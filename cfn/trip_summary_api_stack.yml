@@ -1,0 +1,419 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "OnPointAI - Serverless Trip Summary API (HTTP API + Lambda + DynamoDB). Provides list + detail endpoints."
+
+Parameters:
+  TripSummaryTableName:
+    Type: String
+    Description: DynamoDB table name that stores trip summaries (PK=VEHICLE#vin, SK=TRIP_SUMMARY#tripId)
+
+  ApiName:
+    Type: String
+    Default: onpoint-trip-summary-api
+    Description: Name for the HTTP API
+
+  LambdaName:
+    Type: String
+    Default: onpoint-trip-summary-api
+    Description: Lambda function name
+
+  StageName:
+    Type: String
+    Default: dev
+    Description: API Gateway stage name
+
+Resources:
+  TripSummaryApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${LambdaName}-role-${AWS::StackName}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: TripSummaryApiPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # CloudWatch Logs
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+
+              # DynamoDB read access to the trip summary table
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TripSummaryTableName}"
+
+  TripSummaryApiFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref LambdaName
+      Runtime: python3.11
+      Handler: index.lambda_handler
+      Role: !GetAtt TripSummaryApiRole.Arn
+      Timeout: 30
+      MemorySize: 512
+      Environment:
+        Variables:
+          TRIP_SUMMARY_TABLE: !Ref TripSummaryTableName
+          DEFAULT_LIMIT: "50"
+          MAX_LIMIT: "200"
+      Code:
+        ZipFile: |
+          import os, json, base64
+          import boto3
+          from datetime import datetime
+          from typing import Any, Dict, List, Optional, Tuple
+
+          ddb = boto3.client("dynamodb")
+          TABLE = os.environ["TRIP_SUMMARY_TABLE"]
+          DEFAULT_LIMIT = int(os.environ.get("DEFAULT_LIMIT", "50"))
+          MAX_LIMIT = int(os.environ.get("MAX_LIMIT", "200"))
+
+          # -----------------------------
+          # Helpers
+          # -----------------------------
+          def _resp(status: int, body: dict):
+              return {
+                  "statusCode": status,
+                  "headers": {
+                      "content-type": "application/json",
+                      "access-control-allow-origin": "*",
+                      "access-control-allow-methods": "GET,OPTIONS",
+                      "access-control-allow-headers": "content-type,authorization"
+                  },
+                  "body": json.dumps(body)
+              }
+
+          def _get_qs(event) -> Dict[str, str]:
+              return event.get("queryStringParameters") or {}
+
+          def _parse_iso(s: Optional[str]) -> Optional[datetime]:
+              if not s:
+                  return None
+              try:
+                  return datetime.fromisoformat(s.replace("Z", "+00:00"))
+              except Exception:
+                  return None
+
+          def _ddb_str(item: dict, key: str) -> Optional[str]:
+              v = item.get(key)
+              if isinstance(v, dict) and "S" in v:
+                  return v["S"]
+              return None
+
+          def _ddb_num(item: dict, key: str) -> Optional[float]:
+              v = item.get(key)
+              if isinstance(v, dict) and "N" in v:
+                  try:
+                      return float(v["N"])
+                  except Exception:
+                      return None
+              return None
+
+          def _encode_token(obj: dict) -> str:
+              raw = json.dumps(obj).encode("utf-8")
+              return base64.urlsafe_b64encode(raw).decode("utf-8")
+
+          def _decode_token(token: str) -> dict:
+              try:
+                  raw = base64.urlsafe_b64decode(token.encode("utf-8"))
+                  return json.loads(raw.decode("utf-8"))
+              except Exception:
+                  return {}
+
+          def _in_range(start_s: Optional[str], end_s: Optional[str], frm: Optional[datetime], to: Optional[datetime]) -> bool:
+              # Trip overlaps [from,to] if start <= to AND end >= from
+              if not frm and not to:
+                  return True
+
+              st = _parse_iso(start_s) if start_s else None
+              et = _parse_iso(end_s) if end_s else None
+
+              # If missing times, include (don't hide data)
+              if not st or not et:
+                  return True
+
+              if frm and et < frm:
+                  return False
+              if to and st > to:
+                  return False
+              return True
+
+          # -----------------------------
+          # DynamoDB access
+          # -----------------------------
+          def _query_vehicle(vin: str, exclusive_start_key: Optional[dict] = None, page_size: int = 100) -> Tuple[List[dict], Optional[dict]]:
+              pk = f"VEHICLE#{vin}"
+              params = {
+                  "TableName": TABLE,
+                  "KeyConditionExpression": "PK = :pk AND begins_with(SK, :skp)",
+                  "ExpressionAttributeValues": {
+                      ":pk": {"S": pk},
+                      ":skp": {"S": "TRIP_SUMMARY#"},
+                  },
+                  "Limit": page_size
+              }
+              if exclusive_start_key:
+                  params["ExclusiveStartKey"] = exclusive_start_key
+
+              resp = ddb.query(**params)
+              items = resp.get("Items", [])
+              lek = resp.get("LastEvaluatedKey")
+              return items, lek
+
+          def _summarize_item(it: dict) -> dict:
+              # Use API-friendly top-level fields; fall back to keys if needed.
+              start_time = _ddb_str(it, "startTime")
+              end_time = _ddb_str(it, "endTime")
+              trip_id = _ddb_str(it, "tripId")
+              vin = _ddb_str(it, "vin")
+              provider = _ddb_str(it, "provider")
+              status = _ddb_str(it, "tripStatus")
+              miles = _ddb_num(it, "milesDriven")
+              fuel = _ddb_num(it, "fuelConsumed")
+              score = _ddb_num(it, "safetyScore")
+              refueled = _ddb_num(it, "refueledGallons")
+
+              if not trip_id:
+                  sk = _ddb_str(it, "SK") or ""
+                  if sk.startswith("TRIP_SUMMARY#"):
+                      trip_id = sk.split("#", 1)[1]
+
+              if not vin:
+                  pk = _ddb_str(it, "PK") or ""
+                  if pk.startswith("VEHICLE#"):
+                      vin = pk.split("#", 1)[1]
+
+              return {
+                  "vin": vin,
+                  "tripId": trip_id,
+                  "startTime": start_time,
+                  "endTime": end_time,
+                  "tripStatus": status,
+                  "provider": provider,
+                  "milesDriven": miles,
+                  "fuelConsumed": fuel,
+                  "refueledGallons": refueled,
+                  "safetyScore": score
+              }
+
+          def _sort_key_endtime_desc(x: dict):
+              et = _parse_iso(x.get("endTime")) or datetime.min
+              st = _parse_iso(x.get("startTime")) or datetime.min
+              return (et, st)
+
+          def _get_trip_detail(vin: str, trip_id: str) -> Optional[dict]:
+              pk = f"VEHICLE#{vin}"
+              sk = f"TRIP_SUMMARY#{trip_id}"
+
+              resp = ddb.get_item(
+                  TableName=TABLE,
+                  Key={"PK": {"S": pk}, "SK": {"S": sk}}
+              )
+              item = resp.get("Item")
+              if not item:
+                  return None
+
+              summary_s = _ddb_str(item, "summary")
+              summary_obj = None
+              if summary_s:
+                  try:
+                      summary_obj = json.loads(summary_s)
+                  except Exception:
+                      summary_obj = None
+
+              return {
+                  "vin": vin,
+                  "tripId": trip_id,
+                  "schemaVersion": _ddb_str(item, "schemaVersion"),
+                  "startTime": _ddb_str(item, "startTime"),
+                  "endTime": _ddb_str(item, "endTime"),
+                  "tripStatus": _ddb_str(item, "tripStatus"),
+                  "provider": _ddb_str(item, "provider"),
+                  "milesDriven": _ddb_num(item, "milesDriven"),
+                  "fuelConsumed": _ddb_num(item, "fuelConsumed"),
+                  "refueledGallons": _ddb_num(item, "refueledGallons"),
+                  "safetyScore": _ddb_num(item, "safetyScore"),
+                  # full summary includes alerts + harsh event counts, etc.
+                  "summary": summary_obj if summary_obj is not None else summary_s
+              }
+
+          def lambda_handler(event, context):
+              method = event.get("requestContext", {}).get("http", {}).get("method")
+              if method == "OPTIONS":
+                  return _resp(200, {"ok": True})
+
+              route_key = event.get("routeKey") or ""
+              path_params = event.get("pathParameters") or {}
+
+              # -----------------------
+              # Detail endpoint
+              # GET /trips/{vin}/{tripId}
+              # -----------------------
+              if route_key == "GET /trips/{vin}/{tripId}":
+                  vin = (path_params.get("vin") or "").strip()
+                  trip_id = (path_params.get("tripId") or "").strip()
+
+                  if not vin or not trip_id:
+                      return _resp(400, {"error": "vin and tripId are required in path"})
+
+                  detail = _get_trip_detail(vin, trip_id)
+                  if not detail:
+                      return _resp(404, {"error": "Trip summary not found", "vin": vin, "tripId": trip_id})
+
+                  return _resp(200, detail)
+
+              # -----------------------
+              # List endpoint
+              # GET /trips
+              # -----------------------
+              qs = _get_qs(event)
+              vehicle_id = (qs.get("vehicleId") or "").strip()
+              vehicle_ids = (qs.get("vehicleIds") or "").strip()
+
+              frm = _parse_iso(qs.get("from"))
+              to = _parse_iso(qs.get("to"))
+
+              try:
+                  limit = int(qs.get("limit") or DEFAULT_LIMIT)
+              except Exception:
+                  limit = DEFAULT_LIMIT
+              limit = max(1, min(limit, MAX_LIMIT))
+
+              token = qs.get("nextToken")
+              token_obj = _decode_token(token) if token else {}
+              per_vin_state = token_obj.get("vins") if isinstance(token_obj.get("vins"), dict) else {}
+
+              vins: List[str] = []
+              if vehicle_id:
+                  vins = [vehicle_id]
+              elif vehicle_ids:
+                  vins = [v.strip() for v in vehicle_ids.split(",") if v.strip()]
+
+              if not vins:
+                  return _resp(400, {
+                      "error": "Provide vehicleId or vehicleIds. Global listing across all vehicles requires an index table (planned)."
+                  })
+
+              results: List[dict] = []
+              next_state: Dict[str, Any] = {"vins": {}}
+
+              # bounded scan per VIN for predictable cost/latency
+              page_size = 100
+              max_pages_per_vin = 3
+
+              for vin in vins:
+                  esk = per_vin_state.get(vin)
+                  pages = 0
+                  collected: List[dict] = []
+
+                  while pages < max_pages_per_vin:
+                      items, lek = _query_vehicle(vin, exclusive_start_key=esk, page_size=page_size)
+                      pages += 1
+
+                      for it in items:
+                          s = _summarize_item(it)
+                          if _in_range(s.get("startTime"), s.get("endTime"), frm, to):
+                              collected.append(s)
+
+                      esk = lek
+                      if not lek:
+                          break
+                      if len(collected) >= limit * 2:
+                          break
+
+                  if esk:
+                      next_state["vins"][vin] = esk
+
+                  results.extend(collected)
+
+              results.sort(key=_sort_key_endtime_desc, reverse=True)
+              results = results[:limit]
+
+              next_token = None
+              if any(next_state["vins"].get(v) for v in vins):
+                  next_token = _encode_token(next_state)
+
+              return _resp(200, {"items": results, "nextToken": next_token})
+
+  TripSummaryHttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Ref ApiName
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowMethods:
+          - GET
+          - OPTIONS
+        AllowHeaders:
+          - content-type
+          - authorization
+
+  TripSummaryApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref TripSummaryHttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt TripSummaryApiFunction.Arn
+      PayloadFormatVersion: "2.0"
+      TimeoutInMillis: 29000
+
+  TripSummaryApiRouteList:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref TripSummaryHttpApi
+      RouteKey: "GET /trips"
+      Target: !Sub "integrations/${TripSummaryApiIntegration}"
+
+  TripSummaryApiRouteDetail:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref TripSummaryHttpApi
+      RouteKey: "GET /trips/{vin}/{tripId}"
+      Target: !Sub "integrations/${TripSummaryApiIntegration}"
+
+  TripSummaryApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref TripSummaryHttpApi
+      StageName: !Ref StageName
+      AutoDeploy: true
+
+  TripSummaryLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref TripSummaryApiFunction
+      Principal: apigateway.amazonaws.com
+      # allow both /trips and /trips/{vin}/{tripId}
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TripSummaryHttpApi}/*/*"
+
+Outputs:
+  TripSummaryListUrl:
+    Description: List trips endpoint
+    Value: !Sub "https://${TripSummaryHttpApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/trips"
+
+  TripSummaryDetailUrlTemplate:
+    Description: Detail endpoint template
+    Value: !Sub "https://${TripSummaryHttpApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/trips/{vin}/{tripId}"
+
+  ExampleListSingleVehicle:
+    Description: Example list request
+    Value: !Sub "GET https://${TripSummaryHttpApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/trips?vehicleId=4JGFB4FB7RA981998&limit=25"
+
+  ExampleDetail:
+    Description: Example detail request
+    Value: !Sub "GET https://${TripSummaryHttpApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/trips/4JGFB4FB7RA981998/CXGM_093B34DED53611F09127121AF9B02FBB"

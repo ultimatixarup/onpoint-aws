@@ -1,0 +1,230 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "OnPoint - PSL enrichment + overspeed alerts (Option 2: telematics-processor -> SQS -> PSL enricher -> EventBridge + mark telemetry event)"
+
+Parameters:
+  StageName:
+    Type: String
+    Default: dev
+
+  TelemetryEventsTableName:
+    Type: String
+    Description: Existing telemetry events table name (e.g., onpoint-dev-telemetry-events)
+
+  LambdaCodeS3Bucket:
+    Type: String
+    Description: S3 bucket where the PSL enricher Lambda zip is stored
+
+  LambdaCodeS3Key:
+    Type: String
+    Description: S3 key for the PSL enricher Lambda zip (e.g., lambdas/onpoint-dev-psl-enricher.zip)
+
+  LambdaCodeS3ObjectVersion:
+    Type: String
+    Default: ""
+    Description: Optional S3 object version for the zip (leave blank if not using versioning)
+
+  OverpassUrl:
+    Type: String
+    Default: "https://overpass-api.de/api/interpreter"
+
+  OverspeedThresholdMph:
+    Type: Number
+    Default: 5
+
+  SevereThresholdMph:
+    Type: Number
+    Default: 15
+
+  CooldownSeconds:
+    Type: Number
+    Default: 60
+
+  CacheTtlDays:
+    Type: Number
+    Default: 14
+
+  NullCacheTtlHours:
+    Type: Number
+    Default: 12
+
+Resources:
+  # ----------------------------
+  # SQS
+  # ----------------------------
+  PslEnrichDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "onpoint-${StageName}-psl-enrich-dlq"
+      MessageRetentionPeriod: 1209600 # 14 days
+
+  PslEnrichQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "onpoint-${StageName}-psl-enrich-queue"
+      VisibilityTimeout: 60
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt PslEnrichDLQ.Arn
+        maxReceiveCount: 5
+
+  # ----------------------------
+  # DynamoDB: PSL Cache
+  # PK = CELL#{cell}, SK = PSL
+  # TTL attribute: expiresAt (epoch seconds)
+  # ----------------------------
+  PslCacheTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "onpoint-${StageName}-psl-cache"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+  # ----------------------------
+  # DynamoDB: Overspeed Dedupe (cooldown)
+  # PK = OVERSPEED#VIN#{vin}#SEV#{severity}, SK = COOLDOWN
+  # TTL attribute: expiresAt (epoch seconds)
+  # ----------------------------
+  OverspeedDedupeTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "onpoint-${StageName}-overspeed-dedupe"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+  # ----------------------------
+  # IAM Role
+  # ----------------------------
+  PslEnricherRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "onpoint-${StageName}-psl-enricher-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: PslEnricherPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Consume SQS
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:ChangeMessageVisibility
+                Resource: !GetAtt PslEnrichQueue.Arn
+
+              # Cache + Dedupe DDB
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                Resource:
+                  - !GetAtt PslCacheTable.Arn
+                  - !GetAtt OverspeedDedupeTable.Arn
+
+              # Update your telemetry events table with PSL + overspeed fields
+              - Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TelemetryEventsTableName}"
+
+              # Emit EventBridge alerts
+              - Effect: Allow
+                Action:
+                  - events:PutEvents
+                Resource: "*"
+
+  # ----------------------------
+  # Lambda: PSL Enricher (S3 Zip)
+  # ----------------------------
+  PslEnricherFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "onpoint-${StageName}-psl-enricher"
+      Runtime: python3.11
+      Handler: lambda_function.lambda_handler
+      Role: !GetAtt PslEnricherRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          TELEMETRY_EVENTS_TABLE: !Ref TelemetryEventsTableName
+          PSL_CACHE_TABLE: !Ref PslCacheTable
+          DEDUPE_TABLE: !Ref OverspeedDedupeTable
+
+          OVERPASS_URL: !Ref OverpassUrl
+
+          OVERSPEED_THRESHOLD_MPH: !Ref OverspeedThresholdMph
+          SEVERE_THRESHOLD_MPH: !Ref SevereThresholdMph
+          COOLDOWN_SECONDS: !Ref CooldownSeconds
+
+          CACHE_TTL_DAYS: !Ref CacheTtlDays
+          NULL_CACHE_TTL_HOURS: !Ref NullCacheTtlHours
+      Code:
+        S3Bucket: !Ref LambdaCodeS3Bucket
+        S3Key: !Ref LambdaCodeS3Key
+        S3ObjectVersion: !If
+          - HasObjectVersion
+          - !Ref LambdaCodeS3ObjectVersion
+          - !Ref "AWS::NoValue"
+
+  # SQS -> Lambda mapping
+  PslEnricherEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt PslEnrichQueue.Arn
+      FunctionName: !Ref PslEnricherFunction
+      BatchSize: 10
+      Enabled: true
+
+Conditions:
+  HasObjectVersion: !Not [!Equals [!Ref LambdaCodeS3ObjectVersion, ""]]
+
+Outputs:
+  PslEnrichQueueUrl:
+    Value: !Ref PslEnrichQueue
+    Description: "Set this as PSL_ENRICH_QUEUE_URL in onpoint-dev-telematics-processor"
+
+  PslEnrichQueueArn:
+    Value: !GetAtt PslEnrichQueue.Arn
+
+  PslCacheTableName:
+    Value: !Ref PslCacheTable
+
+  OverspeedDedupeTableName:
+    Value: !Ref OverspeedDedupeTable
+
+  PslEnricherFunctionName:
+    Value: !Ref PslEnricherFunction

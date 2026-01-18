@@ -1,0 +1,12 @@
+{
+    "Tags": [
+        {
+            "Key": "Project",
+            "Value": "OnPointAI"
+        },
+        {
+            "Key": "Environment",
+            "Value": "dev"
+        }
+    ]
+}

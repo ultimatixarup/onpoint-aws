@@ -1,0 +1,6 @@
+{
+    "DEFAULT_DOMAIN": "telematics",
+    "ENVIRONMENT": "dev",
+    "INGRESS_STREAM_NAME": "onpoint-dev-telematics",
+    "PROJECT_NAME": "onpoint"
+}
