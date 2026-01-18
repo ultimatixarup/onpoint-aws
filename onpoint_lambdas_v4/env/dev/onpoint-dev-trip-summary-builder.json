@@ -1,0 +1,4 @@
+{
+    "TELEMETRY_EVENTS_TABLE": "onpoint-dev-telemetry-events",
+    "TRIP_SUMMARY_TABLE": "onpoint-dev-trip-summary"
+}

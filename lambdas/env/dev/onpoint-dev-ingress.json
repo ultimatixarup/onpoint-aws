@@ -2,5 +2,6 @@
     "DEFAULT_DOMAIN": "telematics",
     "ENVIRONMENT": "dev",
     "INGRESS_STREAM_NAME": "onpoint-dev-telematics",
-    "PROJECT_NAME": "onpoint"
-}
+    "PROJECT_NAME": "onpoint",
+    "MAX_RAW_PAYLOAD_BYTES": "262144"
+  }

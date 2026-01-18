@@ -1,0 +1,5 @@
+{
+    "DEFAULT_LIMIT": 50,
+    "MAX_LIMIT": 200,
+    "TRIP_SUMMARY_TABLE": "onpoint-dev-trip-summary"
+  }
