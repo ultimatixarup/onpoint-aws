@@ -1,0 +1,9 @@
+{
+    "TELEMETRY_EVENTS_TABLE": "onpoint-dev-telemetry-events",
+    "VEHICLE_STATE_TABLE": "onpoint-dev-vehicle-state",
+    "OVERSPEED_DEDUPE_TABLE": "onpoint-dev-overspeed-dedupe",
+    "EVENT_BUS_NAME": "default",
+    "OVERSPEED_STANDARD_THRESHOLD_MPH": "5",
+    "OVERSPEED_SEVERE_THRESHOLD_MPH": "15",
+    "OVERSPEED_COOLDOWN_SECONDS": "60"
+  }
