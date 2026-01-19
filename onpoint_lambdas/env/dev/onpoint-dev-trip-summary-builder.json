@@ -1,0 +1,9 @@
+{
+    "Variables": {
+        "TELEMETRY_EVENTS_TABLE": "onpoint-dev-telemetry-events",
+        "TRIP_SUMMARY_TABLE": "onpoint-dev-trip-summary",
+        "TRIP_SUMMARY_SCHEMA_VERSION": "trip-summary-1.0",
+        "REFUEL_NOISE_THRESHOLD_GAL": "0.25",
+        "SPEED_THRESHOLD_MPH": "5"
+    }
+}

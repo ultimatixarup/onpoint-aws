@@ -1,0 +1,202 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: onpoint lambdas, roles, permissions
+
+Parameters:
+  Env:
+    Type: String
+  ProjectName:
+    Type: String
+  LambdaRuntime:
+    Type: String
+    Default: python3.11
+  LambdaMemory:
+    Type: Number
+    Default: 512
+    MinValue: 128
+    MaxValue: 10240
+  LambdaTimeout:
+    Type: Number
+    Default: 30
+  IngressHandler:
+    Type: String
+    Default: app.lambda_handler
+  TelematicsProcessorHandler:
+    Type: String
+    Default: app.lambda_handler
+  PslEnricherHandler:
+    Type: String
+    Default: app.lambda_handler
+  OverspeedDetectorHandler:
+    Type: String
+    Default: app.lambda_handler
+  TripSummaryBuilderHandler:
+    Type: String
+    Default: app.lambda_handler
+  TripSummaryApiHandler:
+    Type: String
+    Default: app.lambda_handler
+  IngressCodeS3Bucket:
+    Type: String
+    Default: ""
+  IngressCodeS3Key:
+    Type: String
+    Default: ""
+  TelematicsProcessorCodeS3Bucket:
+    Type: String
+    Default: ""
+  TelematicsProcessorCodeS3Key:
+    Type: String
+    Default: ""
+  PslEnricherCodeS3Bucket:
+    Type: String
+    Default: ""
+  PslEnricherCodeS3Key:
+    Type: String
+    Default: ""
+  OverspeedDetectorCodeS3Bucket:
+    Type: String
+    Default: ""
+  OverspeedDetectorCodeS3Key:
+    Type: String
+    Default: ""
+  TripSummaryBuilderCodeS3Bucket:
+    Type: String
+    Default: ""
+  TripSummaryBuilderCodeS3Key:
+    Type: String
+    Default: ""
+  TripSummaryApiCodeS3Bucket:
+    Type: String
+    Default: ""
+  TripSummaryApiCodeS3Key:
+    Type: String
+    Default: ""
+
+Conditions:
+  HasIngressCode: !And [!Not [!Equals [!Ref IngressCodeS3Bucket, ""]], !Not [!Equals [!Ref IngressCodeS3Key, ""]]]
+  HasTelematicsProcessorCode: !And [!Not [!Equals [!Ref TelematicsProcessorCodeS3Bucket, ""]], !Not [!Equals [!Ref TelematicsProcessorCodeS3Key, ""]]]
+  HasPslEnricherCode: !And [!Not [!Equals [!Ref PslEnricherCodeS3Bucket, ""]], !Not [!Equals [!Ref PslEnricherCodeS3Key, ""]]]
+  HasOverspeedDetectorCode: !And [!Not [!Equals [!Ref OverspeedDetectorCodeS3Bucket, ""]], !Not [!Equals [!Ref OverspeedDetectorCodeS3Key, ""]]]
+  HasTripSummaryBuilderCode: !And [!Not [!Equals [!Ref TripSummaryBuilderCodeS3Bucket, ""]], !Not [!Equals [!Ref TripSummaryBuilderCodeS3Key, ""]]]
+  HasTripSummaryApiCode: !And [!Not [!Equals [!Ref TripSummaryApiCodeS3Bucket, ""]], !Not [!Equals [!Ref TripSummaryApiCodeS3Key, ""]]]
+
+Resources:
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-${Env}-lambda-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: !Sub "${ProjectName}-${Env}-lambda-access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:*
+                  - sqs:*
+                  - kinesis:*
+                  - events:*
+                Resource: "*"
+
+  IngressFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-${Env}-ingress"
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: !Ref LambdaRuntime
+      Handler: !Ref IngressHandler
+      MemorySize: !Ref LambdaMemory
+      Timeout: !Ref LambdaTimeout
+      Code:
+        S3Bucket: !If [HasIngressCode, !Ref IngressCodeS3Bucket, !Ref AWS::NoValue]
+        S3Key: !If [HasIngressCode, !Ref IngressCodeS3Key, !Ref AWS::NoValue]
+
+  TelematicsProcessorFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-${Env}-telematics-processor"
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: !Ref LambdaRuntime
+      Handler: !Ref TelematicsProcessorHandler
+      MemorySize: !Ref LambdaMemory
+      Timeout: !Ref LambdaTimeout
+      Code:
+        S3Bucket: !If [HasTelematicsProcessorCode, !Ref TelematicsProcessorCodeS3Bucket, !Ref AWS::NoValue]
+        S3Key: !If [HasTelematicsProcessorCode, !Ref TelematicsProcessorCodeS3Key, !Ref AWS::NoValue]
+
+  PslEnricherFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-${Env}-psl-enricher"
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: !Ref LambdaRuntime
+      Handler: !Ref PslEnricherHandler
+      MemorySize: !Ref LambdaMemory
+      Timeout: !Ref LambdaTimeout
+      Code:
+        S3Bucket: !If [HasPslEnricherCode, !Ref PslEnricherCodeS3Bucket, !Ref AWS::NoValue]
+        S3Key: !If [HasPslEnricherCode, !Ref PslEnricherCodeS3Key, !Ref AWS::NoValue]
+
+  OverspeedDetectorFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-${Env}-overspeed-detector"
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: !Ref LambdaRuntime
+      Handler: !Ref OverspeedDetectorHandler
+      MemorySize: !Ref LambdaMemory
+      Timeout: !Ref LambdaTimeout
+      Code:
+        S3Bucket: !If [HasOverspeedDetectorCode, !Ref OverspeedDetectorCodeS3Bucket, !Ref AWS::NoValue]
+        S3Key: !If [HasOverspeedDetectorCode, !Ref OverspeedDetectorCodeS3Key, !Ref AWS::NoValue]
+
+  TripSummaryBuilderFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-${Env}-trip-summary-builder"
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: !Ref LambdaRuntime
+      Handler: !Ref TripSummaryBuilderHandler
+      MemorySize: !Ref LambdaMemory
+      Timeout: !Ref LambdaTimeout
+      Code:
+        S3Bucket: !If [HasTripSummaryBuilderCode, !Ref TripSummaryBuilderCodeS3Bucket, !Ref AWS::NoValue]
+        S3Key: !If [HasTripSummaryBuilderCode, !Ref TripSummaryBuilderCodeS3Key, !Ref AWS::NoValue]
+
+  TripSummaryApiFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-${Env}-trip-summary-api"
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: !Ref LambdaRuntime
+      Handler: !Ref TripSummaryApiHandler
+      MemorySize: !Ref LambdaMemory
+      Timeout: !Ref LambdaTimeout
+      Code:
+        S3Bucket: !If [HasTripSummaryApiCode, !Ref TripSummaryApiCodeS3Bucket, !Ref AWS::NoValue]
+        S3Key: !If [HasTripSummaryApiCode, !Ref TripSummaryApiCodeS3Key, !Ref AWS::NoValue]
+
+Outputs:
+  IngressFunctionName:
+    Value: !Ref IngressFunction
+  TelematicsProcessorFunctionName:
+    Value: !Ref TelematicsProcessorFunction
+  PslEnricherFunctionName:
+    Value: !Ref PslEnricherFunction
+  OverspeedDetectorFunctionName:
+    Value: !Ref OverspeedDetectorFunction
+  TripSummaryBuilderFunctionName:
+    Value: !Ref TripSummaryBuilderFunction
+  TripSummaryApiFunctionName:
+    Value: !Ref TripSummaryApiFunction
+  LambdaRoleArn:
+    Value: !GetAtt LambdaRole.Arn

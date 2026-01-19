@@ -1,0 +1,9 @@
+{
+    "Variables": {
+        "TRIP_SUMMARY_TABLE": "onpoint-dev-trip-summary",
+        "DEFAULT_LIMIT": 50,
+        "MAX_LIMIT": 200,
+        "PAGE_SIZE": "100",
+        "MAX_PAGES_PER_VIN": "3"
+    }
+}

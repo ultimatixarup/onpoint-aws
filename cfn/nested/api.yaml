@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: onpoint http api
+
+Parameters:
+  Env:
+    Type: String
+  ProjectName:
+    Type: String
+  TripSummaryApiFunctionArn:
+    Type: String
+    Default: ""
+
+Conditions:
+  HasTripSummaryApiArn: !Not [!Equals [!Ref TripSummaryApiFunctionArn, ""]]
+
+Resources:
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub "${ProjectName}-${Env}-http-api"
+      ProtocolType: HTTP
+
+  ApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Condition: HasTripSummaryApiArn
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Ref TripSummaryApiFunctionArn
+      PayloadFormatVersion: "2.0"
+
+  TripsRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Condition: HasTripSummaryApiArn
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: "GET /trips"
+      Target: !Sub "integrations/${ApiIntegration}"
+
+  TripDetailRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Condition: HasTripSummaryApiArn
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: "GET /trips/{vin}/{tripId}"
+      Target: !Sub "integrations/${ApiIntegration}"
+
+  ApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref HttpApi
+      StageName: !Ref Env
+      AutoDeploy: true
+
+Outputs:
+  ApiId:
+    Value: !Ref HttpApi
+  ApiEndpoint:
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Env}"

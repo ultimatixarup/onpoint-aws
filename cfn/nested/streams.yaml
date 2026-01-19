@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: onpoint kinesis streams
+
+Parameters:
+  Env:
+    Type: String
+  ProjectName:
+    Type: String
+  TelematicsStreamName:
+    Type: String
+    Default: ""
+
+Conditions:
+  UseDefaultTelematicsStreamName: !Equals [!Ref TelematicsStreamName, ""]
+
+Resources:
+  TelematicsStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: !If
+        - UseDefaultTelematicsStreamName
+        - !Sub "${ProjectName}-${Env}-telematics"
+        - !Ref TelematicsStreamName
+      ShardCount: 1
+      RetentionPeriodHours: 24
+
+Outputs:
+  TelematicsStreamName:
+    Value: !Ref TelematicsStream

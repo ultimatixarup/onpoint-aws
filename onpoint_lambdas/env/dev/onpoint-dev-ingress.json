@@ -1,0 +1,6 @@
+{
+    "Variables": {
+        "INGRESS_STREAM_NAME": "onpoint-dev-telematics",
+        "MAX_RAW_PAYLOAD_BYTES": "262144"
+    }
+}
