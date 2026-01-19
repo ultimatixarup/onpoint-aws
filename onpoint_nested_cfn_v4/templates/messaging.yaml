@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Messaging stack - SQS queues (with DLQs) + Kinesis ingress stream.
+
+Parameters:
+  IngressQueueName:
+    Type: String
+  IngressDlqName:
+    Type: String
+
+  TripSummaryQueueName:
+    Type: String
+  TripSummaryDlqName:
+    Type: String
+
+  IngressStreamName:
+    Type: String
+  IngressStreamShardCount:
+    Type: Number
+    Default: 2
+
+Resources:
+  IngressDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref IngressDlqName
+
+  IngressQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref IngressQueueName
+      VisibilityTimeout: 120
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt IngressDlq.Arn
+        maxReceiveCount: 5
+
+  TripSummaryDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref TripSummaryDlqName
+
+  TripSummaryQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref TripSummaryQueueName
+      VisibilityTimeout: 300
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt TripSummaryDlq.Arn
+        maxReceiveCount: 5
+
+  IngressStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: !Ref IngressStreamName
+      ShardCount: !Ref IngressStreamShardCount
+      RetentionPeriodHours: 24
+      StreamEncryption:
+        EncryptionType: KMS
+        KeyId: alias/aws/kinesis
+
+Outputs:
+  IngressQueueArn:
+    Value: !GetAtt IngressQueue.Arn
+  IngressQueueUrl:
+    Value: !Ref IngressQueue
+  TripSummaryQueueArn:
+    Value: !GetAtt TripSummaryQueue.Arn
+  TripSummaryQueueUrl:
+    Value: !Ref TripSummaryQueue
+  IngressStreamArn:
+    Value: !GetAtt IngressStream.Arn
+  IngressStreamName:
+    Value: !Ref IngressStreamName

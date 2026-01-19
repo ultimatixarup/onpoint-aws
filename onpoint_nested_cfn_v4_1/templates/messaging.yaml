@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Messaging stack - SQS queues (with DLQs) + Kinesis ingress stream.
+
+Parameters:
+  IngressQueueName:
+    Type: String
+  IngressDlqName:
+    Type: String
+
+  PslEnricherQueueName:
+    Type: String
+  PslEnricherDlqName:
+    Type: String
+
+  IngressStreamName:
+    Type: String
+  IngressStreamShardCount:
+    Type: Number
+    Default: 2
+
+Resources:
+  IngressDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref IngressDlqName
+
+  IngressQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref IngressQueueName
+      VisibilityTimeout: 120
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt IngressDlq.Arn
+        maxReceiveCount: 5
+
+  PslEnricherDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref PslEnricherDlqName
+
+  PslEnricherQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref PslEnricherQueueName
+      VisibilityTimeout: 120
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt PslEnricherDlq.Arn
+        maxReceiveCount: 5
+
+  IngressStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: !Ref IngressStreamName
+      ShardCount: !Ref IngressStreamShardCount
+      RetentionPeriodHours: 24
+      StreamEncryption:
+        EncryptionType: KMS
+        KeyId: alias/aws/kinesis
+
+Outputs:
+  IngressQueueArn:
+    Value: !GetAtt IngressQueue.Arn
+  IngressQueueUrl:
+    Value: !Ref IngressQueue
+  PslEnricherQueueArn:
+    Value: !GetAtt PslEnricherQueue.Arn
+  PslEnricherQueueUrl:
+    Value: !Ref PslEnricherQueue
+  IngressStreamArn:
+    Value: !GetAtt IngressStream.Arn
+  IngressStreamName:
+    Value: !Ref IngressStreamName

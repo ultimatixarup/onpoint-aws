@@ -1,32 +1,76 @@
 # ============================================================
-# onpoint-dev-telematics-processor  (Kinesis -> Normalize -> DDB + SQS)
-# Adds: PSL Enrich Job (Option 2) -> SQS (psl-enrich-job-1.0)
+# telematics_processor (Kinesis -> Normalize -> DDB + SQS)
+# - Async Trip Summary build via SQS
+# - PSL Enrich Job (Option 2) via SQS (psl-enrich-job-1.0)
 # ============================================================
+
 import base64
 import json
 import os
 import logging
 from datetime import datetime, timezone
+from typing import Any, Dict, Optional, Tuple
 
 import boto3
 from botocore.exceptions import ClientError
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+# ---------------------------------------------------------
+# Optional shared utilities (preferred)
+# ---------------------------------------------------------
+try:
+    from onpoint_common.timeutil import utc_now_iso  # type: ignore
+except Exception:
+    def utc_now_iso() -> str:
+        return datetime.now(timezone.utc).isoformat()
 
+try:
+    from onpoint_common.loggingutil import setup_logger  # type: ignore
+except Exception:
+    def setup_logger(name: str = "onpoint") -> logging.Logger:
+        lg = logging.getLogger(name)
+        if not lg.handlers:
+            handler = logging.StreamHandler()
+            fmt = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
+            handler.setFormatter(fmt)
+            lg.addHandler(handler)
+        lg.setLevel(logging.INFO)
+        return lg
+
+try:
+    from onpoint_common.validate import require_dict  # type: ignore
+except Exception:
+    def require_dict(obj: Any, msg: str = "Expected JSON object") -> Dict[str, Any]:
+        if not isinstance(obj, dict):
+            raise ValueError(msg)
+        return obj
+
+logger = setup_logger("onpoint.telematics_processor")
+
+# ---------------------------------------------------------
+# AWS Clients
+# ---------------------------------------------------------
 ddb = boto3.client("dynamodb")
 sqs = boto3.client("sqs")
+
+# ---------------------------------------------------------
+# Environment Variables (standardized)
+# ---------------------------------------------------------
+PROJECT_NAME = os.environ.get("PROJECT_NAME", "onpoint")
+ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
+DEFAULT_DOMAIN = os.environ.get("DEFAULT_DOMAIN", "telematics")
 
 TELEMETRY_EVENTS_TABLE = os.environ["TELEMETRY_EVENTS_TABLE"]
 VEHICLE_STATE_TABLE = os.environ["VEHICLE_STATE_TABLE"]
 TRIPS_TABLE = os.environ["TRIPS_TABLE"]
+
+# Async trip summary build
 TRIP_SUMMARY_QUEUE_URL = os.environ["TRIP_SUMMARY_QUEUE_URL"]
 
-# NEW: PSL enrich queue (Option 2)
-PSL_ENRICH_QUEUE_URL = os.environ.get("PSL_ENRICH_QUEUE_URL")  # optional; if not set, PSL is skipped
+# PSL enrich queue (Option 2) - optional
+PSL_ENRICH_QUEUE_URL = os.environ.get("PSL_ENRICH_QUEUE_URL")
 PSL_JOB_SCHEMA_VERSION = os.environ.get("PSL_JOB_SCHEMA_VERSION", "psl-enrich-job-1.0")
 
-# Enforce schema version for incoming envelope
+# Envelope schema enforcement
 EXPECTED_SCHEMA_VERSION = os.environ.get("EXPECTED_SCHEMA_VERSION", "telematics-1.0")
 
 # Normalized schema version (what we write)
@@ -38,13 +82,10 @@ KPH_TO_MPH = 0.621371
 # ---------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------
-def _iso_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
 def _iso_from_epoch(epoch: float) -> str:
     return datetime.fromtimestamp(epoch, tz=timezone.utc).isoformat()
 
-def _num(v):
+def _num(v) -> Optional[float]:
     try:
         if isinstance(v, (int, float)):
             return float(v)
@@ -66,9 +107,9 @@ def _parse_event_time(raw: dict) -> str:
     if isinstance(epoch, (int, float)):
         return _iso_from_epoch(epoch)
 
-    return _iso_now()
+    return utc_now_iso()
 
-def _get_location(raw: dict):
+def _get_location(raw: dict) -> Tuple[Optional[float], Optional[float], Optional[float], Optional[float]]:
     geo = raw.get("cx_geolocation") or {}
     lat = _num(geo.get("cx_latitude"))
     lon = _num(geo.get("cx_longitude"))
@@ -76,7 +117,7 @@ def _get_location(raw: dict):
     altitude_m = _num(geo.get("cx_altitude"))
     return lat, lon, heading, altitude_m
 
-def _get_speed_mph(raw: dict):
+def _get_speed_mph(raw: dict) -> Optional[float]:
     sp = raw.get("cx_vehicle_speed") or {}
     if isinstance(sp, dict):
         kph = _num(sp.get("value"))
@@ -84,7 +125,7 @@ def _get_speed_mph(raw: dict):
             return kph * KPH_TO_MPH
     return None
 
-def _get_odometer_miles(raw: dict):
+def _get_odometer_miles(raw: dict) -> Optional[float]:
     odo = raw.get("cx_odometer") or {}
     if isinstance(odo, dict):
         km = _num(odo.get("value"))
@@ -92,27 +133,27 @@ def _get_odometer_miles(raw: dict):
             return km * KM_TO_MILES
     return None
 
-def _get_engine_speed_rpm(raw: dict):
+def _get_engine_speed_rpm(raw: dict) -> Optional[float]:
     eng = raw.get("cx_engine") or {}
     es = eng.get("cx_engine_speed")
     if isinstance(es, dict):
         return _num(es.get("value"))
     return None
 
-def _get_coolant_temp_c(raw: dict):
+def _get_coolant_temp_c(raw: dict) -> Optional[float]:
     eng = raw.get("cx_engine") or {}
     ct = eng.get("cx_coolant_temp")
     if isinstance(ct, dict):
         return _num(ct.get("value"))
     return None
 
-def _get_battery_volts(raw: dict):
+def _get_battery_volts(raw: dict) -> Optional[float]:
     batt = (raw.get("cx_battery") or {}).get("cx_battery_level")
     if isinstance(batt, dict):
         return _num(batt.get("value"))
     return None
 
-def _get_fuel_percent(raw: dict):
+def _get_fuel_percent(raw: dict) -> Optional[float]:
     """
     cx_fuel.cx_fuel_level.value with unit 'perc' or '%'
     If unit is liters, do NOT coerce -> leave percent null.
@@ -129,7 +170,7 @@ def _get_fuel_percent(raw: dict):
         return val
     return None
 
-def _get_fuel_level_gallons(raw: dict):
+def _get_fuel_level_gallons(raw: dict) -> Optional[float]:
     """
     Authoritative absolute fuel: cx_fuel.cx_abs_fuel_level.value (gallons)
     """
@@ -139,22 +180,21 @@ def _get_fuel_level_gallons(raw: dict):
         return _num(absf.get("value"))
     return None
 
-def _get_ignition_status(raw: dict):
+def _get_ignition_status(raw: dict) -> Optional[str]:
     ign = raw.get("cx_ignition_state")
     if ign in (1, 1.0, True):
         return "ON"
     if ign in (0, 0.0, False):
         return "OFF"
-    # fallback if ignition_state missing
     eng = raw.get("cx_engine") or {}
     ign2 = eng.get("cx_ign_status")
     if ign2 in (1, 1.0):
         return "ON"
     if ign2 in (0, 0.0):
         return "OFF"
-    return None  # optional
+    return None
 
-def _derive_vehicle_state(event_type: str, speed_mph, ignition_status) -> str:
+def _derive_vehicle_state(event_type: str, speed_mph: Optional[float], ignition_status: Optional[str]) -> str:
     """
     Decision B: speed-based only; no cx_message_reason override.
     """
@@ -179,13 +219,16 @@ def _derive_vehicle_state(event_type: str, speed_mph, ignition_status) -> str:
 # Normalization
 # ---------------------------------------------------------
 def _normalize(envelope: dict) -> dict:
+    require_dict(envelope, "Envelope must be an object")
+
     schema_version = envelope.get("schemaVersion")
     if schema_version and schema_version != EXPECTED_SCHEMA_VERSION:
         raise ValueError(f"Unsupported schemaVersion: {schema_version} (expected {EXPECTED_SCHEMA_VERSION})")
 
-    raw = envelope.get("data", {}) or {}
+    raw = envelope.get("data") or {}
+    require_dict(raw, "Envelope.data must be an object")
 
-    vin = raw.get("cx_vehicle_id")
+    vin = raw.get("cx_vehicle_id") or raw.get("vin")
     trip_id = raw.get("cx_trip_id")
     event_type = raw.get("cx_event_type")
     event_time = _parse_event_time(raw)
@@ -209,6 +252,7 @@ def _normalize(envelope: dict) -> dict:
 
     return {
         "schemaVersion": NORMALIZED_SCHEMA_VERSION,
+        "domain": envelope.get("domain") or DEFAULT_DOMAIN,
 
         "vin": vin,
         "tripId": trip_id,
@@ -258,7 +302,7 @@ def _put_telemetry_event(n: dict):
         "vehicleState": {"S": n["vehicleState"]},
         "providerId": {"S": n.get("providerId", "unknown")},
         "messageId": {"S": n["messageId"]},
-        "ingestedAt": {"S": _iso_now()},
+        "ingestedAt": {"S": utc_now_iso()},
         "raw": {"S": json.dumps(n["raw"])},
     }
 
@@ -287,7 +331,7 @@ def _put_telemetry_event(n: dict):
             Item=item,
             ConditionExpression="attribute_not_exists(PK) AND attribute_not_exists(SK)",
         )
-        return True, pk, sk  # inserted new
+        return True, pk, sk
     except ClientError as e:
         if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
             logger.info(f"Duplicate ignored → {pk} {sk}")
@@ -305,7 +349,7 @@ def _update_vehicle_state(n: dict):
     vals = {
         ":t": {"S": n["eventTime"]},
         ":vs": {"S": n["vehicleState"]},
-        ":u": {"S": _iso_now()},
+        ":u": {"S": utc_now_iso()},
         ":sv": {"S": n["schemaVersion"]},
     }
 
@@ -342,7 +386,7 @@ def _update_vehicle_state(n: dict):
             raise
 
 # ---------------------------------------------------------
-# Trips Table (Start/End + send trip_end to SQS)
+# Trips Table + Async Trip Summary on trip_end
 # ---------------------------------------------------------
 def _write_trip(n: dict):
     pk = f"VEHICLE#{n['vin']}"
@@ -357,7 +401,7 @@ def _write_trip(n: dict):
             "tripId": {"S": n["tripId"]},
             "startTime": {"S": n["eventTime"]},
             "tripStatus": {"S": "IN_PROGRESS"},
-            "createdAt": {"S": _iso_now()},
+            "createdAt": {"S": utc_now_iso()},
         }
         if n.get("lat") is not None:
             item["startLat"] = {"N": str(n["lat"])}
@@ -379,7 +423,7 @@ def _write_trip(n: dict):
         vals = {
             ":et": {"S": n["eventTime"]},
             ":s": {"S": "COMPLETED"},
-            ":u": {"S": _iso_now()},
+            ":u": {"S": utc_now_iso()},
         }
         if n.get("lat") is not None:
             expr += ", endLat=:lat"
@@ -395,23 +439,23 @@ def _write_trip(n: dict):
             ExpressionAttributeValues=vals,
         )
 
+        # Old model, now async: enqueue trip summary build
         sqs.send_message(
             QueueUrl=TRIP_SUMMARY_QUEUE_URL,
-            MessageBody=json.dumps({
-                "vin": n["vin"],
-                "tripId": n["tripId"],
-                "endTime": n["eventTime"],
-                "provider": n.get("providerId", "unknown"),
-            }),
+            MessageBody=json.dumps(
+                {
+                    "vin": n["vin"],
+                    "tripId": n["tripId"],
+                    "endTime": n["eventTime"],
+                    "provider": n.get("providerId", "unknown"),
+                    "env": ENVIRONMENT,
+                    "project": PROJECT_NAME,
+                }
+            ),
         )
 
 # ---------------------------------------------------------
-# NEW: Send PSL enrichment job (Option 2)
-# We do this only when we have lat/lon/speed and a queue URL is configured.
-# Also: we only enqueue when telemetry event is newly inserted to avoid duplicate jobs.
-#
-# IMPORTANT: Include telemetryPk/telemetrySk to allow PSL enricher to update
-# the exact event item deterministically.
+# PSL Enrichment Job (Option 2) - enqueue on new inserts
 # ---------------------------------------------------------
 def _send_psl_job_if_applicable(n: dict, inserted_new_event: bool, telemetry_pk: str, telemetry_sk: str):
     if not PSL_ENRICH_QUEUE_URL:
@@ -419,7 +463,6 @@ def _send_psl_job_if_applicable(n: dict, inserted_new_event: bool, telemetry_pk:
     if not inserted_new_event:
         return
 
-    # Need minimal fields to evaluate PSL + overspeed
     if n.get("lat") is None or n.get("lon") is None or n.get("speed_mph") is None:
         return
 
@@ -438,45 +481,58 @@ def _send_psl_job_if_applicable(n: dict, inserted_new_event: bool, telemetry_pk:
         # deterministic update keys for enricher
         "telemetryPk": telemetry_pk,
         "telemetrySk": telemetry_sk,
+
+        "env": ENVIRONMENT,
+        "project": PROJECT_NAME,
     }
 
     try:
-        sqs.send_message(
-            QueueUrl=PSL_ENRICH_QUEUE_URL,
-            MessageBody=json.dumps(job),
-        )
+        sqs.send_message(QueueUrl=PSL_ENRICH_QUEUE_URL, MessageBody=json.dumps(job))
     except Exception:
-        # Non-fatal: we still keep normalized event in DDB
-        logger.exception("Failed to enqueue PSL enrichment job")
+        logger.exception("Failed to enqueue PSL enrichment job (non-fatal)")
 
 # ---------------------------------------------------------
 # Lambda Handler
 # ---------------------------------------------------------
 def lambda_handler(event, context):
-    records = event.get("Records", [])
-    logger.info(f"Received {len(records)} Kinesis records")
+    records = event.get("Records") or []
+    logger.info(
+        json.dumps(
+            {
+                "msg": "Received Kinesis batch",
+                "recordCount": len(records),
+                "env": ENVIRONMENT,
+                "project": PROJECT_NAME,
+            }
+        )
+    )
 
     for r in records:
-        payload = json.loads(base64.b64decode(r["kinesis"]["data"]).decode("utf-8"))
-
         try:
+            payload = json.loads(base64.b64decode(r["kinesis"]["data"]).decode("utf-8"))
+            require_dict(payload, "Kinesis record must decode to a JSON object")
+
             n = _normalize(payload)
+
+            # Hard requirements for normalized storage
+            if not n.get("vin") or not n.get("tripId") or not n.get("eventType") or not n.get("eventTime") or not n.get("messageId"):
+                logger.warning(f"Dropping: Missing required fields vin/trip/type/time/msgId → {payload}")
+                continue
+
+            inserted, telemetry_pk, telemetry_sk = _put_telemetry_event(n)
+
+            _update_vehicle_state(n)
+            _write_trip(n)
+
+            _send_psl_job_if_applicable(
+                n,
+                inserted_new_event=inserted,
+                telemetry_pk=telemetry_pk,
+                telemetry_sk=telemetry_sk,
+            )
+
         except Exception as e:
-            logger.error(f"Dropping message due to schema/normalize error: {e}")
-            continue
-
-        # Hard requirements for normalized storage
-        if not n.get("vin") or not n.get("tripId") or not n.get("eventType") or not n.get("eventTime") or not n.get("messageId"):
-            logger.warning(f"Dropping: Missing required fields vin/trip/type/time/msgId → {payload}")
-            continue
-
-        inserted, telemetry_pk, telemetry_sk = _put_telemetry_event(n)
-
-        # Always update snapshot/trips (idempotency handled by DynamoDB)
-        _update_vehicle_state(n)
-        _write_trip(n)
-
-        # NEW: PSL Enrichment job (Option 2)
-        _send_psl_job_if_applicable(n, inserted_new_event=inserted, telemetry_pk=telemetry_pk, telemetry_sk=telemetry_sk)
+            # For Kinesis triggers, one bad record should not poison the whole batch.
+            logger.error(f"Failed processing record (skipping). err={e}")
 
     return {"status": "ok", "processed": len(records)}
