@@ -71,6 +71,119 @@ Parameters:
   TripSummaryApiCodeS3Key:
     Type: String
     Default: ""
+  TelematicsStreamName:
+    Type: String
+  TelematicsStreamArn:
+    Type: String
+  IngressQueueArn:
+    Type: String
+  PslEnrichQueueUrl:
+    Type: String
+  PslEnrichQueueArn:
+    Type: String
+  TripSummaryQueueUrl:
+    Type: String
+  TripSummaryQueueArn:
+    Type: String
+  TelemetryEventsTableName:
+    Type: String
+  VehicleStateTableName:
+    Type: String
+  TripsTableName:
+    Type: String
+  TripSummaryTableName:
+    Type: String
+  PslCacheTableName:
+    Type: String
+  OverspeedDedupeTableName:
+    Type: String
+  DefaultDomain:
+    Type: String
+    Default: telematics
+  ExpectedSchemaVersion:
+    Type: String
+    Default: telematics-1.0
+  NormalizedSchemaVersion:
+    Type: String
+    Default: normalized-telematics-1.0
+  PslJobSchemaVersion:
+    Type: String
+    Default: psl-job-1.0
+  IngressMaxRawPayloadBytes:
+    Type: String
+    Default: "262144"
+  EventBusName:
+    Type: String
+    Default: default
+  EventSource:
+    Type: String
+    Default: onpoint.overspeed
+  EventDetailType:
+    Type: String
+    Default: OverspeedAlert
+  OverspeedStandardThresholdMph:
+    Type: String
+    Default: "5"
+  OverspeedSevereThresholdMph:
+    Type: String
+    Default: "15"
+  OverspeedCooldownSeconds:
+    Type: String
+    Default: "60"
+  MinPslConfidence:
+    Type: String
+    Default: LOW
+  SkipAlertsBelowMinConf:
+    Type: String
+    Default: "true"
+  DedupeTtlSeconds:
+    Type: String
+    Default: ""
+  OverpassEndpoints:
+    Type: String
+    Default: https://overpass-api.de/api/interpreter,https://overpass.kumi.systems/api/interpreter
+  OverpassTimeoutSeconds:
+    Type: String
+    Default: "10"
+  OverpassMaxRetries:
+    Type: String
+    Default: "1"
+  OverspeedThresholdMph:
+    Type: String
+    Default: "5"
+  SevereThresholdMph:
+    Type: String
+    Default: "15"
+  CooldownSeconds:
+    Type: String
+    Default: "60"
+  CacheTtlDays:
+    Type: String
+    Default: "14"
+  NullCacheTtlHours:
+    Type: String
+    Default: "12"
+  TripSummarySchemaVersion:
+    Type: String
+    Default: trip-summary-1.0
+  RefuelNoiseThresholdGal:
+    Type: String
+    Default: "0.25"
+  SpeedThresholdMph:
+    Type: String
+    Default: "5"
+  DefaultLimit:
+    Type: String
+    Default: "50"
+  MaxLimit:
+    Type: String
+    Default: "200"
+  PageSize:
+    Type: String
+    Default: "100"
+  MaxPagesPerVin:
+    Type: String
+    Default: "3"
 
 Conditions:
   HasIngressCode: !And [!Not [!Equals [!Ref IngressCodeS3Bucket, ""]], !Not [!Equals [!Ref IngressCodeS3Key, ""]]]
@@ -102,10 +215,48 @@ Resources:
               - Effect: Allow
                 Action:
                   - dynamodb:*
-                  - sqs:*
-                  - kinesis:*
-                  - events:*
-                Resource: "*"
+                Resource:
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TelemetryEventsTableName}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TelemetryEventsTableName}/*
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${VehicleStateTableName}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${VehicleStateTableName}/*
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TripsTableName}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TripsTableName}/*
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TripSummaryTableName}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TripSummaryTableName}/*
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PslCacheTableName}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PslCacheTableName}/*
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OverspeedDedupeTableName}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OverspeedDedupeTableName}/*
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:ChangeMessageVisibility
+                Resource:
+                  - !Ref IngressQueueArn
+                  - !Ref PslEnrichQueueArn
+                  - !Ref TripSummaryQueueArn
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource:
+                  - !Ref PslEnrichQueueArn
+                  - !Ref TripSummaryQueueArn
+              - Effect: Allow
+                Action:
+                  - kinesis:PutRecord
+                  - kinesis:PutRecords
+                  - kinesis:DescribeStream
+                  - kinesis:GetRecords
+                  - kinesis:GetShardIterator
+                  - kinesis:ListShards
+                Resource: !Ref TelematicsStreamArn
+              - Effect: Allow
+                Action:
+                  - events:PutEvents
+                Resource: !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:event-bus/${EventBusName}
 
   IngressFunction:
     Type: AWS::Lambda::Function
@@ -116,6 +267,10 @@ Resources:
       Handler: !Ref IngressHandler
       MemorySize: !Ref LambdaMemory
       Timeout: !Ref LambdaTimeout
+      Environment:
+        Variables:
+          INGRESS_STREAM_NAME: !Ref TelematicsStreamName
+          MAX_RAW_PAYLOAD_BYTES: !Ref IngressMaxRawPayloadBytes
       Code:
         S3Bucket: !If [HasIngressCode, !Ref IngressCodeS3Bucket, !Ref AWS::NoValue]
         S3Key: !If [HasIngressCode, !Ref IngressCodeS3Key, !Ref AWS::NoValue]
@@ -129,6 +284,19 @@ Resources:
       Handler: !Ref TelematicsProcessorHandler
       MemorySize: !Ref LambdaMemory
       Timeout: !Ref LambdaTimeout
+      Environment:
+        Variables:
+          PROJECT_NAME: !Ref ProjectName
+          ENVIRONMENT: !Ref Env
+          DEFAULT_DOMAIN: !Ref DefaultDomain
+          TELEMETRY_EVENTS_TABLE: !Ref TelemetryEventsTableName
+          VEHICLE_STATE_TABLE: !Ref VehicleStateTableName
+          TRIPS_TABLE: !Ref TripsTableName
+          TRIP_SUMMARY_QUEUE_URL: !Ref TripSummaryQueueUrl
+          PSL_ENRICH_QUEUE_URL: !Ref PslEnrichQueueUrl
+          PSL_JOB_SCHEMA_VERSION: !Ref PslJobSchemaVersion
+          EXPECTED_SCHEMA_VERSION: !Ref ExpectedSchemaVersion
+          NORMALIZED_SCHEMA_VERSION: !Ref NormalizedSchemaVersion
       Code:
         S3Bucket: !If [HasTelematicsProcessorCode, !Ref TelematicsProcessorCodeS3Bucket, !Ref AWS::NoValue]
         S3Key: !If [HasTelematicsProcessorCode, !Ref TelematicsProcessorCodeS3Key, !Ref AWS::NoValue]
@@ -142,6 +310,19 @@ Resources:
       Handler: !Ref PslEnricherHandler
       MemorySize: !Ref LambdaMemory
       Timeout: !Ref LambdaTimeout
+      Environment:
+        Variables:
+          TELEMETRY_EVENTS_TABLE: !Ref TelemetryEventsTableName
+          PSL_CACHE_TABLE: !Ref PslCacheTableName
+          OVERSPEED_DEDUPE_TABLE: !Ref OverspeedDedupeTableName
+          OVERPASS_ENDPOINTS: !Ref OverpassEndpoints
+          OVERPASS_TIMEOUT_SECONDS: !Ref OverpassTimeoutSeconds
+          OVERPASS_MAX_RETRIES: !Ref OverpassMaxRetries
+          OVERSPEED_THRESHOLD_MPH: !Ref OverspeedThresholdMph
+          SEVERE_THRESHOLD_MPH: !Ref SevereThresholdMph
+          COOLDOWN_SECONDS: !Ref CooldownSeconds
+          CACHE_TTL_DAYS: !Ref CacheTtlDays
+          NULL_CACHE_TTL_HOURS: !Ref NullCacheTtlHours
       Code:
         S3Bucket: !If [HasPslEnricherCode, !Ref PslEnricherCodeS3Bucket, !Ref AWS::NoValue]
         S3Key: !If [HasPslEnricherCode, !Ref PslEnricherCodeS3Key, !Ref AWS::NoValue]
@@ -155,6 +336,20 @@ Resources:
       Handler: !Ref OverspeedDetectorHandler
       MemorySize: !Ref LambdaMemory
       Timeout: !Ref LambdaTimeout
+      Environment:
+        Variables:
+          TELEMETRY_EVENTS_TABLE: !Ref TelemetryEventsTableName
+          VEHICLE_STATE_TABLE: !Ref VehicleStateTableName
+          OVERSPEED_DEDUPE_TABLE: !Ref OverspeedDedupeTableName
+          EVENT_BUS_NAME: !Ref EventBusName
+          EVENT_SOURCE: !Ref EventSource
+          EVENT_DETAIL_TYPE: !Ref EventDetailType
+          OVERSPEED_STANDARD_THRESHOLD_MPH: !Ref OverspeedStandardThresholdMph
+          OVERSPEED_SEVERE_THRESHOLD_MPH: !Ref OverspeedSevereThresholdMph
+          OVERSPEED_COOLDOWN_SECONDS: !Ref OverspeedCooldownSeconds
+          MIN_PSL_CONFIDENCE: !Ref MinPslConfidence
+          SKIP_ALERTS_BELOW_MIN_CONF: !Ref SkipAlertsBelowMinConf
+          DEDUPE_TTL_SECONDS: !Ref DedupeTtlSeconds
       Code:
         S3Bucket: !If [HasOverspeedDetectorCode, !Ref OverspeedDetectorCodeS3Bucket, !Ref AWS::NoValue]
         S3Key: !If [HasOverspeedDetectorCode, !Ref OverspeedDetectorCodeS3Key, !Ref AWS::NoValue]
@@ -168,6 +363,13 @@ Resources:
       Handler: !Ref TripSummaryBuilderHandler
       MemorySize: !Ref LambdaMemory
       Timeout: !Ref LambdaTimeout
+      Environment:
+        Variables:
+          TELEMETRY_EVENTS_TABLE: !Ref TelemetryEventsTableName
+          TRIP_SUMMARY_TABLE: !Ref TripSummaryTableName
+          TRIP_SUMMARY_SCHEMA_VERSION: !Ref TripSummarySchemaVersion
+          REFUEL_NOISE_THRESHOLD_GAL: !Ref RefuelNoiseThresholdGal
+          SPEED_THRESHOLD_MPH: !Ref SpeedThresholdMph
       Code:
         S3Bucket: !If [HasTripSummaryBuilderCode, !Ref TripSummaryBuilderCodeS3Bucket, !Ref AWS::NoValue]
         S3Key: !If [HasTripSummaryBuilderCode, !Ref TripSummaryBuilderCodeS3Key, !Ref AWS::NoValue]
@@ -181,9 +383,49 @@ Resources:
       Handler: !Ref TripSummaryApiHandler
       MemorySize: !Ref LambdaMemory
       Timeout: !Ref LambdaTimeout
+      Environment:
+        Variables:
+          TRIP_SUMMARY_TABLE: !Ref TripSummaryTableName
+          DEFAULT_LIMIT: !Ref DefaultLimit
+          MAX_LIMIT: !Ref MaxLimit
+          PAGE_SIZE: !Ref PageSize
+          MAX_PAGES_PER_VIN: !Ref MaxPagesPerVin
       Code:
         S3Bucket: !If [HasTripSummaryApiCode, !Ref TripSummaryApiCodeS3Bucket, !Ref AWS::NoValue]
         S3Key: !If [HasTripSummaryApiCode, !Ref TripSummaryApiCodeS3Key, !Ref AWS::NoValue]
+
+  IngressEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !Ref IngressQueueArn
+      FunctionName: !Ref IngressFunction
+      BatchSize: 10
+      Enabled: true
+
+  PslEnricherEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !Ref PslEnrichQueueArn
+      FunctionName: !Ref PslEnricherFunction
+      BatchSize: 10
+      Enabled: true
+
+  TripSummaryBuilderEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !Ref TripSummaryQueueArn
+      FunctionName: !Ref TripSummaryBuilderFunction
+      BatchSize: 10
+      Enabled: true
+
+  TelematicsProcessorEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !Ref TelematicsStreamArn
+      FunctionName: !Ref TelematicsProcessorFunction
+      StartingPosition: LATEST
+      BatchSize: 100
+      Enabled: true
 
 Outputs:
   IngressFunctionName:
@@ -198,5 +440,7 @@ Outputs:
     Value: !Ref TripSummaryBuilderFunction
   TripSummaryApiFunctionName:
     Value: !Ref TripSummaryApiFunction
+  TripSummaryApiFunctionArn:
+    Value: !GetAtt TripSummaryApiFunction.Arn
   LambdaRoleArn:
     Value: !GetAtt LambdaRole.Arn

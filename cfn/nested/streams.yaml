@@ -27,3 +27,5 @@ Resources:
 Outputs:
   TelematicsStreamName:
     Value: !Ref TelematicsStream
+  TelematicsStreamArn:
+    Value: !GetAtt TelematicsStream.Arn

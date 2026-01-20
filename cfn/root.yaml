@@ -12,6 +12,24 @@ Parameters:
     Type: String
   TemplatePrefix:
     Type: String
+  IngressCodeS3Key:
+    Type: String
+    Default: lambda/ingress.zip
+  TelematicsProcessorCodeS3Key:
+    Type: String
+    Default: lambda/telematics_processor.zip
+  PslEnricherCodeS3Key:
+    Type: String
+    Default: lambda/psl_enricher.zip
+  OverspeedDetectorCodeS3Key:
+    Type: String
+    Default: lambda/overspeed_detector.zip
+  TripSummaryBuilderCodeS3Key:
+    Type: String
+    Default: lambda/trip_summary_builder.zip
+  TripSummaryApiCodeS3Key:
+    Type: String
+    Default: lambda/trip_summary_api.zip
 
 Resources:
   StreamsStack:
@@ -44,6 +62,31 @@ Resources:
       Parameters:
         Env: !Ref Env
         ProjectName: !Ref ProjectName
+        TelematicsStreamName: !GetAtt StreamsStack.Outputs.TelematicsStreamName
+        TelematicsStreamArn: !GetAtt StreamsStack.Outputs.TelematicsStreamArn
+        IngressQueueArn: !GetAtt QueuesStack.Outputs.IngressQueueArn
+        PslEnrichQueueUrl: !GetAtt QueuesStack.Outputs.PslEnrichQueueUrl
+        PslEnrichQueueArn: !GetAtt QueuesStack.Outputs.PslEnrichQueueArn
+        TripSummaryQueueUrl: !GetAtt QueuesStack.Outputs.TripSummaryQueueUrl
+        TripSummaryQueueArn: !GetAtt QueuesStack.Outputs.TripSummaryQueueArn
+        TelemetryEventsTableName: !GetAtt TablesStack.Outputs.TelemetryEventsTableName
+        VehicleStateTableName: !GetAtt TablesStack.Outputs.VehicleStateTableName
+        TripsTableName: !GetAtt TablesStack.Outputs.TripsTableName
+        TripSummaryTableName: !GetAtt TablesStack.Outputs.TripSummaryTableName
+        PslCacheTableName: !GetAtt TablesStack.Outputs.PslCacheTableName
+        OverspeedDedupeTableName: !GetAtt TablesStack.Outputs.OverspeedDedupeTableName
+        IngressCodeS3Bucket: !Ref TemplateBucket
+        IngressCodeS3Key: !Ref IngressCodeS3Key
+        TelematicsProcessorCodeS3Bucket: !Ref TemplateBucket
+        TelematicsProcessorCodeS3Key: !Ref TelematicsProcessorCodeS3Key
+        PslEnricherCodeS3Bucket: !Ref TemplateBucket
+        PslEnricherCodeS3Key: !Ref PslEnricherCodeS3Key
+        OverspeedDetectorCodeS3Bucket: !Ref TemplateBucket
+        OverspeedDetectorCodeS3Key: !Ref OverspeedDetectorCodeS3Key
+        TripSummaryBuilderCodeS3Bucket: !Ref TemplateBucket
+        TripSummaryBuilderCodeS3Key: !Ref TripSummaryBuilderCodeS3Key
+        TripSummaryApiCodeS3Bucket: !Ref TemplateBucket
+        TripSummaryApiCodeS3Key: !Ref TripSummaryApiCodeS3Key
       TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/nested/lambdas.yaml
 
   ApiStack:
@@ -52,6 +95,7 @@ Resources:
       Parameters:
         Env: !Ref Env
         ProjectName: !Ref ProjectName
+        TripSummaryApiFunctionArn: !GetAtt LambdasStack.Outputs.TripSummaryApiFunctionArn
       TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/nested/api.yaml
 
 Outputs:

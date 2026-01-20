@@ -8,6 +8,21 @@ Parameters:
     Type: String
 
 Resources:
+  IngressDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${ProjectName}-${Env}-ingress-dlq"
+      MessageRetentionPeriod: 1209600
+
+  IngressQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${ProjectName}-${Env}-ingress-queue"
+      VisibilityTimeout: 60
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt IngressDlq.Arn
+        maxReceiveCount: 5
+
   PslEnrichDlq:
     Type: AWS::SQS::Queue
     Properties:
@@ -39,6 +54,10 @@ Resources:
         maxReceiveCount: 5
 
 Outputs:
+  IngressQueueUrl:
+    Value: !Ref IngressQueue
+  IngressQueueArn:
+    Value: !GetAtt IngressQueue.Arn
   PslEnrichQueueUrl:
     Value: !Ref PslEnrichQueue
   PslEnrichQueueArn:

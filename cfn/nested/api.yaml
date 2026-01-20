@@ -45,6 +45,15 @@ Resources:
       RouteKey: "GET /trips/{vin}/{tripId}"
       Target: !Sub "integrations/${ApiIntegration}"
 
+  TripSummaryInvokePermission:
+    Type: AWS::Lambda::Permission
+    Condition: HasTripSummaryApiArn
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref TripSummaryApiFunctionArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*
+
   ApiStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
