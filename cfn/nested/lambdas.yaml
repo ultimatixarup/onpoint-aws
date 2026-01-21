@@ -112,6 +112,15 @@ Parameters:
   IngressMaxRawPayloadBytes:
     Type: String
     Default: "262144"
+  ProviderLookupMode:
+    Type: String
+    Default: dynamodb
+  ProviderKeysTableName:
+    Type: String
+    Default: onpoint-dev-provider-keys
+  ProviderKeysParam:
+    Type: String
+    Default: /onpoint/dev/providerKeys
   EventBusName:
     Type: String
     Default: default
@@ -228,6 +237,13 @@ Resources:
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PslCacheTableName}/*
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OverspeedDedupeTableName}
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OverspeedDedupeTableName}/*
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProviderKeysTableName}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProviderKeysTableName}/*
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource:
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ProviderKeysParam}
               - Effect: Allow
                 Action:
                   - sqs:ReceiveMessage
@@ -271,6 +287,9 @@ Resources:
         Variables:
           INGRESS_STREAM_NAME: !Ref TelematicsStreamName
           MAX_RAW_PAYLOAD_BYTES: !Ref IngressMaxRawPayloadBytes
+          PROVIDER_LOOKUP_MODE: !Ref ProviderLookupMode
+          PROVIDER_TABLE: !Ref ProviderKeysTableName
+          PROVIDER_KEYS_PARAM: !Ref ProviderKeysParam
       Code:
         S3Bucket: !If [HasIngressCode, !Ref IngressCodeS3Bucket, !Ref AWS::NoValue]
         S3Key: !If [HasIngressCode, !Ref IngressCodeS3Key, !Ref AWS::NoValue]

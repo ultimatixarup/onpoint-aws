@@ -1,0 +1,152 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: onpoint ingest REST API -> SQS
+
+Parameters:
+  Env:
+    Type: String
+  ProjectName:
+    Type: String
+  DeploymentNonce:
+    Type: String
+    Default: "1"
+  IngressQueueArn:
+    Type: String
+  IngressQueueName:
+    Type: String
+  IngressQueueUrl:
+    Type: String
+
+Resources:
+  IngestRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub "${ProjectName}-${Env}-ingest-api"
+
+  IngestApiResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IngestRestApi
+      ParentId: !GetAtt IngestRestApi.RootResourceId
+      PathPart: ingest
+
+  IngestApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-${Env}-ingest-apigw-sqs-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub "${ProjectName}-${Env}-ingest-apigw-sqs"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: sqs:SendMessage
+                Resource: !Ref IngressQueueArn
+
+  IngestRequestValidator:
+    Type: AWS::ApiGateway::RequestValidator
+    Properties:
+      Name: !Sub "${ProjectName}-${Env}-ingest-validator"
+      RestApiId: !Ref IngestRestApi
+      ValidateRequestBody: true
+      ValidateRequestParameters: true
+
+  IngestMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IngestRestApi
+      ResourceId: !Ref IngestApiResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      RequestParameters:
+        method.request.header.x-api-key: true
+      RequestValidatorId: !Ref IngestRequestValidator
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:sqs:path/${AWS::AccountId}/${IngressQueueName}
+        Credentials: !GetAtt IngestApiRole.Arn
+        RequestTemplates:
+          application/json: |
+            #set($body = $util.parseJson($input.body))
+            #set($apiKeyId = $context.identity.apiKeyId)
+            #if($apiKeyId == "" || $apiKeyId == $null)
+              #set($apiKeyId = "unknown-key")
+            #end
+            #if($body.apiKeyId == "" || $body.apiKeyId == $null)
+              #set($body.apiKeyId = $apiKeyId)
+            #end
+            #set($providerId = $body.providerId)
+            #if($providerId == "" || $providerId == $null)
+              #set($providerId = "unknown-provider")
+            #end
+            Action=SendMessage&MessageBody=$util.urlEncode($util.toJson($body))&MessageAttribute.1.Name=apiKeyId&MessageAttribute.1.Value.StringValue=$util.urlEncode($apiKeyId)&MessageAttribute.1.Value.DataType=String&MessageAttribute.2.Name=providerId&MessageAttribute.2.Value.StringValue=$util.urlEncode($providerId)&MessageAttribute.2.Value.DataType=String
+        IntegrationResponses:
+          - StatusCode: 200
+      MethodResponses:
+        - StatusCode: 200
+
+  IngestDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - IngestMethod
+    Properties:
+      RestApiId: !Ref IngestRestApi
+      Description: !Sub "deploy-${AWS::StackName}-${AWS::Region}-${DeploymentNonce}"
+
+  IngestStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref IngestRestApi
+      DeploymentId: !Ref IngestDeployment
+      StageName: v1
+      Variables:
+        PROVIDER_LOOKUP_MODE: dynamodb
+        PROVIDER_TABLE: onpoint-dev-provider-keys
+
+  IngestUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn:
+      - IngestStage
+    Properties:
+      UsagePlanName: !Sub "${ProjectName}-${Env}-ingest-plan"
+      Throttle:
+        BurstLimit: 50
+        RateLimit: 10
+      ApiStages:
+        - ApiId: !Ref IngestRestApi
+          Stage: v1
+
+  ExampleProviderApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Name: !Sub "${ProjectName}-${Env}-EXAMPLE"
+      Enabled: true
+
+  ExampleProviderUsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref ExampleProviderApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref IngestUsagePlan
+
+Outputs:
+  IngestApiInvokeUrl:
+    Value: !Sub "https://${IngestRestApi}.execute-api.${AWS::Region}.amazonaws.com/v1/ingest"
+  IngestApiId:
+    Value: !Ref IngestRestApi
+  IngestApiStageName:
+    Value: v1
+  IngestQueueUrl:
+    Value: !Ref IngressQueueUrl
+  IngestUsagePlanNote:
+    Value: !Sub "Attach API keys to usage plan ${IngestUsagePlan} and set stage variables PROVIDER_LOOKUP_MODE and PROVIDER_TABLE or PROVIDER_KEYS_PARAM."
+  ExampleProviderApiKeyId:
+    Value: !Ref ExampleProviderApiKey
