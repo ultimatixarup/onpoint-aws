@@ -9,126 +9,11 @@ Parameters:
   TripSummaryApiFunctionArn:
     Type: String
     Default: ""
-  IngressQueueArn:
-    Type: String
-  IngressQueueName:
-    Type: String
 
 Conditions:
   HasTripSummaryApiArn: !Not [!Equals [!Ref TripSummaryApiFunctionArn, ""]]
 
 Resources:
-  IngestRestApi:
-    Type: AWS::ApiGateway::RestApi
-    Properties:
-      Name: !Sub "${ProjectName}-${Env}-ingest-api"
-
-  IngestApiResource:
-    Type: AWS::ApiGateway::Resource
-    Properties:
-      RestApiId: !Ref IngestRestApi
-      ParentId: !GetAtt IngestRestApi.RootResourceId
-      PathPart: ingest
-
-  IngestApiRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub "${ProjectName}-${Env}-ingest-apigw-sqs-role"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: apigateway.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: !Sub "${ProjectName}-${Env}-ingest-apigw-sqs"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action: sqs:SendMessage
-                Resource: !Ref IngressQueueArn
-
-  IngestRequestValidator:
-    Type: AWS::ApiGateway::RequestValidator
-    Properties:
-      Name: !Sub "${ProjectName}-${Env}-ingest-validator"
-      RestApiId: !Ref IngestRestApi
-      ValidateRequestBody: true
-      ValidateRequestParameters: true
-
-  IngestMethod:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      RestApiId: !Ref IngestRestApi
-      ResourceId: !Ref IngestApiResource
-      HttpMethod: POST
-      AuthorizationType: NONE
-      ApiKeyRequired: true
-      RequestParameters:
-        method.request.header.x-api-key: true
-      RequestValidatorId: !Ref IngestRequestValidator
-      Integration:
-        Type: AWS
-        IntegrationHttpMethod: POST
-        Uri: !Sub arn:aws:apigateway:${AWS::Region}:sqs:path/${AWS::AccountId}/${IngressQueueName}
-        Credentials: !GetAtt IngestApiRole.Arn
-        RequestTemplates:
-          application/json: |
-            #set($body = $input.body)
-            #set($encoded = $util.base64Encode($body))
-            #set($providerIdMap = $util.parseJson($stageVariables.providerIdByKey))
-            #set($providerId = $providerIdMap.get($context.identity.apiKeyId))
-            #if($providerId == "" || $providerId == $null)
-              #set($providerId = "unknown-provider")
-            #end
-            Action=SendMessage&MessageBody=$util.urlEncode($encoded)&MessageAttribute.1.Name=providerId&MessageAttribute.1.Value.StringValue=$util.urlEncode($providerId)&MessageAttribute.1.Value.DataType=String
-        IntegrationResponses:
-          - StatusCode: 200
-      MethodResponses:
-        - StatusCode: 200
-
-  IngestDeployment:
-    Type: AWS::ApiGateway::Deployment
-    Properties:
-      RestApiId: !Ref IngestRestApi
-    DependsOn:
-      - IngestMethod
-
-  IngestStage:
-    Type: AWS::ApiGateway::Stage
-    Properties:
-      RestApiId: !Ref IngestRestApi
-      DeploymentId: !Ref IngestDeployment
-      StageName: !Ref Env
-      Variables:
-        providerIdByKey: !Sub "{\"${CerebrumxApiKey}\":\"CEREBRUMX\"}"
-
-  IngestUsagePlan:
-    Type: AWS::ApiGateway::UsagePlan
-    Properties:
-      UsagePlanName: !Sub "${ProjectName}-${Env}-ingest-plan"
-      Throttle:
-        BurstLimit: 50
-        RateLimit: 10
-      ApiStages:
-        - ApiId: !Ref IngestRestApi
-          Stage: !Ref IngestStage
-
-  CerebrumxApiKey:
-    Type: AWS::ApiGateway::ApiKey
-    Properties:
-      Name: !Sub "${ProjectName}-${Env}-CEREBRUMX"
-      Enabled: true
-
-  CerebrumxUsagePlanKey:
-    Type: AWS::ApiGateway::UsagePlanKey
-    Properties:
-      KeyId: !Ref CerebrumxApiKey
-      KeyType: API_KEY
-      UsagePlanId: !Ref IngestUsagePlan
-
   HttpApi:
     Type: AWS::ApiGatewayV2::Api
     Properties:
@@ -181,9 +66,3 @@ Outputs:
     Value: !Ref HttpApi
   ApiEndpoint:
     Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Env}"
-  IngestApiId:
-    Value: !Ref IngestRestApi
-  IngestApiUrl:
-    Value: !Sub "https://${IngestRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Env}/ingest"
-  CerebrumxApiKeyId:
-    Value: !Ref CerebrumxApiKey

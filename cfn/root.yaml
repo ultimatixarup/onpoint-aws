@@ -96,12 +96,31 @@ Resources:
         Env: !Ref Env
         ProjectName: !Ref ProjectName
         TripSummaryApiFunctionArn: !GetAtt LambdasStack.Outputs.TripSummaryApiFunctionArn
+      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/nested/api.yaml
+
+  IngestApiStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        Env: !Ref Env
+        ProjectName: !Ref ProjectName
         IngressQueueArn: !GetAtt QueuesStack.Outputs.IngressQueueArn
         IngressQueueName: !GetAtt QueuesStack.Outputs.IngressQueueName
-      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/nested/api.yaml
+        IngressQueueUrl: !GetAtt QueuesStack.Outputs.IngressQueueUrl
+      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/nested/ingest_api.yaml
 
 Outputs:
   Env:
     Value: !Ref Env
   ProjectName:
     Value: !Ref ProjectName
+  IngestApiInvokeUrl:
+    Value: !GetAtt IngestApiStack.Outputs.IngestApiInvokeUrl
+  IngestApiId:
+    Value: !GetAtt IngestApiStack.Outputs.IngestApiId
+  IngestApiStageName:
+    Value: !GetAtt IngestApiStack.Outputs.IngestApiStageName
+  IngestQueueUrl:
+    Value: !GetAtt IngestApiStack.Outputs.IngestQueueUrl
+  IngestUsagePlanNote:
+    Value: !GetAtt IngestApiStack.Outputs.IngestUsagePlanNote
