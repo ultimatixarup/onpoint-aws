@@ -58,6 +58,8 @@ Outputs:
     Value: !Ref IngressQueue
   IngressQueueArn:
     Value: !GetAtt IngressQueue.Arn
+  IngressQueueName:
+    Value: !GetAtt IngressQueue.QueueName
   PslEnrichQueueUrl:
     Value: !Ref PslEnrichQueue
   PslEnrichQueueArn:

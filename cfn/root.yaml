@@ -96,6 +96,8 @@ Resources:
         Env: !Ref Env
         ProjectName: !Ref ProjectName
         TripSummaryApiFunctionArn: !GetAtt LambdasStack.Outputs.TripSummaryApiFunctionArn
+        IngressQueueArn: !GetAtt QueuesStack.Outputs.IngressQueueArn
+        IngressQueueName: !GetAtt QueuesStack.Outputs.IngressQueueName
       TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/nested/api.yaml
 
 Outputs:
