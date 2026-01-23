@@ -1,0 +1,90 @@
+{
+  "info": {
+    "name": "OnPoint - Ingest API",
+    "_postman_id": "a3b7a2c2-2c5b-4b8a-8c0f-0b2a1a2f9b3d",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://agpzpas961.execute-api.us-east-1.amazonaws.com/v1" },
+    { "key": "apiKey", "value": "NFNdM4PQTz8jKeNZQMF6o8gNXKdNnTpO1Ljuj52T" },
+    { "key": "providerId", "value": "test-provider" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const url = pm.request.url.toString();",
+          "const headers = {};",
+          "pm.request.headers.each(h => {",
+          "  const key = h.key || '';",
+          "  headers[key] = key.toLowerCase() === 'x-api-key' ? '***' : h.value;",
+          "});",
+          "console.log('Resolved URL:', url);",
+          "console.log('Headers:', headers);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Ingest Telematics (JSON)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{baseUrl}}/ingest/telematics",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"cx_event_type\":\"trip_start\",\"vin\":\"TE66666ST123\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.code === 200);",
+              "const text = pm.response.text();",
+              "pm.test('No UnknownOperationException', () => !text.includes('UnknownOperationException'));",
+              "pm.test('No Missing Authentication Token', () => !text.includes('Missing Authentication Token'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ingest Telematics (Minimal JSON)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{baseUrl}}/ingest/telematics",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"vin\":\"TE66666ST123\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.code === 200);",
+              "const text = pm.response.text();",
+              "pm.test('No UnknownOperationException', () => !text.includes('UnknownOperationException'));",
+              "pm.test('No Missing Authentication Token', () => !text.includes('Missing Authentication Token'));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
