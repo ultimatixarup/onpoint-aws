@@ -75,17 +75,19 @@ Resources:
       ApiKeyRequired: true
       RequestParameters:
         method.request.header.x-api-key: true
+        method.request.header.providerId: true
       RequestValidatorId: !Ref IngestRequestValidator
       Integration:
         Type: AWS
         IntegrationHttpMethod: POST
         Uri: !Sub arn:aws:apigateway:${AWS::Region}:sqs:action/SendMessage
         Credentials: !GetAtt IngestApiRole.Arn
+        PassthroughBehavior: NEVER
         RequestParameters:
           integration.request.header.Content-Type: "'application/x-www-form-urlencoded'"
         RequestTemplates:
-            application/json: !Sub |
-              Action=SendMessage&Version=2012-11-05&QueueUrl=$util.urlEncode('${IngressQueueUrl}')&MessageBody=$util.urlEncode($input.body)&MessageAttribute.1.Name=providerId&MessageAttribute.1.Value.StringValue=$util.urlEncode($util.escapeJavaScript($context.identity.apiKey))&MessageAttribute.1.Value.DataType=String
+          application/json: !Sub |
+            Action=SendMessage&Version=2012-11-05&QueueUrl=$util.urlEncode('${IngressQueueUrl}')&MessageBody=$util.urlEncode($input.body)&MessageAttribute.1.Name=providerId&MessageAttribute.1.Value.StringValue=$util.urlEncode($context.identity.apiKey)&MessageAttribute.1.Value.DataType=String
         IntegrationResponses:
           - StatusCode: 200
       MethodResponses:

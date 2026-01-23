@@ -34,6 +34,7 @@
         "method": "POST",
         "header": [
           { "key": "x-api-key", "value": "{{apiKey}}" },
+          { "key": "providerId", "value": "{{providerId}}" },
           { "key": "Content-Type", "value": "application/json" }
         ],
         "url": "{{baseUrl}}/ingest/telematics",
@@ -63,6 +64,7 @@
         "method": "POST",
         "header": [
           { "key": "x-api-key", "value": "{{apiKey}}" },
+          { "key": "providerId", "value": "{{providerId}}" },
           { "key": "Content-Type", "value": "application/json" }
         ],
         "url": "{{baseUrl}}/ingest/telematics",
