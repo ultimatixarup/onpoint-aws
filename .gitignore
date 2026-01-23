@@ -2,3 +2,9 @@ __pycache__/
 *.pyc
 .venv/
 .DS_Store
+
+.vscode/
+postman/
+MCP_Server_Design_Document.docx
+MCP_Server_Design_Document.pdf
+~$P_Server_Design_Document.docx
