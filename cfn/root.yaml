@@ -30,6 +30,9 @@ Parameters:
   TripSummaryApiCodeS3Key:
     Type: String
     Default: lambda/trip_summary_api.zip
+  CommonLayerS3Key:
+    Type: String
+    Default: lambda/onpoint_common_layer.zip
 
 Resources:
   StreamsStack:
@@ -87,6 +90,8 @@ Resources:
         TripSummaryBuilderCodeS3Key: !Ref TripSummaryBuilderCodeS3Key
         TripSummaryApiCodeS3Bucket: !Ref TemplateBucket
         TripSummaryApiCodeS3Key: !Ref TripSummaryApiCodeS3Key
+        CommonLayerS3Bucket: !Ref TemplateBucket
+        CommonLayerS3Key: !Ref CommonLayerS3Key
       TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/nested/lambdas.yaml
 
   ApiStack:

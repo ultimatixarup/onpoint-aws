@@ -71,6 +71,12 @@ Parameters:
   TripSummaryApiCodeS3Key:
     Type: String
     Default: ""
+  CommonLayerS3Bucket:
+    Type: String
+    Default: ""
+  CommonLayerS3Key:
+    Type: String
+    Default: ""
   TelematicsStreamName:
     Type: String
   TelematicsStreamArn:
@@ -201,8 +207,22 @@ Conditions:
   HasOverspeedDetectorCode: !And [!Not [!Equals [!Ref OverspeedDetectorCodeS3Bucket, ""]], !Not [!Equals [!Ref OverspeedDetectorCodeS3Key, ""]]]
   HasTripSummaryBuilderCode: !And [!Not [!Equals [!Ref TripSummaryBuilderCodeS3Bucket, ""]], !Not [!Equals [!Ref TripSummaryBuilderCodeS3Key, ""]]]
   HasTripSummaryApiCode: !And [!Not [!Equals [!Ref TripSummaryApiCodeS3Bucket, ""]], !Not [!Equals [!Ref TripSummaryApiCodeS3Key, ""]]]
+  HasCommonLayer: !And [!Not [!Equals [!Ref CommonLayerS3Bucket, ""]], !Not [!Equals [!Ref CommonLayerS3Key, ""]]]
 
 Resources:
+  CommonLayerVersion:
+    Type: AWS::Lambda::LayerVersion
+    Condition: HasCommonLayer
+    Properties:
+      LayerName: !Sub "${ProjectName}-${Env}-common-layer"
+      Description: "onpoint_common module shared across Lambda functions"
+      Content:
+        S3Bucket: !Ref CommonLayerS3Bucket
+        S3Key: !Ref CommonLayerS3Key
+      CompatibleRuntimes:
+        - python3.11
+        - python3.12
+
   LambdaRole:
     Type: AWS::IAM::Role
     Properties:
@@ -285,6 +305,8 @@ Resources:
       Timeout: !Ref LambdaTimeout
       Environment:
         Variables:
+          ENV: !Ref Env
+          PROJECT: !Ref ProjectName
           INGRESS_STREAM_NAME: !Ref TelematicsStreamName
           MAX_RAW_PAYLOAD_BYTES: !Ref IngressMaxRawPayloadBytes
           PROVIDER_LOOKUP_MODE: !Ref ProviderLookupMode
@@ -293,6 +315,8 @@ Resources:
       Code:
         S3Bucket: !If [HasIngressCode, !Ref IngressCodeS3Bucket, !Ref AWS::NoValue]
         S3Key: !If [HasIngressCode, !Ref IngressCodeS3Key, !Ref AWS::NoValue]
+      Layers:
+        - !If [HasCommonLayer, !Ref CommonLayerVersion, !Ref AWS::NoValue]
 
   TelematicsProcessorFunction:
     Type: AWS::Lambda::Function
