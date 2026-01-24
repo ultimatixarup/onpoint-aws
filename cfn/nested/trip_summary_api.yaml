@@ -103,6 +103,17 @@ Resources:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TripSummaryApiFunctionArn}/invocations"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+        - StatusCode: 400
+        - StatusCode: 404
+        - StatusCode: 500
+      IntegrationResponses:
+        - StatusCode: 200
+          ResponseTemplates:
+            application/json: ''
 
   # Lambda permission for REST API
   TripSummaryRestApiInvokePermission:
