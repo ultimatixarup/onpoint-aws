@@ -25,6 +25,41 @@
       "key": "testTripId",
       "value": "TRIP123",
       "type": "string"
+    },
+    {
+      "key": "apiId",
+      "value": "i4mtx1tqw4",
+      "type": "string"
+    },
+    {
+      "key": "region",
+      "value": "us-east-1",
+      "type": "string"
+    },
+    {
+      "key": "stage",
+      "value": "dev",
+      "type": "string"
+    },
+    {
+      "key": "vin",
+      "value": "TESTVIN123",
+      "type": "string"
+    },
+    {
+      "key": "tripId",
+      "value": "TRIP123",
+      "type": "string"
+    },
+    {
+      "key": "limit",
+      "value": "100",
+      "type": "string"
+    },
+    {
+      "key": "nextToken",
+      "value": "",
+      "type": "string"
     }
   ],
   "event": [
@@ -584,6 +619,120 @@
               "});"
             ]
           }
+        },
+        {
+          "name": "Get Trip Events (Normalized + Raw)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "https://{{apiId}}.execute-api.{{region}}.amazonaws.com/{{stage}}/trips/{{vin}}/{{tripId}}/events?limit={{limit}}",
+              "protocol": "https",
+              "host": ["{{apiId}}.execute-api.{{region}}.amazonaws.com"],
+              "path": ["{{stage}}", "trips", "{{vin}}", "{{tripId}}", "events"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "{{limit}}"
+                }
+              ]
+            },
+            "description": "Get telemetry events for a trip, returning normalized and raw event payloads. Automatically appends nextToken when present."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Append nextToken only when set",
+                  "const token = (pm.collectionVariables.get('nextToken') || pm.variables.get('nextToken') || '').trim();",
+                  "if (token) {",
+                  "  pm.request.url.addQueryParams({ nextToken: token });",
+                  "  console.log('Added nextToken to request:', token);",
+                  "} else {",
+                  "  console.log('No nextToken set; requesting first page');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => { pm.response.to.have.status(200); });",
+                  "",
+                  "// Assert response is JSON",
+                  "let json = null;",
+                  "pm.test('Response is JSON', () => {",
+                  "  try { json = pm.response.json(); pm.expect(json).to.be.an('object'); }",
+                  "  catch (e) { pm.expect.fail('Response is not valid JSON'); }",
+                  "});",
+                  "",
+                  "// Shape checks",
+                  "pm.test('Body has tripId and vin', () => {",
+                  "  pm.expect(json).to.have.property('tripId');",
+                  "  pm.expect(json).to.have.property('vin');",
+                  "  pm.expect(json.tripId).to.eql(pm.variables.get('tripId'));",
+                  "  pm.expect(json.vin).to.eql(pm.variables.get('vin'));",
+                  "});",
+                  "pm.test('Count is a number', () => { pm.expect(json.count).to.satisfy(n => typeof n === 'number'); });",
+                  "pm.test('Items is an array', () => { pm.expect(json.items).to.be.an('array'); });",
+                  "",
+                  "if (Array.isArray(json.items) && json.items.length > 0) {",
+                  "  pm.test('Event items contain required keys', () => {",
+                  "    const keys = ['eventId','eventType','eventTime','normalized','raw'];",
+                  "    json.items.forEach(it => keys.forEach(k => pm.expect(it).to.have.property(k)));",
+                  "  });",
+                  "}",
+                  "",
+                  "// Save/clear nextToken at collection scope",
+                  "if (json.nextToken) {",
+                  "  pm.collectionVariables.set('nextToken', json.nextToken);",
+                  "  console.log('Saved nextToken to collection:', json.nextToken);",
+                  "} else {",
+                  "  pm.collectionVariables.set('nextToken', '');",
+                  "  console.log('Cleared nextToken (no more pages)');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset Pagination Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://{{apiId}}.execute-api.{{region}}.amazonaws.com/{{stage}}/trips",
+              "protocol": "https",
+              "host": ["{{apiId}}.execute-api.{{region}}.amazonaws.com"],
+              "path": ["{{stage}}", "trips"]
+            },
+            "description": "Helper: reset pagination token to start from first page in next request."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('nextToken', '');",
+                  "pm.test('Pagination token reset', () => {",
+                  "  pm.expect(pm.collectionVariables.get('nextToken')).to.eql('');",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     }
