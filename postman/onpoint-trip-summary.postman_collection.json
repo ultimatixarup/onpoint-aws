@@ -638,9 +638,7 @@
           "protocol": "https",
           "host": ["{{apiId}}.execute-api.{{region}}.amazonaws.com"],
           "path": ["{{stage}}", "trips", "{{vin}}", "{{tripId}}", "events"],
-          "query": [
-            { "key": "limit", "value": "{{limit}}" }
-          ]
+          "query": [{ "key": "limit", "value": "{{limit}}" }]
         },
         "description": "Get telemetry events for a trip, returning normalized and raw event payloads. Automatically appends nextToken when present."
       },
