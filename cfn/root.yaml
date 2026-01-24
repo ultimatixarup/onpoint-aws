@@ -12,6 +12,9 @@ Parameters:
     Type: String
   TemplatePrefix:
     Type: String
+  TemplateVersion:
+    Type: String
+    Default: v1
   IngressCodeS3Key:
     Type: String
     Default: lambda/ingress.zip
@@ -41,7 +44,7 @@ Resources:
       Parameters:
         Env: !Ref Env
         ProjectName: !Ref ProjectName
-      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/nested/streams.yaml
+      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/streams.yaml
 
   QueuesStack:
     Type: AWS::CloudFormation::Stack
@@ -49,7 +52,7 @@ Resources:
       Parameters:
         Env: !Ref Env
         ProjectName: !Ref ProjectName
-      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/nested/queues.yaml
+      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/queues.yaml
 
   TablesStack:
     Type: AWS::CloudFormation::Stack
@@ -57,7 +60,7 @@ Resources:
       Parameters:
         Env: !Ref Env
         ProjectName: !Ref ProjectName
-      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/nested/tables.yaml
+      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/tables.yaml
 
   LambdasStack:
     Type: AWS::CloudFormation::Stack
@@ -92,7 +95,7 @@ Resources:
         TripSummaryApiCodeS3Key: !Ref TripSummaryApiCodeS3Key
         CommonLayerS3Bucket: !Ref TemplateBucket
         CommonLayerS3Key: !Ref CommonLayerS3Key
-      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/nested/lambdas.yaml
+      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/lambdas.yaml
 
   ApiStack:
     Type: AWS::CloudFormation::Stack
@@ -101,7 +104,7 @@ Resources:
         Env: !Ref Env
         ProjectName: !Ref ProjectName
         TripSummaryApiFunctionArn: !GetAtt LambdasStack.Outputs.TripSummaryApiFunctionArn
-      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/nested/trip_summary_api.yaml
+      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/trip_summary_api.yaml
 
   IngestApiStack:
     Type: AWS::CloudFormation::Stack
@@ -112,7 +115,7 @@ Resources:
         IngressQueueArn: !GetAtt QueuesStack.Outputs.IngressQueueArn
         IngressQueueName: !GetAtt QueuesStack.Outputs.IngressQueueName
         IngressQueueUrl: !GetAtt QueuesStack.Outputs.IngressQueueUrl
-      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/nested/ingest_api.yaml
+      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/ingest_api.yaml
 
 Outputs:
   Env:
@@ -129,3 +132,12 @@ Outputs:
     Value: !GetAtt IngestApiStack.Outputs.IngestQueueUrl
   IngestUsagePlanNote:
     Value: !GetAtt IngestApiStack.Outputs.IngestUsagePlanNote
+  ApiStackTemplateURL:
+    Description: Trip summary API nested template URL
+    Value: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/trip_summary_api.yaml
+  TemplateVersionUsed:
+    Description: TemplateVersion used for nested stack TemplateURL paths
+    Value: !Ref TemplateVersion
+  TemplatePrefixUsed:
+    Description: TemplatePrefix used for nested stack TemplateURL paths
+    Value: !Ref TemplatePrefix

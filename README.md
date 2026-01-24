@@ -19,3 +19,11 @@ pre-commit run -a
 
 Never delete stacks; redeploy via update-stack.
 Nested templates must be uploaded to S3 first; stack references them from TemplateBucket/TemplatePrefix.
+
+## Diagnosing stale nested templates
+
+If CloudFormation reports `IntegrationResponses` on a Lambda proxy method, run the deploy script with a new `--template-version` and inspect the outputs:
+
+- `ApiStackTemplateURL` and `TemplateVersionUsed` in root stack outputs confirm the exact TemplateURL.
+- The deploy script prints S3 `head-object` metadata and the first 160 lines of the uploaded nested template.
+- On failure, it prints the nested ApiStack template body via `get-template` so you can verify exactly what CFN used.
