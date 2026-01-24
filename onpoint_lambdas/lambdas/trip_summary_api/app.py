@@ -285,29 +285,26 @@ def _get_trip_detail(vin: str, trip_id: str, include: str) -> Optional[dict]:
 # Handler
 # -----------------------------
 def lambda_handler(event, context):
-    method = event.get("requestContext", {}).get("http", {}).get("method")
+    # Prefer HTTP API v2 method if present, otherwise REST API v1 httpMethod
+    method = event.get("requestContext", {}).get("http", {}).get("method") or event.get("httpMethod")
     if method == "OPTIONS":
         return _resp(200, {"ok": True})
 
-    route_key = event.get("routeKey") or ""
     path_params = event.get("pathParameters") or {}
+    vin_path = (path_params.get("vin") or "").strip()
+    trip_id_path = (path_params.get("tripId") or "").strip()
     qs = _get_qs(event)
 
     # -----------------------
-    # Detail endpoint
+    # Detail endpoint (path params win)
     # GET /trips/{vin}/{tripId}
     # -----------------------
-    if route_key == "GET /trips/{vin}/{tripId}":
-        vin = (path_params.get("vin") or "").strip()
-        trip_id = (path_params.get("tripId") or "").strip()
+    if vin_path and trip_id_path:
         include = _normalize_include(qs.get("include"), default=INCLUDE_SUMMARY)
 
-        if not vin or not trip_id:
-            return _resp(400, {"error": "vin and tripId are required in path"})
-
-        detail = _get_trip_detail(vin, trip_id, include=include)
+        detail = _get_trip_detail(vin_path, trip_id_path, include=include)
         if not detail:
-            return _resp(404, {"error": "Trip summary not found", "vin": vin, "tripId": trip_id})
+            return _resp(404, {"error": "Trip summary not found", "vin": vin_path, "tripId": trip_id_path})
 
         return _resp(200, detail)
 
@@ -315,7 +312,7 @@ def lambda_handler(event, context):
     # List endpoint
     # GET /trips
     # -----------------------
-    vehicle_id = (qs.get("vehicleId") or "").strip()
+    vehicle_id = vin_path or (qs.get("vehicleId") or "").strip()
     vehicle_ids = (qs.get("vehicleIds") or "").strip()
     include = _normalize_include(qs.get("include"), default=INCLUDE_NONE)  # list default is fast
 
