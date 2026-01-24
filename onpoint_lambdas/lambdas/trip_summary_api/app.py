@@ -109,6 +109,30 @@ def _ddb_int(item: dict, key: str) -> Optional[int]:
     return None
 
 
+def _ddb_unmarshal_value(value: dict) -> Any:
+    if "S" in value:
+        return value["S"]
+    if "N" in value:
+        num = value["N"]
+        try:
+            return int(num) if num.isdigit() else float(num)
+        except Exception:
+            return num
+    if "BOOL" in value:
+        return value["BOOL"]
+    if "NULL" in value:
+        return None
+    if "M" in value:
+        return {k: _ddb_unmarshal_value(v) for k, v in value["M"].items()}
+    if "L" in value:
+        return [_ddb_unmarshal_value(v) for v in value["L"]]
+    return value
+
+
+def _ddb_unmarshal_item(item: dict) -> dict:
+    return {k: _ddb_unmarshal_value(v) for k, v in item.items()}
+
+
 def _encode_token(obj: dict) -> str:
     raw = json.dumps(obj).encode("utf-8")
     return base64.urlsafe_b64encode(raw).decode("utf-8")
@@ -121,6 +145,19 @@ def _decode_token(token: str) -> dict:
         return j if isinstance(j, dict) else {}
     except Exception:
         return {}
+
+
+def _decode_lek_token(token: Optional[str]) -> Tuple[Optional[dict], Optional[str]]:
+    if not token:
+        return None, None
+    try:
+        raw = base64.urlsafe_b64decode(token.encode("utf-8"))
+        j = json.loads(raw.decode("utf-8"))
+        if not isinstance(j, dict):
+            return None, "Invalid nextToken"
+        return j, None
+    except Exception:
+        return None, "Invalid nextToken"
 
 
 def _normalize_include(v: Optional[str], default: str) -> str:
@@ -170,6 +207,14 @@ def _sort_key_endtime_desc(x: dict):
     vin = x.get("vin") or ""
     trip_id = x.get("tripId") or ""
     return (et, st, vin, trip_id)
+
+
+def _is_events_route(resource: str, path: str) -> bool:
+    if resource == "/trips/{vin}/{tripId}/events":
+        return True
+    if path:
+        return path.rstrip("/").endswith("/events")
+    return False
 
 
 # -----------------------------
@@ -264,71 +309,34 @@ def _summarize_item(it: dict) -> dict:
     return out
 
 
-def _query_telemetry_events(
+def _query_trip_events_raw(
+    vin: str,
     trip_id: str,
-    vin: Optional[str] = None,
-    frm: Optional[datetime] = None,
-    to: Optional[datetime] = None,
     limit: int = EVENTS_DEFAULT_LIMIT,
     exclusive_start_key: Optional[dict] = None,
-) -> Tuple[List[dict], Optional[dict], Optional[str]]:
+) -> Tuple[List[dict], Optional[dict]]:
     """
-    Query telemetry events by tripId from DynamoDB.
-    Assumes table has a GSI: PK=TRIP_ID, SK=EVENT_TIME (or similar).
-    Returns: (items, last_evaluated_key, vin_from_first_record)
+    Query telemetry events for a specific vin + tripId.
+    PK=VEHICLE#{vin}#TRIP#{trip_id}
+    SK=TS#{eventTime}#MSG#{messageId}
     """
+    pk = f"VEHICLE#{vin}#TRIP#{trip_id}"
     params: Dict[str, Any] = {
         "TableName": TELEMETRY_EVENTS_TABLE,
-        "IndexName": "TRIP_ID-EVENT_TIME-index",  # Adjust if GSI name differs
-        "KeyConditionExpression": "TRIP_ID = :trip_id",
+        "KeyConditionExpression": "PK = :pk AND begins_with(SK, :skp)",
         "ExpressionAttributeValues": {
-            ":trip_id": {"S": trip_id},
+            ":pk": {"S": pk},
+            ":skp": {"S": "TS#"},
         },
         "Limit": limit,
-        "ScanIndexForward": False,  # Most recent first
+        "ScanIndexForward": True,
     }
-
-    # Apply time filtering if provided
-    if frm or to:
-        time_expr = []
-        if frm:
-            time_expr.append("EVENT_TIME >= :from")
-            params["ExpressionAttributeValues"][":from"] = {"S": frm.isoformat()}
-        if to:
-            time_expr.append("EVENT_TIME <= :to")
-            params["ExpressionAttributeValues"][":to"] = {"S": to.isoformat()}
-        if time_expr:
-            params["KeyConditionExpression"] += " AND " + " AND ".join(time_expr)
 
     if exclusive_start_key:
         params["ExclusiveStartKey"] = exclusive_start_key
 
-    try:
-        resp = ddb.query(**params)
-    except Exception as e:
-        logger.error(f"Query telemetry events failed: {e}")
-        return [], None, None
-
-    items = resp.get("Items", [])
-    lek = resp.get("LastEvaluatedKey")
-    
-    # Extract VIN from first item for validation
-    vin_from_record = None
-    if items:
-        vin_from_record = _ddb_str(items[0], "VIN")
-
-    return items, lek, vin_from_record
-
-
-def _format_event_item(item: dict) -> dict:
-    """Convert DynamoDB telemetry event to response format."""
-    return {
-        "eventId": _ddb_str(item, "EVENT_ID") or "",
-        "eventType": _ddb_str(item, "EVENT_TYPE") or "",
-        "eventTime": _ddb_str(item, "EVENT_TIME") or "",
-        "normalized": json.loads(_ddb_str(item, "NORMALIZED") or "{}"),
-        "raw": json.loads(_ddb_str(item, "RAW") or "{}"),
-    }
+    resp = ddb.query(**params)
+    return resp.get("Items", []), resp.get("LastEvaluatedKey")
 
 
 def _get_trip_detail(vin: str, trip_id: str, include: str) -> Optional[dict]:
@@ -371,10 +379,11 @@ def lambda_handler(event, context):
     query = event.get("queryStringParameters") or {}
     vin = path_params.get("vin")
     trip_id = path_params.get("tripId")
-    resource = event.get("resource", "")
+    resource = event.get("resource", "") or ""
+    path = event.get("path") or event.get("rawPath") or ""
 
     # Detect route type based on resource path first (most specific)
-    if resource == "/trips/{vin}/{tripId}/events":
+    if _is_events_route(resource, path):
         route_type = "TRIP_EVENTS"
     # /trips/{vin}/{tripId} detail route
     elif resource == "/trips/{vin}/{tripId}" and trip_id:
@@ -400,13 +409,9 @@ def lambda_handler(event, context):
 
     # TRIP EVENTS ROUTE: GET /trips/{tripId}/events
     if route_type == "TRIP_EVENTS":
-        if not trip_id_path:
-            return _resp(400, {"error": "tripId is required"})
+        if not vin_path or not trip_id_path:
+            return _resp(400, {"error": "vin and tripId are required"})
 
-        # Parse optional filters (vin from path, others from query string)
-        vin_filter = (vin_path or "").strip()
-        frm = _parse_iso(qs.get("from"))
-        to = _parse_iso(qs.get("to"))
         try:
             limit = int(qs.get("limit") or EVENTS_DEFAULT_LIMIT)
         except Exception:
@@ -414,54 +419,43 @@ def lambda_handler(event, context):
         limit = max(1, min(limit, EVENTS_MAX_LIMIT))
 
         token = qs.get("nextToken")
-        esk = None
-        if token:
-            try:
-                esk = json.loads(base64.urlsafe_b64decode(token))
-            except Exception:
-                esk = None
+        esk, token_error = _decode_lek_token(token)
+        if token_error:
+            return _resp(400, {"error": token_error})
 
         logger.info(
             json.dumps(
                 {
                     "routeType": "TRIP_EVENTS",
                     "tripId": trip_id_path,
-                    "vin_filter": vin_filter,
+                    "vin": vin_path,
                     "limit": limit,
                 }
             )
         )
 
-        # Query events
-        items, lek, vin_from_db = _query_telemetry_events(
-            trip_id_path,
-            vin=vin_filter if vin_filter else None,
-            frm=frm,
-            to=to,
-            limit=limit,
-            exclusive_start_key=esk,
-        )
+        try:
+            items, lek = _query_trip_events_raw(
+                vin_path,
+                trip_id_path,
+                limit=limit,
+                exclusive_start_key=esk,
+            )
+        except Exception as e:
+            logger.error(f"Query telemetry events failed: {e}")
+            return _resp(500, {"error": "Failed to query telemetry events", "requestId": request_id})
 
-        # Validate VIN if provided
-        if vin_filter and vin_from_db and vin_filter != vin_from_db:
-            logger.info(f"VIN mismatch: requested={vin_filter}, found={vin_from_db}")
-            return _resp(404, {"error": "VIN does not match trip records", "tripId": trip_id_path})
-
-        # Build response
-        next_token = None
-        if lek:
-            next_token = base64.urlsafe_b64encode(json.dumps(lek).encode()).decode()
-
-        formatted_items = [_format_event_item(item) for item in items]
+        next_token = _encode_token(lek) if lek else None
+        raw_items = [_ddb_unmarshal_item(item) for item in items]
 
         return _resp(
             200,
             {
+                "vin": vin_path,
                 "tripId": trip_id_path,
-                "vin": vin_from_db,
-                "count": len(formatted_items),
+                "count": len(raw_items),
+                "items": raw_items,
                 "nextToken": next_token,
-                "items": formatted_items,
             },
         )
 
