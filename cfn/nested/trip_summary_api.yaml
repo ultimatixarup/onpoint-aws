@@ -9,9 +9,6 @@ Parameters:
   TripSummaryApiFunctionArn:
     Type: String
     Default: ""
-  ApiDeployVersion:
-    Type: String
-    Default: "1"
 
 Conditions:
   HasTripSummaryApiArn: !Not [!Equals [!Ref TripSummaryApiFunctionArn, ""]]
@@ -127,7 +124,7 @@ Resources:
       - TripEventsGetMethod
     Properties:
       RestApiId: !Ref TripSummaryRestApi
-      Description: !Sub "Deployment for ${Env} stage v${ApiDeployVersion}"
+      Description: !Sub "Deployment for ${Env} stage"
 
   # API Stage
   TripSummaryRestApiStage:
