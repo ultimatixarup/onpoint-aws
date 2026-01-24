@@ -3,6 +3,8 @@ __pycache__/
 .venv/
 .DS_Store
 
+.coverage
+
 .vscode/
 MCP_Server_Design_Document.docx
 MCP_Server_Design_Document.pdf
