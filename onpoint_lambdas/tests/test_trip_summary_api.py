@@ -168,3 +168,111 @@ def test_detail_route_with_tripId_does_not_require_vehicleId_query_param(monkeyp
     # Ensure it does NOT have the "vehicleId or vehicleIds" error
     assert "vehicleId" not in body.get("error", "")
 
+
+def test_trip_events_endpoint_returns_events(monkeypatch):
+    """Test GET /trips/{tripId}/events returns telemetry events with normalized and raw."""
+    add_common_to_path()
+
+    def fake_client(service_name):
+        return DummyClient()
+
+    monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
+    monkeypatch.setenv("TELEMETRY_EVENTS_TABLE", "telemetry-events")
+    monkeypatch.setattr(boto3, "client", fake_client)
+
+    module_path = Path(__file__).resolve().parents[1] / "lambdas" / "trip_summary_api" / "app.py"
+    mod = load_lambda_module("trip_summary_api_app", module_path)
+
+    # Mock telemetry events query
+    mock_events = [
+        {
+            "EVENT_ID": {"S": "evt-1"},
+            "EVENT_TYPE": {"S": "speed_alert"},
+            "EVENT_TIME": {"S": "2026-01-24T02:00:00Z"},
+            "NORMALIZED": {"S": '{"speed_mph": 85}'},
+            "RAW": {"S": '{"raw_speed": 85000}'},
+            "VIN": {"S": "VIN123"},
+            "TRIP_ID": {"S": "TRIP456"},
+        }
+    ]
+    mod.ddb = DummyClient(query=lambda **kwargs: {"Items": mock_events, "LastEvaluatedKey": None})
+
+    event = {
+        "httpMethod": "GET",
+        "pathParameters": {"vin": "VIN123", "tripId": "TRIP456"},
+        "queryStringParameters": None,
+        "resource": "/trips/{vin}/{tripId}/events",
+    }
+
+    resp = mod.lambda_handler(event, None)
+    assert resp["statusCode"] == 200
+    body = json.loads(resp["body"])
+    assert body["tripId"] == "TRIP456"
+    assert body["count"] == 1
+    assert len(body["items"]) == 1
+    assert body["items"][0]["eventId"] == "evt-1"
+    assert body["items"][0]["normalized"] == {"speed_mph": 85}
+    assert body["items"][0]["raw"] == {"raw_speed": 85000}
+
+
+def test_trip_events_vin_mismatch_returns_404(monkeypatch):
+    """Test VIN validation in trip events endpoint."""
+    add_common_to_path()
+
+    def fake_client(service_name):
+        return DummyClient()
+
+    monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
+    monkeypatch.setenv("TELEMETRY_EVENTS_TABLE", "telemetry-events")
+    monkeypatch.setattr(boto3, "client", fake_client)
+
+    module_path = Path(__file__).resolve().parents[1] / "lambdas" / "trip_summary_api" / "app.py"
+    mod = load_lambda_module("trip_summary_api_app", module_path)
+
+    mock_events = [
+        {
+            "VIN": {"S": "ACTUAL_VIN"},
+            "TRIP_ID": {"S": "TRIP456"},
+        }
+    ]
+    mod.ddb = DummyClient(query=lambda **kwargs: {"Items": mock_events})
+
+    event = {
+        "httpMethod": "GET",
+        "pathParameters": {"vin": "WRONG_VIN", "tripId": "TRIP456"},
+        "queryStringParameters": None,
+        "resource": "/trips/{vin}/{tripId}/events",
+    }
+
+    resp = mod.lambda_handler(event, None)
+    assert resp["statusCode"] == 404
+    body = json.loads(resp["body"])
+    assert "VIN does not match" in body.get("error", "")
+
+
+def test_trip_events_no_tripId_returns_400(monkeypatch):
+    """Test that missing tripId returns 400."""
+    add_common_to_path()
+
+    def fake_client(service_name):
+        return DummyClient()
+
+    monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
+    monkeypatch.setenv("TELEMETRY_EVENTS_TABLE", "telemetry-events")
+    monkeypatch.setattr(boto3, "client", fake_client)
+
+    module_path = Path(__file__).resolve().parents[1] / "lambdas" / "trip_summary_api" / "app.py"
+    mod = load_lambda_module("trip_summary_api_app", module_path)
+
+    event = {
+        "httpMethod": "GET",
+        "pathParameters": None,
+        "queryStringParameters": None,
+        "resource": "/trips/{vin}/{tripId}/events",
+    }
+
+    resp = mod.lambda_handler(event, None)
+    assert resp["statusCode"] == 400
+    body = json.loads(resp["body"])
+    assert "tripId" in body.get("error", "")
+

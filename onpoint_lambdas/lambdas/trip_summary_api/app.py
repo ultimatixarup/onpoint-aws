@@ -1,15 +1,17 @@
 # ============================================================
 # onpoint-dev-trip-summary-api
-# API Gateway (HTTP API) -> Lambda -> DynamoDB (Trip Summary table)
+# API Gateway (REST API) -> Lambda -> DynamoDB (Trip Summary & Telemetry Events tables)
 #
 # Endpoints:
 #   GET /trips?vehicleId=VIN[&from=...&to=...&limit=...&nextToken=...&include=...]
 #   GET /trips?vehicleIds=VIN1,VIN2,... (bounded fan-out; no global index)
 #   GET /trips/{vin}/{tripId}[?include=summary|none|summary,alerts,events]
+#   GET /trips/{tripId}/events[?vin=...&from=...&to=...&limit=...&nextToken=...]
 #
 # Standard behavior:
 # - List endpoint (GET /trips) default: include=none (fast), returns top-level rollups
 # - Detail endpoint (GET /trips/{vin}/{tripId}) default: include=summary
+# - Events endpoint (GET /trips/{tripId}/events) returns normalized + raw events from telemetry table
 # - Overspeed rollups are returned top-level if stored on the item:
 #     overspeedMilesStandard / Severe / Total
 #     overspeedEventCountStandard / Severe / Total
@@ -33,8 +35,11 @@ ddb = boto3.client("dynamodb")
 BUILD_ID = "2026-01-23T18:45:00Z"
 
 TABLE = os.environ["TRIP_SUMMARY_TABLE"]
+TELEMETRY_EVENTS_TABLE = os.environ.get("TELEMETRY_EVENTS_TABLE", "onpoint-dev-telemetry-events")
 DEFAULT_LIMIT = int(os.environ.get("DEFAULT_LIMIT", "50"))
 MAX_LIMIT = int(os.environ.get("MAX_LIMIT", "200"))
+EVENTS_DEFAULT_LIMIT = int(os.environ.get("EVENTS_DEFAULT_LIMIT", "100"))
+EVENTS_MAX_LIMIT = int(os.environ.get("EVENTS_MAX_LIMIT", "500"))
 
 # List endpoint scanning caps per VIN (cost guardrails)
 DEFAULT_PAGE_SIZE = int(os.environ.get("PAGE_SIZE", "100"))
@@ -259,6 +264,73 @@ def _summarize_item(it: dict) -> dict:
     return out
 
 
+def _query_telemetry_events(
+    trip_id: str,
+    vin: Optional[str] = None,
+    frm: Optional[datetime] = None,
+    to: Optional[datetime] = None,
+    limit: int = EVENTS_DEFAULT_LIMIT,
+    exclusive_start_key: Optional[dict] = None,
+) -> Tuple[List[dict], Optional[dict], Optional[str]]:
+    """
+    Query telemetry events by tripId from DynamoDB.
+    Assumes table has a GSI: PK=TRIP_ID, SK=EVENT_TIME (or similar).
+    Returns: (items, last_evaluated_key, vin_from_first_record)
+    """
+    params: Dict[str, Any] = {
+        "TableName": TELEMETRY_EVENTS_TABLE,
+        "IndexName": "TRIP_ID-EVENT_TIME-index",  # Adjust if GSI name differs
+        "KeyConditionExpression": "TRIP_ID = :trip_id",
+        "ExpressionAttributeValues": {
+            ":trip_id": {"S": trip_id},
+        },
+        "Limit": limit,
+        "ScanIndexForward": False,  # Most recent first
+    }
+
+    # Apply time filtering if provided
+    if frm or to:
+        time_expr = []
+        if frm:
+            time_expr.append("EVENT_TIME >= :from")
+            params["ExpressionAttributeValues"][":from"] = {"S": frm.isoformat()}
+        if to:
+            time_expr.append("EVENT_TIME <= :to")
+            params["ExpressionAttributeValues"][":to"] = {"S": to.isoformat()}
+        if time_expr:
+            params["KeyConditionExpression"] += " AND " + " AND ".join(time_expr)
+
+    if exclusive_start_key:
+        params["ExclusiveStartKey"] = exclusive_start_key
+
+    try:
+        resp = ddb.query(**params)
+    except Exception as e:
+        logger.error(f"Query telemetry events failed: {e}")
+        return [], None, None
+
+    items = resp.get("Items", [])
+    lek = resp.get("LastEvaluatedKey")
+    
+    # Extract VIN from first item for validation
+    vin_from_record = None
+    if items:
+        vin_from_record = _ddb_str(items[0], "VIN")
+
+    return items, lek, vin_from_record
+
+
+def _format_event_item(item: dict) -> dict:
+    """Convert DynamoDB telemetry event to response format."""
+    return {
+        "eventId": _ddb_str(item, "EVENT_ID") or "",
+        "eventType": _ddb_str(item, "EVENT_TYPE") or "",
+        "eventTime": _ddb_str(item, "EVENT_TIME") or "",
+        "normalized": json.loads(_ddb_str(item, "NORMALIZED") or "{}"),
+        "raw": json.loads(_ddb_str(item, "RAW") or "{}"),
+    }
+
+
 def _get_trip_detail(vin: str, trip_id: str, include: str) -> Optional[dict]:
     pk = f"VEHICLE#{vin}"
     sk = f"TRIP_SUMMARY#{trip_id}"
@@ -299,8 +371,17 @@ def lambda_handler(event, context):
     query = event.get("queryStringParameters") or {}
     vin = path_params.get("vin")
     trip_id = path_params.get("tripId")
+    resource = event.get("resource", "")
 
-    route_type = "DETAIL" if trip_id else "LIST"
+    # Detect route type based on resource path first (most specific)
+    if resource == "/trips/{vin}/{tripId}/events":
+        route_type = "TRIP_EVENTS"
+    # /trips/{vin}/{tripId} detail route
+    elif resource == "/trips/{vin}/{tripId}" and trip_id:
+        route_type = "DETAIL"
+    # /trips list route
+    else:
+        route_type = "LIST"
     logger.info(
         json.dumps(
             {
@@ -316,6 +397,73 @@ def lambda_handler(event, context):
     vin_path = (vin or "").strip()
     trip_id_path = (trip_id or "").strip()
     qs = query
+
+    # TRIP EVENTS ROUTE: GET /trips/{tripId}/events
+    if route_type == "TRIP_EVENTS":
+        if not trip_id_path:
+            return _resp(400, {"error": "tripId is required"})
+
+        # Parse optional filters (vin from path, others from query string)
+        vin_filter = (vin_path or "").strip()
+        frm = _parse_iso(qs.get("from"))
+        to = _parse_iso(qs.get("to"))
+        try:
+            limit = int(qs.get("limit") or EVENTS_DEFAULT_LIMIT)
+        except Exception:
+            limit = EVENTS_DEFAULT_LIMIT
+        limit = max(1, min(limit, EVENTS_MAX_LIMIT))
+
+        token = qs.get("nextToken")
+        esk = None
+        if token:
+            try:
+                esk = json.loads(base64.urlsafe_b64decode(token))
+            except Exception:
+                esk = None
+
+        logger.info(
+            json.dumps(
+                {
+                    "routeType": "TRIP_EVENTS",
+                    "tripId": trip_id_path,
+                    "vin_filter": vin_filter,
+                    "limit": limit,
+                }
+            )
+        )
+
+        # Query events
+        items, lek, vin_from_db = _query_telemetry_events(
+            trip_id_path,
+            vin=vin_filter if vin_filter else None,
+            frm=frm,
+            to=to,
+            limit=limit,
+            exclusive_start_key=esk,
+        )
+
+        # Validate VIN if provided
+        if vin_filter and vin_from_db and vin_filter != vin_from_db:
+            logger.info(f"VIN mismatch: requested={vin_filter}, found={vin_from_db}")
+            return _resp(404, {"error": "VIN does not match trip records", "tripId": trip_id_path})
+
+        # Build response
+        next_token = None
+        if lek:
+            next_token = base64.urlsafe_b64encode(json.dumps(lek).encode()).decode()
+
+        formatted_items = [_format_event_item(item) for item in items]
+
+        return _resp(
+            200,
+            {
+                "tripId": trip_id_path,
+                "vin": vin_from_db,
+                "count": len(formatted_items),
+                "nextToken": next_token,
+                "items": formatted_items,
+            },
+        )
 
     # HARD ROUTE SWITCH: If tripId exists in pathParameters -> DETAIL route
     # This must happen BEFORE any "vehicleId required" validation

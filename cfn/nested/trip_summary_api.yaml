@@ -80,6 +80,30 @@ Resources:
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TripSummaryApiFunctionArn}/invocations"
 
+  # /trips/{vin}/{tripId}/events resource (nested under tripId, not sibling)
+  TripEventsResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ParentId: !Ref TripIdResource
+      PathPart: "events"
+
+  # GET /trips/{vin}/{tripId}/events method
+  TripEventsGetMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ResourceId: !Ref TripEventsResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TripSummaryApiFunctionArn}/invocations"
+
   # Lambda permission for REST API
   TripSummaryRestApiInvokePermission:
     Type: AWS::Lambda::Permission
@@ -97,6 +121,7 @@ Resources:
     DependsOn:
       - TripsGetMethod
       - TripDetailGetMethod
+      - TripEventsGetMethod
     Properties:
       RestApiId: !Ref TripSummaryRestApi
       Description: !Sub "Deployment for ${Env} stage"
