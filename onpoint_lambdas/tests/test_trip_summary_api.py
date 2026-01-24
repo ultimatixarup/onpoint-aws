@@ -13,10 +13,12 @@ def test_trip_summary_api_helpers(monkeypatch):
         return DummyClient()
 
     monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
+    monkeypatch.setenv("VIN_REGISTRY_TABLE", "vin-registry")
     monkeypatch.setattr(boto3, "client", fake_client)
 
     module_path = Path(__file__).resolve().parents[1] / "lambdas" / "trip_summary_api" / "app.py"
     mod = load_lambda_module("trip_summary_api_app", module_path)
+    monkeypatch.setattr(mod, "resolve_vin_registry", lambda *args, **kwargs: {"tenantId": "tenant-1"})
 
     token = mod._encode_token({"a": 1})
     decoded = mod._decode_token(token)
@@ -62,6 +64,7 @@ def test_trip_detail_routes_with_path_params(monkeypatch):
 
     event = {
         "httpMethod": "GET",
+        "requestContext": {"identity": {"apiKey": "tenant-1"}},
         "pathParameters": {"vin": "V1", "tripId": "T1"},
         "queryStringParameters": {"include": "summary"},
     }
@@ -81,10 +84,12 @@ def test_list_trips_uses_path_vin(monkeypatch):
         return DummyClient()
 
     monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
+    monkeypatch.setenv("VIN_REGISTRY_TABLE", "vin-registry")
     monkeypatch.setattr(boto3, "client", fake_client)
 
     module_path = Path(__file__).resolve().parents[1] / "lambdas" / "trip_summary_api" / "app.py"
     mod = load_lambda_module("trip_summary_api_app", module_path)
+    monkeypatch.setattr(mod, "resolve_vin_registry", lambda *args, **kwargs: {"tenantId": "tenant-1"})
 
     sample_item = {
         "PK": {"S": "VEHICLE#V1"},
@@ -99,6 +104,7 @@ def test_list_trips_uses_path_vin(monkeypatch):
 
     event = {
         "httpMethod": "GET",
+        "requestContext": {"identity": {"apiKey": "tenant-1"}},
         "pathParameters": {"vin": "V1"},
         "queryStringParameters": {},
     }
@@ -117,13 +123,16 @@ def test_list_trips_without_vehicle_returns_400(monkeypatch):
         return DummyClient()
 
     monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
+    monkeypatch.setenv("VIN_REGISTRY_TABLE", "vin-registry")
     monkeypatch.setattr(boto3, "client", fake_client)
 
     module_path = Path(__file__).resolve().parents[1] / "lambdas" / "trip_summary_api" / "app.py"
     mod = load_lambda_module("trip_summary_api_app", module_path)
+    monkeypatch.setattr(mod, "resolve_vin_registry", lambda *args, **kwargs: {"tenantId": "tenant-1"})
 
     event = {
         "httpMethod": "GET",
+        "requestContext": {"identity": {"apiKey": "tenant-1"}},
         "queryStringParameters": {},
         "pathParameters": None,
     }
@@ -146,10 +155,12 @@ def test_detail_route_with_tripId_does_not_require_vehicleId_query_param(monkeyp
         return DummyClient()
 
     monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
+    monkeypatch.setenv("VIN_REGISTRY_TABLE", "vin-registry")
     monkeypatch.setattr(boto3, "client", fake_client)
 
     module_path = Path(__file__).resolve().parents[1] / "lambdas" / "trip_summary_api" / "app.py"
     mod = load_lambda_module("trip_summary_api_app", module_path)
+    monkeypatch.setattr(mod, "resolve_vin_registry", lambda *args, **kwargs: {"tenantId": "tenant-1"})
 
     # Stub DynamoDB to return no item (404 case)
     mod.ddb = DummyClient(get_item=lambda **kwargs: {})
@@ -157,6 +168,7 @@ def test_detail_route_with_tripId_does_not_require_vehicleId_query_param(monkeyp
     # Event exactly as API Gateway sends it
     event = {
         "httpMethod": "GET",
+        "requestContext": {"identity": {"apiKey": "tenant-1"}},
         "pathParameters": {
             "vin": "4JGFB4FB7RA981998",
             "tripId": "CXGM_093B34DED53611F09127121AF9B02FBB"
@@ -184,10 +196,12 @@ def test_trip_events_endpoint_returns_events(monkeypatch):
 
     monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
     monkeypatch.setenv("TELEMETRY_EVENTS_TABLE", "telemetry-events")
+    monkeypatch.setenv("VIN_REGISTRY_TABLE", "vin-registry")
     monkeypatch.setattr(boto3, "client", fake_client)
 
     module_path = Path(__file__).resolve().parents[1] / "lambdas" / "trip_summary_api" / "app.py"
     mod = load_lambda_module("trip_summary_api_app", module_path)
+    monkeypatch.setattr(mod, "resolve_vin_registry", lambda *args, **kwargs: {"tenantId": "tenant-1"})
 
     # Mock telemetry events query
     mock_events = [
@@ -200,10 +214,14 @@ def test_trip_events_endpoint_returns_events(monkeypatch):
             "raw": {"S": '{"raw_speed": 85000}'},
         }
     ]
-    mod.ddb = DummyClient(query=lambda **kwargs: {"Items": mock_events, "LastEvaluatedKey": None})
+    mod.ddb = DummyClient(
+        query=lambda **kwargs: {"Items": mock_events, "LastEvaluatedKey": None},
+        get_item=lambda **kwargs: {"Item": {"startTime": {"S": "2026-01-24T02:00:00Z"}}},
+    )
 
     event = {
         "httpMethod": "GET",
+        "requestContext": {"identity": {"apiKey": "tenant-1"}},
         "pathParameters": {"vin": "VIN123", "tripId": "TRIP456"},
         "queryStringParameters": None,
         "resource": "/trips/{vin}/{tripId}/events",
@@ -229,13 +247,16 @@ def test_trip_events_no_tripId_returns_400(monkeypatch):
 
     monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
     monkeypatch.setenv("TELEMETRY_EVENTS_TABLE", "telemetry-events")
+    monkeypatch.setenv("VIN_REGISTRY_TABLE", "vin-registry")
     monkeypatch.setattr(boto3, "client", fake_client)
 
     module_path = Path(__file__).resolve().parents[1] / "lambdas" / "trip_summary_api" / "app.py"
     mod = load_lambda_module("trip_summary_api_app", module_path)
+    monkeypatch.setattr(mod, "resolve_vin_registry", lambda *args, **kwargs: {"tenantId": "tenant-1"})
 
     event = {
         "httpMethod": "GET",
+        "requestContext": {"identity": {"apiKey": "tenant-1"}},
         "pathParameters": None,
         "queryStringParameters": None,
         "resource": "/trips/{vin}/{tripId}/events",
@@ -256,15 +277,21 @@ def test_trip_events_route_detected_by_path(monkeypatch):
 
     monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
     monkeypatch.setenv("TELEMETRY_EVENTS_TABLE", "telemetry-events")
+    monkeypatch.setenv("VIN_REGISTRY_TABLE", "vin-registry")
     monkeypatch.setattr(boto3, "client", fake_client)
 
     module_path = Path(__file__).resolve().parents[1] / "lambdas" / "trip_summary_api" / "app.py"
     mod = load_lambda_module("trip_summary_api_app", module_path)
+    monkeypatch.setattr(mod, "resolve_vin_registry", lambda *args, **kwargs: {"tenantId": "tenant-1"})
 
-    mod.ddb = DummyClient(query=lambda **kwargs: {"Items": [], "LastEvaluatedKey": None})
+    mod.ddb = DummyClient(
+        query=lambda **kwargs: {"Items": [], "LastEvaluatedKey": None},
+        get_item=lambda **kwargs: {"Item": {"startTime": {"S": "2026-01-24T02:00:00Z"}}},
+    )
 
     event = {
         "httpMethod": "GET",
+        "requestContext": {"identity": {"apiKey": "tenant-1"}},
         "path": "/dev/trips/VIN123/TRIP456/events",
         "pathParameters": {"vin": "VIN123", "tripId": "TRIP456"},
         "queryStringParameters": None,
@@ -286,15 +313,21 @@ def test_trip_events_invalid_next_token_returns_400(monkeypatch):
 
     monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
     monkeypatch.setenv("TELEMETRY_EVENTS_TABLE", "telemetry-events")
+    monkeypatch.setenv("VIN_REGISTRY_TABLE", "vin-registry")
     monkeypatch.setattr(boto3, "client", fake_client)
 
     module_path = Path(__file__).resolve().parents[1] / "lambdas" / "trip_summary_api" / "app.py"
     mod = load_lambda_module("trip_summary_api_app", module_path)
+    monkeypatch.setattr(mod, "resolve_vin_registry", lambda *args, **kwargs: {"tenantId": "tenant-1"})
 
-    mod.ddb = DummyClient(query=lambda **kwargs: {"Items": [], "LastEvaluatedKey": None})
+    mod.ddb = DummyClient(
+        query=lambda **kwargs: {"Items": [], "LastEvaluatedKey": None},
+        get_item=lambda **kwargs: {"Item": {"startTime": {"S": "2026-01-24T02:00:00Z"}}},
+    )
 
     event = {
         "httpMethod": "GET",
+        "requestContext": {"identity": {"apiKey": "tenant-1"}},
         "pathParameters": {"vin": "VIN123", "tripId": "TRIP456"},
         "queryStringParameters": {"nextToken": "not-a-token"},
         "resource": "/trips/{vin}/{tripId}/events",
@@ -315,19 +348,25 @@ def test_trip_events_limit_clamps(monkeypatch):
 
     monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
     monkeypatch.setenv("TELEMETRY_EVENTS_TABLE", "telemetry-events")
+    monkeypatch.setenv("VIN_REGISTRY_TABLE", "vin-registry")
     monkeypatch.setattr(boto3, "client", fake_client)
 
     module_path = Path(__file__).resolve().parents[1] / "lambdas" / "trip_summary_api" / "app.py"
     mod = load_lambda_module("trip_summary_api_app", module_path)
+    monkeypatch.setattr(mod, "resolve_vin_registry", lambda *args, **kwargs: {"tenantId": "tenant-1"})
 
     def query(**kwargs):
         assert kwargs.get("Limit") == mod.EVENTS_MAX_LIMIT
         return {"Items": [], "LastEvaluatedKey": None}
 
-    mod.ddb = DummyClient(query=query)
+    mod.ddb = DummyClient(
+        query=query,
+        get_item=lambda **kwargs: {"Item": {"startTime": {"S": "2026-01-24T02:00:00Z"}}},
+    )
 
     event = {
         "httpMethod": "GET",
+        "requestContext": {"identity": {"apiKey": "tenant-1"}},
         "pathParameters": {"vin": "VIN123", "tripId": "TRIP456"},
         "queryStringParameters": {"limit": "999"},
         "resource": "/trips/{vin}/{tripId}/events",

@@ -31,6 +31,26 @@ Resources:
         AttributeName: expiresAt
         Enabled: true
 
+  VinRegistryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-${Env}-vin-registry"
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+        KMSMasterKeyId: alias/aws/dynamodb
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+
   TripsTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -163,6 +183,8 @@ Resources:
 Outputs:
   TelemetryEventsTableName:
     Value: !Ref TelemetryEventsTable
+  VinRegistryTableName:
+    Value: !Ref VinRegistryTable
   TripsTableName:
     Value: !Ref TripsTable
   TripSummaryTableName:

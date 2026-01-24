@@ -1,0 +1,296 @@
+{
+  "info": {
+    "name": "OnPoint - Multi-Tenancy Tests",
+    "_postman_id": "d2d2e0f3-2f2b-4f9a-9a0c-3a6c7a6b0f6e",
+    "description": "Multi-tenancy validation for Trip Summary APIs (VIN registry + tenant isolation)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://{{apiId}}.execute-api.{{region}}.amazonaws.com/{{stage}}",
+      "type": "string"
+    },
+    {
+      "key": "apiId",
+      "value": "i4mtx1tqw4",
+      "type": "string"
+    },
+    {
+      "key": "region",
+      "value": "us-east-1",
+      "type": "string"
+    },
+    {
+      "key": "stage",
+      "value": "dev",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "<API_KEY>",
+      "type": "string"
+    },
+    {
+      "key": "tenantId",
+      "value": "tenant-1",
+      "type": "string"
+    },
+    {
+      "key": "tenantIdForbidden",
+      "value": "tenant-2",
+      "type": "string"
+    },
+    {
+      "key": "vinAllowed",
+      "value": "VIN_ALLOWED",
+      "type": "string"
+    },
+    {
+      "key": "vinForbidden",
+      "value": "VIN_FORBIDDEN",
+      "type": "string"
+    },
+    {
+      "key": "tripId",
+      "value": "TRIP_ID",
+      "type": "string"
+    },
+    {
+      "key": "limit",
+      "value": "100",
+      "type": "string"
+    },
+    {
+      "key": "nextToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const url = pm.request.url.toString();",
+          "const headers = {};",
+          "pm.request.headers.each(h => {",
+          "  const key = h.key || '';",
+          "  headers[key] = key.toLowerCase() === 'x-api-key' ? '***' : h.value;",
+          "});",
+          "console.log('Request URL:', url);",
+          "console.log('Headers (redacted API key):', headers);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Trip Events (Allowed Tenant)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}" },
+          { "key": "x-tenant-id", "value": "{{tenantId}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/trips/{{vinAllowed}}/{{tripId}}/events?limit={{limit}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["trips", "{{vinAllowed}}", "{{tripId}}", "events"],
+          "query": [
+            { "key": "limit", "value": "{{limit}}" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Response shape', () => {",
+              "  pm.expect(json).to.have.property('vin');",
+              "  pm.expect(json).to.have.property('tripId');",
+              "  pm.expect(json).to.have.property('items');",
+              "  pm.expect(json.items).to.be.an('array');",
+              "});",
+              "pm.test('No summary payload', () => {",
+              "  pm.expect(json).to.not.have.property('summary');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Trip Events (Forbidden Tenant)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}" },
+          { "key": "x-tenant-id", "value": "{{tenantIdForbidden}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/trips/{{vinForbidden}}/{{tripId}}/events?limit={{limit}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["trips", "{{vinForbidden}}", "{{tripId}}", "events"],
+          "query": [
+            { "key": "limit", "value": "{{limit}}" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 403', () => pm.response.to.have.status(403));",
+              "pm.test('Error is Forbidden', () => {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.error).to.eql('Forbidden');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Trip Detail (Allowed Tenant)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}" },
+          { "key": "x-tenant-id", "value": "{{tenantId}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/trips/{{vinAllowed}}/{{tripId}}?include=summary",
+          "host": ["{{baseUrl}}"],
+          "path": ["trips", "{{vinAllowed}}", "{{tripId}}"],
+          "query": [
+            { "key": "include", "value": "summary" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Has vin/tripId', () => {",
+              "  pm.expect(json).to.have.property('vin');",
+              "  pm.expect(json).to.have.property('tripId');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Trip Detail (Forbidden Tenant)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}" },
+          { "key": "x-tenant-id", "value": "{{tenantIdForbidden}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/trips/{{vinForbidden}}/{{tripId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["trips", "{{vinForbidden}}", "{{tripId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 403', () => pm.response.to.have.status(403));",
+              "pm.test('Error is Forbidden', () => {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.error).to.eql('Forbidden');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List Trips (Allowed Tenant)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}" },
+          { "key": "x-tenant-id", "value": "{{tenantId}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/trips?vehicleId={{vinAllowed}}&limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["trips"],
+          "query": [
+            { "key": "vehicleId", "value": "{{vinAllowed}}" },
+            { "key": "limit", "value": "10" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Has items array', () => {",
+              "  pm.expect(json).to.have.property('items');",
+              "  pm.expect(json.items).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List Trips (Forbidden Tenant)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}" },
+          { "key": "x-tenant-id", "value": "{{tenantIdForbidden}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/trips?vehicleId={{vinForbidden}}&limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["trips"],
+          "query": [
+            { "key": "vehicleId", "value": "{{vinForbidden}}" },
+            { "key": "limit", "value": "10" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 403', () => pm.response.to.have.status(403));",
+              "pm.test('Error is Forbidden', () => {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.error).to.eql('Forbidden');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

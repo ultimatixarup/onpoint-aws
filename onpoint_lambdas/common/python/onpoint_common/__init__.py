@@ -3,6 +3,7 @@ __all__ = [
     "validate",
     "ids",
     "tenant",
+    "vin_registry",
     "timeutil",
     "loggingutil",
 ]

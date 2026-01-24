@@ -27,6 +27,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import boto3
 
+try:
+    from onpoint_common.vin_registry import resolve_vin_registry  # type: ignore
+except Exception:
+    def resolve_vin_registry(*args, **kwargs):
+        return None
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -36,6 +42,7 @@ BUILD_ID = "2026-01-23T18:45:00Z"
 
 TABLE = os.environ["TRIP_SUMMARY_TABLE"]
 TELEMETRY_EVENTS_TABLE = os.environ.get("TELEMETRY_EVENTS_TABLE", "onpoint-dev-telemetry-events")
+VIN_REGISTRY_TABLE = os.environ.get("VIN_REGISTRY_TABLE")
 DEFAULT_LIMIT = int(os.environ.get("DEFAULT_LIMIT", "50"))
 MAX_LIMIT = int(os.environ.get("MAX_LIMIT", "200"))
 EVENTS_DEFAULT_LIMIT = int(os.environ.get("EVENTS_DEFAULT_LIMIT", "100"))
@@ -209,6 +216,40 @@ def _sort_key_endtime_desc(x: dict):
     return (et, st, vin, trip_id)
 
 
+def _get_caller_tenant_id(event: dict) -> Optional[str]:
+    identity = (event.get("requestContext") or {}).get("identity") or {}
+    tenant_id = identity.get("apiKey") or identity.get("apiKeyId")
+    if isinstance(tenant_id, str) and tenant_id.strip():
+        return tenant_id.strip()
+    headers = event.get("headers") or {}
+    fallback = headers.get("x-tenant-id") or headers.get("X-Tenant-Id")
+    if isinstance(fallback, str) and fallback.strip():
+        return fallback.strip()
+    return None
+
+
+def _resolve_vin_tenancy(vin: str, as_of: Optional[str]) -> Optional[dict]:
+    if not VIN_REGISTRY_TABLE:
+        logger.warning("VIN_REGISTRY_TABLE not configured; skipping tenancy enforcement.")
+        return None
+    try:
+        return resolve_vin_registry(vin, as_of=as_of, table_name=VIN_REGISTRY_TABLE, ddb_client=ddb)
+    except Exception as exc:
+        logger.error(f"VIN registry lookup failed for vin={vin}: {exc}")
+        return None
+
+
+def _authorize_vin(vin: str, tenant_id: Optional[str], as_of: Optional[str]) -> bool:
+    if not VIN_REGISTRY_TABLE:
+        return True
+    if not tenant_id:
+        return False
+    record = _resolve_vin_tenancy(vin, as_of)
+    if not record:
+        return False
+    return record.get("tenantId") == tenant_id
+
+
 def _is_events_route(resource: str, path: str) -> bool:
     if resource == "/trips/{vin}/{tripId}/events":
         return True
@@ -339,6 +380,18 @@ def _query_trip_events_raw(
     return resp.get("Items", []), resp.get("LastEvaluatedKey")
 
 
+def _get_trip_summary_times(vin: str, trip_id: str) -> Tuple[Optional[str], Optional[str]]:
+    pk = f"VEHICLE#{vin}"
+    sk = f"TRIP_SUMMARY#{trip_id}"
+    resp = ddb.get_item(
+        TableName=TABLE,
+        Key={"PK": {"S": pk}, "SK": {"S": sk}},
+        ProjectionExpression="startTime,endTime",
+    )
+    item = resp.get("Item") or {}
+    return _ddb_str(item, "startTime"), _ddb_str(item, "endTime")
+
+
 def _get_trip_detail(vin: str, trip_id: str, include: str) -> Optional[dict]:
     pk = f"VEHICLE#{vin}"
     sk = f"TRIP_SUMMARY#{trip_id}"
@@ -406,11 +459,17 @@ def lambda_handler(event, context):
     vin_path = (vin or "").strip()
     trip_id_path = (trip_id or "").strip()
     qs = query
+    tenant_id = _get_caller_tenant_id(event)
 
     # TRIP EVENTS ROUTE: GET /trips/{tripId}/events
     if route_type == "TRIP_EVENTS":
         if not vin_path or not trip_id_path:
             return _resp(400, {"error": "vin and tripId are required"})
+
+        start_time, end_time = _get_trip_summary_times(vin_path, trip_id_path)
+        as_of = start_time or end_time
+        if not _authorize_vin(vin_path, tenant_id, as_of):
+            return _resp(403, {"error": "Forbidden"})
 
         try:
             limit = int(qs.get("limit") or EVENTS_DEFAULT_LIMIT)
@@ -470,6 +529,9 @@ def lambda_handler(event, context):
         if not detail:
             return _resp(404, {"error": "Trip summary not found", "vin": vehicle_id, "tripId": trip_id_path})
 
+        if not _authorize_vin(vehicle_id, tenant_id, detail.get("startTime") or detail.get("endTime")):
+            return _resp(403, {"error": "Forbidden"})
+
         return _resp(200, detail)
 
     # If we reach here: LIST route (no tripId in path)
@@ -528,14 +590,20 @@ def lambda_handler(event, context):
         esk = per_vin_state.get(vin)
         pages = 0
         collected: List[dict] = []
+        found_any = False
+        authorized_any = False
 
         while pages < max_pages_per_vin:
             items, lek = _query_vehicle(vin, exclusive_start_key=esk, page_size=page_size)
             pages += 1
 
             for it in items:
+                found_any = True
                 s = _summarize_item(it)
                 if _in_range(s.get("startTime"), s.get("endTime"), frm, to):
+                    if not _authorize_vin(vin, tenant_id, s.get("startTime") or s.get("endTime")):
+                        continue
+                    authorized_any = True
                     if include == INCLUDE_SUMMARY:
                         # attach summary (expensive, explicit)
                         tid = s.get("tripId") or ""
@@ -552,6 +620,9 @@ def lambda_handler(event, context):
 
         if esk:
             next_state["vins"][vin] = esk
+
+        if found_any and not authorized_any:
+            return _resp(403, {"error": "Forbidden"})
 
         results.extend(collected)
 

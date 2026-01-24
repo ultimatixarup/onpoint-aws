@@ -1,6 +1,7 @@
 {
     "Variables": {
         "TRIP_SUMMARY_TABLE": "onpoint-dev-trip-summary",
+        "VIN_REGISTRY_TABLE": "onpoint-dev-vin-registry",
         "DEFAULT_LIMIT": 50,
         "MAX_LIMIT": 200,
         "PAGE_SIZE": "100",

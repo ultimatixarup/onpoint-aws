@@ -4,6 +4,7 @@ __pycache__/
 .DS_Store
 
 .coverage
+.cfn_cached/
 
 .vscode/
 MCP_Server_Design_Document.docx

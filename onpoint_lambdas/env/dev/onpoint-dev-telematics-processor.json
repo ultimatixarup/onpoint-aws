@@ -6,6 +6,7 @@
         "TRIPS_TABLE": "onpoint-dev-trips",
         "TRIP_SUMMARY_QUEUE_URL": "https://sqs.us-east-1.amazonaws.com/518761466197/onpoint-dev-trip-summary-queue",
         "VEHICLE_STATE_TABLE": "onpoint-dev-vehicle-state",
+        "VIN_REGISTRY_TABLE": "onpoint-dev-vin-registry",
         "PROJECT_NAME": "onpoint",
         "ENVIRONMENT": "dev",
         "DEFAULT_DOMAIN": "telematics",

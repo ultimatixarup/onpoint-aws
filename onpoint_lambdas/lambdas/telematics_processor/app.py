@@ -44,6 +44,12 @@ except Exception:
             raise ValueError(msg)
         return obj
 
+try:
+    from onpoint_common.vin_registry import resolve_vin_registry  # type: ignore
+except Exception:
+    def resolve_vin_registry(*args, **kwargs):
+        return None
+
 logger = setup_logger("onpoint.telematics_processor")
 
 # ---------------------------------------------------------
@@ -62,6 +68,7 @@ DEFAULT_DOMAIN = os.environ.get("DEFAULT_DOMAIN", "telematics")
 TELEMETRY_EVENTS_TABLE = os.environ["TELEMETRY_EVENTS_TABLE"]
 VEHICLE_STATE_TABLE = os.environ["VEHICLE_STATE_TABLE"]
 TRIPS_TABLE = os.environ["TRIPS_TABLE"]
+VIN_REGISTRY_TABLE = os.environ.get("VIN_REGISTRY_TABLE")
 
 # Async trip summary build
 TRIP_SUMMARY_QUEUE_URL = os.environ["TRIP_SUMMARY_QUEUE_URL"]
@@ -218,6 +225,15 @@ def _derive_vehicle_state(event_type: str, speed_mph: Optional[float], ignition_
 # ---------------------------------------------------------
 # Normalization
 # ---------------------------------------------------------
+def _resolve_vin_tenancy(vin: Optional[str], event_time: str) -> Optional[Dict[str, Any]]:
+    if not vin or not VIN_REGISTRY_TABLE:
+        return None
+    try:
+        return resolve_vin_registry(vin, as_of=event_time, table_name=VIN_REGISTRY_TABLE, ddb_client=ddb)
+    except Exception as exc:
+        logger.warning(f"VIN registry lookup failed for vin={vin}: {exc}")
+        return None
+
 def _normalize(envelope: dict) -> dict:
     require_dict(envelope, "Envelope must be an object")
 
@@ -235,6 +251,11 @@ def _normalize(envelope: dict) -> dict:
 
     message_id = raw.get("cx_msg_id") or envelope.get("messageId")
     provider_id = envelope.get("providerId") or envelope.get("provider") or "unknown"
+
+    tenancy = _resolve_vin_tenancy(vin, event_time)
+    tenant_id = tenancy.get("tenantId") if isinstance(tenancy, dict) else None
+    customer_id = tenancy.get("customerId") if isinstance(tenancy, dict) else None
+    fleet_id = tenancy.get("fleetId") if isinstance(tenancy, dict) else None
 
     ignition_status = _get_ignition_status(raw)
     speed_mph = _get_speed_mph(raw)
@@ -260,6 +281,9 @@ def _normalize(envelope: dict) -> dict:
         "eventTime": event_time,
         "messageId": message_id,
         "providerId": provider_id,
+        "tenantId": tenant_id,
+        "customerId": customer_id,
+        "fleetId": fleet_id,
 
         "ignition_status": ignition_status,
         "vehicleState": vehicle_state,
@@ -305,6 +329,13 @@ def _put_telemetry_event(n: dict):
         "ingestedAt": {"S": utc_now_iso()},
         "raw": {"S": json.dumps(n["raw"])},
     }
+
+    if n.get("tenantId"):
+        item["tenantId"] = {"S": n["tenantId"]}
+    if n.get("customerId"):
+        item["customerId"] = {"S": n["customerId"]}
+    if n.get("fleetId"):
+        item["fleetId"] = {"S": n["fleetId"]}
 
     if n.get("ignition_status") is not None:
         item["ignition_status"] = {"S": n["ignition_status"]}

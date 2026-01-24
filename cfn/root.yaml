@@ -76,6 +76,7 @@ Resources:
         TripSummaryQueueUrl: !GetAtt QueuesStack.Outputs.TripSummaryQueueUrl
         TripSummaryQueueArn: !GetAtt QueuesStack.Outputs.TripSummaryQueueArn
         TelemetryEventsTableName: !GetAtt TablesStack.Outputs.TelemetryEventsTableName
+        VinRegistryTableName: !GetAtt TablesStack.Outputs.VinRegistryTableName
         VehicleStateTableName: !GetAtt TablesStack.Outputs.VehicleStateTableName
         TripsTableName: !GetAtt TablesStack.Outputs.TripsTableName
         TripSummaryTableName: !GetAtt TablesStack.Outputs.TripSummaryTableName

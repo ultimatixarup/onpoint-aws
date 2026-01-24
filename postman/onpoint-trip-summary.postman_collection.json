@@ -17,6 +17,11 @@
       "type": "string"
     },
     {
+      "key": "tenantId",
+      "value": "tenant-1",
+      "type": "string"
+    },
+    {
       "key": "testVin",
       "value": "TESTVIN123",
       "type": "string"
@@ -69,6 +74,10 @@
         "type": "text/javascript",
         "exec": [
           "const url = pm.request.url.toString();",
+          "const tenantId = pm.variables.get('tenantId');",
+          "if (tenantId && !pm.request.headers.has('x-tenant-id')) {",
+          "  pm.request.headers.add({ key: 'x-tenant-id', value: tenantId });",
+          "}",
           "const headers = {};",
           "pm.request.headers.each(h => {",
           "  const key = h.key || '';",
