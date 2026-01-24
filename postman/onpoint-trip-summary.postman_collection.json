@@ -1,0 +1,591 @@
+{
+  "info": {
+    "name": "OnPoint - Trip Summary API",
+    "_postman_id": "b4c8d3e4-3d6c-5c9b-9d1f-1c3b2a4f0e5f",
+    "description": "Trip Summary REST API - Query trip summaries and details",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://i4mtx1tqw4.execute-api.us-east-1.amazonaws.com/dev",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "9S1kMEWtDSakTNZrhnWwxWTAfwZidnZ9BpiBpAJg",
+      "type": "string"
+    },
+    {
+      "key": "testVin",
+      "value": "TESTVIN123",
+      "type": "string"
+    },
+    {
+      "key": "testTripId",
+      "value": "TRIP123",
+      "type": "string"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const url = pm.request.url.toString();",
+          "const headers = {};",
+          "pm.request.headers.each(h => {",
+          "  const key = h.key || '';",
+          "  headers[key] = key.toLowerCase() === 'x-api-key' ? '***' : h.value;",
+          "});",
+          "console.log('Request URL:', url);",
+          "console.log('Headers (redacted API key):', headers);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "List Trips - Single Vehicle",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/trips?vehicleId={{testVin}}&limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["trips"],
+          "query": [
+            {
+              "key": "vehicleId",
+              "value": "{{testVin}}",
+              "description": "Single VIN to query"
+            },
+            {
+              "key": "limit",
+              "value": "10",
+              "description": "Max results (default 50, max 200)"
+            },
+            {
+              "key": "include",
+              "value": "none",
+              "description": "none (fast) or summary (includes full summary JSON)",
+              "disabled": true
+            },
+            {
+              "key": "from",
+              "value": "2026-01-01T00:00:00Z",
+              "description": "ISO8601 start time filter",
+              "disabled": true
+            },
+            {
+              "key": "to",
+              "value": "2026-01-31T23:59:59Z",
+              "description": "ISO8601 end time filter",
+              "disabled": true
+            },
+            {
+              "key": "nextToken",
+              "value": "",
+              "description": "Pagination token from previous response",
+              "disabled": true
+            }
+          ]
+        },
+        "description": "List trip summaries for a single vehicle. Returns top-level rollup fields by default (include=none)."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response has items array', () => {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json).to.have.property('items');",
+              "  pm.expect(json.items).to.be.an('array');",
+              "});",
+              "",
+              "pm.test('Items have required fields', () => {",
+              "  const json = pm.response.json();",
+              "  if (json.items.length > 0) {",
+              "    const item = json.items[0];",
+              "    pm.expect(item).to.have.property('vin');",
+              "    pm.expect(item).to.have.property('tripId');",
+              "    pm.expect(item).to.have.property('startTime');",
+              "    pm.expect(item).to.have.property('endTime');",
+              "  }",
+              "});",
+              "",
+              "pm.test('No unauthorized errors', () => {",
+              "  const text = pm.response.text();",
+              "  pm.expect(text).to.not.include('Unauthorized');",
+              "  pm.expect(text).to.not.include('Missing Authentication Token');",
+              "  pm.expect(text).to.not.include('Forbidden');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List Trips - Multiple Vehicles",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/trips?vehicleIds=VIN1,VIN2,VIN3&limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["trips"],
+          "query": [
+            {
+              "key": "vehicleIds",
+              "value": "VIN1,VIN2,VIN3",
+              "description": "Comma-separated VINs (bounded fan-out)"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        },
+        "description": "Query trip summaries across multiple vehicles (bounded fan-out)."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "pm.test('Response has items', () => {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json).to.have.property('items');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List Trips - With Summary",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/trips?vehicleId={{testVin}}&include=summary&limit=5",
+          "host": ["{{baseUrl}}"],
+          "path": ["trips"],
+          "query": [
+            {
+              "key": "vehicleId",
+              "value": "{{testVin}}"
+            },
+            {
+              "key": "include",
+              "value": "summary",
+              "description": "Include full summary JSON (slower, more data)"
+            },
+            {
+              "key": "limit",
+              "value": "5"
+            }
+          ]
+        },
+        "description": "List trips with full summary JSON included (include=summary). More expensive than default."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "pm.test('Items include summary field', () => {",
+              "  const json = pm.response.json();",
+              "  if (json.items && json.items.length > 0) {",
+              "    pm.expect(json.items[0]).to.have.property('summary');",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List Trips - Time Range Filter",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/trips?vehicleId={{testVin}}&from=2026-01-01T00:00:00Z&to=2026-01-31T23:59:59Z",
+          "host": ["{{baseUrl}}"],
+          "path": ["trips"],
+          "query": [
+            {
+              "key": "vehicleId",
+              "value": "{{testVin}}"
+            },
+            {
+              "key": "from",
+              "value": "2026-01-01T00:00:00Z",
+              "description": "Start time (ISO8601)"
+            },
+            {
+              "key": "to",
+              "value": "2026-01-31T23:59:59Z",
+              "description": "End time (ISO8601)"
+            }
+          ]
+        },
+        "description": "Filter trips by time range using from/to query params (ISO8601 format)."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Trip Detail",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/trips/{{testVin}}/{{testTripId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["trips", "{{testVin}}", "{{testTripId}}"],
+          "query": [
+            {
+              "key": "include",
+              "value": "summary",
+              "description": "summary (default) or none",
+              "disabled": true
+            }
+          ]
+        },
+        "description": "Get a single trip detail by VIN and tripId. Default includes summary JSON."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const is404 = pm.response.code === 404;",
+              "const is200 = pm.response.code === 200;",
+              "",
+              "pm.test('Status is 200 or 404', () => {",
+              "  pm.expect(is200 || is404).to.be.true;",
+              "});",
+              "",
+              "if (is200) {",
+              "  pm.test('Response has trip fields', () => {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json).to.have.property('vin');",
+              "    pm.expect(json).to.have.property('tripId');",
+              "    pm.expect(json).to.have.property('summary');",
+              "  });",
+              "",
+              "  pm.test('VIN matches path param', () => {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.vin).to.eql(pm.variables.get('testVin'));",
+              "  });",
+              "}",
+              "",
+              "if (is404) {",
+              "  pm.test('404 response has error message', () => {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json).to.have.property('error');",
+              "  });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Trip Detail - No Summary",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/trips/{{testVin}}/{{testTripId}}?include=none",
+          "host": ["{{baseUrl}}"],
+          "path": ["trips", "{{testVin}}", "{{testTripId}}"],
+          "query": [
+            {
+              "key": "include",
+              "value": "none",
+              "description": "Exclude summary JSON for faster response"
+            }
+          ]
+        },
+        "description": "Get trip detail without summary JSON (include=none) for faster response."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200 or 404', () => {",
+              "  pm.expect([200, 404]).to.include(pm.response.code);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "  pm.test('Response does NOT include summary', () => {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json).to.not.have.property('summary');",
+              "  });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pagination - First Page",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/trips?vehicleId={{testVin}}&limit=5",
+          "host": ["{{baseUrl}}"],
+          "path": ["trips"],
+          "query": [
+            {
+              "key": "vehicleId",
+              "value": "{{testVin}}"
+            },
+            {
+              "key": "limit",
+              "value": "5",
+              "description": "Small limit to trigger pagination"
+            }
+          ]
+        },
+        "description": "Get first page of results with small limit to test pagination."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const json = pm.response.json();",
+              "",
+              "pm.test('Has items array', () => {",
+              "  pm.expect(json).to.have.property('items');",
+              "});",
+              "",
+              "if (json.nextToken) {",
+              "  pm.test('nextToken present (more pages available)', () => {",
+              "    pm.expect(json.nextToken).to.be.a('string');",
+              "    pm.environment.set('nextToken', json.nextToken);",
+              "  });",
+              "  console.log('Next page token saved to environment');",
+              "} else {",
+              "  console.log('No next page token - all results fit in one page');",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pagination - Next Page",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/trips?vehicleId={{testVin}}&limit=5&nextToken={{nextToken}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["trips"],
+          "query": [
+            {
+              "key": "vehicleId",
+              "value": "{{testVin}}"
+            },
+            {
+              "key": "limit",
+              "value": "5"
+            },
+            {
+              "key": "nextToken",
+              "value": "{{nextToken}}",
+              "description": "Token from previous response"
+            }
+          ]
+        },
+        "description": "Get next page using nextToken from previous response. Run 'Pagination - First Page' first."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "pm.test('Has items array', () => {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json).to.have.property('items');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error - Missing API Key",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/trips?vehicleId={{testVin}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["trips"],
+          "query": [
+            {
+              "key": "vehicleId",
+              "value": "{{testVin}}"
+            }
+          ]
+        },
+        "description": "Test that API Key is required - should return 403 Forbidden."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 403 Forbidden', () => {",
+              "  pm.response.to.have.status(403);",
+              "});",
+              "",
+              "pm.test('Error message mentions API key', () => {",
+              "  const text = pm.response.text();",
+              "  pm.expect(text.toLowerCase()).to.satisfy(t => ",
+              "    t.includes('forbidden') || t.includes('api key') || t.includes('unauthorized')",
+              "  );",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error - Invalid VIN Format",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/trips?vehicleId=",
+          "host": ["{{baseUrl}}"],
+          "path": ["trips"],
+          "query": [
+            {
+              "key": "vehicleId",
+              "value": "",
+              "description": "Empty VIN should trigger 400"
+            }
+          ]
+        },
+        "description": "Test error handling for missing vehicleId or vehicleIds."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 400 Bad Request', () => {",
+              "  pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test('Error message present', () => {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json).to.have.property('error');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

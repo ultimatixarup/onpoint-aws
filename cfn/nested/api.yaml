@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: onpoint http api
+Description: onpoint trip summary rest api
 
 Parameters:
   Env:
@@ -14,55 +14,145 @@ Conditions:
   HasTripSummaryApiArn: !Not [!Equals [!Ref TripSummaryApiFunctionArn, ""]]
 
 Resources:
-  HttpApi:
-    Type: AWS::ApiGatewayV2::Api
+  TripSummaryRestApi:
+    Type: AWS::ApiGateway::RestApi
     Properties:
-      Name: !Sub "${ProjectName}-${Env}-http-api"
-      ProtocolType: HTTP
+      Name: !Sub "${ProjectName}-${Env}-trip-summary-rest-api"
+      Description: Trip Summary REST API
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
 
-  ApiIntegration:
-    Type: AWS::ApiGatewayV2::Integration
+  # /trips resource
+  TripsResource:
+    Type: AWS::ApiGateway::Resource
     Condition: HasTripSummaryApiArn
     Properties:
-      ApiId: !Ref HttpApi
-      IntegrationType: AWS_PROXY
-      IntegrationUri: !Ref TripSummaryApiFunctionArn
-      PayloadFormatVersion: "2.0"
+      RestApiId: !Ref TripSummaryRestApi
+      ParentId: !GetAtt TripSummaryRestApi.RootResourceId
+      PathPart: trips
 
-  TripsRoute:
-    Type: AWS::ApiGatewayV2::Route
+  # GET /trips method
+  TripsGetMethod:
+    Type: AWS::ApiGateway::Method
     Condition: HasTripSummaryApiArn
     Properties:
-      ApiId: !Ref HttpApi
-      RouteKey: "GET /trips"
-      Target: !Sub "integrations/${ApiIntegration}"
+      RestApiId: !Ref TripSummaryRestApi
+      ResourceId: !Ref TripsResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TripSummaryApiFunctionArn}/invocations"
 
-  TripDetailRoute:
-    Type: AWS::ApiGatewayV2::Route
+  # /trips/{vin} resource
+  VinResource:
+    Type: AWS::ApiGateway::Resource
     Condition: HasTripSummaryApiArn
     Properties:
-      ApiId: !Ref HttpApi
-      RouteKey: "GET /trips/{vin}/{tripId}"
-      Target: !Sub "integrations/${ApiIntegration}"
+      RestApiId: !Ref TripSummaryRestApi
+      ParentId: !Ref TripsResource
+      PathPart: "{vin}"
 
-  TripSummaryInvokePermission:
+  # /trips/{vin}/{tripId} resource
+  TripIdResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ParentId: !Ref VinResource
+      PathPart: "{tripId}"
+
+  # GET /trips/{vin}/{tripId} method
+  TripDetailGetMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ResourceId: !Ref TripIdResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TripSummaryApiFunctionArn}/invocations"
+
+  # Lambda permission for REST API
+  TripSummaryRestApiInvokePermission:
     Type: AWS::Lambda::Permission
     Condition: HasTripSummaryApiArn
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !Ref TripSummaryApiFunctionArn
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TripSummaryRestApi}/*/GET/*"
 
-  ApiStage:
-    Type: AWS::ApiGatewayV2::Stage
+  # API Deployment
+  TripSummaryRestApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Condition: HasTripSummaryApiArn
+    DependsOn:
+      - TripsGetMethod
+      - TripDetailGetMethod
     Properties:
-      ApiId: !Ref HttpApi
+      RestApiId: !Ref TripSummaryRestApi
+      Description: !Sub "Deployment for ${Env} stage"
+
+  # API Stage
+  TripSummaryRestApiStage:
+    Type: AWS::ApiGateway::Stage
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      DeploymentId: !Ref TripSummaryRestApiDeployment
       StageName: !Ref Env
-      AutoDeploy: true
+      Description: !Sub "${Env} environment stage"
+
+  # API Key
+  TripSummaryRestApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Condition: HasTripSummaryApiArn
+    Properties:
+      Name: !Sub "${ProjectName}-${Env}-trip-summary-key"
+      Description: API Key for Trip Summary API
+      Enabled: true
+
+  # Usage Plan
+  TripSummaryRestApiUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Condition: HasTripSummaryApiArn
+    DependsOn: TripSummaryRestApiStage
+    Properties:
+      UsagePlanName: !Sub "${ProjectName}-${Env}-trip-summary-plan"
+      Description: Usage plan for Trip Summary API
+      ApiStages:
+        - ApiId: !Ref TripSummaryRestApi
+          Stage: !Ref Env
+      Throttle:
+        RateLimit: 100
+        BurstLimit: 200
+
+  # Link API Key to Usage Plan
+  TripSummaryRestApiUsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Condition: HasTripSummaryApiArn
+    Properties:
+      KeyId: !Ref TripSummaryRestApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref TripSummaryRestApiUsagePlan
 
 Outputs:
-  ApiId:
-    Value: !Ref HttpApi
-  ApiEndpoint:
-    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Env}"
+  RestApiId:
+    Description: REST API ID
+    Value: !Ref TripSummaryRestApi
+  InvokeUrl:
+    Description: API Gateway invoke URL
+    Value: !Sub "https://${TripSummaryRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Env}"
+  ApiKeyId:
+    Description: API Key ID (retrieve value via AWS Console or CLI)
+    Value: !If [HasTripSummaryApiArn, !Ref TripSummaryRestApiKey, "N/A"]
+    Export:
+      Name: !Sub "${ProjectName}-${Env}-trip-summary-api-key-id"
