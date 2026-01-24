@@ -37,23 +37,25 @@ class TestOnpointCommonImports:
 
     def test_import_ids(self):
         """Test that IDs utilities can be imported from onpoint_common."""
-        from onpoint_common.ids import gen_envelope_id
-        assert gen_envelope_id is not None
+        from onpoint_common.ids import new_uuid, safe_trace_id
+        assert new_uuid is not None
+        assert safe_trace_id is not None
 
     def test_import_tenant(self):
         """Test that tenant utilities can be imported from onpoint_common."""
-        from onpoint_common.tenant import validate_tenant_id
-        assert validate_tenant_id is not None
+        from onpoint_common.tenant import normalize_customer_id
+        assert normalize_customer_id is not None
 
     def test_import_timeutil(self):
         """Test that timeutil can be imported from onpoint_common."""
-        from onpoint_common.timeutil import current_iso_string
-        assert current_iso_string is not None
+        from onpoint_common.timeutil import utc_now_iso
+        assert utc_now_iso is not None
 
     def test_import_validate(self):
         """Test that validate utilities can be imported from onpoint_common."""
-        from onpoint_common.validate import validate_json_schema
-        assert validate_json_schema is not None
+        from onpoint_common.validate import validate_max_bytes, require_json_object
+        assert validate_max_bytes is not None
+        assert require_json_object is not None
 
     def test_get_logger_returns_valid_logger(self):
         """Test that get_logger returns a valid logger object."""

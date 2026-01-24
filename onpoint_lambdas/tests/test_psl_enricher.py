@@ -19,6 +19,8 @@ def test_psl_enricher_parsing(monkeypatch):
     module_path = Path(__file__).resolve().parents[1] / "lambdas" / "psl_enricher" / "app.py"
     mod = load_lambda_module("psl_enricher_app", module_path)
 
+    mod.ddb = DummyClient(update_item=lambda **kwargs: {})
+
     mph, conf = mod._parse_maxspeed_to_mph("45 mph")
     assert mph == 45
     assert conf == "HIGH"
@@ -41,6 +43,8 @@ def test_psl_enricher_accepts_psl_job_1_0(monkeypatch):
 
     module_path = Path(__file__).resolve().parents[1] / "lambdas" / "psl_enricher" / "app.py"
     mod = load_lambda_module("psl_enricher_app", module_path)
+
+    mod.ddb = DummyClient(update_item=lambda **kwargs: {})
 
     emitted = []
     monkeypatch.setattr(mod, "_get_cached_psl", lambda cell: {"psl_mph": 30.0, "source": "TEST", "confidence": "HIGH"})
