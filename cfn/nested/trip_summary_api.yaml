@@ -17,7 +17,7 @@ Resources:
   TripSummaryRestApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
-      Name: !Sub "${ProjectName}-${Env}-trip-summary-rest-api"
+      Name: !Sub "${ProjectName}-${Env}-trip-summary-api"
       Description: Trip Summary REST API
       EndpointConfiguration:
         Types:
