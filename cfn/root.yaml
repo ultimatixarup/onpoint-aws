@@ -101,6 +101,7 @@ Resources:
         Env: !Ref Env
         ProjectName: !Ref ProjectName
         TripSummaryApiFunctionArn: !GetAtt LambdasStack.Outputs.TripSummaryApiFunctionArn
+        ApiDeployVersion: "2"
       TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/nested/trip_summary_api.yaml
 
   IngestApiStack:
