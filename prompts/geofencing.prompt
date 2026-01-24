@@ -1,0 +1,212 @@
+You are GitHub Copilot working in an AWS serverless, multi-tenant fleet telematics project (“OnPoint”). Implement the “Industry Standard Geofencing” solution described below end-to-end. Follow these rules strictly:
+
+- Produce CODE + TESTS + IaC changes. Do not give high-level advice only.
+- Keep changes minimal but complete; do not break existing APIs.
+- Multi-tenant isolation is mandatory: all reads/writes must be tenant-scoped.
+- Use idempotency and dedupe for event generation and alerting.
+- Ensure strong observability (structured logs, metrics).
+- Do NOT add API Gateway IntegrationResponses/MethodResponses to AWS_PROXY methods.
+- Add unit tests with coverage measurement and make CI fail if coverage drops.
+
+Repository context assumptions (adapt to actual repo structure):
+- There is an existing telemetry ingestion pipeline writing normalized telemetry events to DynamoDB.
+- There is a Trip Summary API Lambda (Node.js or Python) already deployed.
+- There are CloudFormation nested templates under cfn/nested/.
+- DynamoDB uses PK/SK style keys similar to: PK="TENANT#<tenantId>#VEHICLE#<vin>#TRIP#<tripId>" or PK="VEHICLE#<vin>#TRIP#<tripId>" etc. Preserve existing patterns but enforce tenant scoping.
+
+================================================================================
+GOAL
+================================================================================
+Implement a production-grade Geofencing capability for fleet/telematics:
+
+1) Geofence definitions (Circle, Polygon; optional Corridor)
+2) Real-time geofence detection on incoming telemetry events (ENTER/EXIT/DWELL_START/DWELL_END)
+3) Persist geofence events in DynamoDB (query by tenant+vehicle and tenant+trip)
+4) Enrich trip summaries with geofence metrics (first entry, last exit, dwell duration, counts)
+5) Alerts/notifications rules for geofence events (basic: webhook + email placeholder) with dedupe
+6) REST API endpoints for geofence management and querying geofence events
+7) Full tests + coverage gating
+8) IaC updates: DynamoDB tables, Lambda(s), permissions, API resources, outputs
+
+================================================================================
+DATA MODEL
+================================================================================
+A) GeofenceDefinition (DynamoDB table: GeofencesTable)
+- PK: TENANT#<tenantId>
+- SK: GEOFENCE#<geofenceId>#V#<version>
+Attributes:
+- geofenceId (uuid)
+- version (int)
+- name
+- type: CIRCLE | POLYGON | CORRIDOR(optional)
+- geometry:
+  - circle: {centerLat, centerLon, radiusM}
+  - polygon: {geojson} (store as GeoJSON string)
+  - corridor: {polyline, bufferM} (optional)
+- status: ACTIVE | INACTIVE
+- schedule: {startTimeUtc?, endTimeUtc?, recurrence?} (optional)
+- priority (int, default 100)
+- tags (map)
+- createdBy, createdAt, updatedAt
+- auditTrail (optional minimal)
+
+Indexes (if needed):
+- GSI1: List active geofences by tenant (PK=TENANT#id, SK startswith ACTIVE#...)
+(If you prefer no GSI, implement a “current version pointer” item to query active geofences efficiently.)
+
+B) VehicleGeofenceState (DynamoDB table: GeofenceStateTable)
+Tracks last known inside/outside to produce ENTER/EXIT idempotently.
+- PK: TENANT#<tenantId>#VEHICLE#<vin>
+- SK: GEOFENCE#<geofenceId>
+Attributes:
+- inside (bool)
+- lastEventTimeUtc
+- lastTransitionTimeUtc (for dwell)
+- dwellStartedAtUtc (optional)
+- lastTelemetryKey (idempotency reference)
+- updatedAt
+
+C) GeofenceEvents (DynamoDB table: GeofenceEventsTable)
+- PK: TENANT#<tenantId>#VEHICLE#<vin>
+- SK: TS#<eventTimeUtc>#GEOFENCE#<geofenceId>#TYPE#<ENTER|EXIT|DWELL_START|DWELL_END>#MSG#<messageId>
+Attributes:
+- tenantId, vin, tripId
+- geofenceId, geofenceName
+- eventType
+- eventTimeUtc
+- lat, lon, speed
+- confidenceScore
+- detectionMethod: GPS
+- rawTelemetryRef (messageId / DynamoDB key)
+- createdAt
+
+Indexes:
+- GSI1 for trip queries:
+  - GSI1PK: TENANT#<tenantId>#TRIP#<tripId>
+  - GSI1SK: TS#<eventTimeUtc>#VEHICLE#<vin>#GEOFENCE#<geofenceId>#TYPE#...
+
+D) AlertRules (DynamoDB table: GeofenceAlertRulesTable)
+- PK: TENANT#<tenantId>
+- SK: RULE#<ruleId>
+Attributes:
+- ruleId
+- geofenceId
+- triggers: [ENTER, EXIT, DWELL_START, DWELL_END]
+- severity
+- channels: webhookUrl?, emailList?
+- enabled
+- throttleWindowSec (default 300)
+- createdAt, updatedAt
+
+E) AlertDedupe (DynamoDB table: AlertDedupeTable)
+- PK: TENANT#<tenantId>#RULE#<ruleId>
+- SK: DEDUPE#<eventFingerprint>
+Attributes:
+- expiresAt (TTL)
+- createdAt
+
+================================================================================
+DETECTION LOGIC (MUST IMPLEMENT)
+================================================================================
+- Evaluate incoming telemetry event (tenantId, vin, tripId, messageId, eventTime, lat, lon, speed).
+- Consider only ACTIVE geofences whose schedule is currently valid.
+- For each geofence, determine “inside”:
+  - Circle: haversine distance <= radiusM
+  - Polygon: point-in-polygon (use robust library; if Python use shapely; if Node use @turf/boolean-point-in-polygon)
+- Apply hysteresis/debounce:
+  - Use a small buffer (e.g. 10m) and debounce time (e.g. 10s) to avoid flapping.
+- Use VehicleGeofenceState to generate transitions:
+  - If previously outside and now inside -> ENTER (write GeofenceEvents) and set inside=true, lastTransitionTime=eventTime
+  - If previously inside and now outside -> EXIT and set inside=false, clear dwellStartedAt if present
+- Dwell:
+  - If inside continuously for >= DWELL_THRESHOLD_SEC (configurable per tenant; default 300 sec), generate DWELL_START once.
+  - When exiting after dwell started, generate DWELL_END once.
+- Idempotency:
+  - Use DynamoDB conditional writes keyed on messageId/time to avoid duplicates.
+  - Ensure retrying the same telemetry event does not produce duplicate geofence events.
+
+================================================================================
+APIs (MUST IMPLEMENT)
+================================================================================
+A) Geofence management
+- POST /geofences (create)
+- PUT /geofences/{geofenceId} (new version)
+- GET /geofences (list; supports status filter)
+- GET /geofences/{geofenceId} (get current)
+- POST /geofences/{geofenceId}/activate
+- POST /geofences/{geofenceId}/deactivate
+
+B) Geofence events query
+- GET /vehicles/{vin}/geofence-events?from=&to=&limit=&nextToken=
+- GET /trips/{vin}/{tripId}/geofence-events?from=&to=&limit=&nextToken=
+Return:
+{
+  "tenantId": "...",
+  "vin": "...",
+  "tripId": "...",
+  "count": N,
+  "items": [...],
+  "nextToken": "..."
+}
+
+C) Security
+- Require API key like existing Trip APIs OR reuse existing auth model; keep consistent with current stack.
+- TenantId MUST be derived from auth context or request header X-Tenant-Id (choose one and apply consistently).
+- Validate inputs thoroughly.
+
+================================================================================
+PIPELINE INTEGRATION
+================================================================================
+- If there is already a telemetry processor Lambda consuming Kinesis/SQS and writing normalized events, extend it:
+  - After persisting normalized event, call GeofenceDetector module to emit geofence events and alerts.
+- If architecture prefers separation, add a dedicated GeofenceProcessor Lambda subscribed to the same stream/queue (state which you chose in code comments).
+- Ensure throughput and cost are reasonable (batch processing, caching active geofences per tenant in memory for the duration of invocation).
+
+================================================================================
+TRIP SUMMARY ENRICHMENT
+================================================================================
+Update Trip Summary builder/API so that trip summary responses include:
+- geofences: [
+   { geofenceId, name, enterTimeUtc?, exitTimeUtc?, dwellSeconds?, enterCount, exitCount }
+  ]
+or a summarized count as agreed, but MUST be deterministic and queryable.
+
+================================================================================
+IAC CHANGES (CloudFormation)
+================================================================================
+- Add new DynamoDB tables in cfn/nested/tables.yaml (or new nested template if preferred):
+  GeofencesTable, GeofenceStateTable, GeofenceEventsTable, GeofenceAlertRulesTable, AlertDedupeTable
+  Include TTL for AlertDedupeTable.
+- Add Lambda permissions for DynamoDB access.
+- Add new API Gateway resources/methods in a nested template (e.g., geofence_api.yaml or extend existing trip_summary_api.yaml carefully).
+  Use AWS_PROXY integration only; do not include MethodResponses/IntegrationResponses.
+- Outputs:
+  - GeofenceApiInvokeUrl (if separate API) or additional routes on existing API.
+
+================================================================================
+TESTING + COVERAGE (MUST IMPLEMENT)
+================================================================================
+- Add unit tests for:
+  - point-in-circle, point-in-polygon
+  - transition logic ENTER/EXIT
+  - dwell start/end
+  - idempotency behavior (conditional writes mocked)
+  - API handlers input validation
+- Add coverage measurement:
+  - Node: jest --coverage with threshold >= 80% lines/branches/functions
+  - Python: pytest + coverage with threshold >= 80%
+- Add CI step (GitHub Actions or existing) to fail if coverage below threshold.
+- Provide commands in README snippet: `npm test` or `pytest`.
+
+================================================================================
+DELIVERABLES
+================================================================================
+1) New/updated source files implementing geofencing
+2) New/updated CloudFormation templates
+3) Unit tests + coverage config
+4) A short “Implementation Notes” markdown section describing:
+   - data model keys
+   - idempotency strategy
+   - how to query events
+
+Now implement this in the repo. Output a concise list of files changed with brief notes, then provide the full code diffs.
