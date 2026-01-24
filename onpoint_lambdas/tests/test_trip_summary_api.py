@@ -126,3 +126,45 @@ def test_list_trips_without_vehicle_returns_400(monkeypatch):
     assert resp["statusCode"] == 400
     body = json.loads(resp["body"])
     assert "vehicleId" in body.get("error", "")
+
+
+def test_detail_route_with_tripId_does_not_require_vehicleId_query_param(monkeypatch):
+    """
+    Regression test: API Gateway passes pathParameters with vin and tripId.
+    Lambda should treat this as DETAIL route and NOT return the 
+    "vehicleId or vehicleIds required" error.
+    """
+    add_common_to_path()
+
+    def fake_client(service_name):
+        return DummyClient()
+
+    monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
+    monkeypatch.setattr(boto3, "client", fake_client)
+
+    module_path = Path(__file__).resolve().parents[1] / "lambdas" / "trip_summary_api" / "app.py"
+    mod = load_lambda_module("trip_summary_api_app", module_path)
+
+    # Stub DynamoDB to return no item (404 case)
+    mod.ddb = DummyClient(get_item=lambda **kwargs: {})
+
+    # Event exactly as API Gateway sends it
+    event = {
+        "httpMethod": "GET",
+        "pathParameters": {
+            "vin": "4JGFB4FB7RA981998",
+            "tripId": "CXGM_093B34DED53611F09127121AF9B02FBB"
+        },
+        "queryStringParameters": None,
+        "resource": "/trips/{vin}/{tripId}",
+    }
+
+    resp = mod.lambda_handler(event, None)
+    
+    # Should return 404 (trip not found), NOT 400 (vehicleId required)
+    assert resp["statusCode"] == 404, f"Expected 404, got {resp['statusCode']}: {resp.get('body')}"
+    body = json.loads(resp["body"])
+    assert "not found" in body.get("error", "").lower()
+    # Ensure it does NOT have the "vehicleId or vehicleIds" error
+    assert "vehicleId" not in body.get("error", "")
+

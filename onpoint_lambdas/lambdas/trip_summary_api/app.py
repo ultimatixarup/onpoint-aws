@@ -30,6 +30,8 @@ logger.setLevel(logging.INFO)
 
 ddb = boto3.client("dynamodb")
 
+BUILD_ID = "2026-01-23T18:45:00Z"
+
 TABLE = os.environ["TRIP_SUMMARY_TABLE"]
 DEFAULT_LIMIT = int(os.environ.get("DEFAULT_LIMIT", "50"))
 MAX_LIMIT = int(os.environ.get("MAX_LIMIT", "200"))
@@ -285,33 +287,56 @@ def _get_trip_detail(vin: str, trip_id: str, include: str) -> Optional[dict]:
 # Handler
 # -----------------------------
 def lambda_handler(event, context):
+    request_id = getattr(context, "aws_request_id", "unknown") if context else "unknown"
+
     # Prefer HTTP API v2 method if present, otherwise REST API v1 httpMethod
     method = event.get("requestContext", {}).get("http", {}).get("method") or event.get("httpMethod")
     if method == "OPTIONS":
         return _resp(200, {"ok": True})
 
+    # Parse path and query params at the top
     path_params = event.get("pathParameters") or {}
-    vin_path = (path_params.get("vin") or "").strip()
-    trip_id_path = (path_params.get("tripId") or "").strip()
-    qs = _get_qs(event)
+    query = event.get("queryStringParameters") or {}
+    vin = path_params.get("vin")
+    trip_id = path_params.get("tripId")
 
-    # -----------------------
-    # Detail endpoint (path params win)
-    # GET /trips/{vin}/{tripId}
-    # -----------------------
-    if vin_path and trip_id_path:
+    route_type = "DETAIL" if trip_id else "LIST"
+    logger.info(
+        json.dumps(
+            {
+                "buildId": BUILD_ID,
+                "requestId": request_id,
+                "route": route_type,
+                "vin": vin,
+                "tripId": trip_id,
+            }
+        )
+    )
+
+    vin_path = (vin or "").strip()
+    trip_id_path = (trip_id or "").strip()
+    qs = query
+
+    # HARD ROUTE SWITCH: If tripId exists in pathParameters -> DETAIL route
+    # This must happen BEFORE any "vehicleId required" validation
+    if trip_id_path:
+        # Detail endpoint: GET /trips/{vin}/{tripId}
+        vehicle_id = vin_path
         include = _normalize_include(qs.get("include"), default=INCLUDE_SUMMARY)
 
-        detail = _get_trip_detail(vin_path, trip_id_path, include=include)
+        detail = _get_trip_detail(vehicle_id, trip_id_path, include=include)
         if not detail:
-            return _resp(404, {"error": "Trip summary not found", "vin": vin_path, "tripId": trip_id_path})
+            return _resp(404, {"error": "Trip summary not found", "vin": vehicle_id, "tripId": trip_id_path})
 
         return _resp(200, detail)
 
+    # If we reach here: LIST route (no tripId in path)
+
     # -----------------------
     # List endpoint
-    # GET /trips
+    # GET /trips?vehicleId=... or GET /trips/{vin}
     # -----------------------
+    # For list: use vin_path if present (from /trips/{vin} route), else query params
     vehicle_id = vin_path or (qs.get("vehicleId") or "").strip()
     vehicle_ids = (qs.get("vehicleIds") or "").strip()
     include = _normalize_include(qs.get("include"), default=INCLUDE_NONE)  # list default is fast
@@ -337,6 +362,8 @@ def lambda_handler(event, context):
         vins = [vehicle_id]
     elif vehicle_ids:
         vins = [v.strip() for v in vehicle_ids.split(",") if v.strip()]
+
+    logger.info(f"List request: vins={vins}, from={frm}, to={to}, limit={limit}")
 
     if not vins:
         return _resp(
