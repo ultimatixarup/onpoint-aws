@@ -26,3 +26,62 @@ def test_psl_enricher_parsing(monkeypatch):
     mph, conf = mod._parse_maxspeed_to_mph("70 km/h")
     assert mph is not None
     assert conf == "MEDIUM"
+
+
+def test_psl_enricher_accepts_psl_job_1_0(monkeypatch):
+    add_common_to_path()
+
+    def fake_client(service_name):
+        return DummyClient()
+
+    monkeypatch.setenv("TELEMETRY_EVENTS_TABLE", "telemetry")
+    monkeypatch.setenv("PSL_CACHE_TABLE", "psl-cache")
+    monkeypatch.setenv("OVERSPEED_DEDUPE_TABLE", "overspeed-dedupe")
+    monkeypatch.setattr(boto3, "client", fake_client)
+
+    module_path = Path(__file__).resolve().parents[1] / "lambdas" / "psl_enricher" / "app.py"
+    mod = load_lambda_module("psl_enricher_app", module_path)
+
+    emitted = []
+    monkeypatch.setattr(mod, "_get_cached_psl", lambda cell: {"psl_mph": 30.0, "source": "TEST", "confidence": "HIGH"})
+    monkeypatch.setattr(mod, "_dedupe_allow", lambda vin, severity, cooldown: True)
+    monkeypatch.setattr(mod, "_emit_overspeed_event", lambda detail: emitted.append(detail))
+    monkeypatch.setattr(mod, "_update_telemetry_event_with_psl", lambda *args, **kwargs: None)
+
+    job = {
+        "schemaVersion": "psl-job-1.0",
+        "vin": "V1",
+        "tripId": "T1",
+        "eventTime": "2026-01-23T00:00:00Z",
+        "messageId": "M1",
+        "latitude": 37.0,
+        "longitude": -122.0,
+        "speedMph": 40.0,
+        "provider": "prov",
+    }
+
+    mod._process_job(job)
+
+    assert len(emitted) == 1, "psl-job-1.0 should be processed and emit an event"
+
+
+def test_psl_enricher_unknown_schema_logs_warning(monkeypatch):
+    add_common_to_path()
+
+    def fake_client(service_name):
+        return DummyClient()
+
+    monkeypatch.setenv("TELEMETRY_EVENTS_TABLE", "telemetry")
+    monkeypatch.setenv("PSL_CACHE_TABLE", "psl-cache")
+    monkeypatch.setenv("OVERSPEED_DEDUPE_TABLE", "overspeed-dedupe")
+    monkeypatch.setattr(boto3, "client", fake_client)
+
+    module_path = Path(__file__).resolve().parents[1] / "lambdas" / "psl_enricher" / "app.py"
+    mod = load_lambda_module("psl_enricher_app", module_path)
+
+    warnings = []
+    monkeypatch.setattr(mod.logger, "warning", lambda msg: warnings.append(msg))
+
+    mod._process_job({"schemaVersion": "foo-1.2", "messageId": "MX"})
+
+    assert any("unknown job schemaVersion=" in w and "msgId=MX" in w for w in warnings), "warning should include schemaVersion and messageId"

@@ -36,6 +36,7 @@ NULL_CACHE_TTL_HOURS = int(os.environ.get("NULL_CACHE_TTL_HOURS", "12"))
 
 ALERT_SCHEMA_VERSION = "overspeed-alert-1.0"
 RULE_VERSION = "overspeed-rule-1.0"
+SUPPORTED_JOB_SCHEMAS = {"psl-enrich-job-1.0", "psl-job-1.0"}
 
 # -----------------------------
 # Helpers
@@ -182,6 +183,48 @@ def _parse_maxspeed_to_mph(maxspeed: str | None):
     return (val, "LOW")
 
 # -----------------------------
+# Job adapters / normalization
+# -----------------------------
+def _normalize_job(job: dict):
+    sv = job.get("schemaVersion")
+    if sv == "psl-enrich-job-1.0":
+        return {
+            "schemaVersion": sv,
+            "vin": job.get("vin"),
+            "tripId": job.get("tripId"),
+            "eventTime": job.get("eventTime"),
+            "messageId": job.get("messageId"),
+            "lat": _num(job.get("lat")),
+            "lon": _num(job.get("lon")),
+            # allow camelCase speed field
+            "speed_mph": _num(job.get("speed_mph") or job.get("speedMph")),
+            # provider field name may vary
+            "providerId": job.get("providerId") or job.get("provider") or "unknown",
+        }
+    if sv == "psl-job-1.0":
+        loc = job.get("location") or {}
+        lat_val = job.get("lat") or job.get("latitude") or loc.get("lat") or loc.get("latitude")
+        lon_val = job.get("lon") or job.get("longitude") or loc.get("lon") or loc.get("longitude")
+
+        speed_val = job.get("speed_mph") or job.get("speedMph")
+        if speed_val is None:
+            kph = job.get("speedKph") or job.get("speed_kph")
+            speed_val = (_num(kph) * 0.621371) if kph is not None else None
+
+        return {
+            "schemaVersion": sv,
+            "vin": job.get("vin"),
+            "tripId": job.get("tripId") or job.get("tripID") or job.get("trip_id"),
+            "eventTime": job.get("eventTime") or job.get("timestamp") or job.get("time"),
+            "messageId": job.get("messageId") or job.get("msgId") or job.get("id"),
+            "lat": _num(lat_val),
+            "lon": _num(lon_val),
+            "speed_mph": _num(speed_val),
+            "providerId": job.get("providerId") or job.get("provider") or "unknown",
+        }
+    return None
+
+# -----------------------------
 # Cooldown / dedupe
 # PK = OVERSPEED#VIN#{vin}#SEV#{severity}, SK = COOLDOWN
 # -----------------------------
@@ -305,21 +348,22 @@ def _resolve_thresholds(vin: str):
 # Main processing
 # -----------------------------
 def _process_job(job: dict):
-    if job.get("schemaVersion") != "psl-enrich-job-1.0":
-        logger.warning(f"Skipping: unknown job schemaVersion: {job.get('schemaVersion')}")
+    sv = job.get("schemaVersion")
+    norm = _normalize_job(job)
+    if norm is None:
+        logger.warning(f"Skipping: unknown job schemaVersion={sv} msgId={job.get('messageId')}")
         return
-
-    vin = job.get("vin")
-    trip_id = job.get("tripId")
-    event_time = job.get("eventTime")
-    message_id = job.get("messageId")
-    lat = _num(job.get("lat"))
-    lon = _num(job.get("lon"))
-    speed_mph = _num(job.get("speed_mph"))
-    provider = job.get("providerId") or "unknown"
+    vin = norm.get("vin")
+    trip_id = norm.get("tripId")
+    event_time = norm.get("eventTime")
+    message_id = norm.get("messageId")
+    lat = norm.get("lat")
+    lon = norm.get("lon")
+    speed_mph = norm.get("speed_mph")
+    provider = norm.get("providerId") or "unknown"
 
     if not vin or not trip_id or not event_time or not message_id:
-        logger.warning(f"Skipping: missing identity fields: {job}")
+        logger.warning(f"Skipping: missing identity fields vin/tripId/eventTime/messageId msgId={message_id}")
         return
     if lat is None or lon is None or speed_mph is None:
         return
