@@ -255,7 +255,15 @@ def _authorize_vin(vin: str, tenant_id: Optional[str], as_of: Optional[str]) -> 
 
 
 def _is_events_route(resource: str, path: str) -> bool:
-    return resource == "/trips/{vin}/{tripId}/events"
+    if resource == "/trips/{vin}/{tripId}/events":
+        return True
+    return bool(path and path.startswith("/trips/") and path.endswith("/events"))
+
+
+def _is_fleet_trips_route(resource: str, path: str) -> bool:
+    if resource == "/fleets/{fleetId}/trips":
+        return True
+    return bool(path and path.startswith("/fleets/") and path.endswith("/trips"))
 
 
 # -----------------------------
@@ -512,7 +520,7 @@ def lambda_handler(event, context):
         route_type = "TRIP_EVENTS"
     elif resource == "/vehicles/{vin}/latest-state":
         route_type = "VEHICLE_STATE"
-    elif resource == "/fleets/{fleetId}/trips":
+    elif _is_fleet_trips_route(resource, path):
         route_type = "FLEET_TRIPS"
     # /trips/{vin}/{tripId} detail route
     elif resource == "/trips/{vin}/{tripId}" and trip_id:
@@ -537,6 +545,11 @@ def lambda_handler(event, context):
     fleet_id_path = (fleet_id or "").strip()
     qs = query
     tenant_id = _get_caller_tenant_id(event)
+
+    if route_type == "FLEET_TRIPS" and not fleet_id_path and path:
+        parts = [p for p in path.split("/") if p]
+        if len(parts) >= 3 and parts[0] == "fleets" and parts[2] == "trips":
+            fleet_id_path = parts[1]
 
     # TRIP EVENTS ROUTE: GET /trips/{tripId}/events
     if route_type == "TRIP_EVENTS":

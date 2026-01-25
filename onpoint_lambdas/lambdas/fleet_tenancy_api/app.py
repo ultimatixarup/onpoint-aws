@@ -1217,8 +1217,9 @@ def _transfer_vin(body: dict, headers: Dict[str, str], role: str, caller_tenant:
         _ddb_update(
             VIN_REGISTRY_TABLE,
             {"PK": current["PK"], "SK": current["SK"]},
-            "SET effectiveTo=:to, status=:st, updatedAt=:u",
+            "SET effectiveTo=:to, #status=:st, updatedAt=:u",
             {":to": effective_from, ":st": "TRANSFERRED", ":u": now},
+            expr_names={"#status": "status"},
         )
 
         new_item = {

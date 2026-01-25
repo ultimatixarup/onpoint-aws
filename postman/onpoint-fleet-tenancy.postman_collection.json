@@ -1,0 +1,509 @@
+{
+  "info": {
+    "name": "OnPoint Fleet Tenancy Management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Fleet/tenant management APIs per requirements. Set baseUrl and apiKey variables before running."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/dev" },
+    { "key": "apiKey", "value": "YOUR_API_KEY" },
+    { "key": "tenantId", "value": "tenant-1" },
+    { "key": "customerId", "value": "customer-1" },
+    { "key": "fleetId", "value": "fleet-1" },
+    { "key": "vin", "value": "VIN123" },
+    { "key": "driverId", "value": "driver-1" },
+    { "key": "roleAdmin", "value": "admin" },
+    { "key": "roleTenantAdmin", "value": "tenant-admin" },
+    { "key": "roleFleetManager", "value": "fleet-manager" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "const uuid = pm.variables.replaceIn('{{$guid}}');",
+          "pm.variables.set('idempotencyKey', uuid);",
+          "pm.variables.set('correlationId', uuid);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Tenants",
+      "item": [
+        {
+          "name": "Create tenant",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-role", "value": "{{roleAdmin}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "x-correlation-id", "value": "{{correlationId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/tenants",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"name\": \"Acme Fleet\",\n  \"config\": {\n    \"retentionDays\": 90\n  },\n  \"reason\": \"initial setup\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/tenants/{{tenantId}}"
+          }
+        },
+        {
+          "name": "Patch tenant",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/tenants/{{tenantId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Fleet Updated\",\n  \"status\": \"ACTIVE\",\n  \"reason\": \"rename\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Suspend tenant",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/tenants/{{tenantId}}:suspend"
+          }
+        },
+        {
+          "name": "Activate tenant",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/tenants/{{tenantId}}:activate"
+          }
+        },
+        {
+          "name": "List tenants (admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-role", "value": "{{roleAdmin}}" }
+            ],
+            "url": "{{baseUrl}}/tenants"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "Create customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/customers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"billingProfile\": {\"plan\": \"gold\"},\n  \"reason\": \"new customer\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get customer",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/customers/{{customerId}}"
+          }
+        },
+        {
+          "name": "Patch customer",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/customers/{{customerId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceTier\": \"platinum\",\n  \"reason\": \"upgrade\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Deactivate customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" }
+            ],
+            "url": "{{baseUrl}}/customers/{{customerId}}:deactivate"
+          }
+        },
+        {
+          "name": "List customers",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/customers?tenantId={{tenantId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fleets",
+      "item": [
+        {
+          "name": "Create fleet",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/fleets",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fleetId\": \"{{fleetId}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"policies\": {\"speedLimitMph\": 70},\n  \"reason\": \"new fleet\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get fleet",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/fleets/{{fleetId}}"
+          }
+        },
+        {
+          "name": "Patch fleet",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/fleets/{{fleetId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"policies\": {\"speedLimitMph\": 65},\n  \"reason\": \"policy update\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Archive fleet",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" }
+            ],
+            "url": "{{baseUrl}}/fleets/{{fleetId}}:archive"
+          }
+        },
+        {
+          "name": "List fleets",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/fleets?tenantId={{tenantId}}&customerId={{customerId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vehicles & VIN Registry",
+      "item": [
+        {
+          "name": "Create vehicle",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/vehicles",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vin\": \"{{vin}}\",\n  \"make\": \"Ford\",\n  \"model\": \"F150\",\n  \"year\": 2022,\n  \"reason\": \"new vehicle\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get vehicle",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/vehicles/{{vin}}"
+          }
+        },
+        {
+          "name": "Patch vehicle",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/vehicles/{{vin}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assetTags\": [\"A1\"],\n  \"reason\": \"tag update\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List vehicles",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/vehicles?tenantId={{tenantId}}&fleetId={{fleetId}}"
+          }
+        },
+        {
+          "name": "Assign VIN (registry)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-role", "value": "{{roleAdmin}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/vin-registry/assign",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vin\": \"{{vin}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"fleetId\": \"{{fleetId}}\",\n  \"effectiveFrom\": \"2026-01-01T00:00:00Z\",\n  \"reason\": \"initial assignment\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Transfer VIN (registry)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-role", "value": "{{roleAdmin}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/vin-registry/transfer",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vin\": \"{{vin}}\",\n  \"fromTenantId\": \"{{tenantId}}\",\n  \"toTenantId\": \"tenant-2\",\n  \"toFleetId\": \"fleet-2\",\n  \"effectiveFrom\": \"2026-02-01T00:00:00Z\",\n  \"reason\": \"ownership transfer\",\n  \"approvalRef\": \"APR-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "VIN registry history",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/vin-registry/{{vin}}"
+          }
+        },
+        {
+          "name": "List VIN registry by tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/vin-registry?tenantId={{tenantId}}&active=true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Drivers",
+      "item": [
+        {
+          "name": "Create driver",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/drivers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"driverId\": \"{{driverId}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"fleetId\": \"{{fleetId}}\",\n  \"metadata\": {\"name\": \"Driver One\"},\n  \"reason\": \"new driver\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get driver",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/drivers/{{driverId}}"
+          }
+        },
+        {
+          "name": "Patch driver",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/drivers/{{driverId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"metadata\": {\"license\": \"A123\"},\n  \"reason\": \"update\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Deactivate driver",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" }
+            ],
+            "url": "{{baseUrl}}/drivers/{{driverId}}:deactivate"
+          }
+        },
+        {
+          "name": "List drivers",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/drivers?tenantId={{tenantId}}&fleetId={{fleetId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Driver Assignments",
+      "item": [
+        {
+          "name": "Assign driver to vehicle",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/drivers/{{driverId}}/assignments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vin\": \"{{vin}}\",\n  \"effectiveFrom\": \"2026-01-15T00:00:00Z\",\n  \"assignmentType\": \"PRIMARY\",\n  \"reason\": \"shift assignment\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List driver assignments",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/drivers/{{driverId}}/assignments"
+          }
+        },
+        {
+          "name": "List vehicle driver assignments",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{baseUrl}}/vehicles/{{vin}}/driver-assignments"
+          }
+        }
+      ]
+    }
+  ]
+}

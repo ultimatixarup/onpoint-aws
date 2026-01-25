@@ -78,12 +78,7 @@ Resources:
             - AttributeName: GSI1SK
               KeyType: RANGE
           Projection:
-            ProjectionType: INCLUDE
-            NonKeyAttributes:
-              - vin
-              - fleetId
-              - effectiveFrom
-              - effectiveTo
+            ProjectionType: ALL
         - !If
           - EnableTenantFleetIndexCondition
           - IndexName: TenantFleetIndex

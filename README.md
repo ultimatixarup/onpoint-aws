@@ -27,3 +27,23 @@ If CloudFormation reports `IntegrationResponses` on a Lambda proxy method, run t
 - `ApiStackTemplateURL` and `TemplateVersionUsed` in root stack outputs confirm the exact TemplateURL.
 - The deploy script prints S3 `head-object` metadata and the first 160 lines of the uploaded nested template.
 - On failure, it prints the nested ApiStack template body via `get-template` so you can verify exactly what CFN used.
+
+## E2E functional tests
+
+Run:
+
+python -m pytest tests/e2e -v
+
+Required environment variables:
+- ONPOINT_BASE_URL
+- ONPOINT_API_KEY
+- ONPOINT_VIN
+- ONPOINT_TRIP_ID
+
+Optional:
+- ONPOINT_FORBIDDEN_VIN (for 403 test)
+- ONPOINT_IDEMPOTENCY_KEY (defaults to e2e-idempotency)
+
+Notes:
+- Tests are black-box API calls only.
+- All requests use `x-api-key` only (no bearer tokens).

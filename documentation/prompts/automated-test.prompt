@@ -1,0 +1,118 @@
+You are GitHub Copilot working in this repo. Build a fully automated end-to-end (functional) test suite that tests ALL OnPoint APIs deployed in AWS.
+
+Goal
+- A runnable test harness that:
+  - Calls every REST API endpoint (Ingest + Trip Summary + Fleet/Tenancy management APIs)
+  - Validates response schema + business rules (multi-tenancy enforcement, 403 behavior, pagination, idempotency, etc.)
+  - Can run locally and in CI/CD
+  - Supports multiple environments (dev/stage/prod) via config
+  - Produces a clear test report + exit code (fail pipeline on any failure)
+
+Constraints / Requirements
+1) Test style
+- Use black-box API tests only (no direct DB access unless explicitly needed for setup/cleanup).
+- Prefer Python + pytest OR Node.js + jest/supertest (choose what repo already uses; if none, pick Python+pytest).
+- All tests must be idempotent and safe to rerun.
+- Tests must be parallelizable where possible.
+- Must support CI execution with environment variables.
+
+2) Configuration
+- Create a single config mechanism via env vars (and optional .env):
+  - ONPOINT_BASE_URL (or specific per-api base URLs)
+  - ONPOINT_ENV (dev/stage/prod)
+  - ONPOINT_API_KEY (TripSummary API key)
+  - ONPOINT_INGEST_API_KEY (if separate)
+  - ONPOINT_TENANT_TOKEN / JWT / auth header inputs (if RBAC exists)
+  - Optional: known VIN/tripId fixtures OR a mode that ingests data first then tests queries.
+
+3) Coverage: ALL API categories
+A) Ingest API
+- POST ingest endpoint(s) (SQS-backed ingestion)
+- Validate 2xx response, requestId, and acceptance semantics.
+- If async pipeline: implement polling/retry strategy until downstream data becomes queryable.
+
+B) Trip Summary API
+- GET /trips
+- GET /trips/{vin}/{tripId}
+- GET /trips/{vin}/{tripId}/events?limit=&nextToken=
+- Validate:
+  - Pagination works (limit respected, nextToken returns more)
+  - Events endpoint returns raw events list (not trip summary)
+  - Unauthorized VIN access returns 403 (never 404)
+  - Query params handled safely (limit bounds)
+
+C) Fleet / Tenancy Management APIs
+- Tenants: create/list/get/update (as implemented)
+- Customers: create/list/get/update
+- Fleets: create/list/get/update
+- Vehicles: register VIN, assign to fleet, list by tenant, list by fleet, transfer VIN between fleets/tenants (if supported)
+- Drivers: create/list/get/update, assign driver to vehicle (if supported)
+- Validate:
+  - Idempotency keys (replay request returns same result)
+  - Audit log entries created where required
+  - RBAC: unauthorized roles rejected (403)
+  - Tenancy isolation: tenantA cannot read tenantB resources
+
+D) Health / metadata endpoints (if present)
+- /health, /version, /openapi, etc.
+
+4) Test data strategy
+Implement TWO modes:
+Mode 1 (default): Uses known fixture VIN + tripId (provided via env vars) and validates read APIs.
+Mode 2 (full e2e): Generates and ingests a minimal synthetic trip:
+  - Ingest at least N events with VIN+tripId (trip_start, trip_ongoing, trip_end)
+  - Poll until TripSummary + Events APIs reflect the ingested data
+  - Then run read tests using that generated VIN/tripId
+
+Mode 2 must:
+- Ensure unique vin/tripId for each run (namespace by timestamp)
+- Avoid clobbering real data (use dedicated test tenant / prefix)
+- Be able to cleanup via management APIs if supported (if not, ensure isolation by unique IDs)
+
+5) Assertions (must be explicit)
+- Validate HTTP codes
+- Validate required fields
+- Validate schemaVersion fields
+- Validate multi-tenancy:
+  - When calling with TenantA credentials, TenantB VIN returns 403
+- Validate error format: consistent JSON error body
+- Validate pagination token is opaque and stable
+- Validate rate limits (optional): basic check that 429 can happen and is handled with retry/backoff in tests
+
+6) Reliability
+- Implement retry with exponential backoff for eventual consistency.
+- Add timeouts and max retries.
+- Print helpful debugging output on failure (request/response summary, correlation IDs).
+
+7) Reporting
+- Generate JUnit XML output for CI
+- Generate a human-readable summary at end
+- Exit non-zero on failure
+
+Deliverables (files)
+- /tests/e2e/ or /test/e2e/ directory with:
+  - test_ingest_api.*
+  - test_trip_summary_api.*
+  - test_events_api.*
+  - test_tenancy_management_api.*
+  - helpers: auth.py, client.py, retry.py, fixtures.py
+- A single runner command:
+  - make test-e2e OR npm run test:e2e OR python -m pytest tests/e2e
+- CI entry guidance in README:
+  - required env vars
+  - example invocation
+  - how to run Mode 1 vs Mode 2
+
+Implementation details
+- Write a small API client wrapper (base_url + headers + retry).
+- Centralize header creation:
+  - x-api-key support
+  - auth bearer token support
+- Define a canonical set of endpoints in one place so coverage is guaranteed.
+- If an OpenAPI spec exists, use it to auto-discover endpoints and ensure all are covered; otherwise enumerate endpoints manually.
+
+Finally
+- Implement the suite.
+- Add documentation on how to run locally and in pipeline.
+- Ensure the test suite can run without manual steps beyond setting env vars.
+- Provide a short list of “known required prerequisites” (e.g., test tenant exists, API key configured, etc.).
