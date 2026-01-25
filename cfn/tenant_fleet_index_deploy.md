@@ -1,6 +1,6 @@
 # TenantFleetIndex staged deployment
 
-This repo uses a staged deployment for the VIN Registry GSI `TenantFleetIndex` to avoid DynamoDB’s single‑GSI‑per‑update limitation.
+This repo uses a staged deployment for the VIN Registry GSI `TenantFleetIndexV2` to avoid DynamoDB’s single‑GSI‑per‑update limitation and prevent in‑place updates of an existing index.
 
 ## Step A — baseline (no new GSI)
 1) Deploy with the default parameter (no GSI creation):
@@ -9,14 +9,14 @@ This repo uses a staged deployment for the VIN Registry GSI `TenantFleetIndex` t
 If using the helper script:
 - `ENABLE_TENANT_FLEET_INDEX=false ./scripts/deploy_stack.sh onpoint-dev-cfn-artifacts`
 
-## Step B — add TenantFleetIndex only
+## Step B — add TenantFleetIndexV2 only
 1) Re‑deploy with the flag enabled:
    - `EnableTenantFleetIndex=true`
 
 If using the helper script:
 - `ENABLE_TENANT_FLEET_INDEX=true ./scripts/deploy_stack.sh onpoint-dev-cfn-artifacts`
 
-This update **only** adds the `TenantFleetIndex` to the VIN Registry table.
+This update **only** adds the `TenantFleetIndexV2` to the VIN Registry table.
 
 ## Backfill (required for existing data)
 After Step B completes, backfill existing VIN registry items to set `GSI2PK`/`GSI2SK`:
@@ -36,5 +36,5 @@ Dry‑run:
 ```
 
 ## Verify
-- Fleet queries use `TenantFleetIndex` when `VIN_TENANT_FLEET_INDEX` is set.
+- Fleet queries use `TenantFleetIndexV2` when `VIN_TENANT_FLEET_INDEX` is set.
 - CloudFormation outputs should include the updated VIN Registry table.

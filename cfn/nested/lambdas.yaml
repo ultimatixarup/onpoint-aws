@@ -485,7 +485,7 @@ Resources:
           TELEMETRY_EVENTS_TABLE: !Ref TelemetryEventsTableName
           VIN_REGISTRY_TABLE: !Ref VinRegistryTableName
           VEHICLE_STATE_TABLE: !Ref VehicleStateTableName
-          VIN_TENANT_FLEET_INDEX: !If [EnableTenantFleetIndexCondition, TenantFleetIndex, !Ref AWS::NoValue]
+          VIN_TENANT_FLEET_INDEX: !If [EnableTenantFleetIndexCondition, TenantFleetIndexV2, !Ref AWS::NoValue]
           DEFAULT_LIMIT: !Ref DefaultLimit
           MAX_LIMIT: !Ref MaxLimit
           PAGE_SIZE: !Ref PageSize
@@ -517,7 +517,7 @@ Resources:
           AUDIT_LOG_TABLE: !Ref AuditLogTableName
           IDEMPOTENCY_TABLE: !Ref IdempotencyTableName
           VIN_TENANT_INDEX: TenantIndex
-          VIN_TENANT_FLEET_INDEX: !If [EnableTenantFleetIndexCondition, TenantFleetIndex, !Ref AWS::NoValue]
+          VIN_TENANT_FLEET_INDEX: !If [EnableTenantFleetIndexCondition, TenantFleetIndexV2, !Ref AWS::NoValue]
       Code:
         S3Bucket: !If [HasFleetTenancyApiCode, !Ref FleetTenancyApiCodeS3Bucket, !Ref AWS::NoValue]
         S3Key: !If [HasFleetTenancyApiCode, !Ref FleetTenancyApiCodeS3Key, !Ref AWS::NoValue]

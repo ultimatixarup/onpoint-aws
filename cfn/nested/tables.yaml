@@ -81,7 +81,7 @@ Resources:
             ProjectionType: ALL
         - !If
           - EnableTenantFleetIndexCondition
-          - IndexName: TenantFleetIndex
+          - IndexName: TenantFleetIndexV2
             KeySchema:
               - AttributeName: GSI2PK
                 KeyType: HASH
@@ -403,6 +403,8 @@ Outputs:
     Value: !Ref TelemetryEventsTable
   VinRegistryTableName:
     Value: !Ref VinRegistryTable
+  VinRegistryTenantFleetIndexName:
+    Value: TenantFleetIndexV2
   TenantsTableName:
     Value: !Ref TenantsTable
   CustomersTableName:

@@ -463,14 +463,14 @@ def test_list_vins_for_fleet_uses_tenant_fleet_index(monkeypatch):
 
     monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
     monkeypatch.setenv("VIN_REGISTRY_TABLE", "vin-registry")
-    monkeypatch.setenv("VIN_TENANT_FLEET_INDEX", "TenantFleetIndex")
+    monkeypatch.setenv("VIN_TENANT_FLEET_INDEX", "TenantFleetIndexV2")
     monkeypatch.setattr(boto3, "client", fake_client)
 
     module_path = Path(__file__).resolve().parents[1] / "lambdas" / "trip_summary_api" / "app.py"
     mod = load_lambda_module("trip_summary_api_app", module_path)
 
     def query(**kwargs):
-        assert kwargs.get("IndexName") == "TenantFleetIndex"
+        assert kwargs.get("IndexName") == "TenantFleetIndexV2"
         assert "GSI2PK" in kwargs.get("KeyConditionExpression", "")
         return {"Items": [], "LastEvaluatedKey": None}
 

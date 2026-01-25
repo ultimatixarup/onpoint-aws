@@ -444,18 +444,34 @@ def _record_active(record: dict, as_of: datetime) -> bool:
     return True
 
 
+def _is_missing_index_error(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    return "validationexception" in msg and "index" in msg and ("not found" in msg or "does not exist" in msg)
+
+
 def _list_vins_for_fleet(tenant_id: str, fleet_id: str) -> List[str]:
     if not VIN_REGISTRY_TABLE:
         return []
+    pk = f"TENANT#{tenant_id}#FLEET#{fleet_id}"
+    params: Dict[str, Any] = {}
+    items: List[dict] = []
+    missing_index = False
     if VIN_TENANT_FLEET_INDEX:
-        pk = f"TENANT#{tenant_id}#FLEET#{fleet_id}"
-        params: Dict[str, Any] = {
+        params = {
             "TableName": VIN_REGISTRY_TABLE,
             "IndexName": VIN_TENANT_FLEET_INDEX,
             "KeyConditionExpression": "GSI2PK = :pk",
             "ExpressionAttributeValues": {":pk": {"S": pk}},
         }
-    else:
+        try:
+            items = _ddb_query_all(params)
+        except Exception as exc:
+            if _is_missing_index_error(exc):
+                logger.warning(f"VIN registry index missing ({VIN_TENANT_FLEET_INDEX}); falling back to TenantIndex")
+                missing_index = True
+            else:
+                raise
+    if missing_index:
         pk = f"TENANT#{tenant_id}"
         params = {
             "TableName": VIN_REGISTRY_TABLE,
@@ -463,7 +479,7 @@ def _list_vins_for_fleet(tenant_id: str, fleet_id: str) -> List[str]:
             "KeyConditionExpression": "GSI1PK = :pk",
             "ExpressionAttributeValues": {":pk": {"S": pk}},
         }
-    items = _ddb_query_all(params)
+        items = _ddb_query_all(params)
     now = datetime.now(timezone.utc)
     vins = []
     for it in items:

@@ -7,7 +7,7 @@ import boto3
 
 
 def _parse_args():
-    parser = argparse.ArgumentParser(description="Backfill VIN registry TenantFleetIndex keys")
+    parser = argparse.ArgumentParser(description="Backfill VIN registry TenantFleetIndexV2 keys")
     parser.add_argument("--table", required=True, help="VIN registry table name")
     parser.add_argument("--region", default="us-east-1")
     parser.add_argument("--page-size", type=int, default=200)

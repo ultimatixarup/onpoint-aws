@@ -364,6 +364,10 @@ def _range_overlaps(a_from: str, a_to: Optional[str], b_from: str, b_to: Optiona
     return a_start <= b_end and b_start <= a_end
 
 
+def _is_missing_index_error(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    return "validationexception" in msg and "index" in msg and ("not found" in msg or "does not exist" in msg)
+
 def _vin_history(vin: str) -> List[dict]:
     if not VIN_REGISTRY_TABLE:
         return []
@@ -422,7 +426,20 @@ def _list_vins_for_tenant(tenant_id: str, fleet_id: Optional[str], active_only: 
             "ExpressionAttributeValues": {":pk": {"S": gsi_pk}},
             "ScanIndexForward": True,
         }
-    items = _ddb_query(params)
+    try:
+        items = _ddb_query(params)
+    except Exception as exc:
+        if fleet_id and VIN_TENANT_FLEET_INDEX and _is_missing_index_error(exc):
+            params = {
+                "TableName": VIN_REGISTRY_TABLE,
+                "IndexName": VIN_TENANT_INDEX,
+                "KeyConditionExpression": "GSI1PK = :pk",
+                "ExpressionAttributeValues": {":pk": {"S": f"TENANT#{tenant_id}"}},
+                "ScanIndexForward": True,
+            }
+            items = _ddb_query(params)
+        else:
+            raise
     for rec in items:
         if active_only:
             if not _range_overlaps(rec.get("effectiveFrom"), rec.get("effectiveTo"), now, now):
