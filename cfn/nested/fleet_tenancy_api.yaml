@@ -1,0 +1,116 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: onpoint fleet tenancy management api
+
+Parameters:
+  Env:
+    Type: String
+  ProjectName:
+    Type: String
+  FleetTenancyApiFunctionArn:
+    Type: String
+    Default: ""
+
+Conditions:
+  HasFleetTenancyApiArn: !Not [!Equals [!Ref FleetTenancyApiFunctionArn, ""]]
+
+Resources:
+  FleetTenancyRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub "${ProjectName}-${Env}-fleet-tenancy-api"
+      Description: Fleet tenancy management API
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  ProxyResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasFleetTenancyApiArn
+    Properties:
+      RestApiId: !Ref FleetTenancyRestApi
+      ParentId: !GetAtt FleetTenancyRestApi.RootResourceId
+      PathPart: "{proxy+}"
+
+  ProxyAnyMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasFleetTenancyApiArn
+    Properties:
+      RestApiId: !Ref FleetTenancyRestApi
+      ResourceId: !Ref ProxyResource
+      HttpMethod: ANY
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FleetTenancyApiFunctionArn}/invocations"
+
+  FleetTenancyRestApiInvokePermission:
+    Type: AWS::Lambda::Permission
+    Condition: HasFleetTenancyApiArn
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref FleetTenancyApiFunctionArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${FleetTenancyRestApi}/*/*/*"
+
+  FleetTenancyRestApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Condition: HasFleetTenancyApiArn
+    DependsOn:
+      - ProxyAnyMethod
+    Properties:
+      RestApiId: !Ref FleetTenancyRestApi
+      Description: !Sub "Deployment for ${Env} stage"
+
+  FleetTenancyRestApiStage:
+    Type: AWS::ApiGateway::Stage
+    Condition: HasFleetTenancyApiArn
+    Properties:
+      RestApiId: !Ref FleetTenancyRestApi
+      DeploymentId: !Ref FleetTenancyRestApiDeployment
+      StageName: !Ref Env
+      Description: !Sub "${Env} environment stage"
+
+  FleetTenancyRestApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Condition: HasFleetTenancyApiArn
+    Properties:
+      Name: !Sub "${ProjectName}-${Env}-fleet-tenancy-key"
+      Description: API Key for Fleet Tenancy API
+      Enabled: true
+
+  FleetTenancyRestApiUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Condition: HasFleetTenancyApiArn
+    DependsOn: FleetTenancyRestApiStage
+    Properties:
+      UsagePlanName: !Sub "${ProjectName}-${Env}-fleet-tenancy-plan"
+      Description: Usage plan for Fleet Tenancy API
+      ApiStages:
+        - ApiId: !Ref FleetTenancyRestApi
+          Stage: !Ref Env
+      Throttle:
+        RateLimit: 50
+        BurstLimit: 100
+
+  FleetTenancyRestApiUsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Condition: HasFleetTenancyApiArn
+    Properties:
+      KeyId: !Ref FleetTenancyRestApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref FleetTenancyRestApiUsagePlan
+
+Outputs:
+  RestApiId:
+    Description: Fleet tenancy REST API ID
+    Value: !Ref FleetTenancyRestApi
+  InvokeUrl:
+    Description: API Gateway invoke URL
+    Value: !Sub "https://${FleetTenancyRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Env}"
+  ApiKeyId:
+    Description: API Key ID
+    Value: !If [HasFleetTenancyApiArn, !Ref FleetTenancyRestApiKey, "N/A"]
+    Export:
+      Name: !Sub "${ProjectName}-${Env}-fleet-tenancy-api-key-id"

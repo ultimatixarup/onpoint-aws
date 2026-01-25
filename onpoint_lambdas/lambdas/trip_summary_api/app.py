@@ -6,7 +6,9 @@
 #   GET /trips?vehicleId=VIN[&from=...&to=...&limit=...&nextToken=...&include=...]
 #   GET /trips?vehicleIds=VIN1,VIN2,... (bounded fan-out; no global index)
 #   GET /trips/{vin}/{tripId}[?include=summary|none|summary,alerts,events]
-#   GET /trips/{tripId}/events[?vin=...&from=...&to=...&limit=...&nextToken=...]
+#   GET /trips/{vin}/{tripId}/events[?limit=...&nextToken=...]
+#   GET /vehicles/{vin}/latest-state
+#   GET /fleets/{fleetId}/trips?from=...&to=...&limit=...&nextToken=...&include=...
 #
 # Standard behavior:
 # - List endpoint (GET /trips) default: include=none (fast), returns top-level rollups
@@ -42,7 +44,9 @@ BUILD_ID = "2026-01-23T18:45:00Z"
 
 TABLE = os.environ["TRIP_SUMMARY_TABLE"]
 TELEMETRY_EVENTS_TABLE = os.environ.get("TELEMETRY_EVENTS_TABLE", "onpoint-dev-telemetry-events")
+VEHICLE_STATE_TABLE = os.environ.get("VEHICLE_STATE_TABLE", "onpoint-dev-vehicle-state")
 VIN_REGISTRY_TABLE = os.environ.get("VIN_REGISTRY_TABLE")
+VIN_TENANT_FLEET_INDEX = os.environ.get("VIN_TENANT_FLEET_INDEX")
 DEFAULT_LIMIT = int(os.environ.get("DEFAULT_LIMIT", "50"))
 MAX_LIMIT = int(os.environ.get("MAX_LIMIT", "200"))
 EVENTS_DEFAULT_LIMIT = int(os.environ.get("EVENTS_DEFAULT_LIMIT", "100"))
@@ -251,11 +255,7 @@ def _authorize_vin(vin: str, tenant_id: Optional[str], as_of: Optional[str]) -> 
 
 
 def _is_events_route(resource: str, path: str) -> bool:
-    if resource == "/trips/{vin}/{tripId}/events":
-        return True
-    if path:
-        return path.rstrip("/").endswith("/events")
-    return False
+    return resource == "/trips/{vin}/{tripId}/events"
 
 
 # -----------------------------
@@ -416,6 +416,77 @@ def _get_trip_detail(vin: str, trip_id: str, include: str) -> Optional[dict]:
     return out
 
 
+def _get_vehicle_state(vin: str) -> Optional[dict]:
+    pk = f"VEHICLE#{vin}"
+    sk = "STATE"
+    resp = ddb.get_item(TableName=VEHICLE_STATE_TABLE, Key={"PK": {"S": pk}, "SK": {"S": sk}})
+    item = resp.get("Item")
+    if not item:
+        return None
+    return _ddb_unmarshal_item(item)
+
+
+def _record_active(record: dict, as_of: datetime) -> bool:
+    ef = _parse_iso(record.get("effectiveFrom"))
+    et = _parse_iso(record.get("effectiveTo"))
+    if ef and ef > as_of:
+        return False
+    if et and et < as_of:
+        return False
+    return True
+
+
+def _list_vins_for_fleet(tenant_id: str, fleet_id: str) -> List[str]:
+    if not VIN_REGISTRY_TABLE:
+        return []
+    if VIN_TENANT_FLEET_INDEX:
+        pk = f"TENANT#{tenant_id}#FLEET#{fleet_id}"
+        params: Dict[str, Any] = {
+            "TableName": VIN_REGISTRY_TABLE,
+            "IndexName": VIN_TENANT_FLEET_INDEX,
+            "KeyConditionExpression": "GSI2PK = :pk",
+            "ExpressionAttributeValues": {":pk": {"S": pk}},
+        }
+    else:
+        pk = f"TENANT#{tenant_id}"
+        params = {
+            "TableName": VIN_REGISTRY_TABLE,
+            "IndexName": "TenantIndex",
+            "KeyConditionExpression": "GSI1PK = :pk",
+            "ExpressionAttributeValues": {":pk": {"S": pk}},
+        }
+    items = _ddb_query_all(params)
+    now = datetime.now(timezone.utc)
+    vins = []
+    for it in items:
+        if _record_active(it, now):
+            if not VIN_TENANT_FLEET_INDEX and it.get("fleetId") != fleet_id:
+                continue
+            vin = it.get("vin")
+            if not vin:
+                gsi2 = it.get("GSI2SK") or ""
+                if isinstance(gsi2, str) and gsi2.startswith("VIN#"):
+                    vin = gsi2.split("VIN#", 1)[1]
+            if isinstance(vin, str) and vin.strip():
+                vins.append(vin.strip())
+    return list(dict.fromkeys(vins))
+
+
+def _ddb_query_all(params: Dict[str, Any]) -> List[dict]:
+    items: List[dict] = []
+    last_key = None
+    while True:
+        if last_key:
+            params["ExclusiveStartKey"] = last_key
+        resp = ddb.query(**params)
+        for it in resp.get("Items") or []:
+            items.append(_ddb_unmarshal_item(it))
+        last_key = resp.get("LastEvaluatedKey")
+        if not last_key:
+            break
+    return items
+
+
 # -----------------------------
 # Handler
 # -----------------------------
@@ -432,12 +503,17 @@ def lambda_handler(event, context):
     query = event.get("queryStringParameters") or {}
     vin = path_params.get("vin")
     trip_id = path_params.get("tripId")
+    fleet_id = path_params.get("fleetId")
     resource = event.get("resource", "") or ""
     path = event.get("path") or event.get("rawPath") or ""
 
     # Detect route type based on resource path first (most specific)
     if _is_events_route(resource, path):
         route_type = "TRIP_EVENTS"
+    elif resource == "/vehicles/{vin}/latest-state":
+        route_type = "VEHICLE_STATE"
+    elif resource == "/fleets/{fleetId}/trips":
+        route_type = "FLEET_TRIPS"
     # /trips/{vin}/{tripId} detail route
     elif resource == "/trips/{vin}/{tripId}" and trip_id:
         route_type = "DETAIL"
@@ -458,6 +534,7 @@ def lambda_handler(event, context):
 
     vin_path = (vin or "").strip()
     trip_id_path = (trip_id or "").strip()
+    fleet_id_path = (fleet_id or "").strip()
     qs = query
     tenant_id = _get_caller_tenant_id(event)
 
@@ -517,6 +594,84 @@ def lambda_handler(event, context):
                 "nextToken": next_token,
             },
         )
+
+    if route_type == "VEHICLE_STATE":
+        if not vin_path:
+            return _resp(400, {"error": "vin is required"})
+        state = _get_vehicle_state(vin_path)
+        if not state:
+            return _resp(404, {"error": "Vehicle state not found"})
+        if not _authorize_vin(vin_path, tenant_id, state.get("lastEventTime")):
+            return _resp(403, {"error": "Forbidden"})
+        return _resp(200, state)
+
+    if route_type == "FLEET_TRIPS":
+        if not fleet_id_path:
+            return _resp(400, {"error": "fleetId is required"})
+        if not tenant_id:
+            return _resp(403, {"error": "Forbidden"})
+
+        vins = _list_vins_for_fleet(tenant_id, fleet_id_path)
+        if not vins:
+            return _resp(200, {"items": [], "nextToken": None})
+
+        frm = _parse_iso(qs.get("from"))
+        to = _parse_iso(qs.get("to"))
+        include = _normalize_include(qs.get("include"), default=INCLUDE_NONE)
+
+        try:
+            limit = int(qs.get("limit") or DEFAULT_LIMIT)
+        except Exception:
+            limit = DEFAULT_LIMIT
+        limit = max(1, min(limit, MAX_LIMIT))
+
+        token = qs.get("nextToken")
+        token_obj = _decode_token(token) if token else {}
+        if token_obj and token_obj.get("v") not in (None, TOKEN_VERSION):
+            token_obj = {}
+
+        per_vin_state = token_obj.get("vins") if isinstance(token_obj.get("vins"), dict) else {}
+
+        results: List[dict] = []
+        next_state: Dict[str, Any] = {"v": TOKEN_VERSION, "vins": {}}
+        page_size = DEFAULT_PAGE_SIZE
+        max_pages_per_vin = DEFAULT_MAX_PAGES_PER_VIN
+        expansion_cap = max(limit * 3, 50)
+
+        for vin in vins:
+            esk = per_vin_state.get(vin)
+            pages = 0
+            collected: List[dict] = []
+
+            while pages < max_pages_per_vin:
+                items, lek = _query_vehicle(vin, exclusive_start_key=esk, page_size=page_size)
+                pages += 1
+
+                for it in items:
+                    s = _summarize_item(it)
+                    if _in_range(s.get("startTime"), s.get("endTime"), frm, to):
+                        if include == INCLUDE_SUMMARY:
+                            tid = s.get("tripId") or ""
+                            d = _get_trip_detail(vin, tid, include=INCLUDE_SUMMARY)
+                            if d and "summary" in d:
+                                s["summary"] = d["summary"]
+                        collected.append(s)
+
+                esk = lek
+                if not lek or len(collected) >= expansion_cap:
+                    break
+
+            if esk:
+                next_state["vins"][vin] = esk
+            results.extend(collected)
+
+        results.sort(key=_sort_key_endtime_desc, reverse=True)
+        results = results[:limit]
+        next_token = None
+        if any(next_state["vins"].get(v) for v in vins):
+            next_token = _encode_token(next_state)
+
+        return _resp(200, {"items": results, "nextToken": next_token})
 
     # HARD ROUTE SWITCH: If tripId exists in pathParameters -> DETAIL route
     # This must happen BEFORE any "vehicleId required" validation

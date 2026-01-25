@@ -15,6 +15,9 @@ Parameters:
   TemplateVersion:
     Type: String
     Default: v1
+  EnableTenantFleetIndex:
+    Type: String
+    Default: "false"
   IngressCodeS3Key:
     Type: String
     Default: lambda/ingress.zip
@@ -33,6 +36,9 @@ Parameters:
   TripSummaryApiCodeS3Key:
     Type: String
     Default: lambda/trip_summary_api.zip
+  FleetTenancyApiCodeS3Key:
+    Type: String
+    Default: lambda/fleet_tenancy_api.zip
   CommonLayerS3Key:
     Type: String
     Default: lambda/onpoint_common_layer.zip
@@ -60,6 +66,7 @@ Resources:
       Parameters:
         Env: !Ref Env
         ProjectName: !Ref ProjectName
+        EnableTenantFleetIndex: !Ref EnableTenantFleetIndex
       TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/tables.yaml
 
   LambdasStack:
@@ -77,11 +84,20 @@ Resources:
         TripSummaryQueueArn: !GetAtt QueuesStack.Outputs.TripSummaryQueueArn
         TelemetryEventsTableName: !GetAtt TablesStack.Outputs.TelemetryEventsTableName
         VinRegistryTableName: !GetAtt TablesStack.Outputs.VinRegistryTableName
+        TenantsTableName: !GetAtt TablesStack.Outputs.TenantsTableName
+        CustomersTableName: !GetAtt TablesStack.Outputs.CustomersTableName
+        FleetsTableName: !GetAtt TablesStack.Outputs.FleetsTableName
+        VehiclesTableName: !GetAtt TablesStack.Outputs.VehiclesTableName
+        DriversTableName: !GetAtt TablesStack.Outputs.DriversTableName
+        DriverAssignmentsTableName: !GetAtt TablesStack.Outputs.DriverAssignmentsTableName
+        AuditLogTableName: !GetAtt TablesStack.Outputs.AuditLogTableName
+        IdempotencyTableName: !GetAtt TablesStack.Outputs.IdempotencyTableName
         VehicleStateTableName: !GetAtt TablesStack.Outputs.VehicleStateTableName
         TripsTableName: !GetAtt TablesStack.Outputs.TripsTableName
         TripSummaryTableName: !GetAtt TablesStack.Outputs.TripSummaryTableName
         PslCacheTableName: !GetAtt TablesStack.Outputs.PslCacheTableName
         OverspeedDedupeTableName: !GetAtt TablesStack.Outputs.OverspeedDedupeTableName
+        EnableTenantFleetIndex: !Ref EnableTenantFleetIndex
         IngressCodeS3Bucket: !Ref TemplateBucket
         IngressCodeS3Key: !Ref IngressCodeS3Key
         TelematicsProcessorCodeS3Bucket: !Ref TemplateBucket
@@ -94,6 +110,8 @@ Resources:
         TripSummaryBuilderCodeS3Key: !Ref TripSummaryBuilderCodeS3Key
         TripSummaryApiCodeS3Bucket: !Ref TemplateBucket
         TripSummaryApiCodeS3Key: !Ref TripSummaryApiCodeS3Key
+        FleetTenancyApiCodeS3Bucket: !Ref TemplateBucket
+        FleetTenancyApiCodeS3Key: !Ref FleetTenancyApiCodeS3Key
         CommonLayerS3Bucket: !Ref TemplateBucket
         CommonLayerS3Key: !Ref CommonLayerS3Key
       TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/lambdas.yaml
@@ -106,6 +124,15 @@ Resources:
         ProjectName: !Ref ProjectName
         TripSummaryApiFunctionArn: !GetAtt LambdasStack.Outputs.TripSummaryApiFunctionArn
       TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/trip_summary_api.yaml
+
+  FleetTenancyApiStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        Env: !Ref Env
+        ProjectName: !Ref ProjectName
+        FleetTenancyApiFunctionArn: !GetAtt LambdasStack.Outputs.FleetTenancyApiFunctionArn
+      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/fleet_tenancy_api.yaml
 
   IngestApiStack:
     Type: AWS::CloudFormation::Stack
@@ -136,6 +163,10 @@ Outputs:
   ApiStackTemplateURL:
     Description: Trip summary API nested template URL
     Value: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/trip_summary_api.yaml
+  FleetTenancyApiInvokeUrl:
+    Value: !GetAtt FleetTenancyApiStack.Outputs.InvokeUrl
+  FleetTenancyApiId:
+    Value: !GetAtt FleetTenancyApiStack.Outputs.RestApiId
   TemplateVersionUsed:
     Description: TemplateVersion used for nested stack TemplateURL paths
     Value: !Ref TemplateVersion

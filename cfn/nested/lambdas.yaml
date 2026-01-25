@@ -35,6 +35,9 @@ Parameters:
   TripSummaryApiHandler:
     Type: String
     Default: app.lambda_handler
+  FleetTenancyApiHandler:
+    Type: String
+    Default: app.lambda_handler
   IngressCodeS3Bucket:
     Type: String
     Default: ""
@@ -71,6 +74,12 @@ Parameters:
   TripSummaryApiCodeS3Key:
     Type: String
     Default: ""
+  FleetTenancyApiCodeS3Bucket:
+    Type: String
+    Default: ""
+  FleetTenancyApiCodeS3Key:
+    Type: String
+    Default: ""
   CommonLayerS3Bucket:
     Type: String
     Default: ""
@@ -94,6 +103,22 @@ Parameters:
   TelemetryEventsTableName:
     Type: String
   VinRegistryTableName:
+    Type: String
+  TenantsTableName:
+    Type: String
+  CustomersTableName:
+    Type: String
+  FleetsTableName:
+    Type: String
+  VehiclesTableName:
+    Type: String
+  DriversTableName:
+    Type: String
+  DriverAssignmentsTableName:
+    Type: String
+  AuditLogTableName:
+    Type: String
+  IdempotencyTableName:
     Type: String
   VehicleStateTableName:
     Type: String
@@ -201,6 +226,9 @@ Parameters:
   MaxPagesPerVin:
     Type: String
     Default: "3"
+  EnableTenantFleetIndex:
+    Type: String
+    Default: "false"
 
 Conditions:
   HasIngressCode: !And [!Not [!Equals [!Ref IngressCodeS3Bucket, ""]], !Not [!Equals [!Ref IngressCodeS3Key, ""]]]
@@ -209,7 +237,9 @@ Conditions:
   HasOverspeedDetectorCode: !And [!Not [!Equals [!Ref OverspeedDetectorCodeS3Bucket, ""]], !Not [!Equals [!Ref OverspeedDetectorCodeS3Key, ""]]]
   HasTripSummaryBuilderCode: !And [!Not [!Equals [!Ref TripSummaryBuilderCodeS3Bucket, ""]], !Not [!Equals [!Ref TripSummaryBuilderCodeS3Key, ""]]]
   HasTripSummaryApiCode: !And [!Not [!Equals [!Ref TripSummaryApiCodeS3Bucket, ""]], !Not [!Equals [!Ref TripSummaryApiCodeS3Key, ""]]]
+  HasFleetTenancyApiCode: !And [!Not [!Equals [!Ref FleetTenancyApiCodeS3Bucket, ""]], !Not [!Equals [!Ref FleetTenancyApiCodeS3Key, ""]]]
   HasCommonLayer: !And [!Not [!Equals [!Ref CommonLayerS3Bucket, ""]], !Not [!Equals [!Ref CommonLayerS3Key, ""]]]
+  EnableTenantFleetIndexCondition: !Equals [!Ref EnableTenantFleetIndex, "true"]
 
 Resources:
   CommonLayerVersion:
@@ -251,6 +281,22 @@ Resources:
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TelemetryEventsTableName}/*
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${VinRegistryTableName}
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${VinRegistryTableName}/*
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TenantsTableName}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TenantsTableName}/*
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CustomersTableName}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${CustomersTableName}/*
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${FleetsTableName}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${FleetsTableName}/*
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${VehiclesTableName}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${VehiclesTableName}/*
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DriversTableName}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DriversTableName}/*
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DriverAssignmentsTableName}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DriverAssignmentsTableName}/*
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AuditLogTableName}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AuditLogTableName}/*
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${IdempotencyTableName}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${IdempotencyTableName}/*
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${VehicleStateTableName}
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${VehicleStateTableName}/*
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TripsTableName}
@@ -436,7 +482,10 @@ Resources:
       Environment:
         Variables:
           TRIP_SUMMARY_TABLE: !Ref TripSummaryTableName
+          TELEMETRY_EVENTS_TABLE: !Ref TelemetryEventsTableName
           VIN_REGISTRY_TABLE: !Ref VinRegistryTableName
+          VEHICLE_STATE_TABLE: !Ref VehicleStateTableName
+          VIN_TENANT_FLEET_INDEX: !If [EnableTenantFleetIndexCondition, TenantFleetIndex, !Ref AWS::NoValue]
           DEFAULT_LIMIT: !Ref DefaultLimit
           MAX_LIMIT: !Ref MaxLimit
           PAGE_SIZE: !Ref PageSize
@@ -444,6 +493,34 @@ Resources:
       Code:
         S3Bucket: !If [HasTripSummaryApiCode, !Ref TripSummaryApiCodeS3Bucket, !Ref AWS::NoValue]
         S3Key: !If [HasTripSummaryApiCode, !Ref TripSummaryApiCodeS3Key, !Ref AWS::NoValue]
+      Layers:
+        - !If [HasCommonLayer, !Ref CommonLayerVersion, !Ref AWS::NoValue]
+
+  FleetTenancyApiFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-${Env}-fleet-tenancy-api"
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: !Ref LambdaRuntime
+      Handler: !Ref FleetTenancyApiHandler
+      MemorySize: !Ref LambdaMemory
+      Timeout: !Ref LambdaTimeout
+      Environment:
+        Variables:
+          TENANTS_TABLE: !Ref TenantsTableName
+          CUSTOMERS_TABLE: !Ref CustomersTableName
+          FLEETS_TABLE: !Ref FleetsTableName
+          VEHICLES_TABLE: !Ref VehiclesTableName
+          VIN_REGISTRY_TABLE: !Ref VinRegistryTableName
+          DRIVERS_TABLE: !Ref DriversTableName
+          DRIVER_ASSIGNMENTS_TABLE: !Ref DriverAssignmentsTableName
+          AUDIT_LOG_TABLE: !Ref AuditLogTableName
+          IDEMPOTENCY_TABLE: !Ref IdempotencyTableName
+          VIN_TENANT_INDEX: TenantIndex
+          VIN_TENANT_FLEET_INDEX: !If [EnableTenantFleetIndexCondition, TenantFleetIndex, !Ref AWS::NoValue]
+      Code:
+        S3Bucket: !If [HasFleetTenancyApiCode, !Ref FleetTenancyApiCodeS3Bucket, !Ref AWS::NoValue]
+        S3Key: !If [HasFleetTenancyApiCode, !Ref FleetTenancyApiCodeS3Key, !Ref AWS::NoValue]
       Layers:
         - !If [HasCommonLayer, !Ref CommonLayerVersion, !Ref AWS::NoValue]
 
@@ -495,5 +572,9 @@ Outputs:
     Value: !Ref TripSummaryApiFunction
   TripSummaryApiFunctionArn:
     Value: !GetAtt TripSummaryApiFunction.Arn
+  FleetTenancyApiFunctionName:
+    Value: !Ref FleetTenancyApiFunction
+  FleetTenancyApiFunctionArn:
+    Value: !GetAtt FleetTenancyApiFunction.Arn
   LambdaRoleArn:
     Value: !GetAtt LambdaRole.Arn

@@ -6,6 +6,8 @@ __pycache__/
 .coverage
 .cfn_cached/
 
+onpoint_lambdas/dist/
+
 .vscode/
 MCP_Server_Design_Document.docx
 MCP_Server_Design_Document.pdf

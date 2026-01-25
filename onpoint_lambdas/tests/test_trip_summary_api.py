@@ -268,8 +268,8 @@ def test_trip_events_no_tripId_returns_400(monkeypatch):
     assert "tripId" in body.get("error", "")
 
 
-def test_trip_events_route_detected_by_path(monkeypatch):
-    """Route should match when path ends with /events, even without resource."""
+def test_trip_events_route_detected_by_resource(monkeypatch):
+    """Route should match when resource is /trips/{vin}/{tripId}/events."""
     add_common_to_path()
 
     def fake_client(service_name):
@@ -295,6 +295,7 @@ def test_trip_events_route_detected_by_path(monkeypatch):
         "path": "/dev/trips/VIN123/TRIP456/events",
         "pathParameters": {"vin": "VIN123", "tripId": "TRIP456"},
         "queryStringParameters": None,
+        "resource": "/trips/{vin}/{tripId}/events",
     }
 
     resp = mod.lambda_handler(event, None)
@@ -374,3 +375,104 @@ def test_trip_events_limit_clamps(monkeypatch):
 
     resp = mod.lambda_handler(event, None)
     assert resp["statusCode"] == 200
+
+
+def test_vehicle_latest_state_returns_state(monkeypatch):
+    add_common_to_path()
+
+    def fake_client(service_name):
+        return DummyClient()
+
+    monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
+    monkeypatch.setenv("VIN_REGISTRY_TABLE", "vin-registry")
+    monkeypatch.setenv("VEHICLE_STATE_TABLE", "vehicle-state")
+    monkeypatch.setattr(boto3, "client", fake_client)
+
+    module_path = Path(__file__).resolve().parents[1] / "lambdas" / "trip_summary_api" / "app.py"
+    mod = load_lambda_module("trip_summary_api_app", module_path)
+    monkeypatch.setattr(mod, "resolve_vin_registry", lambda *args, **kwargs: {"tenantId": "tenant-1"})
+
+    mod.ddb = DummyClient(
+        get_item=lambda **kwargs: {
+            "Item": {
+                "PK": {"S": "VEHICLE#VIN123"},
+                "SK": {"S": "STATE"},
+                "lastEventTime": {"S": "2026-01-24T02:00:00Z"},
+                "vehicleState": {"S": "MOVING"},
+            }
+        }
+    )
+
+    event = {
+        "httpMethod": "GET",
+        "requestContext": {"identity": {"apiKey": "tenant-1"}},
+        "pathParameters": {"vin": "VIN123"},
+        "resource": "/vehicles/{vin}/latest-state",
+    }
+
+    resp = mod.lambda_handler(event, None)
+    assert resp["statusCode"] == 200
+    body = json.loads(resp["body"])
+    assert body["vehicleState"] == "MOVING"
+
+
+def test_fleet_trips_returns_items(monkeypatch):
+    add_common_to_path()
+
+    def fake_client(service_name):
+        return DummyClient()
+
+    monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
+    monkeypatch.setenv("VIN_REGISTRY_TABLE", "vin-registry")
+    monkeypatch.setattr(boto3, "client", fake_client)
+
+    module_path = Path(__file__).resolve().parents[1] / "lambdas" / "trip_summary_api" / "app.py"
+    mod = load_lambda_module("trip_summary_api_app", module_path)
+    monkeypatch.setattr(mod, "resolve_vin_registry", lambda *args, **kwargs: {"tenantId": "tenant-1"})
+
+    mod._list_vins_for_fleet = lambda tenant_id, fleet_id: ["V1"]
+    sample_item = {
+        "PK": {"S": "VEHICLE#V1"},
+        "SK": {"S": "TRIP_SUMMARY#T1"},
+        "vin": {"S": "V1"},
+        "tripId": {"S": "T1"},
+        "startTime": {"S": "2026-01-01T00:00:00Z"},
+        "endTime": {"S": "2026-01-01T00:10:00Z"},
+    }
+    mod._query_vehicle = lambda vin, exclusive_start_key=None, page_size=None, scan_forward=False: ([sample_item], None)
+
+    event = {
+        "httpMethod": "GET",
+        "requestContext": {"identity": {"apiKey": "tenant-1"}},
+        "pathParameters": {"fleetId": "F1"},
+        "resource": "/fleets/{fleetId}/trips",
+        "queryStringParameters": {},
+    }
+
+    resp = mod.lambda_handler(event, None)
+    assert resp["statusCode"] == 200
+    body = json.loads(resp["body"])
+    assert body["items"][0]["vin"] == "V1"
+
+
+def test_list_vins_for_fleet_uses_tenant_fleet_index(monkeypatch):
+    add_common_to_path()
+
+    def fake_client(service_name):
+        return DummyClient()
+
+    monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
+    monkeypatch.setenv("VIN_REGISTRY_TABLE", "vin-registry")
+    monkeypatch.setenv("VIN_TENANT_FLEET_INDEX", "TenantFleetIndex")
+    monkeypatch.setattr(boto3, "client", fake_client)
+
+    module_path = Path(__file__).resolve().parents[1] / "lambdas" / "trip_summary_api" / "app.py"
+    mod = load_lambda_module("trip_summary_api_app", module_path)
+
+    def query(**kwargs):
+        assert kwargs.get("IndexName") == "TenantFleetIndex"
+        assert "GSI2PK" in kwargs.get("KeyConditionExpression", "")
+        return {"Items": [], "LastEvaluatedKey": None}
+
+    mod.ddb = DummyClient(query=query)
+    assert mod._list_vins_for_fleet("tenant-1", "fleet-1") == []

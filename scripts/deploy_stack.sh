@@ -11,9 +11,11 @@ ARTIFACT_BUCKET="$1"
 REGION="us-east-1"
 STACK_NAME="onpoint-dev"
 TEMPLATE_FILE="cfn/root.yaml"
+TEMPLATE_VERSION="v1"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LAMBDA_BUILD_SCRIPT="$ROOT_DIR/onpoint_lambdas/scripts/build_lambda.sh"
 LAYER_BUILD_SCRIPT="$ROOT_DIR/onpoint_lambdas/scripts/build_layers.sh"
+ENABLE_TENANT_FLEET_INDEX="${ENABLE_TENANT_FLEET_INDEX:-false}"
 
 # Validate bucket exists
 aws s3api head-bucket --bucket "$ARTIFACT_BUCKET" --region "$REGION" >/dev/null 2>&1 || {
@@ -22,7 +24,7 @@ aws s3api head-bucket --bucket "$ARTIFACT_BUCKET" --region "$REGION" >/dev/null 
 }
 
 # Upload templates
-aws s3 sync cfn "s3://${ARTIFACT_BUCKET}/cfn" --region "$REGION"
+aws s3 sync cfn "s3://${ARTIFACT_BUCKET}/cfn/${TEMPLATE_VERSION}" --region "$REGION"
 
 # Build and upload lambda packages
 LAMBDA_OUT_DIR="$ROOT_DIR/onpoint_lambdas/dist"
@@ -35,6 +37,7 @@ psl_enricher_zip=$($LAMBDA_BUILD_SCRIPT psl_enricher)
 overspeed_zip=$($LAMBDA_BUILD_SCRIPT overspeed_detector)
 trip_summary_builder_zip=$($LAMBDA_BUILD_SCRIPT trip_summary_builder)
 trip_summary_api_zip=$($LAMBDA_BUILD_SCRIPT trip_summary_api)
+fleet_tenancy_api_zip=$($LAMBDA_BUILD_SCRIPT fleet_tenancy_api)
 
 echo "Building Lambda layers..."
 $LAYER_BUILD_SCRIPT
@@ -46,6 +49,7 @@ aws s3 cp "$psl_enricher_zip" "s3://${ARTIFACT_BUCKET}/lambda/psl_enricher.zip" 
 aws s3 cp "$overspeed_zip" "s3://${ARTIFACT_BUCKET}/lambda/overspeed_detector.zip" --region "$REGION"
 aws s3 cp "$trip_summary_builder_zip" "s3://${ARTIFACT_BUCKET}/lambda/trip_summary_builder.zip" --region "$REGION"
 aws s3 cp "$trip_summary_api_zip" "s3://${ARTIFACT_BUCKET}/lambda/trip_summary_api.zip" --region "$REGION"
+aws s3 cp "$fleet_tenancy_api_zip" "s3://${ARTIFACT_BUCKET}/lambda/fleet_tenancy_api.zip" --region "$REGION"
 
 echo "Uploading Lambda layers to S3..."
 common_layer_zip="$LAMBDA_OUT_DIR/onpoint_common_layer.zip"
@@ -62,12 +66,15 @@ PARAMS=(
   "ParameterKey=ProjectName,ParameterValue=onpoint"
   "ParameterKey=TemplateBucket,ParameterValue=${ARTIFACT_BUCKET}"
   "ParameterKey=TemplatePrefix,ParameterValue=cfn"
+  "ParameterKey=TemplateVersion,ParameterValue=${TEMPLATE_VERSION}"
+  "ParameterKey=EnableTenantFleetIndex,ParameterValue=${ENABLE_TENANT_FLEET_INDEX}"
   "ParameterKey=IngressCodeS3Key,ParameterValue=lambda/ingress.zip"
   "ParameterKey=TelematicsProcessorCodeS3Key,ParameterValue=lambda/telematics_processor.zip"
   "ParameterKey=PslEnricherCodeS3Key,ParameterValue=lambda/psl_enricher.zip"
   "ParameterKey=OverspeedDetectorCodeS3Key,ParameterValue=lambda/overspeed_detector.zip"
   "ParameterKey=TripSummaryBuilderCodeS3Key,ParameterValue=lambda/trip_summary_builder.zip"
   "ParameterKey=TripSummaryApiCodeS3Key,ParameterValue=lambda/trip_summary_api.zip"
+  "ParameterKey=FleetTenancyApiCodeS3Key,ParameterValue=lambda/fleet_tenancy_api.zip"
   "ParameterKey=CommonLayerS3Key,ParameterValue=lambda/onpoint_common_layer.zip"
 )
 
