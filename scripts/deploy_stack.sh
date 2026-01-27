@@ -68,6 +68,7 @@ PARAMS=(
   "ParameterKey=TemplatePrefix,ParameterValue=cfn"
   "ParameterKey=TemplateVersion,ParameterValue=${TEMPLATE_VERSION}"
   "ParameterKey=EnableTenantFleetIndex,ParameterValue=${ENABLE_TENANT_FLEET_INDEX}"
+  "ParameterKey=UserPoolId,ParameterValue=${USER_POOL_ID:-}"
   "ParameterKey=IngressCodeS3Key,ParameterValue=lambda/ingress.zip"
   "ParameterKey=TelematicsProcessorCodeS3Key,ParameterValue=lambda/telematics_processor.zip"
   "ParameterKey=PslEnricherCodeS3Key,ParameterValue=lambda/psl_enricher.zip"

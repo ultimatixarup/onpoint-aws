@@ -26,6 +26,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 _ddb = boto3.client("dynamodb")
+_cognito = boto3.client("cognito-idp")
 _serializer = TypeSerializer()
 _deserializer = TypeDeserializer()
 
@@ -38,6 +39,7 @@ DRIVERS_TABLE = os.environ.get("DRIVERS_TABLE")
 DRIVER_ASSIGNMENTS_TABLE = os.environ.get("DRIVER_ASSIGNMENTS_TABLE")
 AUDIT_LOG_TABLE = os.environ.get("AUDIT_LOG_TABLE")
 IDEMPOTENCY_TABLE = os.environ.get("IDEMPOTENCY_TABLE")
+USER_POOL_ID = os.environ.get("USER_POOL_ID")
 
 VIN_TENANT_INDEX = os.environ.get("VIN_TENANT_INDEX", "TenantIndex")
 VIN_TENANT_FLEET_INDEX = os.environ.get("VIN_TENANT_FLEET_INDEX")
@@ -47,6 +49,12 @@ ROLE_TENANT_ADMIN = "tenant-admin"
 ROLE_FLEET_MANAGER = "fleet-manager"
 ROLE_ANALYST = "analyst"
 ROLE_READ_ONLY = "read-only"
+
+GROUP_PLATFORM_ADMIN = "PlatformAdmin"
+GROUP_TENANT_ADMIN = "TenantAdmin"
+GROUP_FLEET_MANAGER = "FleetManager"
+GROUP_DISPATCHER = "Dispatcher"
+GROUP_READ_ONLY = "ReadOnly"
 
 
 # -----------------------------
@@ -73,6 +81,26 @@ def _headers(event: dict) -> Dict[str, str]:
         if isinstance(k, str) and isinstance(v, str):
             out[k.lower()] = v
     return out
+
+
+def _get_claims(event: dict) -> Dict[str, Any]:
+    ctx = event.get("requestContext") or {}
+    authorizer = ctx.get("authorizer") or {}
+    claims = authorizer.get("claims") or {}
+    if isinstance(claims, dict) and claims:
+        return claims
+    jwt = authorizer.get("jwt") or {}
+    jwt_claims = jwt.get("claims") or {}
+    return jwt_claims if isinstance(jwt_claims, dict) else {}
+
+
+def _get_groups_from_claims(claims: Dict[str, Any]) -> List[str]:
+    groups = claims.get("cognito:groups") or claims.get("groups") or []
+    if isinstance(groups, str):
+        groups = [g.strip() for g in groups.split(",") if g.strip()]
+    if isinstance(groups, list):
+        return [g for g in groups if isinstance(g, str)]
+    return []
 
 
 def _get_method(event: dict) -> str:
@@ -105,22 +133,34 @@ def _parse_body(event: dict) -> Tuple[Optional[dict], Optional[str]]:
 
 
 def _get_caller_tenant_id(event: dict) -> Optional[str]:
+    claims = _get_claims(event)
+    tenant_id = claims.get("custom:tenantId") or claims.get("tenantId")
+    if isinstance(tenant_id, str) and tenant_id.strip():
+        return tenant_id.strip()
     identity = (event.get("requestContext") or {}).get("identity") or {}
     tenant_id = identity.get("apiKey") or identity.get("apiKeyId")
     if isinstance(tenant_id, str) and tenant_id.strip():
         return tenant_id.strip()
-    headers = event.get("headers") or {}
-    fallback = headers.get("x-tenant-id") or headers.get("X-Tenant-Id")
-    if isinstance(fallback, str) and fallback.strip():
-        return fallback.strip()
     return None
 
 
-def _get_role(headers: Dict[str, str]) -> str:
-    role = headers.get("x-role") or headers.get("x-roles") or ""
-    role = role.strip().lower() if isinstance(role, str) else ""
-    if role:
-        return role
+def _get_role(event: dict, headers: Dict[str, str]) -> str:
+    claims = _get_claims(event)
+    groups = _get_groups_from_claims(claims)
+    if GROUP_PLATFORM_ADMIN in groups:
+        return ROLE_ADMIN
+    if GROUP_TENANT_ADMIN in groups:
+        return ROLE_TENANT_ADMIN
+    if GROUP_FLEET_MANAGER in groups:
+        return ROLE_FLEET_MANAGER
+    if GROUP_DISPATCHER in groups:
+        return ROLE_ANALYST
+    if GROUP_READ_ONLY in groups:
+        return ROLE_READ_ONLY
+    legacy = headers.get("x-role") or headers.get("x-roles") or ""
+    legacy = legacy.strip().lower() if isinstance(legacy, str) else ""
+    if legacy:
+        return legacy
     return ROLE_READ_ONLY
 
 
@@ -486,6 +526,179 @@ def _require_tables() -> Optional[str]:
     if missing:
         return f"Missing environment variables: {', '.join(missing)}"
     return None
+
+
+def _require_user_pool() -> Optional[str]:
+    if not USER_POOL_ID:
+        return "USER_POOL_ID not configured"
+    return None
+
+
+def _normalize_groups(roles: Any) -> List[str]:
+    if roles is None:
+        return []
+    if isinstance(roles, str):
+        roles = [r.strip() for r in roles.split(",") if r.strip()]
+    if not isinstance(roles, list):
+        return []
+    role_map = {
+        ROLE_ADMIN: GROUP_PLATFORM_ADMIN,
+        ROLE_TENANT_ADMIN: GROUP_TENANT_ADMIN,
+        ROLE_FLEET_MANAGER: GROUP_FLEET_MANAGER,
+        ROLE_ANALYST: GROUP_DISPATCHER,
+        ROLE_READ_ONLY: GROUP_READ_ONLY,
+        GROUP_PLATFORM_ADMIN.lower(): GROUP_PLATFORM_ADMIN,
+        GROUP_TENANT_ADMIN.lower(): GROUP_TENANT_ADMIN,
+        GROUP_FLEET_MANAGER.lower(): GROUP_FLEET_MANAGER,
+        GROUP_DISPATCHER.lower(): GROUP_DISPATCHER,
+        GROUP_READ_ONLY.lower(): GROUP_READ_ONLY,
+    }
+    out: List[str] = []
+    for role in roles:
+        if not isinstance(role, str):
+            continue
+        key = role.strip()
+        if not key:
+            continue
+        mapped = role_map.get(key) or role_map.get(key.lower())
+        out.append(mapped or key)
+    return list(dict.fromkeys(out))
+
+
+def _create_cognito_user(tenant_id: str, body: dict, headers: Dict[str, str], role: str, caller_tenant: Optional[str], groups: List[str]) -> dict:
+    err = _require_role(role, [ROLE_ADMIN, ROLE_TENANT_ADMIN])
+    if err:
+        return _resp(403, {"error": err})
+    err = _require_tenant_access(role, caller_tenant, tenant_id)
+    if err:
+        return _resp(403, {"error": err})
+    err = _require_user_pool()
+    if err:
+        return _resp(500, {"error": err})
+
+    email = body.get("email") or body.get("username")
+    if not isinstance(email, str) or not email.strip():
+        return _resp(400, {"error": "email is required"})
+    username = body.get("userId") or email
+    attrs = [
+        {"Name": "email", "Value": email},
+        {"Name": "email_verified", "Value": "true"},
+        {"Name": "custom:tenantId", "Value": tenant_id},
+    ]
+    try:
+        _cognito.admin_create_user(
+            UserPoolId=USER_POOL_ID,
+            Username=username,
+            UserAttributes=attrs,
+            DesiredDeliveryMediums=["EMAIL"],
+        )
+        for group in groups:
+            _cognito.admin_add_user_to_group(UserPoolId=USER_POOL_ID, Username=username, GroupName=group)
+    except Exception as exc:
+        return _resp(500, {"error": f"Failed to create user: {exc}"})
+
+    _audit(
+        entity_type="user",
+        entity_id=str(username),
+        action="create",
+        actor=_get_actor(headers, caller_tenant),
+        reason=body.get("reason"),
+        before=None,
+        after={"tenantId": tenant_id, "email": email, "groups": groups},
+        tenant_id=tenant_id,
+        correlation_id=headers.get("x-correlation-id"),
+    )
+    return _resp(201, {"userId": username, "email": email, "tenantId": tenant_id, "groups": groups})
+
+
+def _list_cognito_users(tenant_id: str, role: str, caller_tenant: Optional[str]) -> dict:
+    err = _require_role(role, [ROLE_ADMIN, ROLE_TENANT_ADMIN])
+    if err:
+        return _resp(403, {"error": err})
+    err = _require_tenant_access(role, caller_tenant, tenant_id)
+    if err:
+        return _resp(403, {"error": err})
+    err = _require_user_pool()
+    if err:
+        return _resp(500, {"error": err})
+    users: List[dict] = []
+    try:
+        resp = _cognito.list_users(UserPoolId=USER_POOL_ID, Filter=f'custom:tenantId = "{tenant_id}"')
+        users = resp.get("Users") or []
+    except Exception as exc:
+        return _resp(500, {"error": f"Failed to list users: {exc}"})
+    return _resp(200, {"items": users})
+
+
+def _set_cognito_user_roles(tenant_id: str, user_id: str, body: dict, headers: Dict[str, str], role: str, caller_tenant: Optional[str]) -> dict:
+    err = _require_role(role, [ROLE_ADMIN, ROLE_TENANT_ADMIN])
+    if err:
+        return _resp(403, {"error": err})
+    err = _require_tenant_access(role, caller_tenant, tenant_id)
+    if err:
+        return _resp(403, {"error": err})
+    err = _require_user_pool()
+    if err:
+        return _resp(500, {"error": err})
+    groups = _normalize_groups(body.get("roles") or body.get("role"))
+    if not groups:
+        return _resp(400, {"error": "roles are required"})
+    managed = {GROUP_PLATFORM_ADMIN, GROUP_TENANT_ADMIN, GROUP_FLEET_MANAGER, GROUP_DISPATCHER, GROUP_READ_ONLY}
+    try:
+        existing = _cognito.admin_list_groups_for_user(UserPoolId=USER_POOL_ID, Username=user_id)
+        for g in existing.get("Groups") or []:
+            name = g.get("GroupName")
+            if name in managed:
+                _cognito.admin_remove_user_from_group(UserPoolId=USER_POOL_ID, Username=user_id, GroupName=name)
+        for group in groups:
+            _cognito.admin_add_user_to_group(UserPoolId=USER_POOL_ID, Username=user_id, GroupName=group)
+    except Exception as exc:
+        return _resp(500, {"error": f"Failed to update roles: {exc}"})
+
+    _audit(
+        entity_type="user",
+        entity_id=str(user_id),
+        action="roles",
+        actor=_get_actor(headers, caller_tenant),
+        reason=body.get("reason"),
+        before=None,
+        after={"tenantId": tenant_id, "groups": groups},
+        tenant_id=tenant_id,
+        correlation_id=headers.get("x-correlation-id"),
+    )
+    return _resp(200, {"userId": user_id, "tenantId": tenant_id, "groups": groups})
+
+
+def _set_cognito_user_status(tenant_id: str, user_id: str, enabled: bool, headers: Dict[str, str], role: str, caller_tenant: Optional[str]) -> dict:
+    err = _require_role(role, [ROLE_ADMIN, ROLE_TENANT_ADMIN])
+    if err:
+        return _resp(403, {"error": err})
+    err = _require_tenant_access(role, caller_tenant, tenant_id)
+    if err:
+        return _resp(403, {"error": err})
+    err = _require_user_pool()
+    if err:
+        return _resp(500, {"error": err})
+    try:
+        if enabled:
+            _cognito.admin_enable_user(UserPoolId=USER_POOL_ID, Username=user_id)
+        else:
+            _cognito.admin_disable_user(UserPoolId=USER_POOL_ID, Username=user_id)
+    except Exception as exc:
+        return _resp(500, {"error": f"Failed to update user status: {exc}"})
+
+    _audit(
+        entity_type="user",
+        entity_id=str(user_id),
+        action="enable" if enabled else "disable",
+        actor=_get_actor(headers, caller_tenant),
+        reason=None,
+        before=None,
+        after={"tenantId": tenant_id, "enabled": enabled},
+        tenant_id=tenant_id,
+        correlation_id=headers.get("x-correlation-id"),
+    )
+    return _resp(200, {"userId": user_id, "tenantId": tenant_id, "enabled": enabled})
 
 
 # -----------------------------
@@ -1594,7 +1807,7 @@ def lambda_handler(event, context):
         return _resp(200, {"ok": True})
 
     headers = _headers(event)
-    role = _get_role(headers)
+    role = _get_role(event, headers)
     caller_tenant = _get_caller_tenant_id(event)
     path = _normalize_path(event)
 
@@ -1607,6 +1820,42 @@ def lambda_handler(event, context):
     body, body_err = _parse_body(event)
     if body_err:
         return _resp(400, {"error": body_err})
+
+    # /platform/tenants
+    if segments[:2] == ["platform", "tenants"]:
+        if len(segments) == 2 and method == "POST":
+            err = _require_body(body)
+            return _resp(400, {"error": err}) if err else _create_tenant(body, headers, role, caller_tenant)
+        if len(segments) == 4 and segments[3] == "admins" and method == "POST":
+            tenant_id = segments[2]
+            err = _require_body(body)
+            groups = _normalize_groups([GROUP_TENANT_ADMIN])
+            if err:
+                return _resp(400, {"error": err})
+            return _create_cognito_user(tenant_id, body, headers, role, caller_tenant, groups)
+
+    # /tenants/{tenantId}/users
+    if len(segments) >= 3 and segments[0] == "tenants" and segments[2] == "users":
+        tenant_id = segments[1]
+        if len(segments) == 3:
+            if method == "POST":
+                err = _require_body(body)
+                if err:
+                    return _resp(400, {"error": err})
+                groups = _normalize_groups(body.get("roles") or body.get("role"))
+                return _create_cognito_user(tenant_id, body, headers, role, caller_tenant, groups)
+            if method == "GET":
+                return _list_cognito_users(tenant_id, role, caller_tenant)
+        if len(segments) == 5 and method == "PUT" and segments[4] == "roles":
+            user_id = segments[3]
+            err = _require_body(body)
+            return _resp(400, {"error": err}) if err else _set_cognito_user_roles(tenant_id, user_id, body, headers, role, caller_tenant)
+        if len(segments) == 5 and method == "POST" and segments[4] == "disable":
+            user_id = segments[3]
+            return _set_cognito_user_status(tenant_id, user_id, False, headers, role, caller_tenant)
+        if len(segments) == 5 and method == "POST" and segments[4] == "enable":
+            user_id = segments[3]
+            return _set_cognito_user_status(tenant_id, user_id, True, headers, role, caller_tenant)
 
     # /tenants
     if segments[:1] == ["tenants"]:

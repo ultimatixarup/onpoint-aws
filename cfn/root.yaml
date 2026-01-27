@@ -18,6 +18,9 @@ Parameters:
   EnableTenantFleetIndex:
     Type: String
     Default: "false"
+  UserPoolId:
+    Type: String
+    Default: ""
   IngressCodeS3Key:
     Type: String
     Default: lambda/ingress.zip
@@ -67,6 +70,7 @@ Resources:
         Env: !Ref Env
         ProjectName: !Ref ProjectName
         EnableTenantFleetIndex: !Ref EnableTenantFleetIndex
+        UserPoolId: !Ref UserPoolId
       TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/tables.yaml
 
   LambdasStack:

@@ -221,14 +221,23 @@ def _sort_key_endtime_desc(x: dict):
 
 
 def _get_caller_tenant_id(event: dict) -> Optional[str]:
-    identity = (event.get("requestContext") or {}).get("identity") or {}
+    ctx = event.get("requestContext") or {}
+    authorizer = ctx.get("authorizer") or {}
+    claims = authorizer.get("claims") or {}
+    if isinstance(claims, dict):
+        tenant_id = claims.get("custom:tenantId") or claims.get("tenantId")
+        if isinstance(tenant_id, str) and tenant_id.strip():
+            return tenant_id.strip()
+    jwt = authorizer.get("jwt") or {}
+    jwt_claims = jwt.get("claims") or {}
+    if isinstance(jwt_claims, dict):
+        tenant_id = jwt_claims.get("custom:tenantId") or jwt_claims.get("tenantId")
+        if isinstance(tenant_id, str) and tenant_id.strip():
+            return tenant_id.strip()
+    identity = ctx.get("identity") or {}
     tenant_id = identity.get("apiKey") or identity.get("apiKeyId")
     if isinstance(tenant_id, str) and tenant_id.strip():
         return tenant_id.strip()
-    headers = event.get("headers") or {}
-    fallback = headers.get("x-tenant-id") or headers.get("X-Tenant-Id")
-    if isinstance(fallback, str) and fallback.strip():
-        return fallback.strip()
     return None
 
 
