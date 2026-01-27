@@ -1,0 +1,195 @@
+flowchart TB
+  Start([Admin logs into OnPoint Admin Portal]) --> Auth{Authenticated via Cognito?}
+  Auth -- No --> Login[Login Screen<br/>Username/Password + MFA] --> Auth
+  Auth -- Yes --> Home[Admin Home / Dashboard]
+
+  Home --> Nav{Choose Admin Area}
+  Nav --> Tenancy[Tenancy Management]
+  Nav --> Users[User Management]
+  Nav --> Access[Access & Roles]
+  Nav --> Audit[Audit & Reports]
+  Nav --> Ops[Operations]
+
+  subgraph TM[Tenancy Management]
+    direction TB
+    Tenancy --> T1{Entity to manage}
+    T1 --> Tenants[Tenants]
+    T1 --> Customers[Customers]
+    T1 --> Fleets[Fleets]
+    T1 --> Vehicles[Vehicles and VIN Registry]
+    T1 --> Drivers[Drivers]
+    T1 --> Assignments[Driver Assignments]
+
+    Tenants --> TenList[Tenants List<br/>Search/Filter/Export]
+    TenList --> TenCreate[Create Tenant]
+    TenList --> TenView[View Tenant]
+    TenView --> TenEdit[Edit Tenant]
+    TenView --> TenDeactivate[Deactivate Tenant]
+    TenCreate --> TenSave{Validate and Save}
+    TenEdit --> TenSave
+    TenDeactivate --> TenConfirm{Confirm Deactivate?}
+    TenConfirm -- Yes --> TenDeactOK[Deactivate and Audit Log]
+    TenConfirm -- No --> TenView
+
+    Customers --> CusList[Customers List<br/>Filter by Tenant]
+    CusList --> CusCreate[Create Customer]
+    CusList --> CusView[View Customer]
+    CusView --> CusEdit[Edit Customer]
+    CusView --> CusDeactivate[Deactivate Customer]
+    CusCreate --> CusSave{Validate and Save}
+    CusEdit --> CusSave
+    CusDeactivate --> CusConfirm{Confirm?}
+    CusConfirm -- Yes --> CusDeactOK[Deactivate and Audit Log]
+    CusConfirm -- No --> CusView
+
+    Fleets --> FleetList[Fleets List<br/>Filter by Tenant/Customer]
+    FleetList --> FleetCreate[Create Fleet]
+    FleetList --> FleetView[View Fleet]
+    FleetView --> FleetEdit[Edit Fleet]
+    FleetView --> FleetDeactivate[Deactivate Fleet]
+    FleetCreate --> FleetSave{Validate and Save}
+    FleetEdit --> FleetSave
+    FleetDeactivate --> FleetConfirm{Confirm?}
+    FleetConfirm -- Yes --> FleetDeactOK[Deactivate and Audit Log]
+    FleetConfirm -- No --> FleetView
+
+    Vehicles --> VinList[VIN List<br/>Filter by Tenant/Customer/Fleet]
+    VinList --> VinRegister[Register VIN and claim ownership]
+    VinList --> VinView[View VIN]
+    VinView --> VinEdit[Edit VIN metadata]
+    VinView --> VinTransfer[Transfer VIN assignment]
+    VinView --> VinUnassign[Unassign from Fleet or Deactivate VIN]
+
+    VinRegister --> VinValidate{VIN valid and not already active?}
+    VinValidate -- No --> VinErr[Show error and remediation]
+    VinValidate -- Yes --> VinAssignCtx[Select Tenant/Customer/Fleet<br/>Set effectiveFrom]
+    VinAssignCtx --> VinSave{Save and Audit Log}
+    VinSave --> VinOK[VIN Active in Registry]
+
+    VinTransfer --> TransferWizard[Transfer Wizard]
+    TransferWizard --> TPickFrom[Confirm current assignment]
+    TransferWizard --> TPickTo[Select new Tenant/Customer/Fleet]
+    TransferWizard --> TEffective[Set effectiveFrom/effectiveTo<br/>Reason code]
+    TransferWizard --> TConfirm{Confirm Transfer?}
+    TConfirm -- Yes --> TExecute[Execute transfer<br/>Close previous range and create new range<br/>Audit Log]
+    TConfirm -- No --> VinView
+    TExecute --> TDone[Transfer Complete]
+
+    VinUnassign --> UnassignConfirm{Confirm unassign or deactivate?}
+    UnassignConfirm -- Yes --> UnassignDo[Update registry range or status<br/>Audit Log]
+    UnassignConfirm -- No --> VinView
+
+    Drivers --> DriverList[Drivers List<br/>Filter by Tenant/Customer/Fleet]
+    DriverList --> DriverCreate[Create Driver]
+    DriverList --> DriverView[View Driver]
+    DriverView --> DriverEdit[Edit Driver]
+    DriverView --> DriverDeactivate[Deactivate Driver]
+    DriverCreate --> DriverSave{Validate and Save}
+    DriverEdit --> DriverSave
+    DriverDeactivate --> DriverConfirm{Confirm?}
+    DriverConfirm -- Yes --> DriverDeactOK[Deactivate and Audit Log]
+    DriverConfirm -- No --> DriverView
+
+    Assignments --> AsnList[Assignments List<br/>Filter by VIN/Driver/Fleet/Time]
+    AsnList --> AsnCreate[Assign Driver to Vehicle]
+    AsnList --> AsnView[View Assignment]
+    AsnView --> AsnEnd[End Assignment]
+    AsnCreate --> AsnPick[Pick Driver and VIN and effectiveFrom]
+    AsnPick --> AsnValidate{No overlap and VIN belongs to tenant?}
+    AsnValidate -- No --> AsnErr[Show conflict and resolution]
+    AsnValidate -- Yes --> AsnSave{Save and Audit Log}
+    AsnEnd --> AsnEndConfirm{Confirm end?}
+    AsnEndConfirm -- Yes --> AsnEndDo[Set effectiveTo and Audit Log]
+    AsnEndConfirm -- No --> AsnView
+  end
+
+  subgraph UM[User Management]
+    direction TB
+    Users --> U1{User domain}
+    U1 --> TenantUsers[Tenant Users]
+    U1 --> AdminUsers[Platform Admins]
+    U1 --> ServiceAccounts[Service Accounts and API Clients]
+
+    TenantUsers --> TUList[User List<br/>Filter by Tenant]
+    TUList --> TUCreate[Create User]
+    TUList --> TUView[View User]
+    TUView --> TUDisable[Disable User]
+    TUView --> TUReset[Reset Password]
+    TUView --> TUMFA[Manage MFA]
+    TUView --> TUClaims[View Claims and Groups]
+
+    TUCreate --> TUDetails[Enter name/email/tenant<br/>Select roles/groups]
+    TUDetails --> TUInvite{Invite or set temp password?}
+    TUInvite -->|Invite| TUEmail[Cognito invite email<br/>Set password at first login]
+    TUInvite -->|Temp password| TUTemp[Generate temp password<br/>Force change at login]
+    TUEmail --> TUCreated[User created and Audit Log]
+    TUTemp --> TUCreated
+
+    TUReset --> TUResetConfirm{Confirm reset?}
+    TUResetConfirm -- Yes --> TUResetDo[Trigger Cognito reset flow<br/>Audit Log]
+    TUResetConfirm -- No --> TUView
+
+    TUDisable --> TUDisableConfirm{Confirm disable?}
+    TUDisableConfirm -- Yes --> TUDisableDo[Disable in Cognito<br/>Invalidate sessions<br/>Audit Log]
+    TUDisableConfirm -- No --> TUView
+
+    TUMFA --> MFAAction{Action}
+    MFAAction --> MFAReset[Reset MFA devices]
+    MFAAction --> MFARequire[Require MFA for user]
+    MFAAction --> MFAOptional[Make MFA optional]
+    MFAReset --> MFADone[Update Cognito settings and Audit Log]
+    MFARequire --> MFADone
+    MFAOptional --> MFADone
+
+    ServiceAccounts --> SAList[API Clients List]
+    SAList --> SACreate[Create API Client]
+    SACreate --> SAType{Auth type}
+    SAType -->|API Key only| SAKey[Issue API Key and attach tenant scope]
+    SAType -->|Cognito client creds| SAClient[Create Cognito App Client<br/>Client secret]
+    SAKey --> SADone[Client created and Audit Log]
+    SAClient --> SADone
+  end
+
+  subgraph RBAC[Access and Roles]
+    direction TB
+    Access --> R1{Manage}
+    R1 --> Roles[Roles]
+    R1 --> Policies[Policies and Permissions]
+    R1 --> Groups[Cognito Groups and Mappings]
+
+    Roles --> RoleList[Role List]
+    RoleList --> RoleCreate[Create Role]
+    RoleList --> RoleView[View Role]
+    RoleView --> RoleEdit[Edit Role]
+    RoleCreate --> RoleSave{Validate and Save}
+    RoleEdit --> RoleSave
+    RoleSave --> RoleOK[Role saved and Audit Log]
+
+    Groups --> GroupMap[Map roles to Cognito groups<br/>Set claim mappings]
+    GroupMap --> GroupSave[Save mappings and Audit Log]
+  end
+
+  subgraph AR[Audit and Reports]
+    direction TB
+    Audit --> AuditDash[Audit Dashboard]
+    AuditDash --> AuditSearch[Search by actor, entity, tenant, time]
+    AuditDash --> AuditDetail[View Audit Record]
+    AuditDash --> Exports[Export CSV or JSON]
+  end
+
+  subgraph OPS[Operations]
+    direction TB
+    Ops --> Health[System Health]
+    Ops --> Jobs[Reprocessing and Backfills]
+    Ops --> Limits[Rate Limits and Quotas]
+
+    Jobs --> JobCreate[Create Reprocess Job<br/>VIN range or tripId or time window]
+    JobCreate --> JobConfirm{Confirm?}
+    JobConfirm -- Yes --> JobRun[Run job and track status]
+    JobConfirm -- No --> Jobs
+  end
+
+  Tenancy -.-> AuditDash
+  Users -.-> AuditDash
+  Access -.-> AuditDash
+  Vehicles -.-> Jobs

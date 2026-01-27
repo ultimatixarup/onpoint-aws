@@ -291,4 +291,10 @@ No servers. Pay-per-use.
 
 # 13. Tenancy Model
 
-![Hierarchical diagram showing OnPoint tenancy structure with Platform Admin at top level, branching down to multiple Tenants, each containing Customers, which further branch into Fleets, and finally individual Vehicles identified by VIN. Solid lines indicate direct ownership relationships, while dotted lines show optional connections. The diagram uses a light yellow background with blue text boxes and connectors, presenting a clear, organized view of the multi-level tenant isolation model described in the documentation.](tenancy.png)
+![Hierarchical diagram showing OnPoint tenancy structure with Platform Admin at top level, branching down to multiple Tenants, each containing Customers, which further branch into Fleets, and finally individual Vehicles identified by VIN. Solid lines indicate direct ownership relationships, while dotted lines show optional connections. The diagram uses a light yellow background with blue text boxes and connectors, presenting a clear, organized view of the multi-level tenant isolation model described in the documentation.](high-level.png)
+![](detail1.png)
+![](detail2.png)
+![](detail4.png)
+![](detail5.png)
+![](detail6.png)
+![](detail7.png)
