@@ -1,0 +1,89 @@
+{
+  "info": {
+    "name": "OnPoint Tenancy & User Management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection for testing OnPoint tenancy and user management APIs. Set the {{baseUrl}} and {{jwt}} variables."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://ljxtyvng28.execute-api.us-east-1.amazonaws.com/dev" },
+    { "key": "jwt", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "List Tenants",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" }
+        ],
+        "url": { "raw": "{{baseUrl}}/tenants", "host": [ "{{baseUrl}}" ], "path": [ "tenants" ] }
+      }
+    },
+    {
+      "name": "Create Tenant",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test Tenant\",\n  \"contact\": \"admin@example.com\"\n}" },
+        "url": { "raw": "{{baseUrl}}/tenants", "host": [ "{{baseUrl}}" ], "path": [ "tenants" ] }
+      }
+    },
+    {
+      "name": "List Users (by Tenant)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" }
+        ],
+        "url": { "raw": "{{baseUrl}}/tenants/{{tenantId}}/users", "host": [ "{{baseUrl}}" ], "path": [ "tenants", "{{tenantId}}", "users" ] }
+      }
+    },
+    {
+      "name": "Create User (by Tenant)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"username\": \"user1@example.com\",\n  \"email\": \"user1@example.com\",\n  \"roles\": [\"TenantAdmin\"]\n}" },
+        "url": { "raw": "{{baseUrl}}/tenants/{{tenantId}}/users", "host": [ "{{baseUrl}}" ], "path": [ "tenants", "{{tenantId}}", "users" ] }
+      }
+    },
+    {
+      "name": "Disable User",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" }
+        ],
+        "url": { "raw": "{{baseUrl}}/tenants/{{tenantId}}/users/{{userId}}/disable", "host": [ "{{baseUrl}}" ], "path": [ "tenants", "{{tenantId}}", "users", "{{userId}}", "disable" ] }
+      }
+    },
+    {
+      "name": "Enable User",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" }
+        ],
+        "url": { "raw": "{{baseUrl}}/tenants/{{tenantId}}/users/{{userId}}/enable", "host": [ "{{baseUrl}}" ], "path": [ "tenants", "{{tenantId}}", "users", "{{userId}}", "enable" ] }
+      }
+    },
+    {
+      "name": "Set User Roles",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"roles\": [\"TenantAdmin\", \"FleetManager\"]\n}" },
+        "url": { "raw": "{{baseUrl}}/tenants/{{tenantId}}/users/{{userId}}/roles", "host": [ "{{baseUrl}}" ], "path": [ "tenants", "{{tenantId}}", "users", "{{userId}}", "roles" ] }
+      }
+    }
+  ]
+}
