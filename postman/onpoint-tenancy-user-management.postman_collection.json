@@ -4,10 +4,6 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": "Collection for testing OnPoint tenancy and user management APIs. Set the {{baseUrl}} and {{jwt}} variables."
   },
-  "variable": [
-    { "key": "baseUrl", "value": "https://ljxtyvng28.execute-api.us-east-1.amazonaws.com/dev" },
-    { "key": "jwt", "value": "" }
-  ],
   "item": [
     {
       "name": "List Tenants",

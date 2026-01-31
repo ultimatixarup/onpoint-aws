@@ -1,0 +1,327 @@
+{
+  "info": {
+    "name": "OnPoint - Fleet Portfolio Setup (MCP Engineering)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Creates a complete fleet portfolio for MCP Engineering. Uses shared environment variables.\n\nPrereqs:\n- Select the OnPoint Dev environment.\n- Ensure fleetTenancyApiKey and idToken are populated (run the JWT auth collection first).\n\nSequence:\n1) Generate VINs\n2) Create tenant\n3) Create tenant admin user\n4) Create fleet manager user\n5) Create customer\n6) Create fleet\n7) Create vehicles (5)\n8) Assign VINs (5)"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const uuid = pm.variables.replaceIn('{{$guid}}');",
+          "pm.environment.set('idempotencyKey', uuid);",
+          "pm.environment.set('correlationId', uuid);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1) Generate VINs",
+      "description": "Generates 5 random VINs and stores them in environment variables vin1..vin5.",
+      "request": {
+        "method": "GET",
+        "url": "https://postman-echo.com/get"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function randomVin() {",
+              "  const chars = 'ABCDEFGHJKLMNPRSTUVWXYZ0123456789';",
+              "  let vin = '';",
+              "  for (let i = 0; i < 17; i++) {",
+              "    vin += chars[Math.floor(Math.random() * chars.length)];",
+              "  }",
+              "  return vin;",
+              "}",
+              "pm.environment.set('vin1', randomVin());",
+              "pm.environment.set('vin2', randomVin());",
+              "pm.environment.set('vin3', randomVin());",
+              "pm.environment.set('vin4', randomVin());",
+              "pm.environment.set('vin5', randomVin());"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2) Create Tenant (MCP Engineering)",
+      "description": "Creates tenant {{tenantId}} with name {{tenantName}}.",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+          { "key": "x-role", "value": "{{roleAdmin}}" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+          { "key": "x-correlation-id", "value": "{{correlationId}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{fleetTenancyBaseUrl}}/tenants",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"name\": \"{{tenantName}}\",\n  \"config\": {\n    \"retentionDays\": 90\n  },\n  \"reason\": \"initial setup for MCP Engineering\"\n}"
+        }
+      }
+    },
+    {
+      "name": "3) Create Tenant Admin User (Carlos Pere)",
+      "description": "Creates tenant admin user under {{tenantId}} using JWT.",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{idToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/users",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{tenantAdminEmail}}\",\n  \"email\": \"{{tenantAdminEmail}}\",\n  \"roles\": [\"TenantAdmin\"],\n  \"displayName\": \"{{tenantAdminName}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "4) Create Fleet Manager User (Juan Rodriguez)",
+      "description": "Creates fleet manager user under {{tenantId}} using JWT.",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{idToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/users",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{fleetManagerEmail}}\",\n  \"email\": \"{{fleetManagerEmail}}\",\n  \"roles\": [\"FleetManager\"],\n  \"displayName\": \"{{fleetManagerName}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "5) Create Customer",
+      "description": "Creates customer {{customerId}} for {{tenantId}}.",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+          { "key": "x-tenant-id", "value": "{{tenantId}}" },
+          { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{fleetTenancyBaseUrl}}/customers",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"billingProfile\": {\"plan\": \"gold\"},\n  \"reason\": \"new customer for MCP Engineering\"\n}"
+        }
+      }
+    },
+    {
+      "name": "6) Create Fleet (MCP FLEET)",
+      "description": "Creates fleet {{fleetId}} under {{customerId}}.",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+          { "key": "x-tenant-id", "value": "{{tenantId}}" },
+          { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{fleetTenancyBaseUrl}}/fleets",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fleetId\": \"{{fleetId}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"policies\": {\"speedLimitMph\": 70},\n  \"reason\": \"new fleet: {{fleetName}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "7) Create Vehicle 1",
+      "description": "Creates Toyota pickup vehicle with VIN {{vin1}}.",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+          { "key": "x-tenant-id", "value": "{{tenantId}}" },
+          { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{fleetTenancyBaseUrl}}/vehicles",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vin\": \"{{vin1}}\",\n  \"make\": \"Toyota\",\n  \"model\": \"Pickup\",\n  \"year\": 2022,\n  \"reason\": \"new vehicle\"\n}"
+        }
+      }
+    },
+    {
+      "name": "8) Create Vehicle 2",
+      "description": "Creates Toyota pickup vehicle with VIN {{vin2}}.",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+          { "key": "x-tenant-id", "value": "{{tenantId}}" },
+          { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{fleetTenancyBaseUrl}}/vehicles",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vin\": \"{{vin2}}\",\n  \"make\": \"Toyota\",\n  \"model\": \"Pickup\",\n  \"year\": 2022,\n  \"reason\": \"new vehicle\"\n}"
+        }
+      }
+    },
+    {
+      "name": "9) Create Vehicle 3",
+      "description": "Creates Toyota pickup vehicle with VIN {{vin3}}.",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+          { "key": "x-tenant-id", "value": "{{tenantId}}" },
+          { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{fleetTenancyBaseUrl}}/vehicles",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vin\": \"{{vin3}}\",\n  \"make\": \"Toyota\",\n  \"model\": \"Pickup\",\n  \"year\": 2022,\n  \"reason\": \"new vehicle\"\n}"
+        }
+      }
+    },
+    {
+      "name": "10) Create Vehicle 4",
+      "description": "Creates Toyota pickup vehicle with VIN {{vin4}}.",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+          { "key": "x-tenant-id", "value": "{{tenantId}}" },
+          { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{fleetTenancyBaseUrl}}/vehicles",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vin\": \"{{vin4}}\",\n  \"make\": \"Toyota\",\n  \"model\": \"Pickup\",\n  \"year\": 2022,\n  \"reason\": \"new vehicle\"\n}"
+        }
+      }
+    },
+    {
+      "name": "11) Create Vehicle 5",
+      "description": "Creates Toyota pickup vehicle with VIN {{vin5}}.",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+          { "key": "x-tenant-id", "value": "{{tenantId}}" },
+          { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{fleetTenancyBaseUrl}}/vehicles",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vin\": \"{{vin5}}\",\n  \"make\": \"Toyota\",\n  \"model\": \"Pickup\",\n  \"year\": 2022,\n  \"reason\": \"new vehicle\"\n}"
+        }
+      }
+    },
+    {
+      "name": "12) Assign VIN 1",
+      "description": "Assigns VIN {{vin1}} to {{tenantId}}/{{fleetId}} in registry.",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+          { "key": "x-role", "value": "{{roleAdmin}}" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{fleetTenancyBaseUrl}}/vin-registry/assign",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vin\": \"{{vin1}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"fleetId\": \"{{fleetId}}\",\n  \"effectiveFrom\": \"2026-01-01T00:00:00Z\",\n  \"reason\": \"initial assignment\"\n}"
+        }
+      }
+    },
+    {
+      "name": "13) Assign VIN 2",
+      "description": "Assigns VIN {{vin2}} to {{tenantId}}/{{fleetId}} in registry.",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+          { "key": "x-role", "value": "{{roleAdmin}}" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{fleetTenancyBaseUrl}}/vin-registry/assign",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vin\": \"{{vin2}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"fleetId\": \"{{fleetId}}\",\n  \"effectiveFrom\": \"2026-01-01T00:00:00Z\",\n  \"reason\": \"initial assignment\"\n}"
+        }
+      }
+    },
+    {
+      "name": "14) Assign VIN 3",
+      "description": "Assigns VIN {{vin3}} to {{tenantId}}/{{fleetId}} in registry.",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+          { "key": "x-role", "value": "{{roleAdmin}}" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{fleetTenancyBaseUrl}}/vin-registry/assign",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vin\": \"{{vin3}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"fleetId\": \"{{fleetId}}\",\n  \"effectiveFrom\": \"2026-01-01T00:00:00Z\",\n  \"reason\": \"initial assignment\"\n}"
+        }
+      }
+    },
+    {
+      "name": "15) Assign VIN 4",
+      "description": "Assigns VIN {{vin4}} to {{tenantId}}/{{fleetId}} in registry.",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+          { "key": "x-role", "value": "{{roleAdmin}}" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{fleetTenancyBaseUrl}}/vin-registry/assign",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vin\": \"{{vin4}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"fleetId\": \"{{fleetId}}\",\n  \"effectiveFrom\": \"2026-01-01T00:00:00Z\",\n  \"reason\": \"initial assignment\"\n}"
+        }
+      }
+    },
+    {
+      "name": "16) Assign VIN 5",
+      "description": "Assigns VIN {{vin5}} to {{tenantId}}/{{fleetId}} in registry.",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+          { "key": "x-role", "value": "{{roleAdmin}}" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{fleetTenancyBaseUrl}}/vin-registry/assign",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vin\": \"{{vin5}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"fleetId\": \"{{fleetId}}\",\n  \"effectiveFrom\": \"2026-01-01T00:00:00Z\",\n  \"reason\": \"initial assignment\"\n}"
+        }
+      }
+    }
+  ]
+}

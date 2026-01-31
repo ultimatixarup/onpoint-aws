@@ -46,6 +46,9 @@ Parameters:
     Type: String
     Default: lambda/onpoint_common_layer.zip
 
+Conditions:
+  UseProvidedUserPoolId: !Not [!Equals [!Ref UserPoolId, ""]]
+
 Resources:
   StreamsStack:
     Type: AWS::CloudFormation::Stack
@@ -70,8 +73,15 @@ Resources:
         Env: !Ref Env
         ProjectName: !Ref ProjectName
         EnableTenantFleetIndex: !Ref EnableTenantFleetIndex
-        UserPoolId: !Ref UserPoolId
       TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/tables.yaml
+
+  CognitoStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        Env: !Ref Env
+        ProjectName: !Ref ProjectName
+      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/cognito.yaml
 
   LambdasStack:
     Type: AWS::CloudFormation::Stack
@@ -102,6 +112,7 @@ Resources:
         PslCacheTableName: !GetAtt TablesStack.Outputs.PslCacheTableName
         OverspeedDedupeTableName: !GetAtt TablesStack.Outputs.OverspeedDedupeTableName
         EnableTenantFleetIndex: !Ref EnableTenantFleetIndex
+        UserPoolId: !If [UseProvidedUserPoolId, !Ref UserPoolId, !GetAtt CognitoStack.Outputs.UserPoolId]
         IngressCodeS3Bucket: !Ref TemplateBucket
         IngressCodeS3Key: !Ref IngressCodeS3Key
         TelematicsProcessorCodeS3Bucket: !Ref TemplateBucket
@@ -177,3 +188,7 @@ Outputs:
   TemplatePrefixUsed:
     Description: TemplatePrefix used for nested stack TemplateURL paths
     Value: !Ref TemplatePrefix
+  UserPoolId:
+    Value: !If [UseProvidedUserPoolId, !Ref UserPoolId, !GetAtt CognitoStack.Outputs.UserPoolId]
+  UserPoolClientId:
+    Value: !GetAtt CognitoStack.Outputs.UserPoolClientId

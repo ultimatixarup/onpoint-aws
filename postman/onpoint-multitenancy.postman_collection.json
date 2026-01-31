@@ -5,68 +5,6 @@
     "description": "Multi-tenancy validation for Trip Summary APIs (VIN registry + tenant isolation)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "https://{{apiId}}.execute-api.{{region}}.amazonaws.com/{{stage}}",
-      "type": "string"
-    },
-    {
-      "key": "apiId",
-      "value": "i4mtx1tqw4",
-      "type": "string"
-    },
-    {
-      "key": "region",
-      "value": "us-east-1",
-      "type": "string"
-    },
-    {
-      "key": "stage",
-      "value": "dev",
-      "type": "string"
-    },
-    {
-      "key": "apiKey",
-      "value": "<API_KEY>",
-      "type": "string"
-    },
-    {
-      "key": "tenantId",
-      "value": "tenant-1",
-      "type": "string"
-    },
-    {
-      "key": "tenantIdForbidden",
-      "value": "tenant-2",
-      "type": "string"
-    },
-    {
-      "key": "vinAllowed",
-      "value": "VIN_ALLOWED",
-      "type": "string"
-    },
-    {
-      "key": "vinForbidden",
-      "value": "VIN_FORBIDDEN",
-      "type": "string"
-    },
-    {
-      "key": "tripId",
-      "value": "TRIP_ID",
-      "type": "string"
-    },
-    {
-      "key": "limit",
-      "value": "100",
-      "type": "string"
-    },
-    {
-      "key": "nextToken",
-      "value": "",
-      "type": "string"
-    }
-  ],
   "event": [
     {
       "listen": "prerequest",

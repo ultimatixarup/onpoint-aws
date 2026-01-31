@@ -4,18 +4,6 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": "Fleet/tenant management APIs per requirements. Set baseUrl and apiKey variables before running."
   },
-  "variable": [
-    { "key": "baseUrl", "value": "https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/dev" },
-    { "key": "apiKey", "value": "YOUR_API_KEY" },
-    { "key": "tenantId", "value": "tenant-1" },
-    { "key": "customerId", "value": "customer-1" },
-    { "key": "fleetId", "value": "fleet-1" },
-    { "key": "vin", "value": "VIN123" },
-    { "key": "driverId", "value": "driver-1" },
-    { "key": "roleAdmin", "value": "admin" },
-    { "key": "roleTenantAdmin", "value": "tenant-admin" },
-    { "key": "roleFleetManager", "value": "fleet-manager" }
-  ],
   "event": [
     {
       "listen": "prerequest",

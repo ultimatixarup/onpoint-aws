@@ -4,11 +4,6 @@
     "_postman_id": "a3b7a2c2-2c5b-4b8a-8c0f-0b2a1a2f9b3d",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "variable": [
-    { "key": "baseUrl", "value": "https://agpzpas961.execute-api.us-east-1.amazonaws.com/v1" },
-    { "key": "apiKey", "value": "NFNdM4PQTz8jKeNZQMF6o8gNXKdNnTpO1Ljuj52T" },
-    { "key": "providerId", "value": "test-provider" }
-  ],
   "event": [
     {
       "listen": "prerequest",

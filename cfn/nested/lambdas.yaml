@@ -38,6 +38,9 @@ Parameters:
   FleetTenancyApiHandler:
     Type: String
     Default: app.lambda_handler
+  UserPoolId:
+    Type: String
+    Default: ""
   IngressCodeS3Bucket:
     Type: String
     Default: ""
@@ -229,9 +232,6 @@ Parameters:
   EnableTenantFleetIndex:
     Type: String
     Default: "false"
-  UserPoolId:
-    Type: String
-    Default: ""
 
 Conditions:
   HasIngressCode: !And [!Not [!Equals [!Ref IngressCodeS3Bucket, ""]], !Not [!Equals [!Ref IngressCodeS3Key, ""]]]

@@ -1,0 +1,122 @@
+{
+  "info": {
+    "name": "OnPoint - Auth (JWT)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Cognito auth flows to generate and manage JWTs. Set username/password and clientId variables."
+  },
+  "item": [
+    {
+      "name": "Initiate Auth (USER_PASSWORD_AUTH)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/x-amz-json-1.1" },
+          { "key": "X-Amz-Target", "value": "AWSCognitoIdentityProviderService.InitiateAuth" }
+        ],
+        "url": "https://cognito-idp.{{region}}.amazonaws.com/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"AuthFlow\": \"USER_PASSWORD_AUTH\",\n  \"ClientId\": \"{{clientId}}\",\n  \"AuthParameters\": {\n    \"USERNAME\": \"{{username}}\",\n    \"PASSWORD\": \"{{password}}\"\n  }\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.Session) {",
+              "  pm.environment.set('authSession', json.Session);",
+              "}",
+              "if (json.AuthenticationResult) {",
+              "  pm.environment.set('idToken', json.AuthenticationResult.IdToken || '');",
+              "  pm.environment.set('accessToken', json.AuthenticationResult.AccessToken || '');",
+              "  pm.environment.set('refreshToken', json.AuthenticationResult.RefreshToken || '');",
+              "}",
+              "pm.test('Got IdToken', () => !!pm.environment.get('idToken'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Respond to NEW_PASSWORD_REQUIRED",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/x-amz-json-1.1" },
+          { "key": "X-Amz-Target", "value": "AWSCognitoIdentityProviderService.RespondToAuthChallenge" }
+        ],
+        "url": "https://cognito-idp.{{region}}.amazonaws.com/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ClientId\": \"{{clientId}}\",\n  \"ChallengeName\": \"NEW_PASSWORD_REQUIRED\",\n  \"Session\": \"{{authSession}}\",\n  \"ChallengeResponses\": {\n    \"USERNAME\": \"{{username}}\",\n    \"NEW_PASSWORD\": \"{{newPassword}}\"\n  }\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.AuthenticationResult) {",
+              "  pm.environment.set('idToken', json.AuthenticationResult.IdToken || '');",
+              "  pm.environment.set('accessToken', json.AuthenticationResult.AccessToken || '');",
+              "  pm.environment.set('refreshToken', json.AuthenticationResult.RefreshToken || '');",
+              "}",
+              "pm.test('Got IdToken', () => !!pm.environment.get('idToken'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Refresh Tokens (REFRESH_TOKEN_AUTH)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/x-amz-json-1.1" },
+          { "key": "X-Amz-Target", "value": "AWSCognitoIdentityProviderService.InitiateAuth" }
+        ],
+        "url": "https://cognito-idp.{{region}}.amazonaws.com/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"AuthFlow\": \"REFRESH_TOKEN_AUTH\",\n  \"ClientId\": \"{{clientId}}\",\n  \"AuthParameters\": {\n    \"REFRESH_TOKEN\": \"{{refreshToken}}\"\n  }\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.AuthenticationResult) {",
+              "  pm.collectionVariables.set('idToken', json.AuthenticationResult.IdToken || '');",
+              "  pm.collectionVariables.set('accessToken', json.AuthenticationResult.AccessToken || '');",
+              "}",
+              "pm.test('Got IdToken', () => !!pm.collectionVariables.get('idToken'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sign Out (Global)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/x-amz-json-1.1" },
+          { "key": "X-Amz-Target", "value": "AWSCognitoIdentityProviderService.GlobalSignOut" }
+        ],
+        "url": "https://cognito-idp.{{region}}.amazonaws.com/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"AccessToken\": \"{{accessToken}}\"\n}"
+        }
+      }
+    }
+  ]
+}

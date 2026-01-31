@@ -5,68 +5,6 @@
     "description": "Trip Summary REST API - Query trip summaries and details",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "https://{{apiId}}.execute-api.{{region}}.amazonaws.com/{{stage}}",
-      "type": "string"
-    },
-    {
-      "key": "apiKey",
-      "value": "9S1kMEWtDSakTNZrhnWwxWTAfwZidnZ9BpiBpAJg",
-      "type": "string"
-    },
-    {
-      "key": "tenantId",
-      "value": "tenant-1",
-      "type": "string"
-    },
-    {
-      "key": "testVin",
-      "value": "TESTVIN123",
-      "type": "string"
-    },
-    {
-      "key": "testTripId",
-      "value": "TRIP123",
-      "type": "string"
-    },
-    {
-      "key": "apiId",
-      "value": "i4mtx1tqw4",
-      "type": "string"
-    },
-    {
-      "key": "region",
-      "value": "us-east-1",
-      "type": "string"
-    },
-    {
-      "key": "stage",
-      "value": "dev",
-      "type": "string"
-    },
-    {
-      "key": "vin",
-      "value": "TESTVIN123",
-      "type": "string"
-    },
-    {
-      "key": "tripId",
-      "value": "TRIP123",
-      "type": "string"
-    },
-    {
-      "key": "limit",
-      "value": "100",
-      "type": "string"
-    },
-    {
-      "key": "nextToken",
-      "value": "",
-      "type": "string"
-    }
-  ],
   "event": [
     {
       "listen": "prerequest",
