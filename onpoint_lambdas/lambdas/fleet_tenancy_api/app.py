@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 import boto3
+from botocore.exceptions import ClientError
 from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
 
 try:
@@ -40,6 +41,7 @@ DRIVER_ASSIGNMENTS_TABLE = os.environ.get("DRIVER_ASSIGNMENTS_TABLE")
 AUDIT_LOG_TABLE = os.environ.get("AUDIT_LOG_TABLE")
 IDEMPOTENCY_TABLE = os.environ.get("IDEMPOTENCY_TABLE")
 USER_POOL_ID = os.environ.get("USER_POOL_ID")
+USERS_TABLE = os.environ.get("USERS_TABLE")
 
 VIN_TENANT_INDEX = os.environ.get("VIN_TENANT_INDEX", "TenantIndex")
 VIN_TENANT_FLEET_INDEX = os.environ.get("VIN_TENANT_FLEET_INDEX")
@@ -534,6 +536,50 @@ def _require_user_pool() -> Optional[str]:
     return None
 
 
+def _get_users_table() -> Optional[str]:
+    # Users are stored in DynamoDB as the system of record. Prefer USERS_TABLE,
+    # but fall back to TENANTS_TABLE to preserve existing deployments.
+    return USERS_TABLE or TENANTS_TABLE
+
+
+def _put_user_record(
+    *,
+    tenant_id: str,
+    username: str,
+    email: str,
+    groups: List[str],
+) -> Optional[str]:
+    table = _get_users_table()
+    if not table:
+        return "USERS_TABLE not configured"
+    now = utc_now_iso()
+    item = {
+        "PK": f"TENANT#{tenant_id}",
+        "SK": f"USER#{username}",
+        "tenantId": tenant_id,
+        "userId": username,
+        "email": email,
+        "groups": groups,
+        "createdAt": now,
+        "updatedAt": now,
+        "entityType": "USER",
+    }
+    try:
+        _ddb_put(table, item, condition="attribute_not_exists(SK)")
+    except Exception as exc:
+        return f"Failed to persist user record: {exc}"
+    return None
+
+
+def _safe_admin_get_user(username: str) -> Optional[dict]:
+    if not USER_POOL_ID:
+        return None
+    try:
+        return _cognito.admin_get_user(UserPoolId=USER_POOL_ID, Username=username)
+    except Exception:
+        return None
+
+
 def _normalize_groups(roles: Any) -> List[str]:
     if roles is None:
         return []
@@ -574,7 +620,7 @@ def _create_cognito_user(tenant_id: str, body: dict, headers: Dict[str, str], ro
         return _resp(403, {"error": err})
     err = _require_user_pool()
     if err:
-        return _resp(500, {"error": err})
+        return _resp(502, {"error": err})
 
     email = body.get("email") or body.get("username")
     if not isinstance(email, str) or not email.strip():
@@ -594,8 +640,19 @@ def _create_cognito_user(tenant_id: str, body: dict, headers: Dict[str, str], ro
         )
         for group in groups:
             _cognito.admin_add_user_to_group(UserPoolId=USER_POOL_ID, Username=username, GroupName=group)
+    except ClientError as exc:
+        code = (exc.response.get("Error") or {}).get("Code", "")
+        if code in ("InvalidParameterException", "InvalidPasswordException"):
+            return _resp(400, {"error": f"Invalid request: {code}"})
+        if code == "UsernameExistsException":
+            return _resp(409, {"error": "User already exists"})
+        return _resp(502, {"error": f"Failed to create user: {code}"})
     except Exception as exc:
-        return _resp(500, {"error": f"Failed to create user: {exc}"})
+        return _resp(502, {"error": f"Failed to create user: {exc}"})
+
+    persist_err = _put_user_record(tenant_id=tenant_id, username=username, email=email, groups=groups)
+    if persist_err:
+        return _resp(502, {"error": persist_err})
 
     _audit(
         entity_type="user",
@@ -612,22 +669,48 @@ def _create_cognito_user(tenant_id: str, body: dict, headers: Dict[str, str], ro
 
 
 def _list_cognito_users(tenant_id: str, role: str, caller_tenant: Optional[str]) -> dict:
+    # NOTE: Cognito ListUsers does NOT support filtering on custom attributes.
+    # Users are stored in DynamoDB as the system of record for tenant mapping.
+    if not isinstance(tenant_id, str) or not tenant_id.strip():
+        return _resp(400, {"error": "tenantId is required"})
     err = _require_role(role, [ROLE_ADMIN, ROLE_TENANT_ADMIN])
     if err:
         return _resp(403, {"error": err})
     err = _require_tenant_access(role, caller_tenant, tenant_id)
     if err:
         return _resp(403, {"error": err})
-    err = _require_user_pool()
-    if err:
-        return _resp(500, {"error": err})
-    users: List[dict] = []
+
+    table = _get_users_table()
+    if not table:
+        return _resp(502, {"error": "USERS_TABLE not configured"})
+
     try:
-        resp = _cognito.list_users(UserPoolId=USER_POOL_ID, Filter=f'custom:tenantId = "{tenant_id}"')
-        users = resp.get("Users") or []
+        params = {
+            "TableName": table,
+            "KeyConditionExpression": "PK = :pk AND begins_with(SK, :sk)",
+            "ExpressionAttributeValues": {
+                ":pk": {"S": f"TENANT#{tenant_id}"},
+                ":sk": {"S": "USER#"},
+            },
+        }
+        items = _ddb_query(params)
     except Exception as exc:
-        return _resp(500, {"error": f"Failed to list users: {exc}"})
-    return _resp(200, {"items": users})
+        return _resp(502, {"error": f"Failed to list users: {exc}"})
+
+    # Best-effort enrichment from Cognito (optional).
+    enriched: List[dict] = []
+    for it in items:
+        username = it.get("userId") or it.get("email")
+        status = None
+        if isinstance(username, str):
+            cognito_user = _safe_admin_get_user(username)
+            if cognito_user:
+                status = cognito_user.get("UserStatus")
+        if status:
+            it = {**it, "cognitoStatus": status}
+        enriched.append(it)
+
+    return _resp(200, {"items": enriched})
 
 
 def _set_cognito_user_roles(tenant_id: str, user_id: str, body: dict, headers: Dict[str, str], role: str, caller_tenant: Optional[str]) -> dict:

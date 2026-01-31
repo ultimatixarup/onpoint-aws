@@ -1,0 +1,474 @@
+openapi: 3.0.3
+info:
+  title: OnPoint Fleet Tenancy API
+  version: 1.0.0
+  description: Fleet/tenant management API.
+servers:
+  - url: https://{apiId}.execute-api.{region}.amazonaws.com/{stage}
+    variables:
+      apiId:
+        default: ayephswoa1
+      region:
+        default: us-east-1
+      stage:
+        default: dev
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+paths:
+  /tenants:
+    post:
+      summary: Create tenant
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tenantId:
+                  type: string
+                name:
+                  type: string
+                config:
+                  type: object
+                reason:
+                  type: string
+      responses:
+        '201': { description: Created }
+    get:
+      summary: List tenants
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        '200': { description: OK }
+  /tenants/{tenantId}:
+    get:
+      summary: Get tenant
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: tenantId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    patch:
+      summary: Patch tenant
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: tenantId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200': { description: OK }
+  /tenants/{tenantId}:suspend:
+    post:
+      summary: Suspend tenant
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: tenantId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /tenants/{tenantId}:activate:
+    post:
+      summary: Activate tenant
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: tenantId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /customers:
+    post:
+      summary: Create customer
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201': { description: Created }
+    get:
+      summary: List customers
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: tenantId
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /customers/{customerId}:
+    get:
+      summary: Get customer
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    patch:
+      summary: Patch customer
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: OK }
+  /customers/{customerId}:deactivate:
+    post:
+      summary: Deactivate customer
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /fleets:
+    post:
+      summary: Create fleet
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '201': { description: Created }
+    get:
+      summary: List fleets
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: tenantId
+          schema: { type: string }
+        - in: query
+          name: customerId
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /fleets/{fleetId}:
+    get:
+      summary: Get fleet
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: fleetId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    patch:
+      summary: Patch fleet
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: fleetId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: OK }
+  /fleets/{fleetId}:archive:
+    post:
+      summary: Archive fleet
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: fleetId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /vehicles:
+    post:
+      summary: Create vehicle
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '201': { description: Created }
+    get:
+      summary: List vehicles
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: tenantId
+          schema: { type: string }
+        - in: query
+          name: fleetId
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /vehicles/{vin}:
+    get:
+      summary: Get vehicle
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: vin
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    patch:
+      summary: Patch vehicle
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: vin
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: OK }
+  /vin-registry:
+    get:
+      summary: List VIN registry
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: tenantId
+          schema: { type: string }
+        - in: query
+          name: active
+          schema: { type: boolean }
+      responses:
+        '200': { description: OK }
+  /vin-registry/assign:
+    post:
+      summary: Assign VIN
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: OK }
+  /vin-registry/transfer:
+    post:
+      summary: Transfer VIN
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: OK }
+  /vin-registry/{vin}:
+    get:
+      summary: VIN registry history
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: vin
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /drivers:
+    post:
+      summary: Create driver
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '201': { description: Created }
+    get:
+      summary: List drivers
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: tenantId
+          schema: { type: string }
+        - in: query
+          name: fleetId
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /drivers/{driverId}:
+    get:
+      summary: Get driver
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: driverId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    patch:
+      summary: Patch driver
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: driverId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: OK }
+  /drivers/{driverId}:deactivate:
+    post:
+      summary: Deactivate driver
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: driverId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /drivers/{driverId}/assignments:
+    post:
+      summary: Create driver assignment
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: driverId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '201': { description: Created }
+    get:
+      summary: List driver assignments
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: driverId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /vehicles/{vin}/driver-assignments:
+    get:
+      summary: List vehicle driver assignments
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: vin
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }

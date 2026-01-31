@@ -4,15 +4,38 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": "Collection for testing OnPoint tenancy and user management APIs. Set the {{baseUrl}} and {{jwt}} variables."
   },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "const apiKey = pm.environment.get('fleetTenancyApiKey');",
+          "const role = pm.environment.get('roleAdmin');",
+          "const token = pm.environment.get('idToken');",
+          "if (apiKey && !pm.request.headers.has('x-api-key')) {",
+          "  pm.request.headers.add({ key: 'x-api-key', value: apiKey });",
+          "}",
+          "if (role && !pm.request.headers.has('x-role')) {",
+          "  pm.request.headers.add({ key: 'x-role', value: role });",
+          "}",
+          "if (token && !pm.request.headers.has('Authorization')) {",
+          "  pm.request.headers.add({ key: 'Authorization', value: `Bearer ${token}` });",
+          "}"
+        ]
+      }
+    }
+  ],
   "item": [
     {
       "name": "List Tenants",
       "request": {
         "method": "GET",
         "header": [
-          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" }
+          { "key": "Authorization", "value": "Bearer {{idToken}}", "type": "text" },
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}", "type": "text" },
+          { "key": "x-role", "value": "{{roleAdmin}}", "type": "text" }
         ],
-        "url": { "raw": "{{baseUrl}}/tenants", "host": [ "{{baseUrl}}" ], "path": [ "tenants" ] }
+        "url": { "raw": "{{fleetTenancyBaseUrl}}/tenants", "host": [ "{{fleetTenancyBaseUrl}}" ], "path": [ "tenants" ] }
       }
     },
     {
@@ -20,11 +43,13 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" },
+          { "key": "Authorization", "value": "Bearer {{idToken}}", "type": "text" },
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}", "type": "text" },
+          { "key": "x-role", "value": "{{roleAdmin}}", "type": "text" },
           { "key": "Content-Type", "value": "application/json", "type": "text" }
         ],
         "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test Tenant\",\n  \"contact\": \"admin@example.com\"\n}" },
-        "url": { "raw": "{{baseUrl}}/tenants", "host": [ "{{baseUrl}}" ], "path": [ "tenants" ] }
+        "url": { "raw": "{{fleetTenancyBaseUrl}}/tenants", "host": [ "{{fleetTenancyBaseUrl}}" ], "path": [ "tenants" ] }
       }
     },
     {
@@ -32,9 +57,11 @@
       "request": {
         "method": "GET",
         "header": [
-          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" }
+          { "key": "Authorization", "value": "Bearer {{idToken}}", "type": "text" },
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}", "type": "text" },
+          { "key": "x-role", "value": "{{roleAdmin}}", "type": "text" }
         ],
-        "url": { "raw": "{{baseUrl}}/tenants/{{tenantId}}/users", "host": [ "{{baseUrl}}" ], "path": [ "tenants", "{{tenantId}}", "users" ] }
+        "url": { "raw": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/users", "host": [ "{{fleetTenancyBaseUrl}}" ], "path": [ "tenants", "{{tenantId}}", "users" ] }
       }
     },
     {
@@ -42,11 +69,13 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" },
+          { "key": "Authorization", "value": "Bearer {{idToken}}", "type": "text" },
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}", "type": "text" },
+          { "key": "x-role", "value": "{{roleAdmin}}", "type": "text" },
           { "key": "Content-Type", "value": "application/json", "type": "text" }
         ],
         "body": { "mode": "raw", "raw": "{\n  \"username\": \"user1@example.com\",\n  \"email\": \"user1@example.com\",\n  \"roles\": [\"TenantAdmin\"]\n}" },
-        "url": { "raw": "{{baseUrl}}/tenants/{{tenantId}}/users", "host": [ "{{baseUrl}}" ], "path": [ "tenants", "{{tenantId}}", "users" ] }
+        "url": { "raw": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/users", "host": [ "{{fleetTenancyBaseUrl}}" ], "path": [ "tenants", "{{tenantId}}", "users" ] }
       }
     },
     {
@@ -54,9 +83,11 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" }
+          { "key": "Authorization", "value": "Bearer {{idToken}}", "type": "text" },
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}", "type": "text" },
+          { "key": "x-role", "value": "{{roleAdmin}}", "type": "text" }
         ],
-        "url": { "raw": "{{baseUrl}}/tenants/{{tenantId}}/users/{{userId}}/disable", "host": [ "{{baseUrl}}" ], "path": [ "tenants", "{{tenantId}}", "users", "{{userId}}", "disable" ] }
+        "url": { "raw": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/users/{{userId}}/disable", "host": [ "{{fleetTenancyBaseUrl}}" ], "path": [ "tenants", "{{tenantId}}", "users", "{{userId}}", "disable" ] }
       }
     },
     {
@@ -64,9 +95,11 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" }
+          { "key": "Authorization", "value": "Bearer {{idToken}}", "type": "text" },
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}", "type": "text" },
+          { "key": "x-role", "value": "{{roleAdmin}}", "type": "text" }
         ],
-        "url": { "raw": "{{baseUrl}}/tenants/{{tenantId}}/users/{{userId}}/enable", "host": [ "{{baseUrl}}" ], "path": [ "tenants", "{{tenantId}}", "users", "{{userId}}", "enable" ] }
+        "url": { "raw": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/users/{{userId}}/enable", "host": [ "{{fleetTenancyBaseUrl}}" ], "path": [ "tenants", "{{tenantId}}", "users", "{{userId}}", "enable" ] }
       }
     },
     {
@@ -74,11 +107,13 @@
       "request": {
         "method": "PUT",
         "header": [
-          { "key": "Authorization", "value": "Bearer {{jwt}}", "type": "text" },
+          { "key": "Authorization", "value": "Bearer {{idToken}}", "type": "text" },
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}", "type": "text" },
+          { "key": "x-role", "value": "{{roleAdmin}}", "type": "text" },
           { "key": "Content-Type", "value": "application/json", "type": "text" }
         ],
         "body": { "mode": "raw", "raw": "{\n  \"roles\": [\"TenantAdmin\", \"FleetManager\"]\n}" },
-        "url": { "raw": "{{baseUrl}}/tenants/{{tenantId}}/users/{{userId}}/roles", "host": [ "{{baseUrl}}" ], "path": [ "tenants", "{{tenantId}}", "users", "{{userId}}", "roles" ] }
+        "url": { "raw": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/users/{{userId}}/roles", "host": [ "{{fleetTenancyBaseUrl}}" ], "path": [ "tenants", "{{tenantId}}", "users", "{{userId}}", "roles" ] }
       }
     }
   ]

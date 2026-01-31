@@ -1,0 +1,70 @@
+openapi: 3.0.3
+info:
+  title: OnPoint Trip Summary API
+  version: 1.0.0
+  description: Trip summary and analytics API.
+servers:
+  - url: https://{apiId}.execute-api.{region}.amazonaws.com/{stage}
+    variables:
+      apiId:
+        default: 0oz7wxe2h8
+      region:
+        default: us-east-1
+      stage:
+        default: dev
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200': { description: OK }
+  /trip-summaries:
+    get:
+      summary: List trip summaries
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: tenantId
+          schema: { type: string }
+        - in: query
+          name: vehicleId
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /trip-summaries/{tripId}:
+    get:
+      summary: Get trip summary
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: tripId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /trip-summary-stats:
+    get:
+      summary: Trip summary stats
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: tenantId
+          schema: { type: string }
+      responses:
+        '200': { description: OK }

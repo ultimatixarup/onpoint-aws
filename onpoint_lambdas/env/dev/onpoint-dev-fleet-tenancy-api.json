@@ -9,6 +9,8 @@
         "DRIVER_ASSIGNMENTS_TABLE": "onpoint-dev-driver-assignments",
         "AUDIT_LOG_TABLE": "onpoint-dev-audit-log",
         "IDEMPOTENCY_TABLE": "onpoint-dev-idempotency",
-        "VIN_TENANT_INDEX": "TenantIndex"
+        "VIN_TENANT_INDEX": "TenantIndex",
+        "USER_POOL_ID": "us-east-1_S1HR9gcRA",
+        "USERS_TABLE": "onpoint-dev-tenants"
     }
 }

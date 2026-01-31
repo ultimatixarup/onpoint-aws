@@ -11,7 +11,19 @@
         "exec": [
           "const uuid = pm.variables.replaceIn('{{$guid}}');",
           "pm.variables.set('idempotencyKey', uuid);",
-          "pm.variables.set('correlationId', uuid);"
+          "pm.variables.set('correlationId', uuid);",
+          "const apiKey = pm.environment.get('fleetTenancyApiKey');",
+          "const role = pm.environment.get('roleAdmin');",
+          "const token = pm.environment.get('idToken');",
+          "if (apiKey && !pm.request.headers.has('x-api-key')) {",
+          "  pm.request.headers.add({ key: 'x-api-key', value: apiKey });",
+          "}",
+          "if (role && !pm.request.headers.has('x-role')) {",
+          "  pm.request.headers.add({ key: 'x-role', value: role });",
+          "}",
+          "if (token && !pm.request.headers.has('Authorization')) {",
+          "  pm.request.headers.add({ key: 'Authorization', value: `Bearer ${token}` });",
+          "}"
         ]
       }
     }
@@ -31,7 +43,7 @@
               { "key": "x-correlation-id", "value": "{{correlationId}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/tenants",
+            "url": "{{fleetTenancyBaseUrl}}/tenants",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"name\": \"Acme Fleet\",\n  \"config\": {\n    \"retentionDays\": 90\n  },\n  \"reason\": \"initial setup\"\n}"
@@ -46,7 +58,7 @@
               { "key": "x-api-key", "value": "{{apiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
-            "url": "{{baseUrl}}/tenants/{{tenantId}}"
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}"
           }
         },
         {
@@ -60,7 +72,7 @@
               { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/tenants/{{tenantId}}",
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Acme Fleet Updated\",\n  \"status\": \"ACTIVE\",\n  \"reason\": \"rename\"\n}"
@@ -76,7 +88,7 @@
               { "key": "x-role", "value": "{{roleTenantAdmin}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
-            "url": "{{baseUrl}}/tenants/{{tenantId}}:suspend"
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}:suspend"
           }
         },
         {
@@ -88,7 +100,7 @@
               { "key": "x-role", "value": "{{roleTenantAdmin}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
-            "url": "{{baseUrl}}/tenants/{{tenantId}}:activate"
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}:activate"
           }
         },
         {
@@ -99,7 +111,7 @@
               { "key": "x-api-key", "value": "{{apiKey}}" },
               { "key": "x-role", "value": "{{roleAdmin}}" }
             ],
-            "url": "{{baseUrl}}/tenants"
+            "url": "{{fleetTenancyBaseUrl}}/tenants"
           }
         }
       ]
@@ -118,7 +130,7 @@
               { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/customers",
+            "url": "{{fleetTenancyBaseUrl}}/customers",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"billingProfile\": {\"plan\": \"gold\"},\n  \"reason\": \"new customer\"\n}"
@@ -133,7 +145,7 @@
               { "key": "x-api-key", "value": "{{apiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
-            "url": "{{baseUrl}}/customers/{{customerId}}"
+            "url": "{{fleetTenancyBaseUrl}}/customers/{{customerId}}"
           }
         },
         {
@@ -147,7 +159,7 @@
               { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/customers/{{customerId}}",
+            "url": "{{fleetTenancyBaseUrl}}/customers/{{customerId}}",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"serviceTier\": \"platinum\",\n  \"reason\": \"upgrade\"\n}"
@@ -163,7 +175,7 @@
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" }
             ],
-            "url": "{{baseUrl}}/customers/{{customerId}}:deactivate"
+            "url": "{{fleetTenancyBaseUrl}}/customers/{{customerId}}:deactivate"
           }
         },
         {
@@ -174,7 +186,7 @@
               { "key": "x-api-key", "value": "{{apiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
-            "url": "{{baseUrl}}/customers?tenantId={{tenantId}}"
+            "url": "{{fleetTenancyBaseUrl}}/customers?tenantId={{tenantId}}"
           }
         }
       ]
@@ -193,7 +205,7 @@
               { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/fleets",
+            "url": "{{fleetTenancyBaseUrl}}/fleets",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fleetId\": \"{{fleetId}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"policies\": {\"speedLimitMph\": 70},\n  \"reason\": \"new fleet\"\n}"
@@ -208,7 +220,7 @@
               { "key": "x-api-key", "value": "{{apiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
-            "url": "{{baseUrl}}/fleets/{{fleetId}}"
+            "url": "{{fleetTenancyBaseUrl}}/fleets/{{fleetId}}"
           }
         },
         {
@@ -222,7 +234,7 @@
               { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/fleets/{{fleetId}}",
+            "url": "{{fleetTenancyBaseUrl}}/fleets/{{fleetId}}",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"policies\": {\"speedLimitMph\": 65},\n  \"reason\": \"policy update\"\n}"
@@ -238,7 +250,7 @@
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" }
             ],
-            "url": "{{baseUrl}}/fleets/{{fleetId}}:archive"
+            "url": "{{fleetTenancyBaseUrl}}/fleets/{{fleetId}}:archive"
           }
         },
         {
@@ -249,7 +261,7 @@
               { "key": "x-api-key", "value": "{{apiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
-            "url": "{{baseUrl}}/fleets?tenantId={{tenantId}}&customerId={{customerId}}"
+            "url": "{{fleetTenancyBaseUrl}}/fleets?tenantId={{tenantId}}&customerId={{customerId}}"
           }
         }
       ]
@@ -268,7 +280,7 @@
               { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/vehicles",
+            "url": "{{fleetTenancyBaseUrl}}/vehicles",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"vin\": \"{{vin}}\",\n  \"make\": \"Ford\",\n  \"model\": \"F150\",\n  \"year\": 2022,\n  \"reason\": \"new vehicle\"\n}"
@@ -283,7 +295,7 @@
               { "key": "x-api-key", "value": "{{apiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
-            "url": "{{baseUrl}}/vehicles/{{vin}}"
+            "url": "{{fleetTenancyBaseUrl}}/vehicles/{{vin}}"
           }
         },
         {
@@ -297,7 +309,7 @@
               { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/vehicles/{{vin}}",
+            "url": "{{fleetTenancyBaseUrl}}/vehicles/{{vin}}",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"assetTags\": [\"A1\"],\n  \"reason\": \"tag update\"\n}"
@@ -312,7 +324,7 @@
               { "key": "x-api-key", "value": "{{apiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
-            "url": "{{baseUrl}}/vehicles?tenantId={{tenantId}}&fleetId={{fleetId}}"
+            "url": "{{fleetTenancyBaseUrl}}/vehicles?tenantId={{tenantId}}&fleetId={{fleetId}}"
           }
         },
         {
@@ -325,7 +337,7 @@
               { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/vin-registry/assign",
+            "url": "{{fleetTenancyBaseUrl}}/vin-registry/assign",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"vin\": \"{{vin}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"fleetId\": \"{{fleetId}}\",\n  \"effectiveFrom\": \"2026-01-01T00:00:00Z\",\n  \"reason\": \"initial assignment\"\n}"
@@ -342,7 +354,7 @@
               { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/vin-registry/transfer",
+            "url": "{{fleetTenancyBaseUrl}}/vin-registry/transfer",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"vin\": \"{{vin}}\",\n  \"fromTenantId\": \"{{tenantId}}\",\n  \"toTenantId\": \"tenant-2\",\n  \"toFleetId\": \"fleet-2\",\n  \"effectiveFrom\": \"2026-02-01T00:00:00Z\",\n  \"reason\": \"ownership transfer\",\n  \"approvalRef\": \"APR-001\"\n}"
@@ -357,7 +369,7 @@
               { "key": "x-api-key", "value": "{{apiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
-            "url": "{{baseUrl}}/vin-registry/{{vin}}"
+            "url": "{{fleetTenancyBaseUrl}}/vin-registry/{{vin}}"
           }
         },
         {

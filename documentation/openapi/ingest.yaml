@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info:
+  title: OnPoint Ingest API
+  version: 1.0.0
+  description: Telematics ingest API.
+servers:
+  - url: https://{apiId}.execute-api.{region}.amazonaws.com/{stage}
+    variables:
+      apiId:
+        default: pxiwaan426
+      region:
+        default: us-east-1
+      stage:
+        default: v1
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200': { description: OK }
+  /ingest:
+    post:
+      summary: Ingest telematics payload
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '202': { description: Accepted }
+  /ingest/batch:
+    post:
+      summary: Ingest batch payload
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '202': { description: Accepted }
