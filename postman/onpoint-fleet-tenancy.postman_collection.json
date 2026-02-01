@@ -343,7 +343,7 @@
             "url": "{{fleetTenancyBaseUrl}}/vin-registry/assign",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"vin\": \"{{vin}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"fleetId\": \"{{fleetId}}\",\n  \"effectiveFrom\": \"2026-01-01T00:00:00Z\",\n  \"reason\": \"initial assignment\"\n}"
+              "raw": "{\n  \"vin\": \"{{vin}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"fleetId\": \"{{fleetId}}\",\n  \"effectiveFrom\": \"{{vinEffectiveFrom}}\",\n  \"reason\": \"initial assignment\"\n}"
             }
           }
         },
@@ -383,7 +383,7 @@
               { "key": "x-api-key", "value": "{{apiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
-            "url": "{{baseUrl}}/vin-registry?tenantId={{tenantId}}&active=true"
+            "url": "{{fleetTenancyBaseUrl}}/vin-registry?tenantId={{tenantId}}&active=true"
           }
         }
       ]
@@ -402,10 +402,10 @@
               { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/drivers",
+            "url": "{{fleetTenancyBaseUrl}}/drivers",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"driverId\": \"{{driverId}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"fleetId\": \"{{fleetId}}\",\n  \"metadata\": {\"name\": \"Driver One\"},\n  \"reason\": \"new driver\"\n}"
+              "raw": "{\n  \"driverId\": \"{{driverId}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"fleetId\": \"{{fleetId}}\",\n  \"metadata\": {\"name\": \"{{driverName1}}\"},\n  \"reason\": \"new driver\"\n}"
             }
           }
         },
@@ -417,7 +417,7 @@
               { "key": "x-api-key", "value": "{{apiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
-            "url": "{{baseUrl}}/drivers/{{driverId}}"
+            "url": "{{fleetTenancyBaseUrl}}/drivers/{{driverId}}"
           }
         },
         {
@@ -431,7 +431,7 @@
               { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/drivers/{{driverId}}",
+            "url": "{{fleetTenancyBaseUrl}}/drivers/{{driverId}}",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"metadata\": {\"license\": \"A123\"},\n  \"reason\": \"update\"\n}"
@@ -447,7 +447,7 @@
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" }
             ],
-            "url": "{{baseUrl}}/drivers/{{driverId}}:deactivate"
+            "url": "{{fleetTenancyBaseUrl}}/drivers/{{driverId}}:deactivate"
           }
         },
         {
@@ -458,7 +458,7 @@
               { "key": "x-api-key", "value": "{{apiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
-            "url": "{{baseUrl}}/drivers?tenantId={{tenantId}}&fleetId={{fleetId}}"
+            "url": "{{fleetTenancyBaseUrl}}/drivers?tenantId={{tenantId}}&fleetId={{fleetId}}"
           }
         }
       ]
@@ -477,10 +477,10 @@
               { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{baseUrl}}/drivers/{{driverId}}/assignments",
+            "url": "{{fleetTenancyBaseUrl}}/drivers/{{driverId}}/assignments",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"vin\": \"{{vin}}\",\n  \"effectiveFrom\": \"2026-01-15T00:00:00Z\",\n  \"assignmentType\": \"PRIMARY\",\n  \"reason\": \"shift assignment\"\n}"
+              "raw": "{\n  \"vin\": \"{{vin}}\",\n  \"effectiveFrom\": \"{{assignmentEffectiveFrom}}\",\n  \"assignmentType\": \"PRIMARY\",\n  \"reason\": \"shift assignment\"\n}"
             }
           }
         },
@@ -492,7 +492,7 @@
               { "key": "x-api-key", "value": "{{apiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
-            "url": "{{baseUrl}}/drivers/{{driverId}}/assignments"
+            "url": "{{fleetTenancyBaseUrl}}/drivers/{{driverId}}/assignments"
           }
         },
         {
@@ -503,7 +503,7 @@
               { "key": "x-api-key", "value": "{{apiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
-            "url": "{{baseUrl}}/vehicles/{{vin}}/driver-assignments"
+            "url": "{{fleetTenancyBaseUrl}}/vehicles/{{vin}}/driver-assignments"
           }
         }
       ]

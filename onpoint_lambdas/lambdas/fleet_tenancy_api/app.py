@@ -429,10 +429,17 @@ def _vin_active_for_tenant(vin: str, tenant_id: str, as_of: Optional[str]) -> bo
         return False
     try:
         from onpoint_common.vin_registry import resolve_vin_registry  # type: ignore
+        record = resolve_vin_registry(vin, as_of=as_of, table_name=VIN_REGISTRY_TABLE, ddb_client=_ddb)
+        return bool(record and record.get("tenantId") == tenant_id)
     except Exception:
+        # Fallback when shared helper is unavailable: resolve locally using VIN history.
+        as_of_value = as_of or utc_now_iso()
+        for rec in _vin_history(vin):
+            if rec.get("tenantId") != tenant_id:
+                continue
+            if _range_overlaps(rec.get("effectiveFrom"), rec.get("effectiveTo"), as_of_value, as_of_value):
+                return True
         return False
-    record = resolve_vin_registry(vin, as_of=as_of, table_name=VIN_REGISTRY_TABLE, ddb_client=_ddb)
-    return bool(record and record.get("tenantId") == tenant_id)
 
 
 def _list_vins_for_tenant(tenant_id: str, fleet_id: Optional[str], active_only: bool) -> List[str]:
