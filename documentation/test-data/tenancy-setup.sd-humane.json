@@ -1,0 +1,128 @@
+{
+  "meta": {
+    "version": "1.0",
+    "description": "Template test data for tenancy setup. Replace placeholders in <> to create new tenant organizations.",
+    "placeholders": {
+      "TENANT_ID": "sd-humane",
+      "TENANT_NAME": "San Diego Humane Society",
+      "CUSTOMER_ID": "sd-humane-customer",
+      "FLEET_ID": "sd-humane-fleet",
+      "FLEET_NAME": "San Diego Humane Society Fleet",
+      "VIN_PREFIX": "JTDBCMFE5R3030603",
+      "DRIVER_ID_PREFIX": "sd-humane-driver",
+      "EFFECTIVE_FROM": "2025-01-01T00:00:00Z",
+      "ASSIGNMENT_EFFECTIVE_FROM": "2025-01-01T00:00:00Z"
+    }
+  },
+  "tenant": {
+    "tenantId": "sd-humane",
+    "name": "San Diego Humane Society",
+    "config": {
+      "retentionDays": 30,
+      "featureFlags": [
+        "vinRegistry",
+        "driverAssignments"
+      ]
+    },
+    "reason": "seed test tenant"
+  },
+  "customer": {
+    "customerId": "sd-humane-customer",
+    "tenantId": "sd-humane",
+    "billingProfile": {
+      "plan": "test"
+    },
+    "reason": "seed test customer"
+  },
+  "fleet": {
+    "fleetId": "sd-humane-fleet",
+    "tenantId": "sd-humane",
+    "customerId": "sd-humane-customer",
+    "name": "San Diego Humane Society Fleet",
+    "policies": {
+      "speedLimitMph": 65
+    },
+    "reason": "seed test fleet"
+  },
+  "vehicles": [
+    {
+      "vin": "JTDBCMFE5R303060300000001",
+      "tenantId": "sd-humane",
+      "customerId": "sd-humane-customer",
+      "fleetId": "sd-humane-fleet",
+      "effectiveFrom": "2025-01-01T00:00:00Z",
+      "reason": "initial assignment"
+    },
+    {
+      "vin": "JTDBCMFE5R303060300000002",
+      "tenantId": "sd-humane",
+      "customerId": "sd-humane-customer",
+      "fleetId": "sd-humane-fleet",
+      "effectiveFrom": "2025-01-01T00:00:00Z",
+      "reason": "initial assignment"
+    },
+    {
+      "vin": "JTDBCMFE5R303060300000003",
+      "tenantId": "sd-humane",
+      "customerId": "sd-humane-customer",
+      "fleetId": "sd-humane-fleet",
+      "effectiveFrom": "2025-01-01T00:00:00Z",
+      "reason": "initial assignment"
+    }
+  ],
+  "drivers": [
+    {
+      "driverId": "sd-humane-driver-1",
+      "tenantId": "sd-humane",
+      "customerId": "sd-humane-customer",
+      "fleetId": "sd-humane-fleet",
+      "metadata": {
+        "name": "Jose"
+      },
+      "reason": "seed test driver"
+    },
+    {
+      "driverId": "sd-humane-driver-2",
+      "tenantId": "sd-humane",
+      "customerId": "sd-humane-customer",
+      "fleetId": "sd-humane-fleet",
+      "metadata": {
+        "name": "Nancy Smith"
+      },
+      "reason": "seed test driver"
+    },
+    {
+      "driverId": "sd-humane-driver-3",
+      "tenantId": "sd-humane",
+      "customerId": "sd-humane-customer",
+      "fleetId": "sd-humane-fleet",
+      "metadata": {
+        "name": "Driver Three"
+      },
+      "reason": "seed test driver"
+    }
+  ],
+  "driverAssignments": [
+    {
+      "driverId": "sd-humane-driver-1",
+      "vin": "JTDBCMFE5R303060300000001",
+      "effectiveFrom": "2025-01-01T00:00:00Z",
+      "assignmentType": "PRIMARY",
+      "reason": "seed assignment"
+    },
+    {
+      "driverId": "sd-humane-driver-2",
+      "vin": "JTDBCMFE5R303060300000002",
+      "effectiveFrom": "2025-01-01T00:00:00Z",
+      "assignmentType": "PRIMARY",
+      "reason": "seed assignment"
+    },
+    {
+      "driverId": "sd-humane-driver-3",
+      "vin": "JTDBCMFE5R303060300000003",
+      "effectiveFrom": "2025-01-01T00:00:00Z",
+      "assignmentType": "PRIMARY",
+      "reason": "seed assignment"
+    }
+  ]
+}

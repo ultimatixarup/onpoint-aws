@@ -1,0 +1,25 @@
+{
+  "info": {
+    "name": "OnPoint Ingest - CerebrumX",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Ingest CerebrumX telematics events. Uses ingestBaseUrl, ingestApiKey, providerId from environment. For bulk ingest, use Collection Runner with a JSON data file (array of events)."
+  },
+  "item": [
+    {
+      "name": "Ingest CerebrumX Event",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "x-api-key", "value": "{{ingestApiKey}}" },
+          { "key": "providerId", "value": "{{providerId}}" }
+        ],
+        "url": "{{ingestBaseUrl}}/ingest/telematics",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"providerId\": \"{{providerId}}\",\n  \"cx_vehicle_id\": \"{{cx_vehicle_id}}\",\n  \"cx_trip_id\": \"{{cx_trip_id}}\",\n  \"cx_event_type\": \"{{cx_event_type}}\",\n  \"cx_timestamp\": \"{{cx_timestamp}}\",\n  \"cx_msg_id\": \"{{cx_msg_id}}\",\n  \"cx_geolocation\": {\n    \"cx_latitude\": {{cx_latitude}},\n    \"cx_longitude\": {{cx_longitude}}\n  }\n}"
+        }
+      }
+    }
+  ]
+}

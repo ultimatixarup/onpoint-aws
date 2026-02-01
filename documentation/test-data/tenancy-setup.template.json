@@ -1,0 +1,119 @@
+{
+  "meta": {
+    "version": "1.0",
+    "description": "Template test data for tenancy setup. Replace placeholders in <> to create new tenant organizations.",
+    "placeholders": {
+      "TENANT_ID": "<TENANT_ID>",
+      "TENANT_NAME": "<TENANT_NAME>",
+      "CUSTOMER_ID": "<CUSTOMER_ID>",
+      "FLEET_ID": "<FLEET_ID>",
+      "FLEET_NAME": "<FLEET_NAME>",
+      "VIN_PREFIX": "<VIN_PREFIX>",
+      "DRIVER_ID_PREFIX": "<DRIVER_ID_PREFIX>",
+      "EFFECTIVE_FROM": "<EFFECTIVE_FROM_ISO_UTC>",
+      "ASSIGNMENT_EFFECTIVE_FROM": "<ASSIGNMENT_EFFECTIVE_FROM_ISO_UTC>"
+    }
+  },
+  "tenant": {
+    "tenantId": "<TENANT_ID>",
+    "name": "<TENANT_NAME>",
+    "config": {
+      "retentionDays": 30,
+      "featureFlags": ["vinRegistry", "driverAssignments"]
+    },
+    "reason": "seed test tenant"
+  },
+  "customer": {
+    "customerId": "<CUSTOMER_ID>",
+    "tenantId": "<TENANT_ID>",
+    "billingProfile": {
+      "plan": "test"
+    },
+    "reason": "seed test customer"
+  },
+  "fleet": {
+    "fleetId": "<FLEET_ID>",
+    "tenantId": "<TENANT_ID>",
+    "customerId": "<CUSTOMER_ID>",
+    "name": "<FLEET_NAME>",
+    "policies": {
+      "speedLimitMph": 65
+    },
+    "reason": "seed test fleet"
+  },
+  "vehicles": [
+    {
+      "vin": "<VIN_PREFIX>00000001",
+      "tenantId": "<TENANT_ID>",
+      "customerId": "<CUSTOMER_ID>",
+      "fleetId": "<FLEET_ID>",
+      "effectiveFrom": "<EFFECTIVE_FROM_ISO_UTC>",
+      "reason": "initial assignment"
+    },
+    {
+      "vin": "<VIN_PREFIX>00000002",
+      "tenantId": "<TENANT_ID>",
+      "customerId": "<CUSTOMER_ID>",
+      "fleetId": "<FLEET_ID>",
+      "effectiveFrom": "<EFFECTIVE_FROM_ISO_UTC>",
+      "reason": "initial assignment"
+    },
+    {
+      "vin": "<VIN_PREFIX>00000003",
+      "tenantId": "<TENANT_ID>",
+      "customerId": "<CUSTOMER_ID>",
+      "fleetId": "<FLEET_ID>",
+      "effectiveFrom": "<EFFECTIVE_FROM_ISO_UTC>",
+      "reason": "initial assignment"
+    }
+  ],
+  "drivers": [
+    {
+      "driverId": "<DRIVER_ID_PREFIX>-1",
+      "tenantId": "<TENANT_ID>",
+      "customerId": "<CUSTOMER_ID>",
+      "fleetId": "<FLEET_ID>",
+      "metadata": {"name": "<DRIVER_NAME_1>"},
+      "reason": "seed test driver"
+    },
+    {
+      "driverId": "<DRIVER_ID_PREFIX>-2",
+      "tenantId": "<TENANT_ID>",
+      "customerId": "<CUSTOMER_ID>",
+      "fleetId": "<FLEET_ID>",
+      "metadata": {"name": "<DRIVER_NAME_2>"},
+      "reason": "seed test driver"
+    },
+    {
+      "driverId": "<DRIVER_ID_PREFIX>-3",
+      "tenantId": "<TENANT_ID>",
+      "customerId": "<CUSTOMER_ID>",
+      "fleetId": "<FLEET_ID>",
+      "metadata": {"name": "<DRIVER_NAME_3>"},
+      "reason": "seed test driver"
+    }
+  ],
+  "driverAssignments": [
+    {
+      "driverId": "<DRIVER_ID_PREFIX>-1",
+      "vin": "<VIN_PREFIX>00000001",
+      "effectiveFrom": "<ASSIGNMENT_EFFECTIVE_FROM_ISO_UTC>",
+      "assignmentType": "PRIMARY",
+      "reason": "seed assignment"
+    },
+    {
+      "driverId": "<DRIVER_ID_PREFIX>-2",
+      "vin": "<VIN_PREFIX>00000002",
+      "effectiveFrom": "<ASSIGNMENT_EFFECTIVE_FROM_ISO_UTC>",
+      "assignmentType": "PRIMARY",
+      "reason": "seed assignment"
+    },
+    {
+      "driverId": "<DRIVER_ID_PREFIX>-3",
+      "vin": "<VIN_PREFIX>00000003",
+      "effectiveFrom": "<ASSIGNMENT_EFFECTIVE_FROM_ISO_UTC>",
+      "assignmentType": "PRIMARY",
+      "reason": "seed assignment"
+    }
+  ]
+}

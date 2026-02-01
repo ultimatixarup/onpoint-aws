@@ -134,6 +134,73 @@
       ]
     },
     {
+      "name": "List Trips - Fleet",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/fleets/{{fleetId}}/trips?limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["fleets", "{{fleetId}}", "trips"],
+          "query": [
+            {
+              "key": "limit",
+              "value": "20",
+              "description": "Max results (default 50, max 200)"
+            },
+            {
+              "key": "include",
+              "value": "none",
+              "description": "none (fast) or summary (includes full summary JSON)",
+              "disabled": true
+            },
+            {
+              "key": "from",
+              "value": "2026-01-01T00:00:00Z",
+              "description": "ISO8601 start time filter",
+              "disabled": true
+            },
+            {
+              "key": "to",
+              "value": "2026-01-31T23:59:59Z",
+              "description": "ISO8601 end time filter",
+              "disabled": true
+            },
+            {
+              "key": "nextToken",
+              "value": "",
+              "description": "Pagination token from previous response",
+              "disabled": true
+            }
+          ]
+        },
+        "description": "List trip summaries for a fleet (VINs resolved via VIN registry)."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "pm.test('Response has items array', () => {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json).to.have.property('items');",
+              "  pm.expect(json.items).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "List Trips - Multiple Vehicles",
       "request": {
         "method": "GET",
