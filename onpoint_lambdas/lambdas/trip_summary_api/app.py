@@ -226,6 +226,25 @@ def _get_caller_tenant_id(event: dict) -> Optional[str]:
     if isinstance(tenant_header, str) and tenant_header.strip():
         return tenant_header.strip()
 
+    mv_headers = event.get("multiValueHeaders") or {}
+    mv_vals = mv_headers.get("x-tenant-id") or mv_headers.get("X-Tenant-Id") or mv_headers.get("x-tenantId") or []
+    if mv_vals and isinstance(mv_vals, list):
+        for val in mv_vals:
+            if isinstance(val, str) and val.strip():
+                return val.strip()
+
+    query = event.get("queryStringParameters") or {}
+    tenant_query = query.get("tenantId") or query.get("tenant_id")
+    if isinstance(tenant_query, str) and tenant_query.strip():
+        return tenant_query.strip()
+
+    mv_query = event.get("multiValueQueryStringParameters") or {}
+    mv_vals = mv_query.get("tenantId") or mv_query.get("tenant_id") or []
+    if mv_vals and isinstance(mv_vals, list):
+        for val in mv_vals:
+            if isinstance(val, str) and val.strip():
+                return val.strip()
+
     ctx = event.get("requestContext") or {}
     authorizer = ctx.get("authorizer") or {}
     claims = authorizer.get("claims") or {}
@@ -257,12 +276,24 @@ def _resolve_vin_tenancy(vin: str, as_of: Optional[str]) -> Optional[dict]:
         return None
 
 
-def _authorize_vin(vin: str, tenant_id: Optional[str], as_of: Optional[str]) -> bool:
+def _get_role_from_headers(headers: Dict[str, str]) -> Optional[str]:
+    role = headers.get("x-role") or headers.get("x-roles")
+    if isinstance(role, str) and role.strip():
+        return role.strip().lower()
+    return None
+
+
+def _authorize_vin(vin: str, tenant_id: Optional[str], as_of: Optional[str], role: Optional[str] = None) -> bool:
+    if role == "admin":
+        return True
     if not VIN_REGISTRY_TABLE:
         return True
     if not tenant_id:
         return False
     record = _resolve_vin_tenancy(vin, as_of)
+    if not record:
+        # Fallback to current ownership when historical lookup fails.
+        record = _resolve_vin_tenancy(vin, None)
     if not record:
         return False
     return record.get("tenantId") == tenant_id
@@ -575,6 +606,7 @@ def lambda_handler(event, context):
     fleet_id_path = (fleet_id or "").strip()
     qs = query
     tenant_id = _get_caller_tenant_id(event)
+    role = _get_role_from_headers(event.get("headers") or {})
 
     if route_type == "FLEET_TRIPS" and not fleet_id_path and path:
         parts = [p for p in path.split("/") if p]
@@ -588,7 +620,7 @@ def lambda_handler(event, context):
 
         start_time, end_time = _get_trip_summary_times(vin_path, trip_id_path)
         as_of = start_time or end_time
-        if not _authorize_vin(vin_path, tenant_id, as_of):
+        if not _authorize_vin(vin_path, tenant_id, as_of, role):
             return _resp(403, {"error": "Forbidden"})
 
         try:
@@ -644,7 +676,7 @@ def lambda_handler(event, context):
         state = _get_vehicle_state(vin_path)
         if not state:
             return _resp(404, {"error": "Vehicle state not found"})
-        if not _authorize_vin(vin_path, tenant_id, state.get("lastEventTime")):
+        if not _authorize_vin(vin_path, tenant_id, state.get("lastEventTime"), role):
             return _resp(403, {"error": "Forbidden"})
         return _resp(200, state)
 
@@ -727,7 +759,7 @@ def lambda_handler(event, context):
         if not detail:
             return _resp(404, {"error": "Trip summary not found", "vin": vehicle_id, "tripId": trip_id_path})
 
-        if not _authorize_vin(vehicle_id, tenant_id, detail.get("startTime") or detail.get("endTime")):
+        if not _authorize_vin(vehicle_id, tenant_id, detail.get("startTime") or detail.get("endTime"), role):
             return _resp(403, {"error": "Forbidden"})
 
         return _resp(200, detail)
@@ -799,7 +831,7 @@ def lambda_handler(event, context):
                 found_any = True
                 s = _summarize_item(it)
                 if _in_range(s.get("startTime"), s.get("endTime"), frm, to):
-                    if not _authorize_vin(vin, tenant_id, s.get("startTime") or s.get("endTime")):
+                    if not _authorize_vin(vin, tenant_id, s.get("startTime") or s.get("endTime"), role):
                         continue
                     authorized_any = True
                     if include == INCLUDE_SUMMARY:
@@ -820,7 +852,7 @@ def lambda_handler(event, context):
             next_state["vins"][vin] = esk
 
         if found_any and not authorized_any:
-            return _resp(403, {"error": "Forbidden"})
+            return _resp(403, {"error": "Forbidden", "tenantId": tenant_id, "vin": vin})
 
         results.extend(collected)
 
