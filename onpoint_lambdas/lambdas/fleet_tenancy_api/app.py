@@ -580,6 +580,68 @@ def _safe_admin_get_user(username: str) -> Optional[dict]:
         return None
 
 
+def _update_user_record_groups(
+    *,
+    tenant_id: str,
+    user_id: str,
+    email: Optional[str],
+    groups: List[str],
+) -> Optional[str]:
+    table = _get_users_table()
+    if not table:
+        return "USERS_TABLE not configured"
+    now = utc_now_iso()
+    key = {"PK": f"TENANT#{tenant_id}", "SK": f"USER#{user_id}"}
+    try:
+        _ddb_update(
+            table,
+            key,
+            "SET #g = :g, updatedAt = :u",
+            {":g": groups, ":u": now},
+            condition="attribute_exists(PK)",
+            expr_names={"#g": "groups"},
+        )
+        return None
+    except ClientError as exc:
+        code = (exc.response.get("Error") or {}).get("Code", "")
+        if code != "ConditionalCheckFailedException":
+            return f"Failed to update user record: {code}"
+    except Exception as exc:
+        return f"Failed to update user record: {exc}"
+
+    # Fallback: locate by email within tenant
+    if not email:
+        return "User record not found"
+    try:
+        params = {
+            "TableName": table,
+            "KeyConditionExpression": "PK = :pk AND begins_with(SK, :sk)",
+            "ExpressionAttributeValues": {
+                ":pk": {"S": f"TENANT#{tenant_id}"},
+                ":sk": {"S": "USER#"},
+                ":email": {"S": email},
+            },
+            "FilterExpression": "email = :email",
+        }
+        items = _ddb_query(params)
+        if not items:
+            return "User record not found"
+        match = items[0]
+        sk = match.get("SK")
+        if not isinstance(sk, str):
+            return "User record not found"
+        _ddb_update(
+            table,
+            {"PK": f"TENANT#{tenant_id}", "SK": sk},
+            "SET #g = :g, updatedAt = :u",
+            {":g": groups, ":u": now},
+            expr_names={"#g": "groups"},
+        )
+        return None
+    except Exception as exc:
+        return f"Failed to update user record: {exc}"
+
+
 def _normalize_groups(roles: Any) -> List[str]:
     if roles is None:
         return []
@@ -722,7 +784,7 @@ def _set_cognito_user_roles(tenant_id: str, user_id: str, body: dict, headers: D
         return _resp(403, {"error": err})
     err = _require_user_pool()
     if err:
-        return _resp(500, {"error": err})
+        return _resp(502, {"error": err})
     groups = _normalize_groups(body.get("roles") or body.get("role"))
     if not groups:
         return _resp(400, {"error": "roles are required"})
@@ -735,8 +797,33 @@ def _set_cognito_user_roles(tenant_id: str, user_id: str, body: dict, headers: D
                 _cognito.admin_remove_user_from_group(UserPoolId=USER_POOL_ID, Username=user_id, GroupName=name)
         for group in groups:
             _cognito.admin_add_user_to_group(UserPoolId=USER_POOL_ID, Username=user_id, GroupName=group)
+    except ClientError as exc:
+        code = (exc.response.get("Error") or {}).get("Code", "")
+        if code in ("InvalidParameterException", "ResourceNotFoundException"):
+            return _resp(400, {"error": f"Invalid request: {code}"})
+        return _resp(502, {"error": f"Failed to update roles: {code}"})
     except Exception as exc:
-        return _resp(500, {"error": f"Failed to update roles: {exc}"})
+        return _resp(502, {"error": f"Failed to update roles: {exc}"})
+
+    email = None
+    if isinstance(user_id, str) and "@" in user_id:
+        email = user_id
+    if not email:
+        cognito_user = _safe_admin_get_user(user_id)
+        if cognito_user:
+            for attr in cognito_user.get("UserAttributes") or []:
+                if attr.get("Name") == "email":
+                    email = attr.get("Value")
+                    break
+
+    persist_err = _update_user_record_groups(
+        tenant_id=tenant_id,
+        user_id=user_id,
+        email=email,
+        groups=groups,
+    )
+    if persist_err:
+        return _resp(502, {"error": persist_err})
 
     _audit(
         entity_type="user",
