@@ -2,7 +2,7 @@
   "info": {
     "name": "OnPoint Fleet Tenancy Management",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Fleet/tenant management APIs per requirements. Set baseUrl and apiKey variables before running."
+    "description": "Fleet/tenant management APIs per requirements. Uses fleetTenancyBaseUrl and fleetTenancyApiKey from the environment."
   },
   "event": [
     {
@@ -13,6 +13,9 @@
           "pm.variables.set('idempotencyKey', uuid);",
           "pm.variables.set('correlationId', uuid);",
           "const apiKey = pm.environment.get('fleetTenancyApiKey');",
+          "if (apiKey) {",
+          "  pm.variables.set('apiKey', apiKey);",
+          "}",
           "const role = pm.environment.get('roleAdmin');",
           "const token = pm.environment.get('idToken');",
           "if (apiKey && !pm.request.headers.has('x-api-key')) {",

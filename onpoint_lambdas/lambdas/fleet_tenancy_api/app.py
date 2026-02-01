@@ -571,6 +571,35 @@ def _put_user_record(
     return None
 
 
+def _upsert_user_record(
+    *,
+    tenant_id: str,
+    username: str,
+    email: str,
+    groups: List[str],
+) -> Optional[str]:
+    table = _get_users_table()
+    if not table:
+        return "USERS_TABLE not configured"
+    now = utc_now_iso()
+    item = {
+        "PK": f"TENANT#{tenant_id}",
+        "SK": f"USER#{username}",
+        "tenantId": tenant_id,
+        "userId": username,
+        "email": email,
+        "groups": groups,
+        "createdAt": now,
+        "updatedAt": now,
+        "entityType": "USER",
+    }
+    try:
+        _ddb_put(table, item)
+    except Exception as exc:
+        return f"Failed to persist user record: {exc}"
+    return None
+
+
 def _safe_admin_get_user(username: str) -> Optional[dict]:
     if not USER_POOL_ID:
         return None
@@ -578,6 +607,96 @@ def _safe_admin_get_user(username: str) -> Optional[dict]:
         return _cognito.admin_get_user(UserPoolId=USER_POOL_ID, Username=username)
     except Exception:
         return None
+
+
+def _assign_existing_user_to_tenant(
+    tenant_id: str,
+    user_id: str,
+    body: dict,
+    headers: Dict[str, str],
+    role: str,
+) -> dict:
+    if not isinstance(tenant_id, str) or not tenant_id.strip():
+        return _resp(400, {"error": "tenantId is required"})
+    if not isinstance(user_id, str) or not user_id.strip():
+        return _resp(400, {"error": "userId is required"})
+    err = _require_role(role, [ROLE_ADMIN])
+    if err:
+        return _resp(403, {"error": err})
+    err = _require_user_pool()
+    if err:
+        return _resp(502, {"error": err})
+
+    groups = _normalize_groups(body.get("roles") or body.get("role"))
+    managed = {GROUP_PLATFORM_ADMIN, GROUP_TENANT_ADMIN, GROUP_FLEET_MANAGER, GROUP_DISPATCHER, GROUP_READ_ONLY}
+
+    try:
+        cognito_user = _cognito.admin_get_user(UserPoolId=USER_POOL_ID, Username=user_id)
+    except ClientError as exc:
+        code = (exc.response.get("Error") or {}).get("Code", "")
+        if code == "UserNotFoundException":
+            return _resp(404, {"error": "User not found"})
+        if code == "InvalidParameterException":
+            return _resp(400, {"error": "Invalid userId"})
+        return _resp(502, {"error": f"Failed to fetch user: {code}"})
+    except Exception as exc:
+        return _resp(502, {"error": f"Failed to fetch user: {exc}"})
+
+    email = None
+    for attr in cognito_user.get("UserAttributes") or []:
+        if attr.get("Name") == "email":
+            email = attr.get("Value")
+            break
+    if not email:
+        email = user_id
+
+    try:
+        _cognito.admin_update_user_attributes(
+            UserPoolId=USER_POOL_ID,
+            Username=user_id,
+            UserAttributes=[{"Name": "custom:tenantId", "Value": tenant_id}],
+        )
+    except ClientError as exc:
+        code = (exc.response.get("Error") or {}).get("Code", "")
+        if code == "InvalidParameterException":
+            return _resp(400, {"error": "Invalid tenantId"})
+        return _resp(502, {"error": f"Failed to update tenant assignment: {code}"})
+    except Exception as exc:
+        return _resp(502, {"error": f"Failed to update tenant assignment: {exc}"})
+
+    try:
+        existing = _cognito.admin_list_groups_for_user(UserPoolId=USER_POOL_ID, Username=user_id)
+        existing_groups = [g.get("GroupName") for g in existing.get("Groups") or [] if g.get("GroupName")]
+        if groups:
+            for name in existing_groups:
+                if name in managed:
+                    _cognito.admin_remove_user_from_group(UserPoolId=USER_POOL_ID, Username=user_id, GroupName=name)
+            for group in groups:
+                _cognito.admin_add_user_to_group(UserPoolId=USER_POOL_ID, Username=user_id, GroupName=group)
+        else:
+            groups = [g for g in existing_groups if g in managed]
+    except ClientError as exc:
+        code = (exc.response.get("Error") or {}).get("Code", "")
+        return _resp(502, {"error": f"Failed to update groups: {code}"})
+    except Exception as exc:
+        return _resp(502, {"error": f"Failed to update groups: {exc}"})
+
+    persist_err = _upsert_user_record(tenant_id=tenant_id, username=user_id, email=email, groups=groups)
+    if persist_err:
+        return _resp(502, {"error": persist_err})
+
+    _audit(
+        entity_type="user",
+        entity_id=str(user_id),
+        action="assign",
+        actor=_get_actor(headers, None),
+        reason=body.get("reason"),
+        before=None,
+        after={"tenantId": tenant_id, "groups": groups},
+        tenant_id=tenant_id,
+        correlation_id=headers.get("x-correlation-id"),
+    )
+    return _resp(200, {"userId": user_id, "tenantId": tenant_id, "groups": groups})
 
 
 def _update_user_record_groups(
@@ -2003,6 +2122,11 @@ def lambda_handler(event, context):
             if err:
                 return _resp(400, {"error": err})
             return _create_cognito_user(tenant_id, body, headers, role, caller_tenant, groups)
+        if len(segments) == 6 and segments[3] == "users" and segments[5] == "assign" and method == "POST":
+            tenant_id = segments[2]
+            user_id = segments[4]
+            body = body or {}
+            return _assign_existing_user_to_tenant(tenant_id, user_id, body, headers, role)
 
     # /tenants/{tenantId}/users
     if len(segments) >= 3 and segments[0] == "tenants" and segments[2] == "users":

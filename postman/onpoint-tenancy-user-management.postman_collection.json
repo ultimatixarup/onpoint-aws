@@ -79,6 +79,20 @@
       }
     },
     {
+      "name": "Assign Existing User (admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{idToken}}", "type": "text" },
+          { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}", "type": "text" },
+          { "key": "x-role", "value": "{{roleAdmin}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"roles\": [\"TenantAdmin\"]\n}" },
+        "url": { "raw": "{{fleetTenancyBaseUrl}}/platform/tenants/{{tenantId}}/users/{{userId}}/assign", "host": [ "{{fleetTenancyBaseUrl}}" ], "path": [ "platform", "tenants", "{{tenantId}}", "users", "{{userId}}", "assign" ] }
+      }
+    },
+    {
       "name": "Disable User",
       "request": {
         "method": "POST",
