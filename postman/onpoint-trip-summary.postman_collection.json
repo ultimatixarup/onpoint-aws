@@ -13,16 +13,13 @@
         "exec": [
           "const baseUrl = pm.environment.get('tripSummaryBaseUrl');",
           "const apiKey = pm.environment.get('tripSummaryApiKey');",
-          "if (baseUrl) {",
-          "  pm.variables.set('baseUrl', baseUrl);",
-          "}",
           "if (apiKey) {",
           "  pm.variables.set('apiKey', apiKey);",
           "}",
           "const url = pm.request.url.toString();",
-          "const tenantId = pm.variables.get('tenantId');",
-          "if (tenantId && !pm.request.headers.has('x-tenant-id')) {",
-          "  pm.request.headers.add({ key: 'x-tenant-id', value: tenantId });",
+          "const tenantId = pm.environment.get('tenantId');",
+          "if (tenantId) {",
+          "  pm.request.headers.upsert({ key: 'x-tenant-id', value: tenantId });",
           "}",
           "const headers = {};",
           "pm.request.headers.each(h => {",
@@ -53,8 +50,8 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/trips?vehicleId={{testVin}}&limit=10",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{tripSummaryBaseUrl}}/trips?vehicleId={{testVin}}&limit=10",
+          "host": ["{{tripSummaryBaseUrl}}"],
           "path": ["trips"],
           "query": [
             {
@@ -145,8 +142,8 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/fleets/{{fleetId}}/trips?limit=20",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{tripSummaryBaseUrl}}/fleets/{{fleetId}}/trips?limit=20",
+          "host": ["{{tripSummaryBaseUrl}}"],
           "path": ["fleets", "{{fleetId}}", "trips"],
           "query": [
             {
@@ -212,8 +209,8 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/trips?vehicleIds=VIN1,VIN2,VIN3&limit=20",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{tripSummaryBaseUrl}}/trips?vehicleIds=VIN1,VIN2,VIN3&limit=20",
+          "host": ["{{tripSummaryBaseUrl}}"],
           "path": ["trips"],
           "query": [
             {
@@ -258,8 +255,8 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/trips?vehicleId={{testVin}}&include=summary&limit=5",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{tripSummaryBaseUrl}}/trips?vehicleId={{testVin}}&include=summary&limit=5",
+          "host": ["{{tripSummaryBaseUrl}}"],
           "path": ["trips"],
           "query": [
             {
@@ -310,8 +307,8 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/trips?vehicleId={{testVin}}&from=2026-01-01T00:00:00Z&to=2026-01-31T23:59:59Z",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{tripSummaryBaseUrl}}/trips?vehicleId={{testVin}}&from=2026-01-01T00:00:00Z&to=2026-01-31T23:59:59Z",
+          "host": ["{{tripSummaryBaseUrl}}"],
           "path": ["trips"],
           "query": [
             {
@@ -356,8 +353,8 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/trips/{{testVin}}/{{testTripId}}",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{tripSummaryBaseUrl}}/trips/{{testVin}}/{{testTripId}}",
+          "host": ["{{tripSummaryBaseUrl}}"],
           "path": ["trips", "{{testVin}}", "{{testTripId}}"],
           "query": [
             {
@@ -420,8 +417,8 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/trips/{{testVin}}/{{testTripId}}?include=none",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{tripSummaryBaseUrl}}/trips/{{testVin}}/{{testTripId}}?include=none",
+          "host": ["{{tripSummaryBaseUrl}}"],
           "path": ["trips", "{{testVin}}", "{{testTripId}}"],
           "query": [
             {
@@ -466,8 +463,8 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/trips?vehicleId={{testVin}}&limit=5",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{tripSummaryBaseUrl}}/trips?vehicleId={{testVin}}&limit=5",
+          "host": ["{{tripSummaryBaseUrl}}"],
           "path": ["trips"],
           "query": [
             {
@@ -523,8 +520,8 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/trips?vehicleId={{testVin}}&limit=5&nextToken={{nextToken}}",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{tripSummaryBaseUrl}}/trips?vehicleId={{testVin}}&limit=5&nextToken={{nextToken}}",
+          "host": ["{{tripSummaryBaseUrl}}"],
           "path": ["trips"],
           "query": [
             {
@@ -567,8 +564,8 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/trips?vehicleId={{testVin}}",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{tripSummaryBaseUrl}}/trips?vehicleId={{testVin}}",
+          "host": ["{{tripSummaryBaseUrl}}"],
           "path": ["trips"],
           "query": [
             {
@@ -612,8 +609,8 @@
           }
         ],
         "url": {
-          "raw": "{{baseUrl}}/trips?vehicleId=",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{tripSummaryBaseUrl}}/trips?vehicleId=",
+          "host": ["{{tripSummaryBaseUrl}}"],
           "path": ["trips"],
           "query": [
             {

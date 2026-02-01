@@ -221,6 +221,11 @@ def _sort_key_endtime_desc(x: dict):
 
 
 def _get_caller_tenant_id(event: dict) -> Optional[str]:
+    headers = event.get("headers") or {}
+    tenant_header = headers.get("x-tenant-id") or headers.get("X-Tenant-Id") or headers.get("x-tenantId")
+    if isinstance(tenant_header, str) and tenant_header.strip():
+        return tenant_header.strip()
+
     ctx = event.get("requestContext") or {}
     authorizer = ctx.get("authorizer") or {}
     claims = authorizer.get("claims") or {}
