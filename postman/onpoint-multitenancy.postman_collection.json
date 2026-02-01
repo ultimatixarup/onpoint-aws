@@ -2,7 +2,7 @@
   "info": {
     "name": "OnPoint - Multi-Tenancy Tests",
     "_postman_id": "d2d2e0f3-2f2b-4f9a-9a0c-3a6c7a6b0f6e",
-    "description": "Multi-tenancy validation for Trip Summary APIs (VIN registry + tenant isolation)",
+    "description": "Multi-tenancy validation for Trip Summary APIs (VIN registry + tenant isolation). Uses tripSummaryBaseUrl and tripSummaryApiKey from the environment.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [

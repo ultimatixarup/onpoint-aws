@@ -2,6 +2,7 @@
   "info": {
     "name": "OnPoint - Ingest API",
     "_postman_id": "a3b7a2c2-2c5b-4b8a-8c0f-0b2a1a2f9b3d",
+    "description": "Ingest API collection. Uses ingestBaseUrl and ingestApiKey from the environment.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [

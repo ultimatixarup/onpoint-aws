@@ -2,7 +2,7 @@
   "info": {
     "name": "OnPoint Tenancy & User Management",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Collection for testing OnPoint tenancy and user management APIs. Set the {{baseUrl}} and {{jwt}} variables."
+    "description": "Collection for testing OnPoint tenancy and user management APIs. Uses fleetTenancyBaseUrl, fleetTenancyApiKey, and idToken from the environment."
   },
   "event": [
     {
