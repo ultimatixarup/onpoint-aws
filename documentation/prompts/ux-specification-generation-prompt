@@ -1,0 +1,172 @@
+You are a senior UI/UX architect and enterprise SaaS product designer.
+
+Goal:
+Review the EXISTING UI source code in legacy-ui-src folder and produce a DETAILED UI SPECIFICATION document.
+Then EXTEND the specification to include INDUSTRY-STANDARD MULTI-TENANCY USER EXPERIENCE requirements that are currently missing.
+
+Context:
+- This is a fleet & telematics platform UI.
+- The existing UI is effectively SINGLE-TENANT.
+- Backend already supports true multi-tenancy with late binding (VIN-based tenancy).
+- The UI MUST be extended to support multi-tenant enterprise use cases.
+- New multi-tenancy UX MUST be additive and clearly distinguished from existing behavior.
+
+IMPORTANT RULE:
+- Never imply that multi-tenancy UX already exists.
+- Clearly label new sections as "TO-BE (Multi-Tenant Extension)".
+
+---
+
+## PART A – AS-IS UI (Source of Truth)
+
+Instructions:
+1. Analyze the existing source code ONLY.
+2. Infer behavior strictly from:
+   - Angular routes
+   - Components
+   - Templates
+   - Services
+   - Layout & CSS
+3. Do NOT invent features.
+4. Treat the current UI as correct even if imperfect.
+
+Deliverable (Part A):
+Document the AS-IS UI exactly as implemented.
+
+Structure:
+
+# UI Specification – Fleet & Telematics Platform
+
+## 1. Application Overview (AS-IS)
+- Purpose
+- Target users
+- Supported devices
+
+## 2. Global Layout & Theme (AS-IS)
+- Header, sidebar, footer
+- Navigation model
+- Dynamic branding (title/favicon behavior)
+
+## 3. Authentication & Session (AS-IS)
+- Login flow
+- Session persistence
+- Assumed user model
+
+## 4. Navigation & Routing (AS-IS)
+- Full route map
+- Entry points
+
+## 5. Screens & Pages (AS-IS)
+For EACH screen:
+- Purpose
+- Components
+- Data displayed
+- User actions
+- API usage
+
+## 6. Vehicle, Trip, Driver Views (AS-IS)
+- Drill-down hierarchy
+- Map & telemetry usage
+
+## 7. Reusable UI Components (AS-IS)
+- Tables
+- Cards
+- Filters
+- Charts
+
+## 8. Implicit Business Rules (AS-IS)
+- Assumptions embedded in UI
+- Hard-coded flows
+
+## 9. Known Gaps (AS-IS)
+- Missing enterprise features
+- Scalability limitations
+
+---
+
+## PART B – TO-BE MULTI-TENANCY UX EXTENSION (NEW)
+
+Now EXTEND the document with the following sections.
+
+### 10. Multi-Tenancy UX Model (TO-BE)
+- Tenant vs Customer vs Fleet definitions (UX-facing)
+- Late-binding tenancy implications for UI
+- How VIN ownership affects visibility
+
+### 11. User Personas & Roles (TO-BE)
+Define UX for:
+- Platform Super Admin
+- Tenant Admin
+- Fleet Manager
+- Fleet Operator (Read-only)
+- Support / Audit User
+
+For each role:
+- Accessible screens
+- Permitted actions
+- Visibility scope
+
+### 12. Tenant & Fleet Context Switching (TO-BE)
+- Tenant selector (when applicable)
+- Fleet selector UX patterns
+- Sticky context vs explicit selection
+- Breadcrumb & context indicators
+
+### 13. Multi-Tenant Navigation Rules (TO-BE)
+- How menus change per role
+- Guard rails to prevent cross-tenant confusion
+- Disabled vs hidden actions
+
+### 14. Tenant Administration UX (TO-BE)
+Screens required:
+- Tenant management
+- Customer management
+- Fleet management
+- VIN assignment / reassignment
+- Driver management
+
+For each screen:
+- Purpose
+- Primary actions
+- Validation rules
+- Audit visibility
+
+### 15. User Management UX (TO-BE)
+- User creation & invitation flow
+- Role assignment
+- Password reset / MFA expectations
+- Deactivation vs deletion
+- Cross-tenant user access (if allowed)
+
+### 16. Authorization & Error UX (TO-BE)
+- 403 vs 404 behavior
+- “You do not have access” patterns
+- Read-only mode UX
+- Admin override flows
+
+### 17. Audit, Compliance & Safety UX (TO-BE)
+- Audit logs visibility
+- VIN ownership history UI
+- Compliance banners / warnings
+
+### 18. Migration & Compatibility Notes
+- What UX must remain unchanged
+- Where multi-tenancy is layered in
+- Backward compatibility assumptions
+
+---
+
+Output Requirements:
+- Clearly mark sections as AS-IS or TO-BE.
+- Write in professional product-spec language.
+- Use bullet points and structured sub-sections.
+- Do NOT include implementation code.
+- Explicitly call out ambiguities or decisions required.
+- Output MUST be Markdown, suitable for repository commit.
+
+Final Instruction:
+This document must be good enough that:
+- A new UI team could rebuild the UI
+- Multi-tenancy would be correctly implemented without backend rework
+
+Begin analysis now.
