@@ -7,7 +7,6 @@
 #   GET /trips?vehicleIds=VIN1,VIN2,... (bounded fan-out; no global index)
 #   GET /trips/{vin}/{tripId}[?include=summary|none|summary,alerts,events]
 #   GET /trips/{vin}/{tripId}/events[?limit=...&nextToken=...]
-#   GET /vehicles/{vin}/latest-state
 #   GET /fleets/{fleetId}/trips?from=...&to=...&limit=...&nextToken=...&include=...
 #
 # Standard behavior:
@@ -44,7 +43,6 @@ BUILD_ID = "2026-01-23T18:45:00Z"
 
 TABLE = os.environ["TRIP_SUMMARY_TABLE"]
 TELEMETRY_EVENTS_TABLE = os.environ.get("TELEMETRY_EVENTS_TABLE", "onpoint-dev-telemetry-events")
-VEHICLE_STATE_TABLE = os.environ.get("VEHICLE_STATE_TABLE", "onpoint-dev-vehicle-state")
 VIN_REGISTRY_TABLE = os.environ.get("VIN_REGISTRY_TABLE")
 VIN_TENANT_FLEET_INDEX = os.environ.get("VIN_TENANT_FLEET_INDEX")
 DEFAULT_LIMIT = int(os.environ.get("DEFAULT_LIMIT", "50"))
@@ -311,6 +309,10 @@ def _is_fleet_trips_route(resource: str, path: str) -> bool:
     return bool(path and path.startswith("/fleets/") and path.endswith("/trips"))
 
 
+def _utc_start_of_day(dt: datetime) -> datetime:
+    return datetime(dt.year, dt.month, dt.day, tzinfo=timezone.utc)
+
+
 # -----------------------------
 # DynamoDB access
 # -----------------------------
@@ -469,16 +471,6 @@ def _get_trip_detail(vin: str, trip_id: str, include: str) -> Optional[dict]:
     return out
 
 
-def _get_vehicle_state(vin: str) -> Optional[dict]:
-    pk = f"VEHICLE#{vin}"
-    sk = "STATE"
-    resp = ddb.get_item(TableName=VEHICLE_STATE_TABLE, Key={"PK": {"S": pk}, "SK": {"S": sk}})
-    item = resp.get("Item")
-    if not item:
-        return None
-    return _ddb_unmarshal_item(item)
-
-
 def _record_active(record: dict, as_of: datetime) -> bool:
     ef = _parse_iso(record.get("effectiveFrom"))
     et = _parse_iso(record.get("effectiveTo"))
@@ -579,8 +571,6 @@ def lambda_handler(event, context):
     # Detect route type based on resource path first (most specific)
     if _is_events_route(resource, path):
         route_type = "TRIP_EVENTS"
-    elif resource == "/vehicles/{vin}/latest-state":
-        route_type = "VEHICLE_STATE"
     elif _is_fleet_trips_route(resource, path):
         route_type = "FLEET_TRIPS"
     # /trips/{vin}/{tripId} detail route
@@ -669,16 +659,6 @@ def lambda_handler(event, context):
                 "nextToken": next_token,
             },
         )
-
-    if route_type == "VEHICLE_STATE":
-        if not vin_path:
-            return _resp(400, {"error": "vin is required"})
-        state = _get_vehicle_state(vin_path)
-        if not state:
-            return _resp(404, {"error": "Vehicle state not found"})
-        if not _authorize_vin(vin_path, tenant_id, state.get("lastEventTime"), role):
-            return _resp(403, {"error": "Forbidden"})
-        return _resp(200, state)
 
     if route_type == "FLEET_TRIPS":
         if not fleet_id_path:

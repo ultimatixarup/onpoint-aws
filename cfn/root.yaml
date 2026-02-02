@@ -39,6 +39,9 @@ Parameters:
   TripSummaryApiCodeS3Key:
     Type: String
     Default: lambda/trip_summary_api.zip
+  VehicleStateApiCodeS3Key:
+    Type: String
+    Default: lambda/vehicle_state_api.zip
   FleetTenancyApiCodeS3Key:
     Type: String
     Default: lambda/fleet_tenancy_api.zip
@@ -125,6 +128,8 @@ Resources:
         TripSummaryBuilderCodeS3Key: !Ref TripSummaryBuilderCodeS3Key
         TripSummaryApiCodeS3Bucket: !Ref TemplateBucket
         TripSummaryApiCodeS3Key: !Ref TripSummaryApiCodeS3Key
+        VehicleStateApiCodeS3Bucket: !Ref TemplateBucket
+        VehicleStateApiCodeS3Key: !Ref VehicleStateApiCodeS3Key
         FleetTenancyApiCodeS3Bucket: !Ref TemplateBucket
         FleetTenancyApiCodeS3Key: !Ref FleetTenancyApiCodeS3Key
         CommonLayerS3Bucket: !Ref TemplateBucket
@@ -139,6 +144,15 @@ Resources:
         ProjectName: !Ref ProjectName
         TripSummaryApiFunctionArn: !GetAtt LambdasStack.Outputs.TripSummaryApiFunctionArn
       TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/trip_summary_api.yaml
+
+  VehicleStateApiStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        Env: !Ref Env
+        ProjectName: !Ref ProjectName
+        VehicleStateApiFunctionArn: !GetAtt LambdasStack.Outputs.VehicleStateApiFunctionArn
+      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/vehicle_state_api.yaml
 
   FleetTenancyApiStack:
     Type: AWS::CloudFormation::Stack
@@ -178,6 +192,10 @@ Outputs:
   ApiStackTemplateURL:
     Description: Trip summary API nested template URL
     Value: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/trip_summary_api.yaml
+  VehicleStateApiInvokeUrl:
+    Value: !GetAtt VehicleStateApiStack.Outputs.InvokeUrl
+  VehicleStateApiId:
+    Value: !GetAtt VehicleStateApiStack.Outputs.RestApiId
   FleetTenancyApiInvokeUrl:
     Value: !GetAtt FleetTenancyApiStack.Outputs.InvokeUrl
   FleetTenancyApiId:

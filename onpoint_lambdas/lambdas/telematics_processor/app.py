@@ -147,6 +147,32 @@ def _get_engine_speed_rpm(raw: dict) -> Optional[float]:
         return _num(es.get("value"))
     return None
 
+def _get_trip_distance_miles(raw: dict) -> Optional[float]:
+    dist = raw.get("cx_trip_distance") or raw.get("cx_trip_distance_inf")
+    if isinstance(dist, dict):
+        val = _num(dist.get("value"))
+        unit = (dist.get("unit") or "").lower()
+        if val is None:
+            return None
+        if unit in ("km", "kilometer", "kilometers"):
+            return val * KM_TO_MILES
+        if unit in ("mi", "mile", "miles"):
+            return val
+        return val
+    return _num(raw.get("trip_distance_miles"))
+
+def _get_duration_since_trip_start(raw: dict) -> Optional[float]:
+    return _num(raw.get("cx_duration"))
+
+def _get_satellite_count(raw: dict) -> Optional[float]:
+    return _num(raw.get("cx_satellites_no"))
+
+def _get_gear_position(raw: dict) -> Optional[str]:
+    gear = raw.get("cx_gear_position") or raw.get("gear_position")
+    if isinstance(gear, str) and gear.strip():
+        return gear.strip()
+    return None
+
 def _get_coolant_temp_c(raw: dict) -> Optional[float]:
     eng = raw.get("cx_engine") or {}
     ct = eng.get("cx_coolant_temp")
@@ -268,6 +294,10 @@ def _normalize(envelope: dict) -> dict:
     battery_volts = _get_battery_volts(raw)
     coolant_temp_c = _get_coolant_temp_c(raw)
     engine_speed_rpm = _get_engine_speed_rpm(raw)
+    gear_position = _get_gear_position(raw)
+    trip_distance_miles = _get_trip_distance_miles(raw)
+    trip_duration_seconds = _get_duration_since_trip_start(raw)
+    satellite_count = _get_satellite_count(raw)
 
     vehicle_state = _derive_vehicle_state(event_type, speed_mph, ignition_status)
 
@@ -294,6 +324,7 @@ def _normalize(envelope: dict) -> dict:
         "altitudeM": altitude_m,
 
         "speed_mph": speed_mph,
+        "odometer_miles": odometer_miles,
         "odometer_Miles": odometer_miles,
 
         "fuelPercent": fuel_percent,
@@ -301,7 +332,14 @@ def _normalize(envelope: dict) -> dict:
 
         "batteryVolts": battery_volts,
         "coolantTempC": coolant_temp_c,
+        "engine_rpm": engine_speed_rpm,
         "engine_speed_rpm": engine_speed_rpm,
+        "gear_position": gear_position,
+
+        "tripStartTime": event_time if event_type == "trip_start" else None,
+        "distanceSinceTripStart_miles": trip_distance_miles,
+        "durationSinceTripStart_seconds": trip_duration_seconds,
+        "satelliteCount": satellite_count,
 
         "raw": raw,
     }
@@ -348,13 +386,23 @@ def _put_telemetry_event(n: dict):
         "lat", "lon", "heading", "altitudeM",
         "speed_mph",
         "odometer_Miles",
+        "odometer_miles",
         "fuelPercent",
         "fuelLevelGallons",
         "batteryVolts",
         "coolantTempC",
         "engine_speed_rpm",
+        "engine_rpm",
+        "distanceSinceTripStart_miles",
+        "durationSinceTripStart_seconds",
+        "satelliteCount",
     ]:
         add_num(k)
+
+    if n.get("gear_position"):
+        item["gear_position"] = {"S": n["gear_position"]}
+    if n.get("tripStartTime"):
+        item["tripStartTime"] = {"S": n["tripStartTime"]}
 
     try:
         ddb.put_item(
@@ -398,9 +446,21 @@ def _update_vehicle_state(n: dict):
     set_num("lat", "lat")
     set_num("lon", "lon")
     set_num("heading", "hd")
+    set_num("odometer_miles", "odo_mi")
     set_num("odometer_Miles", "odo")
     set_num("fuelPercent", "fp")
     set_num("fuelLevelGallons", "fg")
+    set_num("engine_rpm", "rpm")
+    set_num("distanceSinceTripStart_miles", "dist")
+    set_num("durationSinceTripStart_seconds", "dur")
+    set_num("satelliteCount", "sat")
+
+    if n.get("gear_position"):
+        expr += ", gear_position=:gp"
+        vals[":gp"] = {"S": n["gear_position"]}
+    if n.get("tripStartTime"):
+        expr += ", tripStartTime=:ts"
+        vals[":ts"] = {"S": n["tripStartTime"]}
 
     condition = "attribute_not_exists(lastEventTime) OR :t >= lastEventTime"
 

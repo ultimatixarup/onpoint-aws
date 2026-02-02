@@ -104,47 +104,6 @@ Resources:
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TripSummaryApiFunctionArn}/invocations"
 
-  # /vehicles resource
-  VehiclesResource:
-    Type: AWS::ApiGateway::Resource
-    Condition: HasTripSummaryApiArn
-    Properties:
-      RestApiId: !Ref TripSummaryRestApi
-      ParentId: !GetAtt TripSummaryRestApi.RootResourceId
-      PathPart: "vehicles"
-
-  # /vehicles/{vin} resource
-  VehicleVinResource:
-    Type: AWS::ApiGateway::Resource
-    Condition: HasTripSummaryApiArn
-    Properties:
-      RestApiId: !Ref TripSummaryRestApi
-      ParentId: !Ref VehiclesResource
-      PathPart: "{vin}"
-
-  # /vehicles/{vin}/latest-state resource
-  VehicleLatestStateResource:
-    Type: AWS::ApiGateway::Resource
-    Condition: HasTripSummaryApiArn
-    Properties:
-      RestApiId: !Ref TripSummaryRestApi
-      ParentId: !Ref VehicleVinResource
-      PathPart: "latest-state"
-
-  # GET /vehicles/{vin}/latest-state method
-  VehicleLatestStateGetMethod:
-    Type: AWS::ApiGateway::Method
-    Condition: HasTripSummaryApiArn
-    Properties:
-      RestApiId: !Ref TripSummaryRestApi
-      ResourceId: !Ref VehicleLatestStateResource
-      HttpMethod: GET
-      AuthorizationType: NONE
-      ApiKeyRequired: true
-      Integration:
-        Type: AWS_PROXY
-        IntegrationHttpMethod: POST
-        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TripSummaryApiFunctionArn}/invocations"
 
   # /fleets resource
   FleetsResource:
@@ -173,6 +132,7 @@ Resources:
       ParentId: !Ref FleetIdResource
       PathPart: "trips"
 
+
   # GET /fleets/{fleetId}/trips method
   FleetTripsGetMethod:
     Type: AWS::ApiGateway::Method
@@ -187,6 +147,7 @@ Resources:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TripSummaryApiFunctionArn}/invocations"
+
 
   # Lambda permission for REST API
   TripSummaryRestApiInvokePermission:
@@ -206,7 +167,6 @@ Resources:
       - TripsGetMethod
       - TripDetailGetMethod
       - TripEventsGetMethod
-      - VehicleLatestStateGetMethod
       - FleetTripsGetMethod
     Properties:
       RestApiId: !Ref TripSummaryRestApi

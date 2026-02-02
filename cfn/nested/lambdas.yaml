@@ -38,6 +38,9 @@ Parameters:
   FleetTenancyApiHandler:
     Type: String
     Default: app.lambda_handler
+  VehicleStateApiHandler:
+    Type: String
+    Default: app.lambda_handler
   UserPoolId:
     Type: String
     Default: ""
@@ -75,6 +78,12 @@ Parameters:
     Type: String
     Default: ""
   TripSummaryApiCodeS3Key:
+    Type: String
+    Default: ""
+  VehicleStateApiCodeS3Bucket:
+    Type: String
+    Default: ""
+  VehicleStateApiCodeS3Key:
     Type: String
     Default: ""
   FleetTenancyApiCodeS3Bucket:
@@ -240,6 +249,7 @@ Conditions:
   HasOverspeedDetectorCode: !And [!Not [!Equals [!Ref OverspeedDetectorCodeS3Bucket, ""]], !Not [!Equals [!Ref OverspeedDetectorCodeS3Key, ""]]]
   HasTripSummaryBuilderCode: !And [!Not [!Equals [!Ref TripSummaryBuilderCodeS3Bucket, ""]], !Not [!Equals [!Ref TripSummaryBuilderCodeS3Key, ""]]]
   HasTripSummaryApiCode: !And [!Not [!Equals [!Ref TripSummaryApiCodeS3Bucket, ""]], !Not [!Equals [!Ref TripSummaryApiCodeS3Key, ""]]]
+  HasVehicleStateApiCode: !And [!Not [!Equals [!Ref VehicleStateApiCodeS3Bucket, ""]], !Not [!Equals [!Ref VehicleStateApiCodeS3Key, ""]]]
   HasFleetTenancyApiCode: !And [!Not [!Equals [!Ref FleetTenancyApiCodeS3Bucket, ""]], !Not [!Equals [!Ref FleetTenancyApiCodeS3Key, ""]]]
   HasCommonLayer: !And [!Not [!Equals [!Ref CommonLayerS3Bucket, ""]], !Not [!Equals [!Ref CommonLayerS3Key, ""]]]
   EnableTenantFleetIndexCondition: !Equals [!Ref EnableTenantFleetIndex, "true"]
@@ -503,7 +513,6 @@ Resources:
           TRIP_SUMMARY_TABLE: !Ref TripSummaryTableName
           TELEMETRY_EVENTS_TABLE: !Ref TelemetryEventsTableName
           VIN_REGISTRY_TABLE: !Ref VinRegistryTableName
-          VEHICLE_STATE_TABLE: !Ref VehicleStateTableName
           VIN_TENANT_FLEET_INDEX: !If [EnableTenantFleetIndexCondition, TenantFleetIndexV2, !Ref AWS::NoValue]
           DEFAULT_LIMIT: !Ref DefaultLimit
           MAX_LIMIT: !Ref MaxLimit
@@ -512,6 +521,26 @@ Resources:
       Code:
         S3Bucket: !If [HasTripSummaryApiCode, !Ref TripSummaryApiCodeS3Bucket, !Ref AWS::NoValue]
         S3Key: !If [HasTripSummaryApiCode, !Ref TripSummaryApiCodeS3Key, !Ref AWS::NoValue]
+      Layers:
+        - !If [HasCommonLayer, !Ref CommonLayerVersion, !Ref AWS::NoValue]
+
+  VehicleStateApiFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-${Env}-vehicle-state-api"
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: !Ref LambdaRuntime
+      Handler: !Ref VehicleStateApiHandler
+      MemorySize: !Ref LambdaMemory
+      Timeout: !Ref LambdaTimeout
+      Environment:
+        Variables:
+          VEHICLE_STATE_TABLE: !Ref VehicleStateTableName
+          VIN_REGISTRY_TABLE: !Ref VinRegistryTableName
+          VIN_TENANT_FLEET_INDEX: !If [EnableTenantFleetIndexCondition, TenantFleetIndexV2, !Ref AWS::NoValue]
+      Code:
+        S3Bucket: !If [HasVehicleStateApiCode, !Ref VehicleStateApiCodeS3Bucket, !Ref AWS::NoValue]
+        S3Key: !If [HasVehicleStateApiCode, !Ref VehicleStateApiCodeS3Key, !Ref AWS::NoValue]
       Layers:
         - !If [HasCommonLayer, !Ref CommonLayerVersion, !Ref AWS::NoValue]
 
@@ -596,5 +625,9 @@ Outputs:
     Value: !Ref FleetTenancyApiFunction
   FleetTenancyApiFunctionArn:
     Value: !GetAtt FleetTenancyApiFunction.Arn
+  VehicleStateApiFunctionName:
+    Value: !Ref VehicleStateApiFunction
+  VehicleStateApiFunctionArn:
+    Value: !GetAtt VehicleStateApiFunction.Arn
   LambdaRoleArn:
     Value: !GetAtt LambdaRole.Arn

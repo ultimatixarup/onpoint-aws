@@ -1,0 +1,130 @@
+{
+  "info": {
+    "name": "OnPoint - Vehicle State API",
+    "_postman_id": "a7e4c7a1-4b7a-4d8e-9f6b-1c2f3a4b5c6d",
+    "description": "Vehicle State REST API - Query latest vehicle state. Uses vehicleStateBaseUrl and vehicleStateApiKey from the environment.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const baseUrl = pm.environment.get('vehicleStateBaseUrl');",
+          "const apiKey = pm.environment.get('vehicleStateApiKey');",
+          "if (apiKey) {",
+          "  pm.variables.set('apiKey', apiKey);",
+          "}",
+          "const url = pm.request.url.toString();",
+          "const tenantId = pm.environment.get('tenantId');",
+          "const role = pm.environment.get('roleAdmin');",
+          "if (tenantId) {",
+          "  pm.request.headers.upsert({ key: 'x-tenant-id', value: tenantId });",
+          "}",
+          "if (role) {",
+          "  pm.request.headers.upsert({ key: 'x-role', value: role });",
+          "}",
+          "const headers = {};",
+          "pm.request.headers.each(h => {",
+          "  const key = h.key || '';",
+          "  headers[key] = key.toLowerCase() === 'x-api-key' ? '***' : h.value;",
+          "});",
+          "console.log('Request URL:', url);",
+          "console.log('Headers (redacted API key):', headers);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Get Latest Vehicle State - VIN",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{vehicleStateBaseUrl}}/vehicles/{{vin}}/latest-state",
+          "host": ["{{vehicleStateBaseUrl}}"],
+          "path": ["vehicles", "{{vin}}", "latest-state"]
+        },
+        "description": "Get the latest vehicle state for a VIN."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Response has vin or PK', () => {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json).to.be.an('object');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List Vehicle State - Fleet",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{vehicleStateBaseUrl}}/fleets/{{fleetId}}/vehicles/state?range=today",
+          "host": ["{{vehicleStateBaseUrl}}"],
+          "path": ["fleets", "{{fleetId}}", "vehicles", "state"],
+          "query": [
+            {
+              "key": "range",
+              "value": "today",
+              "description": "today|week|month|year (defaults to today)",
+              "disabled": false
+            },
+            {
+              "key": "from",
+              "value": "2026-01-01T00:00:00Z",
+              "description": "ISO8601 start time filter",
+              "disabled": true
+            },
+            {
+              "key": "to",
+              "value": "2026-01-31T23:59:59Z",
+              "description": "ISO8601 end time filter",
+              "disabled": true
+            }
+          ]
+        },
+        "description": "List latest vehicle state for all VINs in a fleet for a date range."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Response has items array', () => {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json).to.have.property('items');",
+              "  pm.expect(json.items).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

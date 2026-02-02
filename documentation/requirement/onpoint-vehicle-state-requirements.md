@@ -15,8 +15,8 @@ This specification builds on the existing vehicle state implementation and exten
 | `PK` | Partition key in the format `VEHICLE#{VIN}` |
 | `SK` | Sort key – fixed value: `STATE` |
 | `schemaVersion` | Version of normalized telematics schema |
-| `updatedAt` | Timestamp when this state record was last updated |
-| `lastEventTime` | Timestamp of the last telematics event received |
+| `updatedAt` | Timestamp when this state record was last updated (ISO8601 UTC) |
+| `lastEventTime` | Timestamp of the last telematics event received (ISO8601 UTC) |
 
 ---
 
@@ -24,15 +24,15 @@ This specification builds on the existing vehicle state implementation and exten
 
 | Attribute | Type | Description |
 |--------|------|------------|
-| `vehicleState` | String | Logical state (e.g., `MOVING`, `IDLE`, `TRIP_STARTED`, `TRIP_ENDED`) |
-| `ignition_status` | String | `ON` or `OFF` |
-| `speed_mph` | Number | Current speed |
+| `vehicleState` | String | Logical state. Allowed: `PARKED`, `IDLE`, `MOVING`, `TRIP_STARTED`, `TRIP_ENDED` |
+| `ignition_status` | String | Allowed: `ON`, `OFF` |
+| `speed_mph` | Number | Current speed in mph |
 | `heading` | Number | Direction of travel (0–359 degrees) |
-| `lat` | Number | Latitude |
-| `lon` | Number | Longitude |
-| `odometer_Miles` | Number | Total vehicle distance |
-| `fuelLevelGallons` | Number | Fuel volume |
-| `fuelPercent` | Number | Fuel percentage remaining |
+| `lat` | Number | Latitude (WGS84) |
+| `lon` | Number | Longitude (WGS84) |
+| `odometer_miles` | Number | Total vehicle distance in miles |
+| `fuelLevelGallons` | Number | Fuel volume in gallons |
+| `fuelPercent` | Number | Fuel percentage remaining (0–100) |
 
 ---
 
@@ -44,11 +44,11 @@ When `vehicleState = MOVING`, the following attributes SHOULD be populated.
 
 | Attribute | Type | Description |
 |--------|------|------------|
-| `acceleration_mps2` | Number | Vehicle acceleration |
-| `deceleration_mps2` | Number | Braking intensity |
-| `yawRate_deg_per_sec` | Number | Turn rate |
-| `engineRPM` | Number | Engine revolutions per minute |
-| `gearPosition` | String | Current gear |
+| `acceleration_mps2` | Number | Vehicle acceleration in m/s² |
+| `deceleration_mps2` | Number | Braking intensity in m/s² |
+| `yawRate_deg_per_sec` | Number | Turn rate in degrees/sec |
+| `engine_rpm` | Number | Engine revolutions per minute |
+| `gear_position` | String | Allowed: `P`, `R`, `N`, `D`, `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8` |
 | `cruiseControlActive` | Boolean | Cruise control status |
 
 ---
@@ -58,9 +58,9 @@ When `vehicleState = MOVING`, the following attributes SHOULD be populated.
 | Attribute | Type | Description |
 |--------|------|------------|
 | `tripId` | String | Unique identifier for current trip |
-| `tripStartTime` | Timestamp | Trip start time |
-| `distanceSinceTripStart_Miles` | Number | Distance traveled |
-| `durationSinceTripStart_Seconds` | Number | Trip duration |
+| `tripStartTime` | Timestamp | Trip start time (ISO8601 UTC) |
+| `distanceSinceTripStart_miles` | Number | Distance traveled in miles |
+| `durationSinceTripStart_seconds` | Number | Trip duration in seconds |
 
 ---
 
@@ -68,11 +68,11 @@ When `vehicleState = MOVING`, the following attributes SHOULD be populated.
 
 | Attribute | Type | Description |
 |--------|------|------------|
-| `gpsFixQuality` | String | GPS quality |
-| `gpsAccuracyMeters` | Number | Accuracy |
-| `satelliteCount` | Number | Satellites |
-| `signalSource` | String | Data source |
-| `telemetryLatencyMs` | Number | Latency |
+| `gpsFixQuality` | String | Allowed: `NO_FIX`, `2D`, `3D`, `DGPS`, `RTK` |
+| `gpsAccuracyMeters` | Number | Accuracy in meters |
+| `satelliteCount` | Number | Satellites visible (integer) |
+| `signalSource` | String | Allowed: `OEM`, `OBD`, `MOBILE`, `THIRD_PARTY` |
+| `telemetryLatencyMs` | Number | Latency in milliseconds |
 
 ---
 
@@ -91,7 +91,7 @@ When `vehicleState = MOVING`, the following attributes SHOULD be populated.
 
 | Attribute | Type | Description |
 |--------|------|------------|
-| `batterySOCPercent` | Number | Battery SOC |
+| `batterySOCPercent` | Number | Battery SOC (0–100) |
 | `batteryRangeMiles` | Number | Estimated range |
 | `energyConsumptionWhPerMile` | Number | Efficiency |
 | `regenActive` | Boolean | Regenerative braking |
@@ -102,8 +102,9 @@ When `vehicleState = MOVING`, the following attributes SHOULD be populated.
 
 | From | To | Condition |
 |----|----|----------|
-| `IDLE` | `MOVING` | Speed > threshold |
-| `MOVING` | `IDLE` | Speed = 0 |
+| `IDLE` | `MOVING` | Speed > threshold (default 2 mph) |
+| `MOVING` | `IDLE` | Speed = 0 for >= 10 seconds |
+| `IDLE` | `TRIP_STARTED` | Ignition ON + tripId assigned |
 | `MOVING` | `TRIP_ENDED` | Ignition OFF |
 
 ---
@@ -115,17 +116,40 @@ When `vehicleState = MOVING`, the following attributes SHOULD be populated.
 - Historical states stored separately
 - High write frequency supported
 
+## Required vs Optional
+
+Required for all updates:
+- `vehicleState`, `ignition_status`, `speed_mph`, `lat`, `lon`, `updatedAt`, `lastEventTime`, `schemaVersion`
+
+Required when `vehicleState = MOVING`:
+- `tripId`, `tripStartTime`, `distanceSinceTripStart_miles`, `durationSinceTripStart_seconds`
+
+Optional:
+- All other fields (populate when available)
+
 ---
 
 ## Example (Moving)
 
 ```json
 {
+  "vin": "4JGFB4FB7RA981998",
+  "schemaVersion": "normalized-telematics-1.0",
+  "updatedAt": "2026-02-01T20:00:00Z",
+  "lastEventTime": "2026-02-01T20:00:00Z",
   "vehicleState": "MOVING",
+  "ignition_status": "ON",
   "speed_mph": 62,
-  "engineRPM": 2200,
-  "gearPosition": "D",
-  "tripId": "TRIP#20260201-001"
+  "heading": 120,
+  "lat": 33.642388,
+  "lon": -117.740412,
+  "odometer_miles": 19264.55,
+  "tripId": "TRIP#20260201-001",
+  "tripStartTime": "2026-02-01T19:34:06Z",
+  "distanceSinceTripStart_miles": 12.4,
+  "durationSinceTripStart_seconds": 1540,
+  "engine_rpm": 2200,
+  "gear_position": "D"
 }
 ```
 

@@ -37,6 +37,7 @@ psl_enricher_zip=$($LAMBDA_BUILD_SCRIPT psl_enricher)
 overspeed_zip=$($LAMBDA_BUILD_SCRIPT overspeed_detector)
 trip_summary_builder_zip=$($LAMBDA_BUILD_SCRIPT trip_summary_builder)
 trip_summary_api_zip=$($LAMBDA_BUILD_SCRIPT trip_summary_api)
+vehicle_state_api_zip=$($LAMBDA_BUILD_SCRIPT vehicle_state_api)
 fleet_tenancy_api_zip=$($LAMBDA_BUILD_SCRIPT fleet_tenancy_api)
 
 echo "Building Lambda layers..."
@@ -49,6 +50,7 @@ aws s3 cp "$psl_enricher_zip" "s3://${ARTIFACT_BUCKET}/lambda/psl_enricher.zip" 
 aws s3 cp "$overspeed_zip" "s3://${ARTIFACT_BUCKET}/lambda/overspeed_detector.zip" --region "$REGION"
 aws s3 cp "$trip_summary_builder_zip" "s3://${ARTIFACT_BUCKET}/lambda/trip_summary_builder.zip" --region "$REGION"
 aws s3 cp "$trip_summary_api_zip" "s3://${ARTIFACT_BUCKET}/lambda/trip_summary_api.zip" --region "$REGION"
+aws s3 cp "$vehicle_state_api_zip" "s3://${ARTIFACT_BUCKET}/lambda/vehicle_state_api.zip" --region "$REGION"
 aws s3 cp "$fleet_tenancy_api_zip" "s3://${ARTIFACT_BUCKET}/lambda/fleet_tenancy_api.zip" --region "$REGION"
 
 echo "Uploading Lambda layers to S3..."
@@ -75,6 +77,7 @@ PARAMS=(
   "ParameterKey=OverspeedDetectorCodeS3Key,ParameterValue=lambda/overspeed_detector.zip"
   "ParameterKey=TripSummaryBuilderCodeS3Key,ParameterValue=lambda/trip_summary_builder.zip"
   "ParameterKey=TripSummaryApiCodeS3Key,ParameterValue=lambda/trip_summary_api.zip"
+  "ParameterKey=VehicleStateApiCodeS3Key,ParameterValue=lambda/vehicle_state_api.zip"
   "ParameterKey=FleetTenancyApiCodeS3Key,ParameterValue=lambda/fleet_tenancy_api.zip"
   "ParameterKey=CommonLayerS3Key,ParameterValue=lambda/onpoint_common_layer.zip"
 )
