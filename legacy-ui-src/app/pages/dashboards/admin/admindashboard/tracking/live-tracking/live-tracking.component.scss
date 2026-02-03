@@ -1,0 +1,190 @@
+.red-box {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background-color: #ef8321;
+  color: white;
+  padding: 10px;
+  z-index: 999;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Poppins'!important;
+  width: auto;
+}
+
+.map-controls {
+  // position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1000; /* Ensure it stays above the map */
+  margin-top: -61px;
+  margin-left: 10px;
+}
+
+.map-toggle-button {
+  width: 78px;
+  height: 60px;
+  border: 2px solid #d0d2cc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #c2c4bf;
+  background-size: cover;
+  background-position: top;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.map-toggle-button span {
+  position: absolute;
+  bottom: 0px;
+  width: 100%;
+  border-bottom-left-radius: 2px;
+  margin-left: -37px;
+  background-color: #bebfba;
+  color: #000;
+  font-family: "Poppins";
+  opacity: 0.8;
+  font-weight:500;
+  font-size: 12px;
+  padding: 0px 0;
+  border-bottom-right-radius: 2px;
+}
+
+.map-toggle-button:hover {
+  opacity: 0.9;
+}
+
+.map-toggle-button:hover {
+  opacity: 0.9;
+}
+
+.roadmap-bg {
+  background-image: url('../../../../../../../assets/images/road.jpg'); /* Replace with actual roadmap image path */
+}
+
+.satellite-bg {
+  background-image: url('../../../../../../../assets/images/satellite.jpeg'); /* Replace with actual satellite image path */
+}
+
+.content-right {
+  flex-grow: 1; /* Allows expansion */
+  width: 84%!important;
+}
+
+.chart-container {
+  position: relative; // This ensures the inner circle can be positioned relative to the chart
+}
+
+
+.map-container {
+  font-family: "Poppins" !important;
+  border-radius: 15px;
+  border: 2px solid #dbecf3;
+  overflow: hidden;
+}
+
+.orange-box {
+  top: 20px;
+  right: 130px;
+  background-color: #ebd2ba;
+  color: #000;
+  padding-top: 20px !important;
+  z-index: 999;
+  border-radius: 50%;
+  height: 80px;
+  width: 98px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  position: absolute;
+}
+
+.new-red-box {
+  top: 20px;
+  right: 20px;
+  background-color: #ebd2ba;
+  color: #000;
+  padding-top: 20px !important;
+  z-index: 999;
+  border-radius: 50%;
+  height: 80px;
+  width: 98px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  position: absolute;
+}
+
+.mr-pad {
+  margin-right: 15px;
+}
+
+.page-content {
+ padding: none!important
+}
+
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin: -10px;
+  position: relative;
+}
+
+.map-height {
+  height: 500px;
+  position: relative;
+}
+
+::ng-deep.gm-style-iw {
+  max-width: 648px;
+  max-height: 431px;
+  min-width: 0px;
+  height: 290px !important;
+  width: 270px !important;
+  margin-top: 100px !important;
+  margin-left: 188px !important;
+  ;
+}
+
+::ng-deep.agm-info-window-content {
+  overflow: hidden !important;
+}
+
+.mr-pad {
+  margin-left: 12px;
+  margin-top: 12px
+}
+
+.heading-title {
+  line-height: 33px !important;
+  text-align: left !important;
+  font-weight: 600 !important;
+}
+
+.map-height {
+  height: 562px;
+  margin-top: 20px;
+}
+
+.histroy-link {
+  font-size: 14px;
+  font-weight: normal;
+  font-family: 'Poppins';
+  color: #ef8321;
+  background-color: #fff !important;
+  border: 1px solid #ef8321 !important;
+  padding: 5px 5px 5px 10px;
+  border-radius: 30px;
+  float: right;
+}
+
+.mrtop-09 {
+  margin-top: -9px !important
+}
+
+.mrtop-20 {
+  margin-top: 20px !important
+}
+
+.mrbot-10 {
+  margin-bottom: 10px !important
+}

@@ -1,0 +1,419 @@
+<ngx-spinner bdColor="rgba(0,0,0,0.8)" size="large" color="#fff" type="ball-elastic-dots" [fullScreen]="true">
+  <div class="custom-spinner">
+    <img src="../../../../../assets/images/spinner3.svg" alt="Your Logo">
+  </div>
+  <div class="loading-text">Please wait, we are getting information...</div>
+</ngx-spinner>
+
+<div class="page-content page-content-main">
+  <div class="row sideMenuItem">
+    <div class="container">
+      <!--Left side menu-->
+      <div class="col-xs-12 col-lg-2 navbar-side-menu">
+        <app-sidebar></app-sidebar>
+      </div>
+      <!--Left side menu end-->
+      <!--Right side content-->
+      <div class="col-xs-12 col-lg-12 content-right" style="margin-left: -16% !important;width: 100% !important;">
+        <div class="row">
+          <div class="col-xs-12 col-lg-12">
+            <span class="breadcrumb-left" style="width: 50%;">
+              <h1 class="login-headline heading-title">DVIR (Driver Vehicle Inspection Report)</h1>
+              <div class="row">
+                <div class="col-xs-12 col-lg-9">
+                  <h1 class="activeSinceFleet" *ngFor="let consumer of consumerList">Active Since: {{ consumer.startDate }}
+                  </h1>
+                </div>
+              </div>
+            </span>
+            <span class="breadcrumb-right" style="width: 50%;">
+              <div class="row">
+                <div class="col-xs-12 col-lg-8"> &nbsp;</div>
+                <div class="col-xs-12 col-lg-4" *ngIf="user !='role_user_fleet'">
+                  <ng-select [searchable]="true" class="newSelect1" (clear)="clearFleetSelection()"
+                    [clearable]="true" placeholder="Organization Id/Name" (change)="selectFleetId()"
+                    [(ngModel)]="fleetIdData">
+                    <ng-option *ngFor="let fleet of fleetList" value="{{fleet.id}}">{{fleet.id}} -
+                      [{{fleet.name}}]</ng-option>
+                  </ng-select>
+                </div>
+                <div class="col-xs-12 col-lg-4" *ngIf="user ==='role_user_fleet'">&nbsp;</div>
+              </div>
+            </span>
+          </div>
+        </div>
+
+        <div class="row mt-4" style="margin-top: -12px; margin-right: 12px;">
+          <div class="col-xs-12 col-lg-10 summary-detail">
+            <span class="user-icon f-le">
+              <img src="../../../../../assets/images/icon/aggresive.svg" class="icon">
+            </span>
+            <span class="f-le">
+              <h4 class="card-title card-heading mb-4">DVIR Inspections</h4>
+            </span>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-xs-12 col-lg-12">
+            <div class="card">
+              <div class="row">
+                <div class="row">
+                  <div class="col-lg-6"></div>
+                  <div class="col-lg-3 mt-2">
+                    <ng-select
+                      [items]="vinList"
+                      bindLabel="alias"
+                      bindValue="vin"
+                      placeholder="Select Vehicle VIN"
+                      [(ngModel)]="selectedVin"
+                      (ngModelChange)="filterByVin()"
+                      class="input-vins font-common"
+                      [ngStyle]="{ 'width': '100%', 'height': '45px' }"
+                    >
+                      <ng-template ng-label-tmp let-item="item">
+                        {{ item.alias }} ({{ item.vin }})
+                      </ng-template>
+                      <ng-template ng-option-tmp let-item="item">
+                        {{ item.alias }} ({{ item.vin }})
+                      </ng-template>
+                    </ng-select>
+                  </div>
+                  <div class="col-lg-3 mt-2">
+                    <ng-select
+                      bindLabel="label"
+                      bindValue="value"
+                      placeholder="Select Time Period"
+                      [(ngModel)]="selectedPeriod"
+                      (change)="onTimePeriodChangeData($event)"
+                      class="newSelect timePeriod current-month-dropdown"
+                      style="font-family: 'Poppins' !important;"
+                    >
+                      <ng-option *ngFor="let period of timePeriods" [value]="period.value">
+                        {{period.label}}
+                      </ng-option>
+                    </ng-select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Main data table-->
+              <div class="row mr-table mx-2">
+                <div class="col-lg-12 col-xs-12">
+                  <div class="table-wrapper">
+                    <div class="table-responsive table-b">
+                      <table class="table">
+                        <thead class="table-head">
+                          <tr>
+                            <th class="table-column-width">Date and Time</th>
+                            <th class="table-column-width">VIN</th>
+                            <th class="table-column-width7">Driver</th>
+                            <th class="table-column-width7">Overall Status</th>
+                            <th class="table-column-width7">Link to Report</th>
+                            <th class="table-column-width7">Link to Video</th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          <ng-container *ngIf="dvirData?.length > 0; else noDataTemplate">
+                            <ng-container *ngFor="let inspection of dvirData; let i = index">
+                              <tr class="bor-none">
+                                <td>
+                                  <a href="javascript:void(0)" class="tripIdnewplus" (click)="toggleExpand(i)">
+                                    <i class="fas" [ngClass]="expandedRowIndex === i ? 'fa-minus' : 'fa-plus'"></i>
+                                  </a>
+                                  {{ inspection.dateTime | date:'MMM d, y, h:mm a' }}
+                                </td>
+                                <td>{{ inspection.vin || 'N/A' }}</td>
+                                <td>{{ inspection.driver || 'N/A' }}</td>
+                                <td>
+                                  <span [ngClass]="inspection.overallStatus === 'OK' ? 'content-sub-text2' : 'content-sub-text'">
+                                    {{ inspection.overallStatus }}
+                                  </span>
+                                </td>
+                                <td>
+                                  <a (click)="generateDVIRPDF(inspection)" class="link-report" style="cursor: pointer;">
+                                    <i class="fas fa-file-pdf"></i> View Report
+                                  </a>
+                                </td>
+                                <td>
+                                  <a (click)="openVideoModalByDvirId(videoModal, inspection.dvirId)" class="link-video" style="cursor: pointer;">
+                                    <i class="fas fa-video"></i> View Video
+                                  </a>
+                                </td>
+                              </tr>
+
+                              <!-- Expanded Details -->
+                              <tr *ngIf="expandedRowIndex === i">
+                                <td colspan="12">
+                                  <div class="expanded-content p-3" style="background-color:#f8f9fa; border-radius:5px;">
+                                    <h5>Inspection Details</h5>
+                                    <div class="row">
+                                      <div class="col-lg-6">
+                                        <p><strong>Date & Time:</strong> {{ inspection.dateTime | date:'MMM d, y, h:mm a' }}</p>
+                                        <p><strong>VIN:</strong> {{ inspection.vin }}</p>
+                                        <p><strong>Driver:</strong> {{ inspection.driver }}</p>
+                                      </div>
+                                      <div class="col-md-6">
+                                        <strong>Overall Status:</strong>
+                                        <span [ngClass]="inspection.overallStatus === 'OK' ? 'content-sub-text2' : 'content-sub-text'">
+                                          {{ inspection.overallStatus }}
+                                        </span>
+                                        <p><strong>Report:</strong>
+                                          <a (click)="generateDVIRPDF(inspection)" class="link-report" style="cursor: pointer;">
+                                            View Report
+                                          </a>
+                                        </p>
+                                        <p><strong>Video:</strong>
+                                          <a (click)="openVideoModalByDvirId(videoModal, inspection.dvirId)" class="link-video" style="cursor: pointer;">
+                                            View Video
+                                          </a>
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    <!-- Physical Inspection Section FIRST -->
+                                    <div class="table-responsive mt-3">
+                                      <h6>Physical Inspection</h6>
+                                      <table class="table table-bordered mt-2">
+                                        <thead style="background-color: #2980b9; color: white;">
+                                          <tr>
+                                            <th style="text-align: left;">Component</th>
+                                            <th style="text-align: left;">Status</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          <ng-container *ngIf="inspection.checklist && objectKeys(inspection.checklist).length > 0; else noChecklistData">
+                                            <!-- Check if all items are OK -->
+                                            <ng-container *ngIf="inspection.overallStatus === 'OK'; else showIndividual">
+                                              <ng-container *ngIf="!inspection.showAllComponents">
+                                                <tr>
+                                                  <td>All Components</td>
+                                                  <td style="text-align: left;">
+                                                    <span class="content-sub-text2">All OK</span>
+                                                  </td>
+                                                </tr>
+                                                <tr>
+                                                  <td colspan="2" style="text-align: center;">
+                                                    <a href="javascript:void(0)" (click)="toggleShowAllComponents(inspection)" style="color: #007bff; cursor: pointer;">
+                                                      <i class="fas fa-chevron-down"></i> View More
+                                                    </a>
+                                                  </td>
+                                                </tr>
+                                              </ng-container>
+                                              <ng-container *ngIf="inspection.showAllComponents">
+                                                <tr *ngFor="let item of objectKeys(inspection.checklist)">
+                                                  <ng-container *ngIf="item !== 'Engine Oil' && item !== 'Seat Belts' && item !== 'Fuel Tank'">
+                                                    <td>{{ item }}</td>
+                                                    <td style="text-align: left;">
+                                                      <span class="content-sub-text2">OK</span>
+                                                    </td>
+                                                  </ng-container>
+                                                </tr>
+                                                <tr>
+                                                  <td colspan="2" style="text-align: center;">
+                                                    <a href="javascript:void(0)" (click)="toggleShowAllComponents(inspection)" style="color: #007bff; cursor: pointer;">
+                                                      <i class="fas fa-chevron-up"></i> View Less
+                                                    </a>
+                                                  </td>
+                                                </tr>
+                                              </ng-container>
+                                            </ng-container>
+
+                                            <!-- Show failed items individually, summary for passed items -->
+                                            <ng-template #showIndividual>
+                                              <ng-container *ngIf="!inspection.showAllComponents">
+                                                <!-- Show all failed items -->
+                                                <ng-container *ngFor="let item of objectKeys(inspection.checklist)">
+                                                  <tr *ngIf="item !== 'Engine Oil' && item !== 'Seat Belts' && item !== 'Fuel Tank' && !(inspection.checklist[item] === true || inspection.checklist[item] === 'true' || inspection.checklist[item] === 'Pass')">
+                                                    <td>{{ item }}</td>
+                                                    <td style="text-align: left;">
+                                                      <span class="content-sub-text">Fail</span>
+                                                    </td>
+                                                  </tr>
+                                                </ng-container>
+                                                <!-- Show summary for passed items if any pass -->
+                                                <tr *ngIf="hasPassedItems(inspection)">
+                                                  <td>Remaining Components</td>
+                                                  <td style="text-align: left;">
+                                                    <span class="content-sub-text2">All OK</span>
+                                                  </td>
+                                                </tr>
+                                                <tr>
+                                                  <td colspan="2" style="text-align: center;">
+                                                    <a href="javascript:void(0)" (click)="toggleShowAllComponents(inspection)" style="color: #007bff; cursor: pointer;">
+                                                      <i class="fas fa-chevron-down"></i> View More
+                                                    </a>
+                                                  </td>
+                                                </tr>
+                                              </ng-container>
+                                              <ng-container *ngIf="inspection.showAllComponents">
+                                                <!-- Show all items -->
+                                                <ng-container *ngFor="let item of objectKeys(inspection.checklist)">
+                                                  <tr *ngIf="item !== 'Engine Oil' && item !== 'Seat Belts' && item !== 'Fuel Tank'">
+                                                    <td>{{ item }}</td>
+                                                    <td style="text-align: left;">
+                                                      <span [ngClass]="inspection.checklist[item] === true || inspection.checklist[item] === 'true' || inspection.checklist[item] === 'Pass' ? 'content-sub-text2' : 'content-sub-text'">
+                                                        {{ inspection.checklist[item] === true || inspection.checklist[item] === 'true' || inspection.checklist[item] === 'Pass' ? 'OK' : 'Fail' }}
+                                                      </span>
+                                                    </td>
+                                                  </tr>
+                                                </ng-container>
+                                                <tr>
+                                                  <td colspan="2" style="text-align: center;">
+                                                    <a href="javascript:void(0)" (click)="toggleShowAllComponents(inspection)" style="color: #007bff; cursor: pointer;">
+                                                      <i class="fas fa-chevron-up"></i> View Less
+                                                    </a>
+                                                  </td>
+                                                </tr>
+                                              </ng-container>
+                                            </ng-template>
+                                          </ng-container>
+                                          <ng-template #noChecklistData>
+                                            <tr>
+                                              <td colspan="2" class="text-center">No checklist data available</td>
+                                            </tr>
+                                          </ng-template>
+                                        </tbody>
+                                      </table>
+                                    </div>
+
+                                    <!-- Telematics Data Section SECOND -->
+                                    <div class="table-responsive mt-3" *ngIf="inspection.telematics">
+                                      <h6>Telematics Data</h6>
+                                      <table class="table table-bordered mt-2">
+                                        <thead style="background-color: #3498db; color: white;">
+                                          <tr>
+                                            <th>Parameter</th>
+                                            <th>Value</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          <tr>
+                                            <td>Odometer</td>
+                                            <td>{{ inspection.telematics.odometerEnd !== undefined && inspection.telematics.odometerEnd !== -1 ? (inspection.telematics.odometerEnd.toFixed(2) + ' miles') : 'N/A' }}</td>
+                                          </tr>
+                                          <!-- <tr>
+                                            <td>Fuel Level Start</td>
+                                            <td>{{ inspection.telematics.fuelLevelStart !== undefined && inspection.telematics.fuelLevelStart !== -1 ? (inspection.telematics.fuelLevelStart.toFixed(2) + ' gallons') : 'N/A' }}</td>
+                                          </tr> -->
+                                          <tr>
+                                            <td>Fuel Level</td>
+                                            <td>{{ inspection.telematics.fuelPercent !== undefined && inspection.telematics.fuelPercent !== -1 ? (inspection.telematics.fuelPercent + '%') : 'N/A' }}</td>
+                                          </tr>
+                                          <tr>
+                                            <td>Engine Oil Life</td>
+                                            <td>{{ inspection.telematics.engineOilLife !== undefined && inspection.telematics.engineOilLife !== -1 ? (inspection.telematics.engineOilLife + '%') : 'N/A' }}</td>
+                                          </tr>
+                                          <tr>
+                                            <td>Battery Status</td>
+                                            <td>{{ inspection.telematics.batteryVoltage !== undefined && inspection.telematics.batteryVoltage !== -1 ? (inspection.telematics.batteryVoltage.toFixed(2) + ' Volts') : 'N/A' }}</td>
+                                          </tr>
+                                          <tr>
+                                            <td>Tire Pressure (FR/FL/RL/RR) in PSI</td>
+                                            <td *ngIf="inspection.telematics.tirePressure">
+                                              {{ inspection.telematics.tirePressure.frontRight?.toFixed(1) || 'N/A' }} /
+                                              {{ inspection.telematics.tirePressure.frontLeft?.toFixed(1) || 'N/A' }} /
+                                              {{ inspection.telematics.tirePressure.rearLeft?.toFixed(1) || 'N/A' }} /
+                                              {{ inspection.telematics.tirePressure.rearRight?.toFixed(1) || 'N/A' }}
+                                            </td>
+                                            <td *ngIf="!inspection.telematics.tirePressure">N/A</td>
+                                          </tr>
+                                          <ng-container *ngIf="inspection.telematics.vehicleDtc && inspection.telematics.vehicleDtc.length > 0; else noDtc">
+                                            <ng-container *ngFor="let dtc of inspection.telematics.vehicleDtc; let i = index">
+                                              <tr>
+                                                <td>DTC Category{{ i > 0 ? ' ' + (i + 1) : '' }}</td>
+                                                <td>{{ dtc.category || 'None' }}</td>
+                                              </tr>
+                                              <tr>
+                                                <td>DTC Code{{ i > 0 ? ' ' + (i + 1) : '' }}</td>
+                                                <td>{{ dtc.code || 'None' }}</td>
+                                              </tr>
+                                              <tr>
+                                                <td>DTC Description{{ i > 0 ? ' ' + (i + 1) : '' }}</td>
+                                                <td>{{ dtc.description || 'N/A' }}</td>
+                                              </tr>
+                                            </ng-container>
+                                          </ng-container>
+                                          <ng-template #noDtc>
+                                            <tr>
+                                              <td>DTC Category</td>
+                                              <td>No DTC</td>
+                                            </tr>
+                                            <tr>
+                                              <td>DTC Code</td>
+                                              <td>No DTC</td>
+                                            </tr>
+                                            <tr>
+                                              <td>DTC Description</td>
+                                              <td>N/A</td>
+                                            </tr>
+                                          </ng-template>
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            </ng-container>
+                          </ng-container>
+
+                          <!-- No Data Template -->
+                          <ng-template #noDataTemplate>
+                            <tr>
+                              <td colspan="12" class="text-center">
+                                <h5 class="heading-c">No Data Found ...</h5>
+              </td>
+            </tr>
+          </ng-template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Video Modal -->
+<ng-template #videoModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">DVIR Video</h5>
+    <button type="button" class="close" aria-label="Close" (click)="closeVideoModal()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+      <video
+        #videoPlayer
+        controls
+        autoplay
+        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+        [src]="currentVideoUrl">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="closeVideoModal()">Close</button>
+  </div>
+</ng-template>
+
+<!-- Custom Date Range Modal -->
+<div class="modal-overlay" *ngIf="isCardOpen">
+  <div class="modal-card">
+    <button (click)="closeCard()" class="close-button">X</button>
+    <div class="row">
+      <div class="col-3 option-column" style="margin-left: -20px; margin-right: 12px;">
+        <div style="margin-top: 20px;">
+          <div class="option" [class.selected]="selectedOption === 'today'" (click)="handleOption('today')">Today</div>
+          <div class="option" [class.selected]="selectedOption === 'weekly'" (click)="handleOption('weekly')">Current Week</div>
+          <div class="option" [class.selected]="selectedOption === 'monthly'" (click)="handleOption('monthly')">Current Month</div>
+          <div class="option" [class.selected]="selectedOption === 'lastmonth'" (click)="handleOption('lastmonth')">Previous Month</div>
+          <div class="option" [class.selected]="selectedOption === 'customRange'" selected (click)="handleOption('customRange')">Custom Range</div>
+        </div>
+      </div>
+      <div class="col-9" style="margin-top: 20px;">
+        <app-calendar (dateRangeSelected)="onDateRangeSelected($event)"></app-calendar>
+      </div>
+    </div>
+  </div>
+</div>

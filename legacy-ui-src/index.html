@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title id="pageTitle"></title>
+    <base href="/">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" id="favicon" type="image/x-icon">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDySexTXKB3Syxg_1eHOf7cuMljEnKb8us&libraries=drawing"   async
+    defer></script> -->
+
+    <script>
+        // Define the initMap function globally
+        function initMap() {
+          const mapElement = document.getElementById('map');
+          if (!mapElement) {
+            console.error('Map container element not found!');
+            return;
+          }
+
+          // Initialize the map
+          const map = new google.maps.Map(mapElement, {
+            center: { lat: -34.397, lng: 150.644 },  // Set default map center
+            zoom: 8,  // Set zoom level
+          });
+        }
+      </script>
+    <!-- <script async
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDySexTXKB3Syxg_1eHOf7cuMljEnKb8us&libraries=places&callback=initMap">
+</script> -->
+    <script defer src="assets/fontawesome/js/all.min.js"></script>
+    <link href="assets/css/demo.css">
+    <link href="assets/css/tabs.css">
+    <link href="assets/css/tabstyles.css">
+    <link id="theme-style" rel="stylesheet" href="assets/css/theme.css">
+    <script type="module" src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400&display=swap" rel="stylesheet">
+    <script src="assets/js/modernizr.custom.js"></script>
+    <script>
+        window.onload = function () {
+            var currentURL = window.location.href;
+            if (currentURL.includes("cerebrumx.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "Cerebrumx: AI-Powered Connected Vehicle Data";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/test2/favicon.ico");
+            }
+            else if (currentURL.includes("smallboard.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "On-Point Solution for a Smart Mobility Platform";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/test1/favicon.ico");
+            }
+            else if (currentURL.includes("smallboard-dev.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "On-Point Solution for a Smart Mobility Platform";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/test1/favicon.ico");
+            }
+             else if (currentURL.includes("onpointsolution.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "On-Point Solution for a Smart Mobility Platform";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/test1/favicon.ico");
+            }
+            else if (currentURL.includes("smallboard-demo.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "Smallboard : Fleet Management System";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/test1/favicon.ico");
+            }
+            else if (currentURL.includes("guidepoint.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "Gudepoint: Live Tracking System";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/guidepoint/favicon.ico");
+            }
+            else if (currentURL.includes("btracking.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "Btracking";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/btracking/favicon.ico");
+            }
+            else if (currentURL.includes("onwardconnected.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "Onward Connected &#8211; Your Trusted Fleet Management Partner";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/onwardfleet/favicon.ico");
+            }
+            else if (currentURL.includes("onwardconnected-demo.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "Onward Connected &#8211; Your Trusted Fleet Management Partner";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/onwardfleet/favicon.ico");
+            }
+            else if (currentURL.includes("https://onwardconnected.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "Onward Connected &#8211; Your Trusted Fleet Management Partner";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/onwardfleet/favicon.ico");
+            }
+            else if (currentURL.includes("revolv.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "Revolv: EV Fleet Management System";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/revol/favicon.ico");
+            }
+            else if (currentURL.includes("siriusxm.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "Siriusxm: Fleet Management System";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/siri/favicon.ico");
+            }
+            else if (currentURL.includes("dpltelemetics.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "DPL Telemetics: Fleet Management System";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/dpl/favicon.ico");
+            }
+            else if (currentURL.includes("ecotrack.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "EcoTrack: Fleet Management System";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/ecotrack/fav.ico");
+            }
+            else if (currentURL.includes("https://dpltelemetics.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "DPL Telemetics: Fleet Management System";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/dpl/favicon.ico");
+            }
+            else if (currentURL.includes("assetworks.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "Asset Works: Fleet Management System";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/assetsWork/assetwork.ico");
+            }
+            else if (currentURL.includes("orionfi.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "Orionfi: Fleet Management System";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/orionfi/favicon.ico");
+            }
+
+            else if (currentURL.includes("satrack.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "Satrack: Fleet Management System";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/satrack/favicon.ico");
+            }
+            else if (currentURL.includes("gpsinsight.fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "GPSInsight: Fleet Management System";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/gpsinsight/favicon.ico");
+            }
+            else if (currentURL.includes("fleettrack.ai")) {
+                document.getElementById("pageTitle").innerHTML = "Cerebrumx: AI-Powered Connected Vehicle Data Plateform";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/guide/favicon.ico");
+            }
+            else {
+                document.getElementById("pageTitle").innerHTML = "On-Point Solution for a Smart Mobility Platform";
+                document.getElementById("favicon").setAttribute("href", "./assets/images/dpl/favicon.ico");
+            }
+        };
+    </script>
+    <style>
+        body {
+            font-family: 'Neo Sans Pro', 'Helvetica', 'Arial', 'Lucida', sans-serif;
+        }
+
+        #wrap {
+            position: relative;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        section {
+            box-sizing: border-box;
+            position: relative;
+            height: 100vh;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+
+    <app-root>
+    </app-root>
+    <script src="assets/js/cbpFWTabs.js"></script>
+    <script>
+        (function () {
+
+            [].slice.call(document.querySelectorAll('.tabs')).forEach(function (el) {
+                new CBPFWTabs(el);
+            });
+
+        })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/plugins/masonry.pkgd.min.js"></script>
+    <script src="assets/plugins/popper.min.js"></script>
+    <script src="assets/plugins/bootstrap/js/bootstrap.min.js"></script>
+    <script src="assets/plugins/typewriterjs/dist/core.js"></script>
+    <script src="assets/plugins/masonry.pkgd.min.js"></script>
+    <script src="assets/js/pricing.js"></script>
+    <script src="assets/plugins/simplelightbox/simple-lightbox.min.js"></script>
+    <script src="assets/plugins/gumshoe/gumshoe.polyfills.min.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,15 @@
+<div class="custom-dropdown">
+  <div class="dropdown-selected" (click)="toggleDropdown()">
+    {{ consumer || 'Select Consumer' }}
+    <span class="dropdown-arrow" [class.open]="isDropdownOpen"></span>
+  </div>
+  <div class="dropdown-options" *ngIf="isDropdownOpen">
+    <div class="dropdown-option" *ngFor="let consumer of consumerList"
+      [ngStyle]="{color: consumer.isActive ? '#000000' : '#9fa19f'}" (click)="selectConsumer(consumer.name)">
+      <span class="consumer-name">{{ consumer.name }}</span>
+      <span class="consumer-icon">
+        <span [ngStyle]="{color: consumer.isActive ? '#45B01F' : '#9fa19f'}">●</span>
+      </span>
+    </div>
+  </div>
+</div>

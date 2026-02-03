@@ -1,0 +1,434 @@
+.login-headlines {
+  font-size: 16px;
+  line-height: 30px;
+  font-weight: 500;
+  font-family: "Poppins";
+  color: #9a9696;
+  text-align: center;
+}
+.nodatefound{
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color:#495057
+}
+
+.content-right {
+  flex-grow: 1; /* Allows expansion */
+  width: 84%!important;
+}
+
+.chart-container {
+  position: relative; // This ensures the inner circle can be positioned relative to the chart
+}
+
+.section-heading {
+  // text-align: center;
+  color: 000000;
+  margin-bottom: 20px;
+  font-weight: 600;
+  padding-left: 20px;
+  font-size: 20px;
+  font-family: 'Poppins';
+}
+
+.content-sub-text {
+  background: #fa751a;
+  padding: 1px 6px;
+  font-size: 14px;
+  color: white;
+  font-weight: 500;
+  font-family: 'Poppins';
+}
+
+.content-sub-text2 {
+  color: #fa751a;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 5px;
+  font-family: 'Poppins';
+}
+
+.ev {
+  margin-top: -166px;
+  margin-left: 154px;
+}
+
+.totalData {
+  font-size: 18px;
+  font-weight: 600;
+  font-family: 'Poppins';
+}
+
+.user-icon {
+  float: left;
+  margin-top: -10px;
+  margin-right: 10px;
+}
+
+.icon {
+  height: 20px;
+  margin-top: 10px;
+}
+
+.line {
+  margin-left: -20px;
+  margin-right: -20px;
+  margin-top: -6px;
+}
+
+::ng-deep.apexcharts-xaxis-label {
+  color: #000000 !important;
+  font-size: 10px !important;
+  font-family: 'Poppins' !important;
+  font-weight: 400 !important;
+}
+
+::-webkit-scrollbar {
+  overflow-x: auto;
+  height: 6px;
+  margin-top: -12px;
+}
+
+.f-le {
+  float: left;
+}
+
+.f-ri {
+  float: right;
+}
+
+.view-more {
+  font-size: 12px;
+}
+
+::ng-deep.ng-select.ng-select-single .ng-select-container {
+  height: 37px !important;
+  border-radius: 10px !important;
+}
+
+.newSelect {
+  color: #9fa19f;
+  width: 100%;
+  height: 37px !important;
+  background-size: 10px 12px !important;
+  font-family: "Poppins" !important;
+  height: 37px !important;
+  border-radius: 10px !important
+}
+
+
+.card-heading {
+  font-family: "Poppins" !important;
+  font-size: .790rem !important;
+  font-weight: 500 !important;
+  color: #000;
+  padding-left: 6px;
+}
+
+.chart-header-card {
+  padding: 0 20px;
+}
+
+
+.legend-item-container {
+  display: flex;
+}
+
+.flex-space-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-top-vehicle {
+  height: 145px;
+  border-radius: 12px;
+  border: 1px solid #E7EAEE;
+}
+
+.me-lg-4 {
+  margin-right: 2.5rem !important;
+}
+
+.heading-card {
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  font-family: 'Poppins' !important;
+  color: #6C757E;
+}
+
+.text {
+  text-decoration: none !important;
+}
+
+.months-text {
+  font-size: 10px !important;
+  color: #6C757E !important;
+}
+
+.ng-select ::ng-deep .ng-option.disabled {
+  cursor: default;
+}
+
+.mr-12-left {
+  margin-left: -30px
+}
+
+::ng-deep .chart-label-x {
+  fill: #000000 !important;
+  font-size: 11px !important;
+  font-family: 'Poppins' !important;
+}
+
+::ng-deep .apex-charts text {
+  color: #000000;
+  text-shadow: none !important;
+  font-family: 'Poppins' !important;
+}
+
+.apexcharts-bar-series rect {
+  stroke-width: 0 !important;
+}
+
+.heading-title {
+  line-height: 33px !important;
+  text-align: left !important;
+  font-weight: 600 !important;
+}
+
+.data-demo {
+  background: #45B01F !important;
+  border: 2px solid #45B01F !important;
+  border-radius: 145px !important;
+  padding: 10px 10px !important;
+  font-style: normal !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  line-height: 17px !important;
+  text-align: center !important;
+  /* letter-spacing: -0.374px !important; */
+  color: #ffffff !important;
+  font-family: "Neo Sans Pro 500", Helvetica, Arial, Lucida, sans-serif;
+  margin: 0px 0 0 !important;
+  display: inline-block !important;
+  text-decoration: none !important;
+}
+
+.data-demo:hover {
+  background: #ffffff !important;
+  border: 2px solid #45B01F !important;
+  border-radius: 145px !important;
+  padding: 10px 10px !important;
+  font-style: normal !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  line-height: 17px !important;
+  text-align: center !important;
+  /* letter-spacing: -0.374px !important; */
+  color: #45B01F !important;
+  font-family: 'Neo Sans Pro 500', Helvetica, Arial, Lucida, sans-serif;
+  margin: 0px 0 0 !important;
+  display: inline-block !important;
+}
+
+.top-row {
+  height: 537px;
+  margin-top: -16px;
+}
+
+.data-chart-heading {
+  padding-left: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #000;
+  font-family: 'Poppins';
+}
+
+.card {
+  border-radius: 10px !important;
+  height: auto !important;
+  border-top-left-radius: 0px !important;
+  border-top-right-radius: 0px !important;
+}
+
+::ng-deep.apexcharts-legend-text {
+  color: #000000 !important;
+  font-family: 'Poppins' !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+.table {
+  --bs-table-striped-color: #495057 !important;
+  --bs-table-striped-bg: #d9d9d9 !important;
+  --bs-table-active-color: #f2f2f2 !important;
+}
+
+.mr24 {
+  margin-top: 24px !important
+}
+
+.mr50 {
+  margin-top: 50px !important
+}
+
+.table {
+  --bs-table-bg: #ffffff !important;
+}
+
+.chart-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.data-container {
+  margin-top: -168px;
+  text-align: center;
+}
+
+::nd-deep.modal {
+  border: transparent !important;
+  margin-top: 0px !important;
+  margin-right: 100px !important;
+}
+
+.data-demo-download {
+  background: #45B01F !important;
+  border: 2px solid #45B01F !important;
+  border-radius: 145px !important;
+  width: 100%;
+  padding: 10px 10px !important;
+  font-style: normal !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  line-height: 17px !important;
+  text-align: center !important;
+  color: #ffffff !important;
+  font-family: "Neo Sans Pro 500", Helvetica, Arial, Lucida, sans-serif;
+  margin: 0px 0 0 !important;
+  display: inline-block !important;
+  text-decoration: none !important;
+}
+
+.data-demo-download:hover {
+  background: #ffffff !important;
+  border: 2px solid #45B01F !important;
+  border-radius: 145px !important;
+  width: 100%;
+  padding: 10px 10px !important;
+  font-style: normal !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  line-height: 17px !important;
+  text-align: center !important;
+  color: #45B01F !important;
+  font-family: 'Neo Sans Pro 500', Helvetica, Arial, Lucida, sans-serif;
+  margin: 0px 0 0 !important;
+  display: inline-block !important;
+}
+
+.data-demo-download.active {
+  background: #ffffff !important;
+  border: 2px solid #45B01F !important;
+  border-radius: 145px !important;
+  width: 100%;
+  padding: 10px 10px !important;
+  font-style: normal !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  line-height: 17px !important;
+  text-align: center !important;
+  color: #45B01F !important;
+  font-family: 'Neo Sans Pro 500', Helvetica, Arial, Lucida, sans-serif;
+  margin: 0px 0 0 !important;
+  display: inline-block !important;
+}
+
+
+.totalData {
+  font-size: 18px;
+  font-weight: 600;
+  font-family: 'Poppins';
+}
+
+.totalData-value {
+  font-size: 16px;
+  font-weight: 500;
+  font-family: 'Poppins';
+}
+
+.totalData-value {
+  font-size: 20px;
+  font-weight: 500;
+  font-family: 'Poppins';
+}
+
+.newSelect1 {
+  color: #9fa19f;
+  width: 100%;
+  height: 37px !important;
+  background-size: 10px 12px !important;
+  font-family: 'Poppins' !important;
+  height: 37px !important;
+  border-radius: 10px !important
+}
+
+::ng-deep.newSelect1 .ng-select-container {
+  background-color: #FA751A !important;
+}
+
+::ng-deep.newSelect1.ng-select .ng-select-container .ng-value-container .ng-placeholder {
+  color: #ffffff !important;
+}
+
+::ng-deep.newSelect1.ng-select.ng-select-opened>.ng-select-container .ng-arrow {
+  top: -2px;
+  border-color: transparent transparent #ffffff !important;
+  border-width: 0 5px 5px;
+}
+
+::ng-deep.newSelect1.ng-select.ng-select-single .ng-select-container .ng-value-container .ng-value {
+  color: #ffffff !important
+}
+
+::ng-deep.newSelect1.ng-select .ng-clear-wrapper {
+  color: #ffffff !important;
+}
+
+::ng-deep.newSelect1.ng-select .ng-arrow-wrapper .ng-arrow {
+  border-color: #fff transparent transparent !important;
+  border-style: solid;
+  border-width: 5px 5px 2.5px;
+}
+::ng-deep.tooltip {
+  background-color: transparent !important;
+  color: #ffffff !important;
+  font-family: 'Poppins'!important;
+  font-weight: 400!important;
+  border-radius: 8px;
+  font-size: 10px!important;
+}
+
+::ng-deep.tooltip .tooltip-inner {
+  background-color: transparent !important;
+  color: #ffffff !important;
+  border-radius: 5px;
+  padding: 5px
+}
+
+::ng-deep .custom-tooltipNew .tooltip-inner {
+  background-color: #000000 !important;
+  color: #fff !important;
+  width: auto !important;
+  white-space: pre-line !important;
+  font-weight: 400;
+  margin-right: 0px;
+  margin-bottom: -12px;
+}
+
+::ng-deep .custom-tooltipNew .tooltip-arrow::before {
+  border-bottom-color: #000000 !important;
+  margin-bottom: -12px;
+}

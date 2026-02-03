@@ -1,0 +1,340 @@
+<!--Page main content-->
+<div class="page-content page-content-main">
+    <div class="row sideMenuItem">
+        <div class="container">
+            <!--Right  side content-->
+            <div class="col-xs-12 content-right">
+                <!--Header & Breadcrumb-->
+                <div class="row">
+                    <div class="col-xs-12 col-lg-12">
+                        <span class="breadcrumb-left">
+                            <h1 class="login-headline heading-title">ADAS</h1>
+                        </span>
+                        <span class="breadcrumb-right mr-8">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item">
+                                        <a routerLink="/adlp/admin/admindashboard/dashboardfleet"
+                                            class="breadcrumb-h6"><i class="bx bx-home-circle"></i></a>
+                                    </li>
+                                    <li class="breadcrumb-item inactive-bread"><a
+                                            routerLink="/adlp/admin/admindashboard/dashboardfleet">Dashboard</a></li>
+                                    <li class="breadcrumb-item text-selected">Safety</li>
+                                    <li class="breadcrumb-item text-selected active-bread">ADAS</li>
+                                </ol>
+                        </span>
+                    </div>
+                </div>
+                <!--Header & Breadcrumb end-->
+                <!--Filter for consumer fleetid and time period-->
+                <div class="row consumer-pad">
+                        <div class="col-xs-12 col-lg-8">&nbsp;</div>
+                            <div class="col-xs-12 col-lg-2" style="margin-top: 6px;" *ngIf="user !='role_user_fleet' && user !='role_org_group' && user != 'role_Driver'">
+                                <ng-select [searchable]="true" class="newSelect1" [clearable]="true"
+                                    placeholder="Organization Id/Name" (change)="selectFleetId()" [(ngModel)]="fleetIdData">
+                                    <ng-option *ngFor="let fleet of fleetList" value="{{fleet.id}}">{{fleet.id}} -
+                                        [{{fleet.name}}]</ng-option>
+                                </ng-select>
+                            </div>
+                    <div class="col-xs-12 col-lg-8" *ngIf="user === 'role_org_group' || user === 'role_user_fleet' || user === 'role_Driver'">&nbsp;</div>
+                    <!-- <div class="col-xs-12 col-lg-2" style="margin-top: 6px;">
+                        <ng-select
+                    [searchable]="true"
+                    class="newSelect1"
+                    [clearable]="true"
+                    placeholder="Group Name"
+                    [items]="groupList"
+                    bindLabel="name"
+                    bindValue="id"
+                    [(ngModel)]="groupIdData"
+                    (change)="onGroupIdChange($event)">
+
+                    <ng-template ng-option-tmp let-item="item">
+                      <span [ngStyle]="{ 'padding-left.px': item.level * 18 }">
+                        {{ item.name }}
+                      </span>
+                    </ng-template>
+                  </ng-select>
+                      </div> -->
+                    <div class="col-xs-12 col-lg-2" style="margin-top: 6px;">
+                        <ng-select [items]="dataOfMonths" bindLabel="label" bindValue="value"
+                            placeholder="Select Time Period" class="newSelecting"
+                            [(ngModel)]="selectedTimePeriodss" (ngModelChange)="onTimePeriodChanges($event)"
+                            (clear)="closeMonthFilter()" [clearable]="true">
+                        </ng-select>
+                    </div>
+                </div>
+                <!--Filter end-->
+                <!--Main section-->
+                <!--Top header ovallall summary of ADAS Warning-->
+                <div class="row" style="margin-top: 12px;">
+                    <div class="col-xs-12 col-lg-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-xs-12 col-lg-4 box">
+                                        <div class="row">
+                                            <div class="col-xs-12 col-lg-12">
+                                                <div class="content-section-heading">
+                                                    <!-- Show spinner only when data is not available (undefined or null) -->
+                                                    <span
+                                                        *ngIf="detailData?.vehicleCount === undefined || detailData?.vehicleCount === null && detailData">
+                                                        <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                                    </span>
+
+                                                    <!-- Show number when data is available, including 0 -->
+                                                    <span class="text_number"
+                                                        *ngIf="detailData?.vehicleCount !== undefined">
+                                                        {{getFormattedNumber(detailData?.vehicleCount)}}</span>
+                                                    <span *ngIf="!detailData" class="text-muted">No data
+                                                        available</span>
+
+                                                </div>
+                                                <div class="content-section-text">Vehicles with ADAS warnings </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-xs-12 col-lg-4 box">
+                                        <div class="row">
+                                            <div class="col-xs-12 col-lg-12">
+                                                <div class="content-section-heading">
+                                                    <span
+                                                        *ngIf="detailData?.adaswarningsCount === undefined || detailData?.adaswarningsCount === null  && detailData">
+                                                        <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                                    </span>
+                                                    <span class="text_number"
+                                                        *ngIf="detailData?.adaswarningsCount !== undefined">
+                                                        {{getFormattedNumber(detailData?.adaswarningsCount)}}
+                                                    </span>
+                                                    <span *ngIf="!detailData" class="text-muted">No data
+                                                        available</span>
+                                                </div>
+                                                <div class="content-section-text">ADAS warnings</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-xs-12 col-lg-4 box">
+                                        <div class="row">
+                                            <div class="col-xs-12 col-lg-12">
+                                                <div class="content-section-heading">
+                                                    <span
+                                                        *ngIf="detailData?.adasperMile === undefined || detailData?.adasperMile === null && detailData">
+                                                        <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                                    </span>
+                                                    <span class="text_number"
+                                                        *ngIf="detailData?.adasperMile !== undefined">
+                                                        {{detailData?.adasperMile | number:'1.2-2'}}
+                                                    </span>
+                                                    <span *ngIf="!detailData" class="text-muted">No data
+                                                        available</span>
+                                                </div>
+                                                <div class="content-section-text">ADAS warnings per mile </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--Top header ovallall summary of ADAS Warning End-->
+                <!-- Monthly trends of all Warning -->
+                <div class="row">
+                    <div class="col-xs-12 col-lg-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-xs-12 col-lg-10">
+                                        <!-- <span class="user-icon f-le">
+                                        <img src="../../../../../assets/images/tracking.svg" class="icon">
+                                    </span> -->
+                                        <span class="f-le">
+                                            <h4 class="card-title card-heading">Monthly Trend For ADAS Warnings </h4>
+                                        </span>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row" style="height: 280px;">
+                                    <div class="col-xs-12 col-lg-12">
+                                        <ng-container *ngIf="chartOptions">
+                                            <apx-chart [series]="chartOptions.series" [chart]="chartOptions.chart"
+                                                [legend]="chartOptions.legend" [xaxis]="chartOptions.xaxis"
+                                                [dataLabels]="chartOptions.dataLabels" [grid]="chartOptions.grid"
+                                                [stroke]="chartOptions.stroke" [tooltip]="chartOptions.tooltip"
+                                                [yaxis]="chartOptions.yaxis" [fill]="chartOptions.fill"
+                                                [colors]="chartOptions.colors"></apx-chart>
+
+                                        </ng-container>
+                                    </div>
+                                </div>
+                                <div class="row" style="margin-bottom: 24px; margin-left: 24px;">
+                                    <ng-container *ngIf="chartOptions">
+                                        <ng-container *ngFor="
+                                        let label of chartOptions.labels;
+                                        let i = index
+                                      " class="legend-item">
+                                            <div class="col-xs-12 col-lg-2">
+                                                <span class="legend-color"
+                                                    [style.background-color]="chartOptions.colors[i]"></span>
+                                                <span class="chart-label">{{ label }}</span>
+                                            </div>
+                                        </ng-container>
+                                    </ng-container>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xs-12 col-lg-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-xs-12 col-lg-10">
+                                        <!-- <span class="user-icon f-le">
+                                        <img src="../../../../../assets/images/tracking.svg" class="icon">
+                                    </span> -->
+                                        <span class="f-le">
+                                            <h4 class="card-title card-heading">Monthly Trend For ADAS Warnings Per Mile
+                                            </h4>
+                                        </span>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row" style="height: 280px;">
+                                    <div class="col-xs-12 col-lg-12">
+                                        <ng-container *ngIf="chartOptionsPerMile">
+                                            <apx-chart [series]="chartOptionsPerMile.series"
+                                                [chart]="chartOptionsPerMile.chart"
+                                                [legend]="chartOptionsPerMile.legend"
+                                                [xaxis]="chartOptionsPerMile.xaxis"
+                                                [dataLabels]="chartOptionsPerMile.dataLabels"
+                                                [grid]="chartOptionsPerMile.grid" [stroke]="chartOptionsPerMile.stroke"
+                                                [tooltip]="chartOptionsPerMile.tooltip"
+                                                [yaxis]="chartOptionsPerMile.yaxis" [fill]="chartOptionsPerMile.fill"
+                                                [colors]="chartOptionsPerMile.colors"></apx-chart>
+
+                                        </ng-container>
+                                    </div>
+                                </div>
+                                <div class="row" style="margin-bottom: 24px; margin-left: 24px;">
+                                    <ng-container *ngIf="chartOptions">
+                                        <ng-container *ngFor="
+                                        let label of chartOptions.labels;
+                                        let i = index
+                                      " class="legend-item">
+                                            <div class="col-xs-12 col-lg-2">
+                                                <span class="legend-color"
+                                                    [style.background-color]="chartOptions.colors[i]"></span>
+                                                <span class="chart-label">{{ label }}</span>
+                                            </div>
+                                        </ng-container>
+                                    </ng-container>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Monthly trends of all Warning -->
+                <!--Summary of ADAS-->
+                <div class="row">
+                    <div class="col-xs-12 col-lg-4">
+                        <!-- <span class="user-icon f-le">
+                        <img src="../../../../../assets/images/safety_collision.svg" class="icon">
+                    </span> -->
+                        <span class="f-le">
+                            <h4 class="card-title card-heading">ADAS Warning Summary</h4>
+                        </span>
+                    </div>
+                </div>
+                <div class="row" style="margin-bottom: 12px; margin-top: 12px;">
+                    <div class="col-xs-12 col-lg-6">
+                        <input class="form-control input-vin font-common"
+                        maxlength="17"
+                        type="text"
+                        (input)="filterTableData()"
+                        [(ngModel)]="searchbyVinNumber"
+                        placeholder="Search Vehicle Name">
+
+                    </div>
+                </div>
+                <hr>
+                <div class="row" style="margin-left: 0px; margin-right: 12px;">
+                    <div class="col-xs-12 col-lg-12">
+                        <div class="table-responsive table-b table-scrooling">
+                            <table class="table table01" style="margin-bottom: 0px;">
+                                <thead class="table-head" style="text-align: center;">
+                                    <tr >
+                                        <th class="tablecol2">Vehicle Name</th>
+                                        <th class="tablecol2">Forward Collision<span class="sort-icon"
+                                                (click)="toggleSort('fwAudioWarningCount')">
+                                                <i *ngIf="sortColumn !== 'fwAudioWarningCount' || sortDirection === 'asc'"
+                                                    class="bx bx-sort-up"></i>
+                                                <i *ngIf="sortColumn === 'fwAudioWarningCount' && sortDirection === 'desc'"
+                                                    class="bx bx-sort-down"></i>
+                                            </span>
+                                        </th>
+                                        <th class="tablecol2">ABS <span class="sort-icon"
+                                                (click)="toggleSort('absCount')">
+                                                <i *ngIf="sortColumn !== 'absCount' || sortDirection === 'asc'"
+                                                    class="bx bx-sort-up"></i>
+                                                <i *ngIf="sortColumn === 'absCount' && sortDirection === 'desc'"
+                                                    class="bx bx-sort-down"></i>
+                                            </span></th>
+                                        <th class="tablecol2">Traction Control Brake <span class="sort-icon"
+                                                (click)="toggleSort('tractionBrakeWarningCount')">
+                                                <i *ngIf="sortColumn != 'tractionBrakeWarningCount' || sortDirection === 'asc'"
+                                                    class="bx bx-sort-up"></i>
+                                                <i *ngIf="sortColumn === 'tractionBrakeWarningCount' && sortDirection === 'desc'"
+                                                    class="bx bx-sort-down"></i>
+                                            </span></th>
+                                        <th class="tablecol2">Blind Spot <span class="sort-icon"
+                                                (click)="toggleSort('blindSpotWarningCount')">
+                                                <i *ngIf="sortColumn != 'blindSpotWarningCount' || sortDirection === 'asc'"
+                                                    class="bx bx-sort-up"></i>
+                                                <i *ngIf="sortColumn === 'blindSpotWarningCount' && sortDirection === 'desc'"
+                                                    class="bx bx-sort-down"></i>
+                                            </span></th>
+                                        <th class="tablecol2">Collision Mitigation <span class="sort-icon"
+                                                (click)="toggleSort('collisionMitigationbrakesignalCount')">
+                                                <i *ngIf="sortColumn != 'collisionMitigationbrakesignalCount' || sortDirection === 'asc'"
+                                                    class="bx bx-sort-up"></i>
+                                                <i *ngIf="sortColumn === 'collisionMitigationbrakesignalCount' && sortDirection === 'desc'"
+                                                    class="bx bx-sort-down"></i>
+                                            </span></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="table-body">
+                                    <tr *ngFor="let item of filteredTableData" style="text-align: center;">
+                                        <td>{{item?.alias}}</td>
+                                        <td>{{item?.fwAudioWarningCount}}</td>
+                                        <td>{{item?.absCount}}</td>
+                                        <td>{{item?.tractionBrakeWarningCount}}</td>
+                                        <td>{{item?.blindSpotWarningCount}}</td>
+                                        <td>{{item?.collisionMitigationbrakesignalCount}}</td>
+                                    </tr>
+                                    <tr *ngIf="filteredTableData.length === 0 && detailDataNew">
+                                        <td colspan="6" style="text-align: center;">
+                                            <span class="text-muted">No data available</span>
+                                        </td>
+                                    </tr>
+                                    <tr *ngIf="searchbyVinNumber && filteredTableData.length === 0">
+                                        <td colspan="6" style="text-align: center;">
+                                          <span class="text-muted">No data found</span>
+                                        </td>
+                                      </tr>
+
+                                </tbody>
+
+
+                            </table>
+                        </div>
+                        <!-- Pagination for table -->
+                    </div>
+                </div>
+                <!--Summary of ADAS end-->
+
+                <!--Main section end-->
+            </div>
+            <!--Right  side content-->
+        </div>
+    </div>
+</div>
+<!--Page main content end-->

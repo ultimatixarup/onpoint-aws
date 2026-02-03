@@ -12,3 +12,9 @@ onpoint_lambdas/dist/
 MCP_Server_Design_Document.docx
 MCP_Server_Design_Document.pdf
 ~$P_Server_Design_Document.docx
+
+# Node/React
+node_modules/
+src-ui/node_modules/
+src-ui/dist/
+src-ui/.vite/

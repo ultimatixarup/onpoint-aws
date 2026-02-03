@@ -1,0 +1,1968 @@
+<!--Page main content-->
+<div class="page-content page-content-main">
+  <div class="row sideMenuItem">
+    <div class="container">
+      <!--Right  side content-->
+      <div class="col-xs-12 content-right">
+        <!-- Breadcrumb and filter-->
+        <div class="row" style="margin-top: -12px;">
+          <div class="col-xs-12 col-lg-12">
+            <span class="breadcrumb-left">
+
+              <div class="row" style="margin-top: 10px;">
+                <div class="col-xs-12 col-lg-12">
+                  <ng-container *ngIf="user === 'admin'">
+                    <app-common-consumer (consumerChange)="selectConsumers($event)"></app-common-consumer>
+                  </ng-container>
+                </div>
+              </div>
+            </span>
+
+            <span class="breadcrumb-right mr-8" style="width: 40%;">
+
+              <div class="row">
+
+                <div class="col-xs-12 col-lg-6">&nbsp;</div>
+                <ng-container *ngIf="user != 'role_org_group' &&  user != 'role_user_fleet'">
+                  <div class="col-xs-12 col-lg-5 mr-6">
+                    <ng-select [searchable]="true" class="newSelect1" [clearable]="true" placeholder="Organization Id/Name"
+                      (change)="selectFleetId()" [(ngModel)]="fleetIdData" (ngModelChange)="onFleetIdChange($event)">
+                      <ng-option *ngFor="let fleet of fleetList" value="{{fleet.id}}">{{fleet.id}} -
+                        [{{fleet.name}}]</ng-option>
+                    </ng-select>
+                  </div>
+                  </ng-container>
+                  <ng-container *ngIf="user === 'role_user_fleet' || user === 'role_org_group'">
+                    <div class="col-xs-12 col-lg-5">&nbsp;</div>
+                  </ng-container>
+                <div class="col-xs-12 col-lg-5 mr-6">
+                  <!-- <ng-select
+                            [searchable]="true"
+                            class="newSelect1"
+                            [clearable]="true"
+                            placeholder="Group Name"
+                            [items]="groupList"
+                            bindLabel="name"
+                            bindValue="id"
+                            [(ngModel)]="groupIdData"
+                            (change)="onGroupIdChange($event)">
+
+                            <ng-template ng-option-tmp let-item="item">
+                              <span [ngStyle]="{ 'padding-left.px': item.level * 18 }">
+                                {{ item.name }}
+                              </span>
+                            </ng-template>
+                          </ng-select> -->
+                </div>
+              </div>
+            </span>
+          </div>
+        </div>
+        <!-- Breadcrumb and filter end-->
+        <ng-container *ngIf="user ==='role_user_fleet'">
+          <div class="content-text">
+            <span class="vin_container">
+              <span class="content-sub-text">Fleet Id</span>
+            </span>
+            <span class="content-sub-text2">{{fleetIdValueNew}}</span>
+          </div>
+        </ng-container>
+        <ng-container *ngIf="user ==='role_org_group'">
+          <div class="content-text">
+            <span class="vin_container">
+              <span class="content-sub-text">Fleet Id</span>
+            </span>
+            <span class="content-sub-text2">{{fleetIdValueNew}}</span>
+          </div>
+        </ng-container>
+        <!--map and details-->
+        <div class="row h-50">
+          <div class="col-xs-12 col-lg-12">
+            <div class="card" style="border-radius: 14px !important;">
+              <div class="card-body1">
+                <div class="row">
+                  <div class="col-xs 12 col-lg-12">
+                    <div style="display: flex; flex-direction: row;">
+                      <!-- Map with overlay layout -->
+                      <div class="map-overlay-wrapper"
+                        style="position: relative; display: flex; width: 100%; height: 100%;">
+                        <!-- Map container (stretch full width behind) -->
+                        <div class="map-container" style="flex: 3; position: relative;">
+
+                          <div class="map-toggle-group">
+                            <button [class.active]="currentMapType === 'roadmap'" (click)="setMapType('roadmap')">
+                              Map
+                            </button>
+                            <button [class.active]="currentMapType === 'satellite'" (click)="setMapType('satellite')">
+                              Satellite
+                            </button>
+                          </div>
+                          <!-- Search OEM Filter-->
+                          <div class="dropdown-container">
+                            <div class="dropdown-header" (click)="toggleDropdown()">
+                              <i class="fa fa-car"></i>
+                              <span class="heading-str">Vehicles</span>
+                              <i class="fa dropdown-arrow" style="margin-left: 28px;"
+                                [ngClass]="{'fa-chevron-down': !dropdownOpen, 'fa-chevron-up': dropdownOpen}"></i>
+                            </div>
+                            <div class="dropdown-menu" [class.show]="dropdownOpen" (mouseleave)="closeDropdowns()">
+                              <!-- CONNECTED MAIN CHECKBOX -->
+                              <!-- <div class="dropdown-section">
+                                <label>
+                                  <input type="checkbox" [(ngModel)]="filters.connected" (change)="onConnectedToggle()" />
+                                  Connected
+                                </label>
+                              </div> -->
+                              <!-- PROVIDERS SUB-FILTER -->
+                              <div class="dropdown-section">
+                                <!-- "All" checkbox -->
+                                <label>
+                                  <input
+                                    type="checkbox"
+                                    [(ngModel)]="selectAll"
+                                    (change)="toggleAllProviders()"
+                                  />
+                                  All
+                                </label>
+                              </div>
+
+                              <!-- Individual provider checkboxes -->
+                              <div class="dropdown-section">
+                                <label *ngFor="let provider of connectedProviders">
+                                  <input
+                                    type="checkbox"
+                                    [(ngModel)]="filters.providers[provider]"
+                                    (change)="onProviderChange()"
+                                  />
+                                  {{ provider }}
+                                </label>
+                              </div>
+
+
+                            </div>
+
+                          </div>
+                          <div class="dropdown-container-geofence">
+                            <div class="dropdown-header" (click)="toggleDropdowngeoFence()">
+                             <img src="../../../../../../assets/images/geofence-icon.svg" style="height: 12px;">
+                              <span class="heading-str">Geofence </span>
+                              <i class="fa dropdown-arrow" style="margin-left: 28px;"
+                                [ngClass]="{'fa-chevron-down': !dropdownGeofence, 'fa-chevron-up': dropdownGeofence}"></i>
+                            </div>
+                            <div class="dropdown-menu" [class.show]="dropdownGeofence" (mouseleave)="closeGeofenceDropDown()">
+                              <div class="dropdown-section">
+                                <label>
+                                  <input
+                                    type="checkbox"
+                                    [checked]="isAllGeofencesSelected()"
+                                    (change)="toggleSelectAllGeofences($event.target.checked)"
+                                  />
+                                  Select All
+                                </label>
+
+                                <label *ngFor="let geofence of geoFenceList">
+                                  <input
+                                    type="checkbox"
+                                    [checked]="selectedGeofenceIds.includes(geofence.id)"
+                                    (change)="onToggleGeofence(geofence.id, $event.target.checked)"
+                                  />
+                                  {{ geofence.name }}
+                                </label>
+                              </div>
+
+                              <!-- Show selected geofence names -->
+                              <div *ngIf="selectedGeofenceNames.length > 0">
+                                <p>Selected Geofences:</p>
+                                <ul>
+                                  <li *ngFor="let name of selectedGeofenceNames">{{ name }}</li>
+                                </ul>
+                              </div>
+
+
+
+                            </div>
+
+                          </div>
+                          <div class="dropdown-container">
+                            <div class="alert-settingN alert-set" (click)=" notificationAlerts()" style="cursor: pointer;">
+                              <img src="assets/images/notification-icon.svg" alt="notificaion" height="30">
+                            </div>
+                            <div class="dropdown-menu main-menu-dropdown"
+                            [class.show]="notificationAlert"
+                            (mouseleave)="closeDropdowns()"
+                            style="border: none !important; max-height: 440px; position: relative;">
+
+                         <div class="sticky-header" style="position: sticky; top: 0; background: white; z-index: 10; padding-bottom: 10px;">
+                           <h5 class="notificaiton-heading">Notifications</h5>
+                           <div class="row d-flex justify-content-between">
+                             <div class="col-xs-12 col-lg-6">
+                               <ng-select placeholder="Search By Vehicle Name"
+                                          (change)="searchFilter()"
+                                          [(ngModel)]="searchVIN">
+                                 <ng-option *ngFor="let item of displayedVehicles" [value]="item?.vin">
+                                   {{item?.alias}}
+                                 </ng-option>
+                               </ng-select>
+                             </div>
+                             <div class="col-xs-12 col-lg-6 font-common">
+                               <ng-select placeholder="Search By Events"
+                                          (change)="searchFilter()"
+                                          [(ngModel)]="searchEvent">
+                                 <ng-option *ngFor="let alert of alertEventList" [value]="alert?.warningDescription">
+                                   {{alert?.name}}
+                                 </ng-option>
+                               </ng-select>
+                             </div>
+                           </div>
+                         </div>
+                         <div class="notification-scroll">
+                          <ng-container *ngFor="let event of eventList">
+                            <div class="row" style="margin-top: -6px;">
+                              <div class="col-xs-12 col-lg-12">
+                                <div class="notification-item">
+                                  <div class="icon-circle">
+                                    <img src="{{getImage(event?.alertDescriptions)}}" alt="icon" />
+                                  </div>
+                                  <div class="notification-content">
+                                    <div class="title pointer" (click)="selectEvent(event?.vin)">{{event?.alias}}</div>
+                                    <div class="message">Detected <span class="highlight">{{event?.alertDescriptions}}</span></div>
+                                    <div class="message"><span class="highlight">{{event?.geoFenceName}}</span></div>
+                                    <!-- <ng-container *ngIf="{{event?.alertDescriptions === 'Geofence Breached'}}">
+                                      <div class="message">Geofence Name<span class="highlight">{{event?.geoFenceName}}</span></div>
+                                    </ng-container> -->
+
+                                  </div>
+                                  <div>
+                                    <div class="time" style="margin-left: 40px;">
+                                      <img *ngIf="event?.events == 'tripEnd'" src="assets/images/pastTrip.svg" alt="Past Trip">
+                                      <img *ngIf="event?.events == ' tripOngoing'" src="assets/images/ongoingTrip.svg" alt="Ongoing Trip">
+                                    </div>
+                                  <div class="time">{{event?.alertTimeStamp | timeAgo }}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <hr style="margin-top: 0px; margin-bottom: 6px;">
+                          </ng-container>
+                         </div>
+
+
+                         <div class="notification-pagination" style="
+                         position: absolute;
+                         bottom: 0;
+                         left: 0;
+                         right: 0;
+                         background: white;
+                         padding: 10px 0;
+                         border-top: 1px solid #e5e5e5;">
+                         <div class="mt-2 text-end pagination-h">
+                          <span *ngIf="pages?.length <=9" class="f-le">
+                            <div>
+                              <nav class="isolate inline-flex -space-x-px rounded-md pag-color" aria-label="Pagination">
+                                <a (click)="selectPages(pageNumber - 1)" href="javascript:(Void)" [class.disabled]="pageNumber == 1"
+                                  class="page pointer relative inline-flex items-center rounded-l-md px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus:z-20">
+                                  <span class="sr-only">Previous</span>
+                                  <img src="../../../../../assets/images/left-img.svg" class="right-arrow">
+                                </a>
+                                <ng-container *ngFor="let page of pages">
+                                  <a [class.isActive]="page == pageNumber" href="javascript:(void)"
+                                    [ngClass]="{'pointer' : page != '...'}" aria-current="page" (click)="selectPages(page)"
+                                    class=" px-4 py-2 pageination-number">{{page}}
+                                  </a>
+                                </ng-container>
+                                <a (click)="selectPages(pageNumber + 1)" [class.disabled]="pageNumber == totalPages"
+                                  class=" page pointer relative inline-flex items-center rounded-r-md px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus:z-20">
+                                  <span class="sr-only">Next</span>
+                                  <img src="../../../../../assets/images/right.svg" class="right-arrow">
+                                </a>
+                              </nav>
+                            </div>
+                          </span>
+                          <span *ngIf="pages?.length >9" class="f-ri">
+                            <div>
+                              <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                                <a (click)="selectPages(pageNumber - 1)" [class.disabled]="pageNumber == 1"
+                                  class="page pointer relative inline-flex items-center rounded-l-md px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus:z-20">
+                                  <span class="sr-only">Previous</span>
+                                  <img src="../../../../../assets/images/left-img.svg" class="right-arrow">
+                                </a>
+                                <ng-container *ngFor="let page of pages">
+                                  <a [class.isActive]="page == pageNumber" *ngIf="( (page < pages.length && page  > 1))"
+                                    aria-current="page" (click)="selectPages(page)"
+                                    [ngStyle]="{'display': ((page > pageNumber+1 ||  page < pageNumber-1) && page < (pages.length)) ? 'none':''}"
+                                    class=" px-4 py-2 pageination-number">{{page}}
+                                  </a>
+                                </ng-container>
+                                <ng-container *ngIf="pageNumber < (pages.length-2)">
+                                  <a aria-current="page" (click)="selectPages(pageNumber+1)"
+                                    class="page relative z-10 inline-flex items-center  px-4 py-2 text-sm font-medium text-indigo-600 focus:z-20 active:bg-blue-700 focus:bg-blue-500 hover:bg-blue-700 hover:text-white ">{{"."}}
+                                  </a>
+                                </ng-container>
+                                <ng-container>
+                                  <a aria-current="page" [class.isActive]="(pageNumber == pages.length )"
+                                    (click)="selectPages(pages.length)" class=" px-4 py-2 pageination-number">{{pages.length}}
+                                  </a>
+                                </ng-container>
+                                <ng-container *ngFor="let page of pages">
+                                  <a [class.isActive]="page == pageNumber" class="page-display" aria-current="page"
+                                    (click)="selectPages(page)" class=" px-4 py-2 pageination-number">{{page}}
+                                  </a>
+                                </ng-container>
+                                <a (click)="selectPages(pageNumber + 1)" [class.disabled]="pageNumber == totalPages"
+                                  class=" page relative inline-flex items-center rounded-r-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus:z-20">
+                                  <span class="sr-only">Next</span>
+                                  <img src="../../../../../assets/images/right.svg" class="right-arrow">
+                                </a>
+                              </nav>
+                            </div>
+                          </span>
+
+                        </div>
+                         </div>
+
+                       </div>
+
+
+                          </div>
+                          <!-- Search filter end-->
+                          <!--Current map with all trip marker and details-->
+                          <ng-container *ngIf="oldMap">
+                            <agm-map *ngIf="showMap || showPolyline" [latitude]="combinedCoords[0]?.[0] || latitude"
+                              [longitude]="combinedCoords[0]?.[1] || longitude" [zoom]="zoom" class="map-height"
+                              [styles]="mapStyles" [mapTypeId]="currentMapType" [fullscreenControl]="true"
+                              (mapReady)="onMapReady($event)">
+                              <!-- Start/End Markers with Info Window -->
+                              <agm-marker *ngFor="let coordinate of start_end_mark; trackBy: trackByCoordinate"
+                                [latitude]="coordinate?.endLat" [longitude]="coordinate?.endLong"
+                                (mouseOver)="openInfoWindow(coordinate)" (mouseOut)="closeInfoWindow()" [iconUrl]="{
+                                            url: getMarkerIcon(coordinate?.colorCode),
+                                            scaledSize: { width: 10, height: 10 }
+                                          }">
+                                <ng-container *ngIf="user === 'admin'">
+                                  <agm-info-window *ngIf="hoveredMarker === coordinate"
+                                    [pixelOffset]="{ width: 20, height: -10 }">
+                                    <div class="custom-info-window custom-ngb-tooltip"
+                                      [ngStyle]="{ 'background-color': getInfoWindowBackgroundColor(coordinate) }">
+                                      <h4>{{ getDriverName(coordinate?.alias) }}</h4>
+                                      <p>{{ coordinate?.address || 'Address not available' }}</p>
+                                    </div>
+                                  </agm-info-window>
+                                </ng-container>
+                                <ng-container *ngIf="user != 'admin'">
+                                  <agm-info-window [isOpen]="true" *ngIf="showMap"
+                                    [pixelOffset]="{ width: 20, height: -10 }">
+                                    <div
+                                      [ngStyle]="{ display: 'flex',  alignItems: 'center', backgroundColor: coordinate?.colorCode === 'RED'
+                                    ? '#F96969'
+                                    : coordinate?.colorCode === 'YELLOW'
+                                      ? '#3B67D7'
+                                      : coordinate?.colorCode,
+                                        color: 'white', fontWeight: 'bold', fontSize: '10px',  padding: '4px 8px', borderRadius: '4px', whiteSpace: 'nowrap'}">
+                                      <span style="margin-left: 6px;"
+                                        ngbTooltip="{{ coordinate?.address || 'Address not available' }}"
+                                        container="body" placement="right" tooltipClass="custom-ngb-tooltip"> {{
+                                        getDriverName(coordinate?.alias) }}</span>
+                                    </div>
+                                  </agm-info-window>
+                                </ng-container>
+                              </agm-marker>
+
+                              <!-- Multiple Polylines for all trips when no trip selected -->
+                              <ng-container *ngIf="!isTripSelected && allTripsCoordinatesArray.length">
+                                <!-- Loop through all trip coordinates -->
+                                <agm-polyline *ngFor="let tripCoords of allTripsCoordinatesArray; let i = index"
+                                  [visible]="true" [strokeWeight]="hoveredTripIndex === i ? 3 : 2"
+                                  [strokeColor]="hoveredTripIndex === i ? '#102c52' : '#21dd21'">
+                                  <!-- Loop through coordinates for each trip -->
+                                  <agm-polyline-point *ngFor="let coord of tripCoords" [latitude]="coord.lat"
+                                    [longitude]="coord.lng">
+                                  </agm-polyline-point>
+                                  <!-- Start marker for the first trip -->
+                                  <agm-marker *ngIf="i === 4" [latitude]="tripCoords[4].lat"
+                                    [longitude]="tripCoords[4].lng" [iconUrl]="{
+                                      url: '../../../../../../../assets/images/start_location.svg',
+                                      scaledSize: { width: 14, height: 14 }
+                                    }">
+                                  </agm-marker>
+                                </agm-polyline>
+                              </ng-container>
+                              <!-- Polyline for the selected trip -->
+                              <!-- Green polyline for full trip -->
+                              <agm-polyline *ngIf="isTripSelected && snappedPolylineCoords.length"
+                                [strokeColor]="'#45b01f'" [strokeWeight]="2" [zIndex]="1">
+                                <agm-polyline-point *ngFor="let point of snappedPolylineCoords" [latitude]="point.lat"
+                                  [longitude]="point.lng">
+                                </agm-polyline-point>
+                              </agm-polyline>
+                              <!-- Red alert segments (overspeeding or harsh_cornering) -->
+                              <agm-polyline *ngFor="let segment of alertSegments" [strokeColor]="segment.color"
+                                [strokeWeight]="2" [zIndex]="10">
+                                <agm-polyline-point [latitude]="segment.start[0]"
+                                  [longitude]="segment.start[1]"></agm-polyline-point>
+                                <agm-polyline-point [latitude]="segment.end[0]"
+                                  [longitude]="segment.end[1]"></agm-polyline-point>
+                              </agm-polyline>
+                              <!-- Event markers for alerts -->
+                              <agm-marker *ngFor="let marker of eventMarkers" [latitude]="marker.lat"
+                                [longitude]="marker.lng" [iconUrl]="
+                                hoveredAlertId === marker.formattedAlertTime
+                                  ? getHighlightedIcon(marker.alertType)
+                                  : getHighlightedIcons(marker.alertType)
+                              " [title]="
+                                marker.alertType
+                                + ' at '
+                                + marker.formattedAlertTime
+                                + '\nLocation: '
+                                + marker.address
+                              "
+                                (click)="toggleDetails(marker.formattedAlertTime,marker?.alert_timestamp, marker?.cx_peak_acc_time, marker?.cx_initial_time)">
+                              </agm-marker>
+
+                              <!-- Start marker -->
+                              <agm-marker
+                                *ngIf="isTripSelected && start_end_mark[0]?.startLat && start_end_mark[0]?.startLng"
+                                [latitude]="start_end_mark[0].startLat" [longitude]="start_end_mark[0].startLng"
+                                [iconUrl]="{
+                              url: '../../../../../../../assets/images/start_location.svg',
+                              scaledSize: { width: 18, height: 18 }
+                            }" (mouseover)="startInfoWindowOpen = true" (mouseout)="startInfoWindowOpen = false">
+                                <agm-info-window [isOpen]="startInfoWindowOpen">
+                                  <div style="padding: 12px;
+                                font-size: 12px;
+                                font-family: 'Poppins';
+                                color: #fff;
+                                text-align: justify;
+                                background-color: #92908E;
+                                width: 251px;
+                                height: 76px;" class="demo">
+                                    <span [ngbTooltip]="start_end_mark[0]?.startAddress" container="body"
+                                      placement="right">
+                                      Start Location: {{ start_end_mark[0]?.startAddress || 'Address not available' }}
+                                    </span>
+                                  </div>
+                                </agm-info-window>
+                              </agm-marker>
+                              <!-- End markers -->
+                              <ng-container *ngIf="isTripSelected">
+                                <agm-marker *ngFor="let trip of start_end_mark" [latitude]="trip.endLat"
+                                  [longitude]="trip.endLng" [iconUrl]="{
+                                url: '../../../../../../../assets/images/end_location.svg',
+                                scaledSize: { width: 18, height: 18 }
+                              }" (mouseover)="openEndInfoWindow(trip)" (mouseout)="closeEndInfoWindow(trip)">
+                                  <agm-info-window [isOpen]="openEndInfoWindowKey === getTripKey(trip)">
+                                    <div style="padding: 12px;
+                                  font-size: 12px;
+                                  font-family: 'Poppins';
+                                  color: #fff;
+                                  text-align: justify;
+                                  background-color: #92908E;
+                                  width: 251px;
+                                  height: 76px;" (mouseenter)="clearCloseTimeout()"
+                                      (mouseleave)="closeEndInfoWindow(trip)">
+                                      <span [ngbTooltip]="trip?.endAddress" container="body" placement="right">
+                                        End Location: {{ trip?.endAddress || 'Address not available' }}
+                                      </span>
+                                    </div>
+                                  </agm-info-window>
+                                </agm-marker>
+                              </ng-container>
+                              <!-- End markers for each trip when no trip is selected -->
+                              <agm-marker *ngFor="let point of eachTripEndPoints" [latitude]="point.lat"
+                                [longitude]="point.lng" [iconUrl]="{
+                                  url: '../../../../../../../assets/images/end_location.svg',
+                                  scaledSize: { width: 10, height: 10 }
+                                }" (markerClick)="onArrowClick(point.trip)" (mouseOver)="onMouseOver(point)"
+                                (mouseOut)="onMouseOut(point)">
+                                <agm-info-window [isOpen]="openInfoWindows[point.lat + '-' + point.lng]">
+                                  <div style="
+                                     width: 250px;
+                            height: auto;
+                            max-height: 350px;
+                            overflow-y: auto;
+                                    padding: 5px;
+                                    box-sizing: border-box;
+                                    color: #fff;
+                                    background-color: #92908E;
+                                    border-radius: 8px;
+                                    box-shadow: 0 4px 1px rgba(0,0,0,0.2);overflow-y: auto;">
+                                    <h4 style="font-size: 10px; font-weight: 600; margin: 0 0 1px 0;">Trip End Location
+                                    </h4>
+                                    <p style="margin: 0 0 1px 0; font-size: 9px!important;">{{ point?.dataAddress ||
+                                      '--' }}</p>
+                                    <p style="margin: 0 0 1px 0; font-size: 10px;"><strong
+                                        style="font-size: 10px;font-weight: 600;">Distance:
+                                      </strong><span style="margin: 0 0 2px 0; font-size: 10px;">{{
+                                        point?.trip?.cxTripDistance ||
+                                        '--' }}
+                                        mi</span> | <strong style="font-size: 10px;font-weight: 600;">Avg. Speed:
+                                      </strong><span style="margin: 0 0 2px 0; font-size: 10px;"> {{ point?.speed ||
+                                        '--' }} mph</span></p>
+                                  </div>
+                                </agm-info-window>
+                              </agm-marker>
+
+
+                            </agm-map>
+                          </ng-container>
+                          <!--Current map with all trip marker and details end-->
+                          <!--Live tracking map-->
+                          <agm-map *ngIf="newMap && mapCenterLat !== null && mapCenterLng !== null"
+                            [latitude]="mapCenterLat" [longitude]="mapCenterLng"  [zoom]="zoom" class="map-height"
+                            [styles]="mapStyles" [mapTypeId]="currentMapType" (mapReady)="onMapReady($event)">
+
+                            <!-- Rotating vehicle marker -->
+                            <agm-marker [latitude]="latitude" [longitude]="longitude" [iconUrl]="{
+                            url: './assets/images/small-icon.png',
+                            scaledSize: { width: 12, height: 12 }
+                          }" [markerDraggable]="false">
+                              <agm-info-window [disableAutoPan]="true">
+                                <div class="rotating-marker" [ngStyle]="getRotationStyle()">
+                                  <img src="./assets/images/small-icon.png" width="15" height="15" />
+                                </div>
+                              </agm-info-window>
+                            </agm-marker>
+                            <agm-marker *ngIf="polylines?.length && polylines[0]?.path?.length"
+                            [latitude]="polylines[0].path[0].lat"
+                            [longitude]="polylines[0].path[0].lng"
+                            [iconUrl]="{
+                              url: '../../../../../../../assets/images/start_location.svg',
+                              scaledSize: { width: 24, height: 24 }
+                            }"
+                            [markerDraggable]="false">
+                </agm-marker>
+                            <!-- Optional End location marker -->
+                            <agm-marker *ngIf="LatLng?.endLat && LatLng?.endLong" [latitude]="LatLng.endLat"
+                              [longitude]="LatLng.endLong" [iconUrl]="{
+                              url: './assets/images/small-icon.png',
+                              scaledSize: { width: 20, height: 20 }
+                            }" [markerDraggable]="false">
+                            </agm-marker>
+
+                            <!-- Snapped polyline -->
+                            <agm-polyline *ngIf="polylines?.length"
+                            [strokeColor]="polylines[0].strokeColor"
+                            [strokeWeight]="polylines[0].strokeWeight"
+                            [strokeOpacity]="polylines[0].strokeOpacity">
+                <agm-polyline-point *ngFor="let pt of polylines[0].path"
+                                    [latitude]="pt.lat"
+                                    [longitude]="pt.lng">
+                </agm-polyline-point>
+              </agm-polyline>
+
+                            <!-- Alert markers -->
+                            <agm-marker *ngFor="let alert of alertMarkers" [latitude]="alert.lat"
+                              [longitude]="alert.lng" [iconUrl]="{
+                              url: alert.iconUrl,
+                              scaledSize: { width: 25, height: 25 }
+                            }" [markerDraggable]="false" [title]="alert.title">
+                            </agm-marker>
+                          </agm-map>
+                          <!--Live tracking map end-->
+                        </div>
+                        <div class="overspeed-threshold thershold-set" *ngIf="psl == true">
+                          <img src="assets/images/icon-vehicle/top_speed.svg" alt="Speed Icon" class="speed-icon-New">
+                          <span >OS:</span>
+                          <strong>Road Speed Limit: (+ {{pslLimit ? pslLimit + 'mph' : '--'}})</strong>
+                        </div>
+                        <ng-container *ngIf="psl != true">
+                        <div class="overspeed-threshold thershold-set" *ngIf="therShold != null">
+                          <img src="assets/images/icon-vehicle/top_speed.svg" alt="Speed Icon" class="speed-icon-New">
+                          <span>Over Speeding Threshold:</span>
+                          <strong>{{ therShold ? therShold + ' mph' : '--' }}</strong>
+                        </div>
+                      </ng-container>
+
+                        <button (click)="isPanelOpen = !isPanelOpen" class="slider-toggle-btn">
+                          <img src="assets/mapIcon/down-arrow.svg" class="ddown-arrow"
+                            [style.transform]="isPanelOpen ? 'rotate(180deg)' : 'rotate(0deg)'" alt="Toggle Panel" />
+                        </button>
+                        <div class="vehicle-status-overlay" [ngClass]="{ 'closed': !isPanelOpen }">
+                          <div class="row">
+                            <div class="col-xs-12 col-lg-9">
+                              <div class="flex-space-between">
+                                <div class="flex-gap1">
+                                  <!--All vehicles-->
+                                  <div style="margin-top: 94px;"
+                                    class="map-container card-sub-padding brdr-blue clickable tooltip-wrapper"
+                                    (click)="filterCar('ALL');resetSelection()"
+                                    [ngClass]="{ 'active': colorCode==null }">
+                                    <div class="flex-space-between flex-gap">
+                                      <div class="sub-text"><img
+                                          src="../../.././../../../assets/images/all-vehicles-tracking.svg" alt=""
+                                          srcset="" /></div>
+                                      <div class="main-text">
+                                        <span *ngIf="totalVehicles === undefined || totalVehicles === null">
+                                          <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                        </span>
+                                        <span *ngIf="totalVehicles !== undefined && totalVehicles !== null"
+                                          class="main-text">
+                                          {{totalVehicles}}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div class="custom-tooltip-All">All</div>
+                                  </div>
+                                  <!-- Moving Vehicle-->
+                                  <div class="map-container card-sub-padding brdr-green clickable tooltip-wrapper"
+                                    (click)="filterCar('GREEN');resetSelection()"
+                                    [ngClass]="{ 'active': colorCode=='GREEN' }">
+
+                                    <div class="flex-space-between flex-gap">
+                                      <div class="sub-text">
+                                        <img src="../../.././../../../assets/images/moving-vehicles-tracking.svg"
+                                          alt="" />
+                                      </div>
+                                      <div class="main-text">
+                                        <span *ngIf="movingVehicles === undefined || movingVehicles === null">
+                                          <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                        </span>
+                                        <span *ngIf="movingVehicles !== undefined && movingVehicles !== null"
+                                          class="main-text">
+                                          {{movingVehicles}}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <!-- Tooltip text -->
+                                    <div class="custom-tooltip-news">Moving</div>
+                                  </div>
+
+                                  <!-- Idle Vehicle-->
+                                  <div class="map-container card-sub-padding brdr-dblue clickable tooltip-wrapper"
+                                    (click)="filterCar('YELLOW');resetSelection()"
+                                    [ngClass]="{ 'active': colorCode=='YELLOW' }">
+                                    <div class="flex-space-between flex-gap">
+                                      <div class="sub-text"> <img src="../../.././../../../assets/images/idel.svg"
+                                          alt="" rcset="" /></div>
+                                      <div class="main-text">
+                                        <span *ngIf="idleVehicles === undefined || idleVehicles === null">
+                                          <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                        </span>
+                                        <span *ngIf="idleVehicles !== undefined && idleVehicles !== null"
+                                          class="main-text">
+                                          {{idleVehicles}}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div class="custom-tooltip-idle">Idle</div>
+                                  </div>
+                                  <!-- Parked Vehicles-->
+                                  <div class="map-container card-sub-padding brdr-red clickable tooltip-wrapper"
+                                    (click)="filterCar('RED');resetSelection()"
+                                    [ngClass]="{ 'active': colorCode=='RED' }">
+                                    <div class="flex-space-between flex-gap">
+                                      <div class="sub-text"><img src="../../.././../../../assets/images/parked.svg"
+                                          alt="" srcset="" /></div>
+                                      <div class="main-text">
+                                        <span *ngIf="parkedVehicles === undefined || parkedVehicles === null">
+                                          <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                        </span>
+                                        <span *ngIf="parkedVehicles !== undefined && parkedVehicles !== null"
+                                          class="main-text">
+                                          {{parkedVehicles}}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div class="custom-tooltip-parked">Parked</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- Map container (stretch full width behind) end-->
+
+                        <!-- Right-side box (absolute over the map) -->
+                        <div class="right-side-box box-view">
+                          <div class="box-inbox">
+                            <!-- First screen sidebox all vehicles details -->
+                            <ng-container *ngIf="!selectedVehicle">
+                              <!-- Top Header-->
+                              <div class="vehicle-wrapper">
+                                <div class="box-orange">
+                                  <div class="row">
+                                    <div class="col-xs-12 col-lg-10">
+                                      <h4 class="left-box-heaidng">All Vehicles</h4>
+                                      <small class="showAll">showing <b>
+                                          <span *ngIf="updateTodayVehicle === undefined || updateTodayVehicle === null">
+                                            <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                          </span>
+                                          <span *ngIf="updateTodayVehicle !== undefined && updateTodayVehicle !== null"
+                                            class="text_number">
+                                            {{ updateTodayVehicle }}
+                                          </span></b> of <b> <span
+                                            *ngIf="totalVehicles === undefined || totalVehicles === null">
+                                            <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                          </span>
+                                          <span *ngIf="totalVehicles !== undefined && totalVehicles !== null"
+                                            class="text_number">
+                                            {{ totalVehicles }}
+                                          </span></b> Vehicles</small>
+                                    </div>
+                                    <div class="col-xs-12 col-lg-2" (click)="toggleInput()">
+                                      <img src="assets/mapIcon/searchvehicle.svg"
+                                        style="height: 25px; margin-top: 4px; cursor: pointer;">
+                                    </div>
+
+                                    <div *ngIf="showInput" class="input-overlay">
+                                      <input type="text" placeholder="Search by vehicle and driver name .." class="search-input"
+                                        [(ngModel)]="searchVin" (keyup)="searchVehicleByVin()"
+                                        (input)="onInputChange()" />
+                                      <button class="close-button" (click)="closeInput()"><i
+                                          class="fa fa-close"></i></button>
+                                    </div>
+                                  </div>
+                                </div>
+                                <!-- Top Heade endr-->
+                                <!-- All vehciles details-->
+                                <div class="vehicle-list-scroll">
+
+                                  <div class="filter-label-icon">
+
+                                    <a [routerLink]="['/adlp/admin/admindashboard/live-view']">
+                                      <img ngbTooltip="View Live Feed"   placement="top"
+                                      container="body"
+                                      tooltipClass="custom-tooltips"  src="/assets/images/live-camera.svg"
+                                        class="dongle cm-img live-hover" height="26">
+                                    </a>
+
+                                    <a [routerLink]="['/adlp/admin/admindashboard/safety-events']">
+                                      <img ngbTooltip="View Recorded Events" placement="top"
+                                      container="body"
+                                      tooltipClass="custom-tooltip-camera"  src="/assets/images/camera-icon.svg"
+                                        class="dongle camera-hover cm-img" height="26">
+                                    </a>
+
+                                  </div>
+
+
+                                  <div class="filter-label"
+                                    *ngFor="let vehicle of displayedVehicles; trackBy: trackByVehicleId"
+                                    [id]="'vehicle-' + vehicle?.vin"
+                                    [class.selected]="vehicle?.vin === selectedVin"
+                                    >
+
+                                    <div class="row">
+                                      <div class="col-xs-12 col-lg-8">
+                                        <h5 class="left-data cursor" (click)="handleVehicleClick(vehicle)" [class.selected]="vehicle?.vin === selectedVin">{{
+                                          vehicle?.alias }} <img src="/assets/images/dongle-icon.svg" class="dongle"
+                                            *ngIf="vehicle?.provider === 'CBX'">
+                                          <!-- <ng-container> -->
+                                          <img src="/assets/images/camera.svg" class="dongle"
+                                            *ngIf="vehicle?.hasCamera">
+                                          <!-- </ng-container> -->
+                                        </h5>
+                                      </div>
+                                      <div class="col-xs-12 col-lg-4">
+                                        <h5 class="left-data-mph">
+                                          {{
+                                          vehicle?.colorCode === 'GREEN'
+                                          ? ((vehicle?.speed || 0).toFixed(2) + ' mph')
+                                          : (vehicle?.colorCode === 'RED' ? '' : '0.00 mph')
+                                          }}
+                                        </h5>
+                                      </div>
+                                    </div>
+
+
+                                    <ng-container [ngSwitch]="vehicle?.colorCode">
+                                      <div class="row" (click)="openInfoWindow(vehicle)" >
+                                        <div class="col-xs-12 col-lg-7">
+                                          <!-- RED: Stopper -->
+                                          <h5 *ngSwitchCase="'RED'" class="time-data" style="color: #ff0000; position: relative;">
+                                            <img
+                                              src="assets/images/stopped-location.svg"
+                                              style="height: 12px; cursor: pointer;"
+                                              (mouseenter)="onHoverTooltip(vehicle)"
+                                              (mouseleave)="vehicle.showTooltip = false"
+                                            />
+
+                                            <!-- Custom Tooltip -->
+                                            <div
+                                              class="custom-tooltip"
+                                              *ngIf="vehicle.showTooltip"
+                                              (click)="$event.stopPropagation()"
+                                            >
+                                              <ng-container *ngIf="vehicle.isAddressLoading; else addressBlock">
+                                                <div class="spinner"></div>
+                                              </ng-container>
+                                              <ng-template #addressBlock>
+                                                {{ vehicle?.address || 'Address not available' }}
+                                              </ng-template>
+                                            </div>
+
+                                            Stopped for {{ vehicle?.lastUpdatedDiff }}
+                                          </h5>
+
+                                          <!-- GREEN: Ongoing Trip -->
+                                          <h5 *ngSwitchCase="'GREEN'" class="time-data-head">
+                                            Ongoing Trip
+                                          </h5>
+
+                                          <!-- YELLOW: Vehicle Parked (Idle) -->
+                                          <h5 *ngSwitchCase="'YELLOW'" class="time-data" style="color:#4680FF; position: relative;">
+                                            <img
+                                              src="assets/images/idle-location.svg"
+                                              style="height: 12px; cursor: pointer;"
+                                              (mouseenter)="onHoverTooltip(vehicle)"
+                                              (mouseleave)="vehicle.showTooltip = false"
+                                            />
+
+                                            <!-- Custom Tooltip -->
+                                            <div
+                                              class="custom-tooltip"
+                                              *ngIf="vehicle.showTooltip"
+                                              (click)="$event.stopPropagation()"
+                                            >
+                                              <ng-container *ngIf="vehicle.isAddressLoading; else addressBlock">
+                                                <div class="spinner"></div>
+                                              </ng-container>
+                                              <ng-template #addressBlock>
+                                                {{ vehicle?.address || 'Address not available' }}
+                                              </ng-template>
+                                            </div>
+
+                                            Vehicle Idle since {{ vehicle?.lastUpdatedDiff }}
+                                          </h5>
+                                          <!-- Optional: Default Case -->
+                                          <h5 *ngSwitchDefault class="time-data"> Status Unknown </h5>
+                                        </div>
+                                        <div class="col-xs-12 col-lg-5">
+                                          <h5 class="left-data cursor" style="text-decoration: none!important;    margin-top: -5px!important;">
+                                            <span class="driver-details-data">
+                                             <img src="../../../../../../assets/images/driver-icons.svg" style="height: 12px; margin-left: -2px;">
+                                             <span class="driver-details-data" style="margin-left: 6px;">
+                                              <ng-container *ngIf="vehicle?.driverName === null  null"> -- </ng-container>
+                                              <ng-container *ngIf="vehicle?.driverName != 'null  null'">
+                                                {{vehicle?.driverName}}
+                                              </ng-container>
+                                            </span>
+                                            </span>
+                                          </h5>
+                                        </div>
+                                      </div>
+                                    </ng-container>
+
+                                  </div>
+                                  <!-- Loading Spinner -->
+                                  <div *ngIf="isLoading && !message">
+                                    <div class="row">
+                                      <div class="col-xs-12 text-center">
+                                        <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <!-- Custom Message -->
+                                  <div *ngIf="message" class="no-vehicle-message text-center text-muted">
+                                    <h5 class="vehicle-status">{{ message }}</h5>
+                                  </div>
+
+                                  <!-- No Vehicles Message -->
+                                  <div *ngIf="!isLoading && displayedVehicles.length === 0 && !message">
+                                    <h5 class="vehicle-status text-center text-muted">No vehicles available.</h5>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <!-- All vehciles details end-->
+                            </ng-container>
+                            <!-- First screen sidebox all vehicles details end-->
+                            <!-- Second screen sidebox complete trips details on date basis -->
+                            <ng-container *ngIf="selectedVehicle">
+                              <ng-container *ngIf="!selectedTripId">
+                                <!-- Top heading-->
+                                <div class="box-orange">
+                                  <div class="row">
+                                    <div class="col-xs-12 col-lg-1">
+                                      <span class="left-al" (click)="resetSelection()">
+                                        <i class="fa fa-long-arrow-left back-icon"></i>
+                                      </span>
+                                    </div>
+                                    <div class="col-xs-12 col-lg-9">
+                                      <span class="left-heading">
+                                        <h4 class="left-box-heaidng-history">Trip History</h4>
+                                       </span>
+                                    </div>
+                                    <div class="col-xs-12 col-lg-2">
+                                      <a
+                                      (click)="downloadTripHistoryReport()">
+                                     <img src="../../../../../../assets/images/download-report.svg"
+                                          style="height: 16px; margin-left: 12px;"
+                                          ngbTooltip="Download Report"
+                                          placement="bottom"
+                                          (mouseenter)="tooltip.open()"
+                                          (mouseleave)="tooltip.close()"
+                                          #tooltip="ngbTooltip"
+                                          tooltipClass="custom-tooltipNew">
+                                   </a>
+
+                                    </div>
+                                  </div>
+
+
+                                    <div class="row">
+                                      <div class="col-xs-12 col-lg-7">
+                                        <div style="display: flex; align-items: center; margin-left: 10px;">
+                                          <small class="showAll">{{ selectedVehicle?.alias }}</small>
+                                        </div>
+                                      </div>
+                                      <div class="col-xs-12 col-lg-5">
+                                        <img src="../../../.././../../../assets/images/icon/driver-icon.svg"
+                                          class="driver-icon">
+                                        <ng-container *ngIf="selectedVehicle?.driverName != 'null  null'"> {{
+                                          selectedVehicle?.driverName }} </ng-container>
+                                        <ng-container *ngIf="selectedVehicle?.driverName === 'null  null'"> --
+                                        </ng-container>
+                                      </div>
+                                    </div>
+                                </div>
+                                <!-- Top heading end -->
+                                <!-- Top heading and calander-->
+                                <div class="filter-label">
+                                  <span class="available-Vehicle"> Trip View </span>
+                                  <span class="data-left">
+                                    <div class="custom-datepicker">
+                                      <div class="date-picker-wrapper" (click)="toggleCalendar()">
+                                        <input type="text" placeholder="Select Date" [value]="displayDate" readonly
+                                          (click)="toggleCalendar()" />
+                                        <i class="fa fa-calendar calendar-icon"></i>
+                                      </div>
+                                      <div class="calendar" *ngIf="showCalendar" (mouseleave)="closeCalendar()">
+                                        <!-- Calendar Header -->
+                                        <div class="calendar-header">
+                                          <button (click)="prevMonth()">&lt;</button>
+                                          <span>{{ months[currentMonth] }} {{ currentYear }}</span>
+                                          <button (click)="nextMonth()">&gt;</button>
+                                        </div>
+                                        <!-- Day Names -->
+                                        <div class="calendar-days">
+                                          <div *ngFor="let day of dayNames">{{ day }}</div>
+                                        </div>
+                                        <!-- Dates -->
+                                        <div class="calendar-dates">
+                                          <div *ngFor="let date of dates"
+                                          [class.disabled]="!date.active"
+                                          [class.today]="isToday(date)"
+                                          (click)="date.active && selectDate(date)"
+                                          (mouseleave)="resetHover()">
+                                       {{ date.day }}
+
+                                       <div *ngIf="hasTripOnDate(date)" style="margin-top: -4px;">
+                                         <img src="assets/images/dot.svg" style="height: 6px;">
+                                       </div>
+                                       <div *ngIf="!hasTripOnDate(date)" style="margin-top: -4px;">
+                                        <img src="assets/images/whitedot.svg" style="height: 6px;">
+                                      </div>
+                                     </div>
+
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </span>
+                                </div>
+                                <!-- Top heading and calander end-->
+                                <!-- Vehicle info and total trips-->
+                                <div class="filter-label">
+
+                                  <div class="data-left-info">
+                                    <div class="align-center">
+                                      <div class="data-left-info-heading">Make</div>
+                                      <div class="data-left-info-data">
+                                        <!-- Show loading spinner if make is undefined or null -->
+                                        <span
+                                          *ngIf="eligibilityData?.make === undefined || eligibilityData?.make === null">
+                                          <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                        </span>
+                                        <span
+                                          *ngIf="eligibilityData?.make !== undefined && eligibilityData?.make !== null"
+                                          class="text_number">
+                                          {{ (eligibilityData?.make === '-1') ? '--' : eligibilityData?.make }}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div class="align-center">
+                                      <div class="data-left-info-heading">Model</div>
+                                      <div class="data-left-info-data">
+                                        <span
+                                          *ngIf="eligibilityData?.model === undefined || eligibilityData?.model === null">
+                                          <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                        </span>
+                                        <span
+                                          *ngIf="eligibilityData?.model !== undefined && eligibilityData?.model !== null"
+                                          class="text_number">
+                                          {{ (eligibilityData?.model === '-1') ? '--' : eligibilityData?.model }}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div class="align-center">
+                                      <div class="data-left-info-heading">Year</div>
+                                      <div class="data-left-info-data">
+                                        <!-- Show spinner if year is undefined -->
+                                        <span *ngIf="eligibilityData?.year === undefined">
+                                          <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                        </span>
+
+                                        <!-- Show '--' if year is null (actual null or string 'null') -->
+                                        <span *ngIf="eligibilityData?.year === null || eligibilityData?.year === 'null'"
+                                          class="text_number">
+                                          --
+                                        </span>
+
+                                        <!-- Show actual year if it is defined and not null -->
+                                        <span
+                                          *ngIf="eligibilityData?.year !== undefined && eligibilityData?.year !== null && eligibilityData?.year !== 'null'"
+                                          class="text_number">
+                                          {{ eligibilityData?.year }}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div class="align-center">
+                                      <div class="data-left-info-heading">Total Trips </div>
+                                      <div class="data-left-info-data"> <span
+                                          *ngIf="tripDataLength === undefined || tripDataLength === null">
+                                          <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                        </span>
+                                        <span *ngIf="tripDataLength !== undefined && tripDataLength !== null"
+                                          class="text_number">
+                                          {{tripDataLength}}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                </div>
+                                <!-- Vehicle info and total trips-->
+                                <div *ngIf="dataLoading" style="margin-left: 45%; margin-top:30px">
+                                  <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                </div>
+                                <!-- Show "No trips available" only if no trip, not idling, and not in progress -->
+                                <div
+                                  *ngIf=" tripDataLength === 0 && eventType !== 'trip_ongoing' && !(colorCode === 'YELLOW' && isToday(displayDate)) && !dataLoading"
+                                  style="text-align: center; margin-top: 20px; font-family: 'Poppins';">
+                                  No trips available on selected date
+                                </div>
+
+                                <!-- Show when trip is ongoing today -->
+                                <div *ngIf="eventType === 'trip_ongoing' && isToday(displayDate) && !dataLoading"
+                                  style="text-align: center; margin-top: 20px; font-family: 'Poppins';">
+                                  Trip is in progress
+                                </div>
+
+                                <!-- Show when vehicle is idling today and not trip ongoing -->
+                                <div
+                                  *ngIf="colorCode === 'YELLOW' && eventType !== 'trip_ongoing' && isToday(displayDate) && !dataLoading">
+                                  <h5 class="vehicle-status text-center text-muted">Vehicle is idling</h5>
+                                </div>
+
+                                <!-- Spacer for past trips -->
+                                <div
+                                  *ngIf="tripDataLength !== 0 && eventType !== 'trip_ongoing' && !isToday(displayDate) && !dataLoading"
+                                  style="text-align: center;">
+                                  &nbsp;
+                                </div>
+                                <!-- Trips data-->
+                                <div *ngIf="tripDataLength >= 1" style="overflow-y: auto; flex: 1;">
+                                  <!-- Post trip history details-->
+                                  <ng-container *ngFor="let group of getData">
+                                    <div *ngFor="let trip of group.tripList; let i = index">
+                                      <!-- Top blank row-->
+                                      <div class="row" *ngIf="selectedTripId !== trip.tripId">
+                                        <div class="col-xs-12 col-lg-12 blank-row">&nbsp; </div>
+                                      </div>
+                                      <!-- Top blank row end-->
+                                      <!-- Trip starttime and startdate-->
+                                      <div class="row shuffleTrips" (mouseenter)="hoveredTripIndex = i"
+                                        (mouseleave)="hoveredTripIndex = null">
+                                        <div class="col-xs-12 col-lg-2">
+                                          <img src="../../../../../../../assets/images/suffle.svg"
+                                            style="height: 40px;">
+                                        </div>
+                                        <div class="col-xs-12 col-lg-9" style="margin-right: 16px;">
+                                          <h5 class="date-time cursor" (click)="toggleArrow(trip)"> {{
+                                            trip.formattedDates }} {{ trip.formattedTimes }}
+                                            <ng-container *ngIf="trip.hasGeofenceAlert">
+                                              <img src="assets/images/geofence_icon.svg" alt="Geofence Alert" width="16" style="margin-left: 6px;" />
+                                            </ng-container>
+                                            <i class="fas arrow"
+                                              [ngClass]="selectedTripId === trip.tripId ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                                          </h5>
+                                          <span class="vehicle-info-row">
+                                            <h5 class="vehicle-info">
+                                              <span style="float: left;color:#25A522">
+                                                {{ formatMinutesToHourMins(trip.tripDurationInMinutes) }} &nbsp;|&nbsp;
+                                              </span>
+                                              <span style="float: left;">
+                                                <ng-container *ngIf="trip.cxIdlingDuration !== undefined; else loading">
+                                                  <span
+                                                    *ngIf="trip.cxIdlingDuration === null; else showDuration">--</span>
+                                                  <ng-template #showDuration>
+                                                    <span style="color: #4680FF;">
+                                                      {{ formatSecondsToHourMinu(trip.cxIdlingDuration) }}
+                                                    </span> idling &nbsp;|&nbsp;
+                                                  </ng-template>
+                                                </ng-container>
+                                                <ng-template #loading>
+                                                  <span class="spinner" style="color: #4680FF;"><i
+                                                      class="fa fa-spinner"></i></span>
+                                                </ng-template>
+                                              </span>
+
+                                              <span style="float: left;">{{ trip.cxTripDistance || '0' | number:'1.2-2'
+                                                }} mi &nbsp;|&nbsp; </span>
+                                              <span style="float: left; color:#ff0000">{{ trip.cxAlerts || '0' }}
+                                                alerts</span>
+                                            </h5>
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <!-- Trip starttime & endtime and startdate & enddate-->
+                                      <div class="row starttimestamp">
+                                        <div class="col-xs-12 col-lg-12">
+                                          <!-- Start time & address-->
+                                          <div class="row" style="height: 40px; margin-bottom: 12px;">
+                                            <div class="col-xs-12 col-lg-2">
+                                              <div class="time-start"> {{ trip.formattedTimes }}</div>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-1">
+                                              <div class="">
+                                                <img src="../../../../../../assets/images/green-icon.svg"
+                                                  style="margin-top: 6px;">
+                                              </div>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-9">
+                                              <div class="address-new">
+                                                <span
+                                                  *ngIf="trip.startAddress === undefined || trip.startAddress === null">
+                                                  <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                                </span>
+                                                <span
+                                                  *ngIf="trip.startAddress !== undefined && trip.startAddress !== null"
+                                                  class="address-new">
+                                                  {{trip.startAddress}}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <!-- Start time & address end-->
+                                          <!-- End Time & address-->
+                                          <div class="row">
+                                            <div class="col-xs-12 col-lg-2">
+                                              <div class="time-start"> {{ trip.formattedTimesEnd }}</div>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-1">
+                                              <div class="">
+                                                <img src="../../../../../../assets/images/orange-icon-stop.svg"
+                                                  style="margin-top: -4px;">
+                                              </div>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-9">
+                                              <div class="address-new">
+                                                <span *ngIf="trip.endAddress === undefined || trip.endAddress === null">
+                                                  <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                                </span>
+                                                <span *ngIf="trip.endAddress !== undefined && trip.endAddress !== null"
+                                                  class="address-new">
+                                                  {{trip.endAddress}}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <!-- End time & address end-->
+                                        </div>
+                                      </div>
+                                      <!-- Trip starttime & endtime and startdate & enddate end-->
+                                      <!-- Blank row-->
+                                      <div class="row blank-row" *ngIf="selectedTripId !== trip.tripId">&nbsp;</div>
+                                      <!-- Blank row end-->
+                                      <!-- Stopped vehicle details-->
+                                      <!-- Stopped time & address-->
+                                      <div class="row endtimeStamp">
+                                        <div class="col-xs-12 col-lg-2">
+                                          <img src="../../../../../../../assets/images/stopped.svg"
+                                            style="height: 40px;">
+                                        </div>
+                                        <div class="col-xs-12 col-lg-9">
+                                          <h5 class="date-time">{{ subtractMinutes(trip.startTimeStamp,
+                                            trip.timeGapFromPrevious) }}</h5>
+                                          <h5 class="diff-datetime">{{ formatMinutesToHourMin(trip.timeGapFromPrevious)
+                                            }} Stopped</h5>
+                                        </div>
+                                      </div>
+                                      <!-- Stopped time & address end-->
+                                      <!-- Stopped vehicle total time from end to next-->
+                                      <div class="row"
+                                        style="padding: 10px; height:auto; border-bottom: 1px solid #eee;background-color: #ffffff">
+                                        <div class="col-xs-12 col-lg-12">
+                                          <div class="row">
+                                            <div class="col-xs-12 col-lg-2">
+                                              <div class="time-start"> {{ subtractMinutesForStopped(trip.startTimeStamp,
+                                                trip.timeGapFromPrevious) }}</div>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-1">
+                                              <div class="marker red"></div>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-9">
+                                              <div class="address-new">{{trip.startAddress}}</div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <!-- Stopped vehicle total time from end to next end-->
+                                      <!-- Stopped vehicle details end-->
+                                    </div>
+                                  </ng-container>
+                                  <!-- Post trip history details end-->
+                                </div>
+                                <!-- Trips data end-->
+                              </ng-container>
+                            </ng-container>
+                            <!-- Second screen sidebox complete trips details on date basis end-->
+                            <!--Third screen sidebox single trip details on click basis-->
+                            <ng-container *ngIf="selectedTripId && selectedTrip">
+                              <!-- Top heading-->
+                              <div class="box-orange">
+                                <div class="row">
+                                  <div class="col-xs-12 col-lg-2">
+                                    <span class="left-al" (click)="backFromTrip()">
+                                      <i class="fa fa-long-arrow-left back-icon"></i></span>
+                                  </div>
+                                  <div class="col-xs-12 col-lg-8">
+                                    <span class="left-heading">
+                                      <h4 class="left-box-heaidng-history">{{selectedVehicle?.alias}}</h4>
+                                      <div class="row">
+                                        <div class="col-xs-12 col-lg-12">
+                                          <small class="showAll" style="margin-left: 10px;">{{ selectedTrip?.formattedDates
+                                            }}, {{ selectedTrip?.formattedTimes }}
+                                          </small>
+                                        </div>
+                                      </div>
+                                    </span>
+                                  </div>
+                                  <div class="col-xs-12 col-lg-2">
+                                    <a
+                                    (click)="downloadTripSummaryPdf()">
+                                   <img src="../../../../../../assets/images/download-report.svg"
+                                        style="height: 16px; margin-left: 12px;"
+                                        ngbTooltip="Download Report"
+                                        placement="bottom"
+                                        (mouseenter)="tooltip.open()"
+                                        (mouseleave)="tooltip.close()"
+                                        #tooltip="ngbTooltip"
+                                        tooltipClass="custom-tooltipNew">
+                                 </a>
+
+                                  </div>
+                                </div>
+
+
+                              </div>
+                              <!-- Top heading end-->
+                              <!-- Trips start address and time-->
+                              <div class="row">
+                                <div class="col-xs-12 col-lg-12">
+                                  <div class="timeline-new-main">
+                                    <div class="row">
+                                      <div class="col-xs-12 col-lg-2">
+                                        <div class="time-new">{{ selectedTrip.formattedTimes }}</div>
+                                      </div>
+                                      <div class="col-xs-12 col-lg-1">
+                                        <div class="">
+                                          <img src="../../../../../../assets/images/green-icon.svg"
+                                            style="margin-top: 6px;">
+                                        </div>
+                                      </div>
+                                      <div class="col-xs-12 col-lg-9">
+                                        <div class="address-new">{{ dataForVehicleDetails?.startAddress }}</div>
+                                      </div>
+                                    </div>
+                                    <div class="event">
+                                      <div class="row">
+                                        <div class="col-xs-12 col-lg-2">
+                                          <div class="time-new">{{ selectedTrip.formattedTime }}</div>
+                                        </div>
+                                        <div class="col-xs-12 col-lg-1">
+                                          <div class="">
+                                            <img src="../../../../../../assets/images/orange-icon-stop.svg"
+                                              style="margin-top: -4px;">
+                                          </div>
+                                        </div>
+                                        <div class="col-xs-12 col-lg-9">
+                                          <div class="address-new">{{ dataForVehicleDetails?.endAddress }}</div>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                  </div>
+                                </div>
+                              </div>
+                              <!-- Trips start address and time end-->
+                              <!-- Event & vehicle details-->
+                              <div class="row" style="height: 390px; overflow-y: auto; flex:1">
+                                <div class="col-xs-12 col-lg-12">
+                                  <div class="tabs" style=" position: sticky;
+                                  top: 0;
+                                  z-index: 2;
+                                  color: #000000;">
+                                    <button (click)="selectedTab = 'vehicle'"
+                                      [class.active]="selectedTab === 'vehicle'">Summary</button>
+                                    <button (click)="selectedTab = 'events'"
+                                      [class.active]="selectedTab === 'events'">Events</button>
+
+                                    <button (click)="selectedTab = 'triDetail'"
+                                      [class.active]="selectedTab === 'triDetail'">Trip Detail</button>
+                                  </div>
+                                  <div *ngIf="selectedTab === 'vehicle'" class="vehicle-grid">
+
+                                    <div class="vehicle-detail">
+                                      <div class="icons"><img
+                                          src="../../../../../../../assets/images/icon-vehicle/vehicle_status.svg"
+                                          style="height: 14px;"></div>
+                                      <div class="text">
+                                        <div class="label">Vehicle Status</div>
+                                        <div class="value">Good</div>
+                                      </div>
+                                    </div>
+
+                                    <div class="vehicle-detail">
+                                      <div class="icons"><img
+                                          src="../../../../../../../assets/images/icon-vehicle/driver_score.svg"
+                                          style="height: 14px;"></div>
+                                      <div class="text">
+                                        <div class="label">Driver Score</div>
+                                        <div class="value">{{dataForVehicleDetails?.cxDriverBehaviourScore}}</div>
+                                      </div>
+                                    </div>
+
+                                    <div class="vehicle-detail">
+                                      <div class="icons"><img
+                                          src="../../../../../../../assets/images/icon-vehicle/speed.svg"
+                                          style="height: 14px;"></div>
+                                      <div class="text">
+                                        <div class="label">Speed</div>
+                                        <div class="value">{{dataForVehicleDetails?.cxAvgVehicleSpeed | number:'1.2-2'}}
+                                          mph</div>
+                                      </div>
+                                    </div>
+
+                                    <div class="vehicle-detail">
+                                      <div class="icons"><img
+                                          src="../../../../../../../assets/images/icon-vehicle/top_speed.svg"
+                                          style="height: 14px;"></div>
+                                      <div class="text">
+                                        <div class="label">Top Speed</div>
+                                        <div class="value">{{dataForVehicleDetails?.maxSpeed | number:'1.2-2'}} mph
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    <div class="vehicle-detail">
+                                      <div class="icons"><img
+                                          src="../../../../../../../assets/images/icon-vehicle/fuel_consumed.svg"
+                                          style="height: 14px;"></div>
+                                      <div class="text">
+                                        <div class="label">Fuel Consumed</div>
+                                        <div class="value">{{dataForVehicleDetails?.cxFuelConsumed | number:'1.2-2'}}
+                                          gal</div>
+                                      </div>
+                                    </div>
+                                    <div class="vehicle-detail">
+                                      <div class="icons"><img
+                                          src="../../../../../../../assets/images/icon-vehicle/odometer.svg"
+                                          style="height: 14px;"></div>
+                                      <div class="text">
+                                        <div class="label">Odometer</div>
+                                        <div class="value">{{dataForVehicleDetails?.endOdometer | number:'1.0-0'}} mi
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div class="vehicle-detail">
+                                      <div class="icons"><img
+                                          src="../../../../../../../assets/images/icon-vehicle/ev_range.svg"
+                                          style="height: 14px;"></div>
+                                      <div class="text">
+                                        <div class="label">EV Range</div>
+                                        <div class="value" *ngIf="dataForVehicleDetails?.evRangeMilesPerKWh != -1">
+                                          {{dataForVehicleDetails?.evRangeMilesPerKWh | number:'1.2-2'}}</div>
+                                        <div class="value" *ngIf="dataForVehicleDetails?.evRangeMilesPerKWh == -1">NA
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div class="vehicle-detail">
+                                      <div class="icons"><img
+                                          src="../../../../../../../assets/images/icon-vehicle/trip_distane.svg"
+                                          style="height: 14px;"></div>
+                                      <div class="text">
+                                        <div class="label">Trip Distance</div>
+                                        <div class="value">{{dataForVehicleDetails?.cxTripDistance | number:'1.2-2'}} mi
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div class="vehicle-detail">
+                                      <div class="icons"><img
+                                          src="../../../../../../../assets/images/icon-vehicle/fuel_level.svg"
+                                          style="height: 14px;"></div>
+                                      <div class="text">
+                                        <div class="label">Fuel Level</div>
+                                        <div class="value">{{dataForVehicleDetails?.fuelLevel | number:'1.2-2'}} gal
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div class="vehicle-detail">
+                                      <div class="icons"><img
+                                          src="../../../../../../../assets/images/icon-vehicle/trip_duratiln.svg"
+                                          style="height: 14px;"></div>
+                                      <div class="text">
+                                        <div class="label">Trip Duration</div>
+                                        <div class="value">{{formatDuration(dataForVehicleDetails?.cxDuration)}}</div>
+                                      </div>
+                                    </div>
+                                    <div class="vehicle-detail">
+                                      <div class="icons"><img
+                                          src="../../../../../../../assets/images/icon-vehicle/bettery_level.svg"
+                                          style="height: 14px;"></div>
+                                      <div class="text">
+                                        <div class="label">Battery Level</div>
+                                        <div class="value" *ngIf="dataForVehicleDetails?.cxEvLevel != -1">
+                                          {{dataForVehicleDetails?.cxEvLevel}}</div>
+                                        <div class="value" *ngIf="dataForVehicleDetails?.cxEvLevel == -1">NA</div>
+                                      </div>
+                                    </div>
+                                    <div class="vehicle-detail">
+                                      <div class="icons"><img
+                                          src="../../../../../../../assets/images/icon-vehicle/mileahe.svg"
+                                          style="height: 14px;"></div>
+                                      <div class="text">
+                                        <div class="label">Mileage</div>
+                                        <div class="value" *ngIf="dataForVehicleDetails?.mileage != null">
+                                          {{dataForVehicleDetails?.mileage | number:'1.2-2'}} mpg</div>
+                                        <div class="value" *ngIf="dataForVehicleDetails?.mileage == null">NA</div>
+                                      </div>
+                                    </div>
+                                    <div class="vehicle-detail">
+                                      <div class="icons"><img
+                                          src="../../../../../../../assets/images/icon-vehicle/ev_battery.svg"
+                                          style="height: 14px;"></div>
+                                      <div class="text">
+                                        <div class="label">EV Battery Consumed</div>
+                                        <div class="value" *ngIf="dataForVehicleDetails?.batteryConsumed != -1">
+                                          {{dataForVehicleDetails?.batteryConsumed | number:'1.2-2'}} %</div>
+                                        <div class="value" *ngIf="dataForVehicleDetails?.batteryConsumed == -1">NA</div>
+                                      </div>
+                                    </div>
+                                    <div class="vehicle-detail">
+                                      <div class="icons"><img
+                                          src="../../../../../../../assets/images/icon-vehicle/ev_remaining.svg"
+                                          style="height: 14px;"></div>
+                                      <div class="text">
+                                        <div class="label">EV Battery Remaining</div>
+                                        <div class="value" *ngIf="dataForVehicleDetails?.remainingBattery != -1">
+                                          {{dataForVehicleDetails?.remainingBattery | number:'1.2-2'}}</div>
+                                        <div class="value" *ngIf="dataForVehicleDetails?.remainingBattery == -1">NA
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div *ngIf="selectedTab === 'events'">
+                                    <ng-container
+                                      *ngIf="dataForVehicleDetails?.cxAlerts?.length; else noEventsTemplate">
+                                      <div class="row data-row" *ngFor="let alert of dataForVehicleDetails.cxAlerts"
+                                        (mouseenter)="hoveredAlertId = alert.formattedAlertTime"
+                                        (mouseleave)="hoveredAlertId = null"
+                                        (click)="toggleDetails(alert.formattedAlertTime,alert?.alert_timestamp, alert?.cx_peak_acc_time, alert?.cx_initial_time)"
+                                        [ngClass]="{'hovered': hoveredAlertId === alert.formattedAlertTime}">
+                                        <div class="col-xs-12 col-lg-12">
+                                          <span style="float: left; margin-left: -16px;">
+                                            <img [src]="getAlertIcon(alert.alert_description)" class="icon-vehicle" />
+                                          </span>
+                                          <span style="float: left;">
+                                            <h6 class="event-data">
+                                              <ng-container
+                                                *ngIf="alert.alert_description === 'overspeeding'">Overspeeding</ng-container>
+                                              <ng-container *ngIf="alert.alert_description === 'night_driving'">Night
+                                                Driving</ng-container>
+                                              <ng-container *ngIf="alert.alert_description === 'harsh_cornering'">Harsh
+                                                Cornering</ng-container>
+                                              <ng-container *ngIf="alert.alert_description === 'harsh_braking'">Harsh
+                                                Braking</ng-container>
+                                              <ng-container
+                                                *ngIf="alert.alert_description === 'harsh_acceleration'">Harsh
+                                                Acceleration</ng-container>
+                                              <ng-container *ngIf="alert.alert_description === 'low_battery_charge'">Low
+                                                Battery</ng-container>
+                                              <ng-container *ngIf="alert.alert_description === 'gps_signal_lost'">GPS
+                                                Signal Lost</ng-container>
+                                              <ng-container
+                                                *ngIf="alert.alert_description === 'rapid_acceleration'">Harsh
+                                                Acceleration</ng-container>
+                                              <ng-container
+                                                *ngIf="alert.alert_description === 'idling'">Idling</ng-container>
+                                                <ng-container *ngIf="alert.alert_description === 'geofence_crossed'">Geofence Breached
+                                                    <br />
+                                                    <span style="color:#92908E">({{alert.geofence_name}})</span>
+                                                </ng-container>
+                                                <ng-container
+                                                *ngIf="alert.alert_description === 'geofence_crossed_in'">Geofence
+                                                IN <br>
+                                                <span style="color:#92908E">({{alert.geofence_name}})</span></ng-container>
+                                                <ng-container
+                                                *ngIf="alert.alert_description === 'geofence_crossed_out'">Geofence
+                                                OUT <br>
+                                                <span style="color:#92908E">({{alert.geofence_name}})</span>
+                                              </ng-container>
+                                                <ng-container
+                                                *ngIf="alert.alert_description === 'overspeeding_in_geofence'">
+                                                Geofence Speed <br> <span style="color:#92908E">({{alert.geofence_name}})</span></ng-container>
+                                            </h6>
+                                          </span>
+                                          <span *ngIf="isCamera" class="alert-pl pointer" (click)="getTrip(alert)">
+                                            <svg class="play" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                                              <path d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445"/>
+                                            </svg>
+                                          </span>
+
+                                          <span style="float: right;">
+                                            <h6 class="event-data">
+                                              {{ alert.alert_description === 'night_driving' ?
+                                              alert.originalAlertTimeFormatted : alert.formattedAlertTime }} &nbsp;
+                                              <i class="fa fa-angle-right" aria-hidden="true"></i>
+                                            </h6>
+                                          </span>
+                                        </div>
+                                        <!-- CONDITIONAL TABLE FOR SELECTED ALERT -->
+                                        <!-- CONDITIONAL TABLE FOR SELECTED ALERT -->
+                                        <div class="col-xs-12 col-lg-12"
+                                          *ngIf="selectedAlertId === alert.formattedAlertTime"
+                                          style="margin-top: 10px;">
+                                          <div class="col-xs-12 col-lg-12" style="float: right;">
+                                            <a href="javascript:(void)" style="    float: right;
+                                            margin-right: -12px;
+                                            margin-top: -12px;
+                                            margin-bottom: 12px;
+                                        " (click)="NewToggleDetails(alert.formattedAlertTime,alert?.alert_timestamp, alert?.cx_peak_acc_time, alert?.cx_initial_time,fullViewEventTable) ">
+                                              <img src="assets/mapIcon/fullView.svg" alt="Full View" width="15" height="15"
+                                                title="Full View">
+                                            </a>
+                                          </div>
+                                          <div class="table-responsive table-b"
+                                            style="height: 325px; overflow-y: auto;">
+                                            <table class="table table-striped custom-table"
+                                              style="table-layout: auto; width: 100%;">
+                                              <thead class="table-head">
+                                                <tr>
+                                                  <td class="csColor">Date</td>
+                                                  <td class="csColor">Time</td>
+                                                  <td class="csColor">Latitude</td>
+                                                  <td class="csColor">Longitude</td>
+                                                  <td class="csColor">Speed (mph)</td>
+                                                  <td class="csColor">Road Speed Limit (mph)</td>
+                                                  <td class="csColor">Odometer (mi)</td>
+                                                  <td class="csColor">Location</td>
+                                                  <td class="csColor">Acceleration</td>
+                                                  <td class="csColor">Fuel Level (gal)</td>
+                                                  <td class="csColor">Alerts</td>
+                                                  <td class="csColor">Geofence Name (If any)</td>
+                                                  <td class="csColor">Oil Temp</td>
+                                                  <td class="csColor">Battery Voltage (v)</td>
+                                                  <td class="csColor">Battery Level (v)</td>
+                                                  <td class="csColor">Coolant Temp (&deg;C)</td>
+                                                  <td class="csColor">DTCs</td>
+                                                  <td class="csColor">Heading (°)                                                  </td>
+                                                  <td class="csColor">Seatbelt</td>
+                                                  <td class="csColor">Tire Pressure</td>
+                                                  <td class="csColor">Altitude</td>
+                                                  <td class="csColor">EV Level</td>
+                                                  <td class="csColor">EV Range (mi)</td>
+                                                  <td class="csColor">Provider</td>
+                                                </tr>
+                                              </thead>
+                                              <tbody>
+                                                <tr *ngFor="let surroundingAlert of alertList" class="data-teable"
+                                                  [ngClass]="{'highlight-row': surroundingAlert.isCenterRow}">
+                                                  <td>{{ surroundingAlert.formattedAlertDate }}</td>
+                                                  <td>{{ surroundingAlert.formattedAlertTime }}</td>
+                                                  <td>{{ surroundingAlert.geometry?.coordinates[1] ?? '--' }}</td>
+                                                  <td>{{ surroundingAlert.geometry?.coordinates[0] ?? '--' }}</td>
+                                                  <td>{{ (surroundingAlert.properties?.cx_vehicle_speed) * 0.62137119 | number:'1.2-2' ?? '--' }}</td>
+                                                  <td>{{ surroundingAlert.properties?.cx_rsl  ?? '--' }}
+                                                    <ng-container *ngIf="surroundingAlert.properties?.cx_rsl_type === 'inferred'">(i)</ng-container>
+                                                    <ng-container *ngIf="surroundingAlert.properties?.cx_rsl_type === 'osrm'">(a)</ng-container>
+                                                  </td>
+                                                  <!-- <td>{{ surroundingAlert.properties?.cx_rsl_type | number:'1.2-2'  ?? '--' }}</td> -->
+                                                  <td>{{ (surroundingAlert.properties?.cx_odometer) * 0.62137119 | number:'1.2-2' ?? '--' }}</td>
+                                                  <td>{{ surroundingAlert.properties?.cx_location ?? '--' }}</td>
+                                                  <td>{{ surroundingAlert.properties?.cx_acc ?? '--' }}</td>
+                                                  <td>{{ (surroundingAlert.properties?.cx_fuel_level) * 0.26417205 | number:'1.2-2' ?? '--' }}</td>
+                                                  <td>{{ getEventTypeFromArray(surroundingAlert.properties?.cx_alerts) }}</td>
+                                                  <td>{{ getGeofenceNameFromArray(surroundingAlert.properties?.cx_alerts) }}</td>
+                                                  <td>{{ surroundingAlert.properties?.cx_oil_temp ?? '--' }}</td>
+                                                  <td>{{ surroundingAlert.properties?.cx_battery_voltage ?? '--' }}</td>
+                                                  <td>{{ surroundingAlert.properties?.cx_battery_level ?? '--' }}</td>
+                                                  <td>{{ surroundingAlert.properties?.cx_coolant_temp ?? '--' }}</td>
+                                                  <td>{{ surroundingAlert.properties?.cx_dtcs ?? '--' }}</td>
+                                                  <td>{{ surroundingAlert.properties?.cx_heading ?? '--' }}</td>
+                                                  <td>{{ surroundingAlert.properties?.cx_driver_seatbelt ?? '--' }}</td>
+                                                  <td>{{ surroundingAlert.properties?.cx_tire_pressure ?? '--' }}</td>
+                                                  <td>{{ surroundingAlert.properties?.cx_altitude ?? '--' }}</td>
+                                                  <td>{{ surroundingAlert.properties?.cx_ev_level ?? '--' }}</td>
+                                                  <td>{{ surroundingAlert.properties?.cx_ev_range ?? '--' }}</td>
+                                                  <td>{{ surroundingAlert.properties?.cx_provider ?? '--' }}</td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                          </div>
+                                        </div>
+
+                                      </div>
+                                    </ng-container>
+
+                                    <!-- Template for when there are no alerts -->
+                                    <ng-template #noEventsTemplate>
+                                      <div class="row data-row">
+                                        <div class="col-xs-12 col-lg-12">
+                                          <h6 class="event-data">No data available</h6>
+                                        </div>
+                                      </div>
+                                    </ng-template>
+
+
+                                  </div>
+
+
+                                  <div *ngIf="selectedTab === 'triDetail'">
+                                    <div class="row" style="margin-top: -20px;
+                                    float: right;
+                                    margin-right: 0px;">
+                                        <div class="col-xs-12 col-lg-12" style="float: right;">
+                                          <a href="javascript:(void)" (click)="tableView(fullViewOfTable)">
+                                            <img src="assets/mapIcon/fullView.svg" alt="Full View" width="15" height="15"
+                                              title="Full View">
+                                          </a>
+                                        </div>
+                                    </div>
+                                    <div class="row" style="margin-left: 0px; margin-right: 0px;">
+                                      <div class="col-xs-12 col-lg-12">
+                                        <div class="table-responsive table-b" style="height: 325px; overflow-y: auto;"
+                                          (scroll)="onScrollHandler($event)">
+                                          <table class="table table-striped custom-table"
+                                            style="table-layout: auto; width: 100%;">
+                                            <thead class="table-head">
+                                              <tr>
+                                                <td class="csColor">Date</td>
+                                                  <td class="csColor">Time</td>
+                                                  <td class="csColor">Latitude</td>
+                                                  <td class="csColor">Longitude</td>
+                                                  <td class="csColor">Speed (mph)</td>
+                                                  <td class="csColor">Road Speed Limit (mph)</td>
+                                                  <td class="csColor">Odometer (mi)</td>
+                                                  <td class="csColor">Location</td>
+                                                  <td class="csColor">Acceleration</td>
+                                                  <td class="csColor">Fuel Level (gal)</td>
+                                                  <td class="csColor">Alerts</td>
+                                                  <td class="csColor">Geofence Name (If any)</td>
+                                                  <td class="csColor">Oil Temp</td>
+                                                  <td class="csColor">Battery Voltage (v)</td>
+                                                  <td class="csColor">Battery Level (v)</td>
+                                                  <td class="csColor">Coolant Temp (&deg;C)</td>
+                                                  <td class="csColor">DTCs</td>
+                                                  <td class="csColor">Heading (°)                                                  </td>
+                                                  <td class="csColor">Seatbelt</td>
+                                                  <td class="csColor">Tire Pressure</td>
+                                                  <td class="csColor">Altitude</td>
+                                                  <td class="csColor">EV Level</td>
+                                                  <td class="csColor">EV Range (mi)</td>
+                                                  <td class="csColor">Provider</td>
+                                              </tr>
+                                            </thead>
+                                            <tbody *ngIf="featuresList.length; else noEventTemplate">
+                                              <tr *ngFor="let feature of featuresList.slice(0, featuresList.length - 1)"
+                                                class="data-teable"
+                                                [ngStyle]="{ 'background-color': isMatched(feature?.geometry?.type) ? 'orange' : 'transparent' }">
+                                                <td>{{ convertDate(feature.properties?.cx_readable_timestamp) }}</td>
+                                                <td>{{ convertTime(feature.properties?.cx_readable_timestamp) }}</td>
+                                                <td>{{ feature.geometry?.coordinates[1] ?? '--' }}</td>
+                                                <td>{{ feature.geometry?.coordinates[0] ?? '--' }}</td>
+                                                <td>{{ (feature.properties?.cx_vehicle_speed) * 0.62137119  | number:'1.0-0'  ?? '--' }}</td>
+                                                <td>
+                                                  <ng-container *ngIf="feature.properties?.cx_rsl && feature.properties?.cx_rsl >= 1; else noValue">
+                                                    {{ feature.properties.cx_rsl }}
+                                                  </ng-container>
+                                                  <ng-template #noValue>--</ng-template>
+
+                                                  <ng-container *ngIf="feature.properties?.cx_rsl_type === 'inferred'">(i)</ng-container>
+                                                  <ng-container *ngIf="feature.properties?.cx_rsl_type === 'osrm'">(a)</ng-container>
+                                                </td>
+                                                <td>{{ (feature.properties?.cx_odometer) * 0.62137119  | number:'1.0-0'  ?? '--' }}</td>
+                                                <td>{{ feature.properties?.cx_location ?? '--' }}</td>
+                                                <td>{{ feature.properties?.cx_acc ?? '--' }}</td>
+                                                <td>{{ (feature.properties?.cx_fuel_level) * 0.26417205 | number:'1.2-2' ?? '--' }}</td>
+                                                <td>{{ getEventTypeFromArray(feature.properties?.cx_alerts ?? '--') }}</td>
+                                                <td>{{ getGeofenceNameFromArray(feature.properties?.cx_alerts ?? '--') }}</td>
+                                                <td>{{ feature.properties?.cx_oil_temp ?? '--' }}</td>
+                                                <td>{{ feature.properties?.cx_battery_voltage ?? '--' }}</td>
+                                                <td>{{ feature.properties?.cx_battery_level ?? '--' }}</td>
+                                                <td>{{ feature.properties?.cx_coolant_temp ?? '--' }}</td>
+                                                <td>{{ feature.properties?.cx_dtcs ?? '--' }}</td>
+                                                <td>{{ feature.properties?.cx_heading ?? '--' }}</td>
+                                                <td>
+                                                  <ng-container
+                                                    *ngIf="feature.properties?.cx_driver_seatbelt == '-999'">--</ng-container>
+                                                  <ng-container
+                                                    *ngIf="feature.properties?.cx_driver_seatbelt != '-999'">
+                                                    {{ feature.properties?.cx_driver_seatbelt }}
+                                                  </ng-container>
+                                                </td>
+                                                <td>{{ feature.properties?.cx_tire_pressure ?? '--' }}</td>
+                                                <td>{{ feature.properties?.cx_altitude ?? '--' }}</td>
+                                                <td>{{ feature.properties?.cx_ev_level ?? '--' }}</td>
+                                                <td>{{ feature.properties?.cx_ev_range ?? '--' }}</td>
+                                                <td>{{ feature.properties?.cx_provider ?? '--' }}</td>
+                                              </tr>
+                                            </tbody>
+                                            <ng-template #noEventTemplate>
+                                              <tr>
+                                                <td colspan="22" style="padding: 115px;
+                                                font-size: 12px;
+                                                font-weight: 500;">No data available</td>
+                                              </tr>
+                                            </ng-template>
+                                          </table>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <!-- Event & vehicle details end-->
+                            </ng-container>
+                            <!--Third screen sidebox single trip details on click basis end-->
+                          </div>
+                        </div>
+                        <!-- Right-side box (absolute over the map) end -->
+                      </div>
+                      <!-- Map with overlay layout end-->
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!--map and details end-->
+      </div>
+      <!--right side content end -->
+    </div>
+  </div>
+</div>
+
+
+<!--Page main content End-->
+
+<!-- Popup for no data found-->
+<ng-template #nodatafound let-modal>
+  <div class="modal-header">
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss('Cross click')"></button>
+  </div>
+  <div class="modal-body">
+    <img src="../../../../../../assets/images/images.png">
+    <h5 class="no-data-found">No Trip Available</h5>
+  </div>
+</ng-template>
+<!-- Popup for no data found end-->
+
+<ng-template #noVehicleActivity let-modal>
+  <div class="modal-header">
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss('Cross click')"></button>
+  </div>
+  <div class="modal-body">
+    <img src="../../../../../../assets/images/images.png" style="margin-left: 115px;">
+    <h5 class="no-data-found">No vehicle activity detected</h5>
+  </div>
+</ng-template>
+
+<ng-template #fullViewOfTable let-modal>
+  <div class="modal-header">
+    <h5 class="no-data-found">Trip Summary</h5>
+    <div>
+      <img src="../../../../../../assets/images/download-report-icon.svg"
+        (click)="downloadReport(); modal.dismiss('Cross click')" alt="" class="download-report-icon" />
+      <span class="downloadTooltip">Download report</span>
+    </div>
+  </div>
+  <div class="modal-body">
+    <div class="row" style="margin-left: 0px; margin-right: 0px;">
+      <div class="col-xs-12 col-lg-12">
+        <div class="table-responsive table-b" style="height: 325px; overflow-y: auto;"
+          (scroll)="onScrollHandler($event)">
+          <table class="table table01 table-striped">
+            <thead class="table-head" style=" position: sticky;
+            top: 0;
+            background-color: grey;
+            z-index: 2;
+            color: #000000;">
+              <tr>
+                <td class="csColor">Date</td>
+                <td class="csColor">Time</td>
+                <td class="csColor">Latitude</td>
+                <td class="csColor">Longitude</td>
+                <td class="csColor">Speed (mph)</td>
+                <td class="csColor">Road Speed Limit (mph)</td>
+                <td class="csColor">Odometer (mi)</td>
+                <td class="csColor">Location</td>
+                <td class="csColor">Acceleration</td>
+                <td class="csColor">Fuel Level (gal)</td>
+                <td class="csColor">Alerts</td>
+                <td class="csColor">Geofence Name (If any)</td>
+                <td class="csColor">Oil Temp</td>
+                <td class="csColor">Battery Voltage (v)</td>
+                <td class="csColor">Battery Level (v)</td>
+                <td class="csColor">Coolant Temp (&deg;C)</td>
+                <td class="csColor">DTCs</td>
+                <td class="csColor">Heading (°)                                                  </td>
+                <td class="csColor">Seatbelt</td>
+                <td class="csColor">Tire Pressure</td>
+                <td class="csColor">Altitude</td>
+                <td class="csColor">EV Level</td>
+                <td class="csColor">EV Range (mi)</td>
+                <td class="csColor">Provider</td>
+              </tr>
+            </thead>
+            <tbody *ngIf="featuresList.length > 0; else noEventTemplate">
+              <tr *ngFor="let feature of featuresList.slice(0, featuresList.length - 1)" class="data-teable"
+                [ngStyle]="{ 'background-color': isMatched(feature?.geometry?.type) ? 'orange' : 'transparent' }">
+                <td>{{ convertDate(feature.properties?.cx_readable_timestamp) }}</td>
+                <td>{{ convertTime(feature.properties?.cx_readable_timestamp) }}</td>
+                <td>{{ feature.geometry?.coordinates[1] ?? '--' }}</td>
+                <td>{{ feature.geometry?.coordinates[0] ?? '--' }}</td>
+                <td>{{ (feature.properties?.cx_vehicle_speed) * 0.62137119  | number:'1.0-0'  ?? '--' }}</td>
+                <td>
+                  <ng-container *ngIf="feature.properties?.cx_rsl && feature.properties?.cx_rsl >= 1; else noValue">
+                    {{ feature.properties.cx_rsl}}
+                  </ng-container>
+                  <ng-template #noValue>--</ng-template>
+
+                  <ng-container *ngIf="feature.properties?.cx_rsl_type === 'inferred'">(i)</ng-container>
+                  <ng-container *ngIf="feature.properties?.cx_rsl_type === 'osrm'">(a)</ng-container>
+                </td>
+                <td>{{ (feature.properties?.cx_odometer) * 0.62137119  | number:'1.0-0'  ?? '--' }}</td>
+                <td>{{ feature.properties?.cx_location ?? '--' }}</td>
+                <td>{{ feature.properties?.cx_acc ?? '--' }}</td>
+                <td>{{ (feature.properties?.cx_fuel_level) * 0.26417205 | number:'1.2-2' ?? '--' }}</td>
+                <td>{{ getEventTypeFromArray(feature.properties?.cx_alerts ?? '--') }}</td>
+                <td>{{ getGeofenceNameFromArray(feature.properties?.cx_alerts ?? '--') }}</td>
+                <td>{{ feature.properties?.cx_oil_temp ?? '--' }}</td>
+                <td>{{ feature.properties?.cx_battery_voltage ?? '--' }}</td>
+                <td>{{ feature.properties?.cx_battery_level ?? '--' }}</td>
+                <td>{{ feature.properties?.cx_coolant_temp ?? '--' }}</td>
+                <td>{{ feature.properties?.cx_dtcs ?? '--' }}</td>
+                <td>{{ feature.properties?.cx_heading ?? '--' }}</td>
+                <td>
+                  <ng-container *ngIf="feature.properties?.cx_driver_seatbelt == '-999'">--</ng-container>
+                  <ng-container *ngIf="feature.properties?.cx_driver_seatbelt != '-999'">
+                    {{ feature.properties?.cx_driver_seatbelt }}
+                  </ng-container>
+                </td>
+                <td>{{ feature.properties?.cx_tire_pressure ?? '--' }}</td>
+                <td>{{ feature.properties?.cx_altitude ?? '--' }}</td>
+                <td>{{ feature.properties?.cx_ev_level ?? '--' }}</td>
+                <td>{{ feature.properties?.cx_ev_range ?? '--' }}</td>
+                <td>{{ feature.properties?.cx_provider ?? '--' }}</td>
+              </tr>
+            </tbody>
+
+            <!-- Fallback Template -->
+            <ng-template #noEventTemplate>
+              <tr>
+                <td colspan="22" style="    padding-top: 115px;
+                font-size: 12px;
+                font-weight: 500;
+                padding-left: 554px;
+            ">No data available</td>
+              </tr>
+            </ng-template>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #fullViewEventTable let-modal>
+  <div class="modal-header">
+    <h5 class="no-data-found">Event Details</h5>
+  </div>
+  <div class="modal-body">
+    <div class="row" style="margin-left: 0px; margin-right: 0px;">
+      <div class="col-xs-12 col-lg-12">
+        <div class="table-responsive table-b" style="height: 325px; overflow-y: auto;"
+          (scroll)="onScrollHandler($event)">
+          <table class="table table-striped custom-table"
+          style="table-layout: auto; width: 100%;">
+          <thead class="table-head">
+            <tr>
+              <td class="csColor">Date</td>
+              <td class="csColor">Time</td>
+              <td class="csColor">Latitude</td>
+              <td class="csColor">Longitude</td>
+              <td class="csColor">Speed (mph)</td>
+              <td class="csColor">Road Speed Limit (mph)</td>
+              <td class="csColor">Odometer (mi)</td>
+              <td class="csColor">Location</td>
+              <td class="csColor">Acceleration</td>
+              <td class="csColor">Fuel Level (gal)</td>
+              <td class="csColor">Alerts</td>
+              <td class="csColor">Geofence Name (If any)</td>
+              <td class="csColor">Oil Temp</td>
+              <td class="csColor">Battery Voltage (v)</td>
+              <td class="csColor">Battery Level (v)</td>
+              <td class="csColor">Coolant Temp (&deg;C)</td>
+              <td class="csColor">DTCs</td>
+              <td class="csColor">Heading (°)                                                  </td>
+              <td class="csColor">Seatbelt</td>
+              <td class="csColor">Tire Pressure</td>
+              <td class="csColor">Altitude</td>
+              <td class="csColor">EV Level</td>
+              <td class="csColor">EV Range (mi)</td>
+              <td class="csColor">Provider</td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let surroundingAlert of alertList" class="data-teable"
+              [ngClass]="{'highlight-row': surroundingAlert.isCenterRow}">
+              <td>{{ surroundingAlert.formattedAlertDate }}</td>
+              <td>{{ surroundingAlert.formattedAlertTime }}</td>
+              <td>{{ surroundingAlert.geometry?.coordinates[1] ?? '--' }}</td>
+              <td>{{ surroundingAlert.geometry?.coordinates[0] ?? '--' }}</td>
+              <td>{{ (surroundingAlert.properties?.cx_vehicle_speed) * 0.62137119 | number:'1.2-2' ?? '--' }}</td>
+              <td>{{ surroundingAlert.properties?.cx_rsl  ?? '--' }}
+                <ng-container *ngIf="surroundingAlert.properties?.cx_rsl_type === 'inferred'">(i)</ng-container>
+                <ng-container *ngIf="surroundingAlert.properties?.cx_rsl_type === 'osrm'">(a)</ng-container>
+              </td>
+              <!-- <td>{{ surroundingAlert.properties?.cx_rsl_type | number:'1.2-2'  ?? '--' }}</td> -->
+              <td>{{ (surroundingAlert.properties?.cx_odometer) * 0.62137119 | number:'1.2-2' ?? '--' }}</td>
+              <td>{{ surroundingAlert.properties?.cx_location ?? '--' }}</td>
+              <td>{{ surroundingAlert.properties?.cx_acc ?? '--' }}</td>
+              <td>{{ (surroundingAlert.properties?.cx_fuel_level) * 0.26417205 | number:'1.2-2' ?? '--' }}</td>
+              <td>{{ getEventTypeFromArray(surroundingAlert.properties?.cx_alerts) }}</td>
+              <td>{{ getGeofenceNameFromArray(surroundingAlert.properties?.cx_alerts) }}</td>
+              <td>{{ surroundingAlert.properties?.cx_oil_temp ?? '--' }}</td>
+              <td>{{ surroundingAlert.properties?.cx_battery_voltage ?? '--' }}</td>
+              <td>{{ surroundingAlert.properties?.cx_battery_level ?? '--' }}</td>
+              <td>{{ surroundingAlert.properties?.cx_coolant_temp ?? '--' }}</td>
+              <td>{{ surroundingAlert.properties?.cx_dtcs ?? '--' }}</td>
+              <td>{{ surroundingAlert.properties?.cx_heading ?? '--' }}</td>
+              <td>{{ surroundingAlert.properties?.cx_driver_seatbelt ?? '--' }}</td>
+              <td>{{ surroundingAlert.properties?.cx_tire_pressure ?? '--' }}</td>
+              <td>{{ surroundingAlert.properties?.cx_altitude ?? '--' }}</td>
+              <td>{{ surroundingAlert.properties?.cx_ev_level ?? '--' }}</td>
+              <td>{{ surroundingAlert.properties?.cx_ev_range ?? '--' }}</td>
+              <td>{{ surroundingAlert.properties?.cx_provider ?? '--' }}</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-template>

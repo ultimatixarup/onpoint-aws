@@ -1,0 +1,2011 @@
+{
+  "openapi": "3.0.0",
+  "servers": [
+    {
+      "url": "https://api.cerebrumx.ai/v1"
+    }
+  ],
+  "tags": [
+    {
+      "name": "data-reports",
+      "x-displayName": "data-reports",
+      "description": "Data Reports for Query"
+    },
+    {
+      "name": "responses",
+      "x-displayName": "Response",
+      "description": "Response"
+    },
+    {
+      "name": "media",
+      "x-displayName": "Media",
+      "description": "Media"
+    },
+    {
+      "name": "ubi",
+      "x-displayName": "UBI",
+      "description": "UBI"
+    },
+    {
+      "name": "oem",
+      "x-displayName": "OEM",
+      "description": "OEM"
+    },
+    {
+      "name": "fleet",
+      "x-displayName": "Fleet",
+      "description": "Fleet"
+    },
+    {
+      "name": "ingestion",
+      "x-displayName": "Ingestion",
+      "description": "Ingestion"
+    },
+    {
+      "name": "consent",
+      "x-displayName": "Consent",
+      "description": "Consent"
+    },
+    {
+      "name": "monitor",
+      "x-displayName": "Monitor",
+      "description": "Monitor"
+    },
+    {
+      "name": "fleet-management",
+      "x-displayName": "fleet-management",
+      "description": "Fleet Management"
+    },
+    {
+      "name": "retail",
+      "x-displayName": "retail",
+      "description": "Retail"
+    },
+    {
+      "name": "insurance",
+      "x-displayName": "insurance",
+      "description": "insurance"
+    },
+    {
+      "name": "smart-city",
+      "x-displayName": "smart-city",
+      "description": "smart-city"
+    },
+    {
+      "name": "data-api",
+      "x-displayName": "data-api",
+      "description": "data-api"
+    },
+    {
+      "name": "data-consumer",
+      "x-displayName": "data-consumer",
+      "description": "data-consumer"
+    },
+    {
+      "name": "after-market",
+      "x-displayName": "after-market",
+      "description": "after-market"
+    }
+  ],
+  "x-tagGroups": [
+    {
+      "name": "Data Consumer",
+      "tags": [
+        "queries",
+        "responses",
+        "media",
+        "oem",
+        "fleet",
+        "data-consumer"
+      ]
+    }
+  ],
+  "paths": {
+
+    "/consumer/data-consumer/add-vehicle": {
+      "post": {
+        "x-code-samples": [
+          {
+            "lang": "java",
+            "source": "OkHttpClient client = new OkHttpClient();\r\n\r\nMediaType mediaType = MediaType.parse(\"application/json\");\r\nRequestBody body = RequestBody.create(mediaType, \"{\\\"vin\\\":\\\"string\\\",\\\"oem\\\":\\\"string\\\"}\");\r\nRequest request = new Request.Builder()\r\n  .url(\"https://api.cerebrumx.ai/v1/consumer/data-consumer/add-vehicle\")\r\n  .post(body)\r\n  .build();\r\n\r\nResponse response = client.newCall(request).execute();"
+          },
+          {
+            "lang": "python",
+            "source": "import http.client\r\n\r\nconn = http.client.HTTPSConnection(\"api.cerebrumx.ai\")\r\n\r\npayload = \"{\\\"vin\\\":\\\"string\\\",\\\"oem\\\":\\\"string\\\"}\"\r\n\r\nconn.request(\"POST\", \"/v1/consumer/data-consumer/add-vehicle\", payload)\r\n\r\nres = conn.getresponse()\r\ndata = res.read()\r\n\r\nprint(data.decode(\"utf-8\"))"
+          }
+        ],
+        "summary": "Add Vehicle",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "operationId": "post-consumer-consent-add-vehicle",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentAddVehicleRequest"
+              },
+              "examples": {}
+            }
+          },
+          "description": "Add Vehicle"
+        },
+        "description": "Add Vehicle",
+        "x-internal": false,
+        "tags": [
+          ""
+        ]
+      },
+      "parameters": []
+    },
+    "/consumer/data-consumer/add-vehicle-list": {
+      "post": {
+        "x-code-samples": [
+          {
+            "lang": "java",
+            "source": "OkHttpClient client = new OkHttpClient();\r\n\r\nMediaType mediaType = MediaType.parse(\"application/json\");\r\nRequestBody body = RequestBody.create(mediaType, \"[[[]]]\");\r\nRequest request = new Request.Builder()\r\n  .url(\"https://api.cerebrumx.ai/v1/consumer/data-consumer/add-vehicle-list\")\r\n  .post(body)\r\n  .build();\r\n\r\nResponse response = client.newCall(request).execute();"
+          },
+          {
+            "lang": "python",
+            "source": "import http.client\r\n\r\nconn = http.client.HTTPSConnection(\"api.cerebrumx.ai\")\r\n\r\npayload = \"[[[]]]\"\r\n\r\nconn.request(\"POST\", \"/v1/consumer/data-consumer/add-vehicle-list\", payload)\r\n\r\nres = conn.getresponse()\r\ndata = res.read()\r\n\r\nprint(data.decode(\"utf-8\"))"
+          }
+        ],
+        "summary": "Add Multiple Vehicles Consent",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "operationId": "post-consumer-add-vehicle-list",
+        "description": "Add Multiple Vehicles Consent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentAddVehicleListRequest"
+              },
+              "examples": {}
+            }
+          },
+          "description": "Add Multiple Vehicles Consent"
+        },
+        "x-internal": false,
+        "tags": [
+          ""
+        ]
+      },
+      "parameters": []
+    },
+    "/consumer/data-consumer/enable-consent": {
+      "post": {
+        "x-code-samples": [
+          {
+            "lang": "java",
+            "source": "OkHttpClient client = new OkHttpClient();\r\n\r\nMediaType mediaType = MediaType.parse(\"application/json\");\r\nRequestBody body = RequestBody.create(mediaType, \"{\\\"vin\\\":\\\"string\\\",\\\"dataConsumer\\\":\\\"string\\\",\\\"dataParameters\\\":\\\"string\\\"}\");\r\nRequest request = new Request.Builder()\r\n  .url(\"https://api.cerebrumx.ai/v1/consumer/data-consumer/enable-consent\")\r\n  .post(body)\r\n  .build();\r\n\r\nResponse response = client.newCall(request).execute();"
+          },
+          {
+            "lang": "python",
+            "source": "import http.client\r\n\r\nconn = http.client.HTTPSConnection(\"api.cerebrumx.ai\")\r\n\r\npayload = \"{\\\"vin\\\":\\\"string\\\",\\\"dataConsumer\\\":\\\"string\\\",\\\"dataParameters\\\":\\\"string\\\"}\"\r\n\r\nconn.request(\"POST\", \"/v1/consumer/data-consumer/enable-consent\", payload)\r\n\r\nres = conn.getresponse()\r\ndata = res.read()\r\n\r\nprint(data.decode(\"utf-8\"))"
+          }
+        ],
+        "summary": "Enable Consent",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "operationId": "post-consumer-consent-enable-consent",
+        "description": "Enable Consent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentEnableConsentRequest"
+              }
+            }
+          }
+        },
+        "x-internal": true,
+        "tags": [
+          ""
+        ]
+      },
+      "parameters": []
+    },
+    "/consumer/data-consumer/revoke-consent": {
+      "post": {
+        "x-code-samples": [
+          {
+            "lang": "java",
+            "source": "OkHttpClient client = new OkHttpClient();\r\n\r\nMediaType mediaType = MediaType.parse(\"application/json\");\r\nRequestBody body = RequestBody.create(mediaType, \"{\\\"vin\\\":\\\"string\\\",\\\"dataConsumer\\\":\\\"string\\\",\\\"dataParameters\\\":\\\"string\\\"}\");\r\nRequest request = new Request.Builder()\r\n  .url(\"https://api.cerebrumx.ai/v1/consumer/data-consumer/revoke-consent\")\r\n  .post(body)\r\n  .build();\r\n\r\nResponse response = client.newCall(request).execute();"
+          },
+          {
+            "lang": "python",
+            "source": "import http.client\r\n\r\nconn = http.client.HTTPSConnection(\"api.cerebrumx.ai\")\r\n\r\npayload = \"{\\\"vin\\\":\\\"string\\\",\\\"dataConsumer\\\":\\\"string\\\",\\\"dataParameters\\\":\\\"string\\\"}\"\r\n\r\nconn.request(\"POST\", \"/v1/consumer/data-consumer/revoke-consent\", payload)\r\n\r\nres = conn.getresponse()\r\ndata = res.read()\r\n\r\nprint(data.decode(\"utf-8\"))"
+          }
+        ],
+        "summary": "Revoke Consent",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "operationId": "post-consumer-consent-revoke-consent",
+        "description": "Revoke Consent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentRevokeConsentRequest"
+              }
+            }
+          }
+        },
+        "x-internal": true,
+        "tags": [
+          ""
+        ]
+      },
+      "parameters": []
+    },
+    "/consumer/data-consumer/get-consent-status/{vin}": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "vin",
+          "in": "path",
+          "required": true,
+          "description": "vehicle's VIN"
+        }
+      ],
+      "get": {
+        "x-code-samples": [
+          {
+            "lang": "java",
+            "source": "OkHttpClient client = new OkHttpClient();\r\n\r\nRequest request = new Request.Builder()\r\n  .url(\"https://api.cerebrumx.ai/v1/consumer/data-consumer/get-consent-status/vin\")\r\n  .get()\r\n  .build();\r\n\r\nResponse response = client.newCall(request).execute();"
+          },
+          {
+            "lang": "python",
+            "source": "import http.client\r\n\r\nconn = http.client.HTTPSConnection(\"api.cerebrumx.ai\")\r\n\r\nconn.request(\"GET\", \"/v1/consumer/data-consumer/get-consent-status/vin\")\r\n\r\nres = conn.getresponse()\r\ndata = res.read()\r\n\r\nprint(data.decode(\"utf-8\"))"
+          }
+        ],
+        "summary": "Get Vehicle Consent Status",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/getConsentStatus"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "operationId": "get-consumer-consent-get-consent-status-vin",
+        "description": "Get Vehicle Consent Status",
+        "x-internal": true,
+        "tags": [
+          ""
+        ]
+      }
+    },
+
+    "/consumer/data-consumer/register": {
+      "post": {
+        "x-code-samples": [
+          {
+            "lang": "java",
+            "source": "OkHttpClient client = new OkHttpClient();\r\n\r\nMediaType mediaType = MediaType.parse(\"application/json\");\r\nRequestBody body = RequestBody.create(mediaType, \"{\\\"consumerName\\\":\\\"string\\\",\\\"type\\\":\\\"string\\\",\\\"contractStart\\\":{\\\"date\\\":\\\"string\\\",\\\"type\\\":\\\"date\\\"},\\\"contractEnd\\\":{\\\"date\\\":\\\"string\\\",\\\"type\\\":\\\"date\\\"}}\");\r\nRequest request = new Request.Builder()\r\n  .url(\"https://api.cerebrumx.ai/v1/consumer/data-consumer/register\")\r\n  .post(body)\r\n  .build();\r\n\r\nResponse response = client.newCall(request).execute();"
+          },
+          {
+            "lang": "python",
+            "source": "import http.client\r\n\r\nconn = http.client.HTTPSConnection(\"api.cerebrumx.ai\")\r\n\r\npayload = \"{\\\"consumerName\\\":\\\"string\\\",\\\"type\\\":\\\"string\\\",\\\"contractStart\\\":{\\\"date\\\":\\\"string\\\",\\\"type\\\":\\\"date\\\"},\\\"contractEnd\\\":{\\\"date\\\":\\\"string\\\",\\\"type\\\":\\\"date\\\"}}\"\r\n\r\nconn.request(\"POST\", \"/v1/consumer/data-consumer/register\", payload)\r\n\r\nres = conn.getresponse()\r\ndata = res.read()\r\n\r\nprint(data.decode(\"utf-8\"))"
+          }
+        ],
+        "summary": "Register data consumer",
+        "tags": [
+          ""
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "consumerId": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "operationId": "post-consumer-data-consumer-register",
+        "description": "Register data consumer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "consumerName": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "contractStart": {
+                    "$ref": "#/components/schemas/DateTime"
+                  },
+                  "contractEnd": {
+                    "$ref": "#/components/schemas/DateTime"
+                  }
+                }
+              },
+              "examples": {}
+            }
+          },
+          "description": ""
+        }
+      }
+    },
+
+    "/consumer/data-consumer/add-user": {
+      "post": {
+        "x-code-samples": [
+          {
+            "lang": "java",
+            "source": "OkHttpClient client = new OkHttpClient();\r\n\r\nMediaType mediaType = MediaType.parse(\"application/json\");\r\nRequestBody body = RequestBody.create(mediaType, \"{\\\"username\\\":\\\"string\\\",\\\"name\\\":\\\"string\\\",\\\"lastname\\\":\\\"string\\\",\\\"email\\\":\\\"string\\\",\\\"phoneNumber\\\":\\\"string\\\",\\\"password\\\":\\\"string\\\",\\\"country\\\":\\\"string\\\",\\\"areaOfInterest\\\":\\\"string\\\"}\");\r\nRequest request = new Request.Builder()\r\n  .url(\"https://api.cerebrumx.ai/v1/consumer/data-consumer/add-user\")\r\n  .post(body)\r\n  .build();\r\n\r\nResponse response = client.newCall(request).execute();"
+          },
+          {
+            "lang": "python",
+            "source": "import http.client\r\n\r\nconn = http.client.HTTPSConnection(\"api.cerebrumx.ai\")\r\n\r\npayload = \"{\\\"username\\\":\\\"string\\\",\\\"name\\\":\\\"string\\\",\\\"lastname\\\":\\\"string\\\",\\\"email\\\":\\\"string\\\",\\\"phoneNumber\\\":\\\"string\\\",\\\"password\\\":\\\"string\\\",\\\"country\\\":\\\"string\\\",\\\"areaOfInterest\\\":\\\"string\\\"}\"\r\n\r\nconn.request(\"POST\", \"/v1/consumer/data-consumer/add-user\", payload)\r\n\r\nres = conn.getresponse()\r\ndata = res.read()\r\n\r\nprint(data.decode(\"utf-8\"))"
+          }
+        ],
+        "summary": "add user",
+        "tags": [
+          ""
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "operationId": "post-consumer-data-consumer-add-user",
+        "description": "add user",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "lastname": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "phoneNumber": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  },
+                  "country": {
+                    "type": "string"
+                  },
+                  "areaOfInterest": {
+                    "type": "string"
+                  }
+                }
+              },
+              "examples": {}
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Attribute": {
+        "title": "Query Attribute",
+        "type": "object",
+        "description": "Query Attributes",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type"
+          },
+          "unit": {
+            "type": "string",
+            "description": "Unit Name"
+          },
+          "category": {
+            "$ref": "#/components/schemas/Category"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "type",
+          "unit"
+        ]
+      },
+      "Country": {
+        "title": "Country",
+        "type": "object",
+        "description": "Represents a Country Object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique Country ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Country Name"
+          },
+          "twoLetterAbbr": {
+            "type": "string",
+            "description": "Country 2-letter abbreviation"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "twoLetterAbbr"
+        ]
+      },
+      "Query": {
+        "title": "Query",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique Query Id"
+          },
+          "name": {
+            "type": "string",
+            "description": "Query Name"
+          },
+          "logo": {
+            "type": "string",
+            "description": "Query Image"
+          },
+          "usecase": {
+            "$ref": "#/components/schemas/UseCase"
+          },
+          "description": {
+            "type": "string",
+            "description": "Query Description"
+          },
+          "callbackUrl": {
+            "type": "string",
+            "description": "Query Callback URL"
+          },
+          "attributeList": {
+            "type": "array",
+            "description": "Query Attribute List",
+            "items": {
+              "$ref": "#/components/schemas/Attribute"
+            }
+          },
+          "countryList": {
+            "type": "array",
+            "description": "Query Countries List",
+            "items": {
+              "$ref": "#/components/schemas/Country"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "Category": {
+        "title": "Categories",
+        "type": "object",
+        "description": "Categories",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique Category ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Category Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Category Description"
+          }
+        }
+      },
+      "UseCase": {
+        "title": "UseCase",
+        "type": "object",
+        "description": "Use Case",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique Usecase ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Usecase Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "UseCase Description"
+          }
+        }
+      },
+      "Filter": {
+        "title": "Filter",
+        "type": "object",
+        "description": "Filter data needs to be filtered on",
+        "properties": {
+          "dateTime": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "vehicleProfile": {
+            "$ref": "#/components/schemas/VehicleProfile"
+          },
+          "driverProfile": {
+            "$ref": "#/components/schemas/DriverProfile"
+          },
+          "mediaProfile": {
+            "$ref": "#/components/schemas/MediaProfile"
+          },
+          "vehicleOccupancy": {
+            "type": "number"
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          }
+        }
+      },
+      "NewCarFeatures": {
+        "title": "NewCarFeatures",
+        "type": "object",
+        "description": "Features for New Car Price Prediction",
+        "properties": {
+          "country": {
+            "type": "string",
+            "description": "2 digit country code",
+            "minLength": 2,
+            "maxLength": 2
+          },
+          "typeOfCar": {
+            "type": "string",
+            "enum": [
+              "SUV",
+              "MUV",
+              "SEDAN",
+              "HATCHBACK",
+              "COUPE"
+            ]
+          },
+          "seatingCapacity": {
+            "type": "number"
+          },
+          "fuelType": {
+            "type": "string"
+          },
+          "transmission": {
+            "type": "string"
+          },
+          "mileage": {
+            "type": "number"
+          },
+          "engineType": {
+            "type": "string"
+          },
+          "bootSpace": {
+            "type": "number"
+          },
+          "fuelTankCapacity": {
+            "type": "number"
+          },
+          "steeringType": {
+            "type": "string"
+          }
+        }
+      },
+      "UsedCarFeatures": {
+        "title": "UsedCarFeatures",
+        "type": "object",
+        "description": "Features for New Car Price Prediction",
+        "properties": {
+          "country": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2,
+            "description": "2 digit country code"
+          },
+          "typeOfCar": {
+            "type": "string",
+            "enum": [
+              "SUV",
+              "MUV",
+              "SEDAN",
+              "HATCHBACK",
+              "COUPE"
+            ]
+          },
+          "yearOfManufacture": {
+            "type": "string",
+            "description": "YYYY Format"
+          },
+          "condition": {
+            "type": "string"
+          },
+          "noOfOwners": {
+            "type": "number"
+          },
+          "fuelType": {
+            "type": "string"
+          },
+          "mileage": {
+            "type": "number"
+          },
+          "transmission": {
+            "type": "string"
+          },
+          "engineType": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "driveTrain": {
+            "type": "string"
+          },
+          "distanceTravelled": {
+            "type": "string"
+          },
+          "placeRegion": {
+            "type": "string"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          }
+        }
+      },
+      "LocationPolygon": {
+        "title": "LocationPolygon",
+        "type": "object",
+        "description": "Location Polygon is set of (lat,long).",
+        "properties": {
+          "coordinates": {
+            "type": "array",
+            "description": "Point is described as (lat,long).",
+            "items": {
+              "$ref": "#/components/schemas/Point"
+            }
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "polygon"
+            ]
+          }
+        },
+        "required": [
+          "coordinates"
+        ]
+      },
+      "LocationCircle": {
+        "title": "LocationCircle",
+        "type": "object",
+        "description": "Location Circle is represented by location centre(lat,long) \nand it's radius.",
+        "properties": {
+          "center": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "radius": {
+            "type": "number"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "circle"
+            ]
+          }
+        },
+        "required": [
+          "center",
+          "radius"
+        ]
+      },
+      "Location": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/LocationPolygon"
+          },
+          {
+            "$ref": "#/components/schemas/LocationCircle"
+          },
+          {
+            "$ref": "#/components/schemas/LocationCountry"
+          }
+        ],
+        "title": "Location",
+        "description": "Location can be given as \n1. Country \n2. Location Polygon i.e. Set of (lat, long) \n3. Location Circle i.e. centre of circle in (lat, long) form with radius.",
+        "x-examples": {
+          "example-1": {
+            "value": {
+              "coordinates": [
+                {
+                  "latitude": "string",
+                  "longitude": "string"
+                }
+              ],
+              "type": "polygon"
+            }
+          }
+        }
+      },
+      "VehicleProfile": {
+        "title": "VehicleProfile",
+        "type": "object",
+        "properties": {
+          "brand": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "trim": {
+            "type": "string"
+          },
+          "engineType": {
+            "type": "string"
+          },
+          "fuelType": {
+            "type": "string"
+          },
+          "vehicleType": {
+            "type": "string"
+          }
+        }
+      },
+      "DriverProfile": {
+        "title": "DriverProfile",
+        "type": "object",
+        "properties": {
+          "ageGroup": {
+            "$ref": "#/components/schemas/AgeGroup"
+          },
+          "Gender": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female"
+            ]
+          }
+        }
+      },
+      "MediaProfile": {
+        "title": "MediaProfile",
+        "type": "object",
+        "properties": {
+          "radioStation": {
+            "type": "string"
+          },
+          "artistName": {
+            "type": "string"
+          }
+        }
+      },
+      "AgeGroup": {
+        "title": "AgeGroup",
+        "type": "object",
+        "description": "Age Group defined as range (start_age, end_age)",
+        "x-examples": {},
+        "properties": {
+          "start_age": {
+            "type": "integer",
+            "description": "Start age of the range"
+          },
+          "end_age": {
+            "type": "integer",
+            "description": "End age of the range"
+          }
+        }
+      },
+      "TimePeriod": {
+        "title": "TimePeriod",
+        "type": "object",
+        "description": "Time period is defined as (start_time, end_time)",
+        "properties": {
+          "start_time": {
+            "type": "string",
+            "description": "Start time in YYYY-MM-DD HH:MM:SS format"
+          },
+          "end_time": {
+            "type": "string",
+            "description": "end time in YYYY-MM-DD HH:MM:SS format"
+          }
+        }
+      },
+      "DateTime": {
+        "title": "DateTime",
+        "anyOf": [
+          {
+            "properties": {
+              "date": {
+                "type": "string",
+                "description": "In YYYY-MM-DD format.(e.g. 2020-06-16 )"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "date"
+                ]
+              }
+            }
+          },
+          {
+            "properties": {
+              "month": {
+                "type": "string",
+                "description": "In YYYY-MM format.(e.g. 2020-06 )"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "month"
+                ]
+              }
+            }
+          },
+          {
+            "properties": {
+              "year": {
+                "type": "string",
+                "description": "In YYYY format.( e.g. 2020 )"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "year"
+                ]
+              }
+            }
+          },
+          {
+            "properties": {
+              "timePeriod": {
+                "$ref": "#/components/schemas/TimePeriod"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "timeperiod"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "'Time and date can be given as \n1. Specific date \n2. Specific month+year \n3. Specific year \n4. Custom date range'",
+        "type": "object"
+      },
+      "ResponseStates": {
+        "type": "string",
+        "title": "ResponseStates",
+        "enum": [
+          "ONGOING",
+          "GENERATED",
+          "FAILED"
+        ]
+      },
+      "Point": {
+        "title": "Point",
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "string"
+          },
+          "longitude": {
+            "type": "string"
+          }
+        }
+      },
+      "LocationCountry": {
+        "title": "LocationCountry",
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2,
+            "description": "2 digit country code"
+          },
+          "state": {
+            "type": "string",
+            "description": "State/Region in country"
+          },
+          "zipcode": {
+            "type": "string",
+            "description": "Zipcode of the location"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "country"
+            ]
+          }
+        },
+        "required": [
+          "country"
+        ]
+      },
+      "MediaDateRange": {
+        "title": "MediaDateRange",
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "MediaDayPart": {
+        "title": "MediaDayPart",
+        "type": "string",
+        "enum": [
+          "M-F 6AM - 10AM Morning Drive",
+          "M-F 10AM - 3PM Midday",
+          "M-F 3PM - 7PM Afternoon Drive",
+          "M-F 7PM - 12M Evening",
+          "M-F 12M - 6AM"
+        ]
+      },
+      "MediaDriverProfile": {
+        "title": "MediaDriverProfile",
+        "type": "object",
+        "properties": {
+          "ageGroup": {
+            "type": "string",
+            "enum": [
+              "18-24",
+              "25-34",
+              "35-44",
+              "45-49",
+              "50-54",
+              "65+"
+            ]
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female"
+            ]
+          },
+          "raceInfo": {
+            "type": "string"
+          }
+        }
+      },
+      "MediaRadioStation": {
+        "title": "MediaRadioStation",
+        "type": "object",
+        "properties": {
+          "waveBand": {
+            "type": "string",
+            "enum": [
+              "AM",
+              "FM",
+              "XM"
+            ]
+          },
+          "frequency": {
+            "type": "string",
+            "description": "frequency in Hz"
+          },
+          "stationId": {
+            "type": "string",
+            "description": "' as displayed to end user by HMI. \nDefined by RDS if available or station frequency \nin Khz for FM or in Hz for AM (string)'"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "SPORTS",
+              "NEWS",
+              "WEATHER",
+              "SONGS"
+            ]
+          },
+          "stationName": {
+            "type": "string"
+          }
+        }
+      },
+      "MediaAudeinceMeasurementStats": {
+        "title": "MediaAudeinceMeasurementStats",
+        "type": "object",
+        "properties": {
+          "cume": {
+            "type": "string"
+          },
+          "tsl": {
+            "type": "string"
+          },
+          "aqh": {
+            "type": "string"
+          },
+          "aqhRating": {
+            "type": "string"
+          },
+          "cumeRating": {
+            "type": "string"
+          },
+          "aqhShare": {
+            "type": "string"
+          },
+          "loyalty": {
+            "type": "string"
+          },
+          "listenerChoiceCategory": {
+            "type": "string"
+          },
+          "stationId": {
+            "type": "string"
+          }
+        }
+      },
+      "MediaVehiceProfile": {
+        "title": "MediaVehiceProfile",
+        "type": "object",
+        "properties": {
+          "brand": {
+            "type": "string"
+          }
+        }
+      },
+      "UbiRegisterProviderRequestModel": {
+        "title": "UbiRegisterProviderRequestModel",
+        "type": "object",
+        "description": "Ubi Register Provider Request Model",
+        "properties": {
+          "cxInsuranceProviderId": {
+            "type": "string",
+            "description": "3-digit country code followed with 2-digit Adlp insurance provider Id."
+          },
+          "insuranceCompanyName": {
+            "type": "string",
+            "description": "Insurance company name"
+          },
+          "metricSystem": {
+            "type": "integer",
+            "description": "KPL=1, MPG=2"
+          },
+          "numberOfProfilesPAYD": {
+            "type": "integer",
+            "description": "Different profiles are required to support\nTest, Production, Regional variation etc. At\nleast one profile is Mandatory. No of profiles\nsupported for PAYD. Zero means No PAYD profile supported."
+          },
+          "numberOfProfilesPHYD": {
+            "type": "integer",
+            "description": "No of profiles Supported for PHYD.  Zero means No PAYD profile supported."
+          },
+          "slabs": {
+            "type": "array",
+            "description": "0:5 carry the Slabs in terms of KM/Mile",
+            "items": {
+              "$ref": "#/components/schemas/UbiProfileSlabListModel"
+            }
+          },
+          "weights": {
+            "type": "array",
+            "description": "The array carries weights 0.w1, 0.w2, 0.w3\netc corresponding to parameters for each\nprofile.",
+            "items": {
+              "$ref": "#/components/schemas/UbiProfileWeightListModel"
+            }
+          }
+        },
+        "required": [
+          "cxInsuranceProviderId",
+          "insuranceCompanyName",
+          "metricSystem",
+          "numberOfProfilesPAYD",
+          "numberOfProfilesPHYD",
+          "slabs",
+          "weights"
+        ]
+      },
+      "UbiCreateUserRecordRequestModel": {
+        "title": "UbiUserRecord",
+        "type": "object",
+        "properties": {
+          "cxInsuranceProviderId": {
+            "type": "string",
+            "description": "3-digit country code followed with 2-digit Adlp insurance provider Id."
+          },
+          "userId": {
+            "type": "string",
+            "description": "Unique User Id from Insurance company identifying the user."
+          },
+          "consent": {
+            "type": "string",
+            "description": "Explicit consent for echo coaching updates. User records field will only be considered when this field is set to \"Y\"",
+            "enum": [
+              "Y",
+              "N"
+            ]
+          },
+          "userRecord": {
+            "type": "object",
+            "description": "Parameter required for echo coaching and driving behaviour analysis. In case this parameter is empty it will be filled as \"NIL\".",
+            "properties": {
+              "gender": {
+                "type": "string",
+                "enum": [
+                  "M",
+                  "F"
+                ]
+              },
+              "age": {
+                "type": "integer"
+              },
+              "email": {
+                "type": "string",
+                "format": "email"
+              }
+            }
+          }
+        },
+        "required": [
+          "cxInsuranceProviderId",
+          "userId",
+          "consent"
+        ]
+      },
+      "UbiAttachPolicyRequestModel": {
+        "title": "UbiAttachPolicyRequestModel",
+        "type": "object",
+        "properties": {
+          "cxInsuranceProviderId": {
+            "type": "string",
+            "description": "3-digit country code followed with 2-digit Adlp insurance provider Id."
+          },
+          "cxUserId": {
+            "type": "string",
+            "description": "Hash"
+          },
+          "cxPolicyId": {
+            "type": "string",
+            "description": "ID to uniquely identify the policy"
+          },
+          "consent": {
+            "type": "string",
+            "enum": [
+              "Y",
+              "N"
+            ],
+            "description": "Explicit consent from the User for sharing the details and processing"
+          },
+          "insuranceType": {
+            "type": "integer",
+            "description": "PAYD=1, PHYD=2"
+          },
+          "cxProfileId": {
+            "type": "integer",
+            "description": "With the profile Insurance Provider can\nselect the applicable parameters and\nweights in case of PHYD and Slabs in\ncase of PAYD. Within ADLP this will\ntrigger the AI Model with these\nparameters/weigths/slabs. Default is\nProfile 1 in PAYD and PHYD."
+          },
+          "startDateTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC Date-Time format"
+          },
+          "tenure": {
+            "type": "integer",
+            "description": "No of Days"
+          },
+          "vehicle": {
+            "$ref": "#/components/schemas/UbiVehicleModel"
+          }
+        },
+        "required": [
+          "cxInsuranceProviderId",
+          "cxUserId",
+          "cxPolicyId",
+          "consent",
+          "insuranceType",
+          "startDateTime",
+          "tenure"
+        ]
+      },
+      "UbiUserStatusRequestModel": {
+        "title": "UbiUserStatusRequestModel",
+        "type": "object",
+        "properties": {
+          "cxInsuranceProviderId": {
+            "type": "string",
+            "description": "3-digit country code followed with 2-digit Adlp insurance provider Id."
+          },
+          "cxUserId": {
+            "type": "string",
+            "description": "User Record Id Hash"
+          }
+        },
+        "required": [
+          "cxInsuranceProviderId",
+          "cxUserId"
+        ]
+      },
+      "UbiUserStatusResponseModel": {
+        "title": "UbiUserStatusResponseModel",
+        "type": "object",
+        "properties": {
+          "consent": {
+            "type": "string",
+            "enum": [
+              "Y",
+              "N"
+            ],
+            "description": "In case the consent is withdrawn by\nthe User via the OEM/explicitly via any\nother mechanism the Return value will\nbe 401 with Consent not provided"
+          },
+          "policies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UbiPolicyModel"
+            }
+          }
+        },
+        "required": [
+          "consent"
+        ]
+      },
+      "UbiUserPolicyStatusResponseModel": {
+        "title": "UbiUserPolicyStatusResponseModel",
+        "type": "object",
+        "description": "Ubi User Policy Status Response Model",
+        "properties": {
+          "consent": {
+            "type": "string",
+            "enum": [
+              "Y",
+              "N"
+            ],
+            "description": "In case the consent is withdrawn by\nthe User via the OEM/explicitly via any\nother mechanism the Return value will\nbe 401 with Consent not provided"
+          },
+          "vehicle": {
+            "$ref": "#/components/schemas/UbiVehicleModel"
+          },
+          "type": {
+            "type": "string",
+            "description": "PayD, PHYD"
+          },
+          "startPeriod": {
+            "type": "string",
+            "format": "date-time",
+            "description": "start Time"
+          },
+          "totalMiles": {
+            "type": "integer"
+          },
+          "driverScore": {
+            "type": "integer",
+            "description": "In case of PHYD mandatory"
+          },
+          "totalTrips": {
+            "type": "integer",
+            "description": "Total trips. In case of PHYD mandatory"
+          },
+          "totalTimeDriven": {
+            "type": "integer",
+            "description": "In case of PHYD mandatory"
+          },
+          "overSpeed": {
+            "type": "integer",
+            "description": "In case of PHYD mandatory"
+          },
+          "hardAcceleration": {
+            "type": "integer",
+            "description": "In case of PHYD mandatory"
+          },
+          "cornering": {
+            "type": "integer",
+            "description": "In case of PHYD mandatory"
+          },
+          "distracted": {
+            "type": "integer",
+            "description": "In case of PHYD mandatory"
+          },
+          "nightTravelRatio": {
+            "type": "integer",
+            "description": "In case of PHYD mandatory"
+          }
+        },
+        "required": [
+          "consent",
+          "vehicle",
+          "type",
+          "totalMiles"
+        ]
+      },
+      "UbiVehicleModel": {
+        "title": "UbiVehicleModel",
+        "type": "object",
+        "description": "Ubi Vehicle Model",
+        "properties": {
+          "vin": {
+            "type": "string",
+            "description": "VIN in US/Chassis and Engine in other\nplaces"
+          },
+          "brand": {
+            "type": "string",
+            "description": "Brand name"
+          },
+          "make": {
+            "type": "string",
+            "description": "Make"
+          },
+          "model": {
+            "type": "string",
+            "description": "Model and Trim"
+          },
+          "registrationYear": {
+            "type": "string",
+            "format": "date",
+            "description": "Year in YYYY format"
+          },
+          "registrationNumber": {
+            "type": "string",
+            "description": "Registration Number"
+          }
+        },
+        "required": [
+          "vin"
+        ]
+      },
+      "UbiUserPolicyStatusRequestModel": {
+        "title": "UbiUserPolicyStatusRequestModel",
+        "type": "object",
+        "properties": {
+          "cxInsuranceProviderId": {
+            "type": "string",
+            "description": "3-digit country code followed with 2-digit Adlp insurance provider Id."
+          },
+          "cxUserId": {
+            "type": "string",
+            "description": "User Record ID Hash"
+          },
+          "cxPolicyId": {
+            "type": "string",
+            "description": "Policy ID"
+          }
+        },
+        "required": [
+          "cxInsuranceProviderId",
+          "cxUserId",
+          "cxPolicyId"
+        ]
+      },
+      "UbiPolicyModel": {
+        "title": "UbiPolicyModel",
+        "type": "object",
+        "properties": {
+          "cxPolicyId": {
+            "type": "string",
+            "description": "Attached Policy Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ],
+            "description": "Policy ACtive or Inactive"
+          },
+          "type": {
+            "type": "string",
+            "description": "PAYD, PHYD"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC Date time"
+          },
+          "tenure": {
+            "type": "integer",
+            "description": "No of Days"
+          },
+          "vehicle": {
+            "$ref": "#/components/schemas/UbiVehicleModel"
+          }
+        },
+        "required": [
+          "cxPolicyId",
+          "status",
+          "type",
+          "startTime",
+          "tenure",
+          "vehicle"
+        ]
+      },
+      "UbiProfileSlabListModel": {
+        "title": "UbiProfileSlabListModel",
+        "type": "object",
+        "properties": {
+          "cxProfileId": {
+            "type": "string",
+            "description": "Profile Id"
+          },
+          "slabList": {
+            "type": "array",
+            "description": "Slab choosen againt given profileId. Maximum 5 slabs can be choosen against each profile.\nEach slab's range is representted by its minimum and maximum value.",
+            "minItems": 0,
+            "maxItems": 5,
+            "items": {
+              "type": "object",
+              "properties": {
+                "minRange": {
+                  "type": "integer",
+                  "description": "Minimum Range Value"
+                },
+                "maxRange": {
+                  "type": "integer",
+                  "description": "Maximum Range Value"
+                }
+              }
+            }
+          }
+        }
+      },
+      "UbiProfileWeightListModel": {
+        "title": "UbiProfileWeightListModel",
+        "type": "object",
+        "properties": {
+          "cxProfileId": {
+            "type": "string",
+            "description": "Profile Id"
+          },
+          "weightList": {
+            "type": "array",
+            "description": "Weights choosen againt given profileId. Maximum 5 weights can be choosen against each profile.",
+            "items": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "FleetManagementGetVehicleScoreRequest": {
+        "title": "FleetManagementGetVehicleScoreRequest",
+        "type": "object",
+        "properties": {
+          "odometer": {
+            "$ref": "#/components/schemas/FleetManagementValueWeightPair"
+          },
+          "engineLoad": {
+            "$ref": "#/components/schemas/FleetManagementValueWeightPair"
+          },
+          "batteryVoltage": {
+            "$ref": "#/components/schemas/FleetManagementValueWeightPair"
+          },
+          "coolantTemperature": {
+            "$ref": "#/components/schemas/FleetManagementValueWeightPair"
+          },
+          "oilLevel": {
+            "$ref": "#/components/schemas/FleetManagementValueWeightPair"
+          },
+          "fuelEfficiency": {
+            "$ref": "#/components/schemas/FleetManagementValueWeightPair"
+          },
+          "tyreLife": {
+            "$ref": "#/components/schemas/FleetManagementValueWeightPair"
+          },
+          "distanceToService": {
+            "$ref": "#/components/schemas/FleetManagementValueWeightPair"
+          }
+        }
+      },
+      "FleetManagementValueWeightPair": {
+        "title": "FleetManagementValueWeightPair",
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number"
+          },
+          "weight": {
+            "type": "number"
+          }
+        }
+      },
+      "FleetManagementGetDriverScoreRequest": {
+        "title": "FleetManagementGetDriverScoreRequest",
+        "type": "object",
+        "properties": {
+          "harshBraking": {
+            "$ref": "#/components/schemas/FleetManagementValueWeightPair"
+          },
+          "harshCornering": {
+            "$ref": "#/components/schemas/FleetManagementValueWeightPair"
+          },
+          "harshAcceleration": {
+            "$ref": "#/components/schemas/FleetManagementValueWeightPair"
+          },
+          "numberOfLWD": {
+            "$ref": "#/components/schemas/FleetManagementValueWeightPair"
+          },
+          "accidents": {
+            "$ref": "#/components/schemas/FleetManagementValueWeightPair"
+          },
+          "driverAlerts": {
+            "$ref": "#/components/schemas/FleetManagementValueWeightPair"
+          }
+        }
+      },
+      "FleetManagementSubscribeForDataRequest": {
+        "title": "FleetManagementSubscribeForData",
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/FleetManagementVehicleAttributes"
+        },
+        "x-examples": {}
+      },
+      "FleetManagementVehicleAttributes": {
+        "type": "string",
+        "title": "FleetManagementVehicleAttributes",
+        "enum": [
+          "LATITUDE",
+          "LONGITUDE",
+          "TRIP_START",
+          "TRIP_END",
+          "TRIP_SPEED",
+          "HEADING",
+          "ACCELERATION"
+        ],
+        "x-examples": {}
+      },
+      "FleetManagementEventType": {
+        "type": "string",
+        "title": "FleetManagementEventType",
+        "enum": [
+          "SPEED",
+          "FUEL_LEVEL",
+          "COOLANT_TEMPERATURE",
+          "BATTERY_VOLTAGE",
+          "OIL_LEVEL",
+          "TYRE_PRESSURE",
+          "IMPACT",
+          "LDW",
+          "FCW",
+          "DTC",
+          "SERVICE_INDICATOR"
+        ]
+      },
+      "FleetManagementSubscribeForEventsRequest": {
+        "title": "FleetManagementSubscribeForEventsRequest",
+        "type": "object",
+        "properties": {
+          "event": {
+            "$ref": "#/components/schemas/FleetManagementEventType"
+          },
+          "threshold": {
+            "$ref": "#/components/schemas/FleetManagementThresholdType"
+          }
+        },
+        "x-examples": {}
+      },
+      "FleetManagementThresholdType": {
+        "title": "ThresholdType",
+        "anyOf": [
+          {
+            "properties": {
+              "minimumValue": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "properties": {
+              "maximumValue": {
+                "type": "number"
+              }
+            }
+          }
+        ],
+        "type": "object",
+        "x-examples": {}
+      },
+      "ConsentAddVehicleRequest": {
+        "title": "ConsentAddVehicleRequest",
+        "type": "object",
+        "properties": {
+          "vin": {
+            "type": "string"
+          },
+          "oem": {
+            "type": "string"
+          }
+        },
+        "x-examples": {}
+      },
+      "ConsentAddVehicleListRequest": {
+        "title": "ConsentAddVehicleListRequest",
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ConsentAddVehicleListRequest"
+        }
+      },
+      "ConsentEnableConsentRequest": {
+        "title": "ConsentEnableConsentRequest",
+        "type": "object",
+        "properties": {
+          "vin": {
+            "type": "string"
+          },
+          "dataConsumer": {
+            "type": "string"
+          },
+          "dataParameters": {
+            "type": "string"
+          }
+        }
+      },
+      "ConsentRevokeConsentRequest": {
+        "title": "ConsentRevokeConsentRequest",
+        "type": "object",
+        "properties": {
+          "vin": {
+            "type": "string"
+          },
+          "dataConsumer": {
+            "type": "string"
+          },
+          "dataParameters": {
+            "type": "string"
+          }
+        }
+      },
+      "FleetManagementTripAllScores": {
+        "title": "FleetManagementTripAllScores",
+        "type": "object",
+        "properties": {
+          "tripid": {
+            "type": "string"
+          },
+          "scores": {
+            "type": "object",
+            "properties": {
+              "vehicleScore": {
+                "type": "integer"
+              },
+              "driverScore": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "x-examples": {}
+      }
+    },
+    "securitySchemes": {
+      "Authorization": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://api.cerebrumx.ai/v1/oauth/token",
+            "refreshUrl": "",
+            "scopes": {}
+          }
+        }
+      }
+    },
+    "responses": {
+      "getVehicleScore": {
+        "description": "Example response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "GOOD",
+                    "AVERAGE",
+                    "EXCELLENT"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "getDriverScore": {
+        "description": "Example response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "score": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "GOOD",
+                    "AVERAGE",
+                    "EXCELLENT"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "getDriverParameters": {
+        "description": "Example response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "harshBraking": {
+                  "type": "number"
+                },
+                "harshCornering": {
+                  "type": "integer"
+                },
+                "harshAcceleration": {
+                  "type": "integer"
+                },
+                "averageSpeed": {
+                  "type": "number"
+                },
+                "numberOfLWD": {
+                  "type": "integer"
+                },
+                "driverAlerts": {
+                  "type": "integer"
+                },
+                "numberOfTrips": {
+                  "type": "integer"
+                },
+                "age": {
+                  "type": "integer"
+                }
+              }
+            },
+            "examples": {}
+          }
+        }
+      },
+      "getFuelParams": {
+        "description": "Example response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "fuelType": {
+                  "type": "string",
+                  "enum": [
+                    "PETROL",
+                    "DIESEL",
+                    "CNG",
+                    "ELECTRIC"
+                  ]
+                },
+                "fuelLevel": {
+                  "type": "number"
+                },
+                "fuelEfficiency": {
+                  "type": "number"
+                },
+                "averageDailyConsumption": {
+                  "type": "number"
+                },
+                "monthlyDailyConsumption": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      },
+      "getCarServiceParam": {
+        "description": "Example response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "vin": {
+                    "type": "string"
+                  },
+                  "distanceToService": {
+                    "type": "number",
+                    "description": "Distance in miles."
+                  },
+                  "daysToService": {
+                    "type": "integer"
+                  }
+                }
+              }
+            },
+            "examples": {}
+          }
+        }
+      },
+      "getTotalTrips": {
+        "description": "Example response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "vin": {
+                    "type": "string"
+                  },
+                  "trips": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "examples": {}
+          }
+        }
+      },
+      "getNumberOfTripsPerVehicle": {
+        "description": "Example response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "vin": {
+                    "type": "string"
+                  },
+                  "totalTrips": {
+                    "type": "integer"
+                  }
+                }
+              }
+            },
+            "examples": {}
+          }
+        }
+      },
+      "getConsentStatus": {
+        "description": "Example response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "dataConsumer": {
+                    "type": "string"
+                  },
+                  "dataParameter": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "Authorization": []
+    }
+  ]
+}

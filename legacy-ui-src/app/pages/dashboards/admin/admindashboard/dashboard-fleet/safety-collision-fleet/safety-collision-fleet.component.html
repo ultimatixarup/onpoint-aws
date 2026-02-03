@@ -1,0 +1,625 @@
+<!--Page main content-->
+<div class="page-content page-content-main">
+  <div class="row sideMenuItem">
+    <div class="container">
+              <!--Right  side content-->
+              <div class="col-xs-12 content-right">
+            <!--Header & Breadcrumb-->
+            <div class="row">
+                <div class="col-xs-12 col-lg-12">
+                    <span class="breadcrumb-left">
+                        <h1 class="login-headline heading-title">Event Alerts</h1>
+                    </span>
+                    <span class="breadcrumb-right mr-8">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a routerLink="/adlp/admin/dashboardAdmin" class="breadcrumb-h6"><i
+                                        class="bx bx-home-circle"></i></a>
+                            </li>
+                            <li class="breadcrumb-item inactive-bread"><a
+                                    routerLink="/adlp/admin/dashboardAdmin">Dashboard</a></li>
+                            <li class="breadcrumb-item text-selected"><a
+                                    routerLink="/adlp/admin/admindashboard/safety">Safety</a></li>
+                            <li class="breadcrumb-item text-selected active-bread">Event Alerts</li>
+                        </ol>
+                    </span>
+                </div>
+            </div>
+            <!--Header & Breadcrumb end-->
+            <!--Filter for consumer fleetid and time period-->
+            <div class="row consumer-pad">
+                <div class="col-xs-12 col-lg-2" >
+                  <ng-container *ngIf="user ==='role_user_fleet'">
+                    <div class="content-text" style="margin-top: 12px;">
+                        <span class="vin_container">
+                          <span class="content-sub-text">Fleet Id</span>
+                        </span>
+                        <span class="content-sub-text2">{{fleetIdValueNew}}</span>
+                      </div>
+                    </ng-container>
+                    <ng-container *ngIf="user ==='role_org_group'">
+                      <div class="content-text" style="margin-top: 12px;">
+                          <span class="vin_container">
+                            <span class="content-sub-text">Fleet Id</span>
+                          </span>
+                          <span class="content-sub-text2">{{fleetIdValueNew}}</span>
+                        </div>
+                      </ng-container>
+
+              </div>
+              <div class="col-xs-12 col-lg-8" *ngIf="user ==='role_user_fleet' && user ==='role_org_group'">
+                &nbsp;
+              </div>
+              <ng-container  *ngIf="user !='role_consumer_fleet'">
+                <div class="col-xs-12 col-lg-6" style="margin-top: 6px;">&nbsp;</div>
+                <div class="col-xs-12 col-lg-2" style="margin-top: 6px;">
+                  <ng-select
+                  [searchable]="true"
+                  class="newSelect1"
+                  [clearable]="true"
+                  placeholder="Group Name"
+                  [items]="groupList"
+                  bindLabel="name"
+                  bindValue="id"
+                  [(ngModel)]="groupIdData"
+                  (change)="onGroupIdChange($event)">
+
+                  <ng-template ng-option-tmp let-item="item">
+                    <span [ngStyle]="{ 'padding-left.px': item.level * 18 }">
+                      {{ item.name }}
+                    </span>
+                  </ng-template>
+                </ng-select>
+                </div>
+              <div class="col-xs-12 col-lg-2" style="margin-top: 6px;">
+                <ng-select bindLabel="label" bindValue="value" placeholder="Select Time Period"
+                    [(ngModel)]="selectedPeriod" (change)="onTimePeriodChangeData($event)" class="newSelect timePeriod current-month-dropdown">
+                    <ng-option *ngFor="let period of timePeriods" [value]="period.value">
+                        {{ period.label }}
+                    </ng-option>
+                </ng-select>
+            </div>
+
+          </ng-container>
+          <ng-container *ngIf="user !='role_user_fleet' && user !='role_org_group' && user != 'role_Driver'" >
+            <div class="col-xs-12 col-lg-6">&nbsp;</div>
+          </ng-container>
+              <ng-container *ngIf="user !='role_user_fleet' && user !='role_org_group' && user != 'role_Driver'">
+               <div class="col-xs-12 col-lg-2" style="margin-top: 6px;">
+                 <ng-select [searchable]="true" class="newSelect1" [clearable]="true" placeholder="Organization Id/Name"
+                     (change)="selectFleetId()" [(ngModel)]="fleetIdData">
+                     <ng-option *ngFor="let fleet of fleetList" value="{{fleet.id}}">{{fleet.id}} -
+                         [{{fleet.name}}]</ng-option>
+                 </ng-select>
+
+             </div>
+             <!-- <div class="col-xs-12 col-lg-2" style="margin-top: 6px;">
+              <ng-select
+              [searchable]="true"
+              class="newSelect1"
+              [clearable]="true"
+              placeholder="Group Name"
+              [items]="groupList"
+              bindLabel="name"
+              bindValue="id"
+              [(ngModel)]="groupIdData"
+              (change)="onGroupIdChange($event)">
+
+              <ng-template ng-option-tmp let-item="item">
+                <span [ngStyle]="{ 'padding-left.px': item.level * 18 }">
+                  {{ item.name }}
+                </span>
+              </ng-template>
+            </ng-select>
+            </div> -->
+             <div class="col-xs-12 col-lg-2" style="margin-top: 6px;">
+              <ng-select bindLabel="label" bindValue="value" placeholder="Select Time Period"
+                  [(ngModel)]="selectedPeriod" (change)="onTimePeriodChangeData($event)" class="newSelect timePeriod current-month-dropdown">
+                  <ng-option *ngFor="let period of timePeriods" [value]="period.value">
+                      {{ period.label }}
+                  </ng-option>
+              </ng-select>
+          </div>
+             </ng-container>
+
+
+
+            </div>
+            <!--Filter end-->
+            <!--Main section-->
+            <div class="card-container">
+                <div class="card-item card-item-height">
+                    <!--Top header ovallall event and low and high serverity-->
+                    <div class="row top-row">
+                        <div class="col-xs-12 col-lg-4 box">
+                            <div class="row">
+                                <div class="col-xs-12 col-lg-12">
+                                    <div class="content-section-heading">
+                                        <!-- Show spinner only when data is not available (undefined or null) -->
+                                        <span *ngIf="detailData?.noOfEvents === undefined || detailData?.noOfEvents === null">
+                                            <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                        </span>
+
+                                        <!-- Show number when data is available, including 0 -->
+                                        <span *ngIf="detailData?.noOfEvents !== undefined && detailData?.noOfEvents !== null" class="text_number">
+                                            {{ detailData?.noOfEvents }}
+                                        </span>
+
+                                    </div>
+                                      <div class="content-section-text">Total Collisions Detected</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xs-12 col-lg-4 box">
+                            <div class="row">
+                                <div class="col-xs-12 col-lg-12">
+                                    <div class="content-section-heading">
+                                        <span *ngIf="detailData?.noOfVehiclesWithCollision === undefined || detailData?.noOfVehiclesWithCollision === null">
+                                            <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                          </span>
+                                          <span *ngIf="detailData?.noOfVehiclesWithCollision !== undefined || detailData?.noOfVehiclesWithCollision !== null" class="text_number">
+                                            {{ detailData?.noOfVehiclesWithCollision }}
+                                          </span>
+                                      </div>
+                                      <div class="content-section-text">Vehicles With Collisions Detected</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xs-12 col-lg-4 box">
+                            <div class="row">
+                                <div class="col-xs-12 col-lg-12">
+                                    <div class="content-section-heading">
+                                        <span *ngIf="detailData?.collisionsPer100kMiles === undefined || detailData?.collisionsPer100kMiles === null">
+                                            <i class="fa fa-spinner fa-spin icon-loading"></i>
+                                          </span>
+                                          <span *ngIf="detailData?.collisionsPer100kMiles !== undefined || detailData?.collisionsPer100kMiles !== null" class="text_number">
+                                            {{ detailData?.collisionsPer100kMiles | number:'1.2-2' }}
+                                          </span>
+                                      </div>
+                                      <div class="content-section-text">Collisions per 100,000 miles</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Top header ovallall event and low and high serverity end-->
+                    <!--Summary of collision-->
+                    <div class="row medium-row">
+                        <div class="row">
+                            <div class="col-xs-12 col-lg-4 summary-detail">
+                                <span class="user-icon f-le">
+                                    <img src="../../../../../assets/images/safety_collision.svg" class="icon">
+                                </span>
+                                <span class="f-le">
+                                    <h4 class="card-title card-heading mb-4">Collision Summary</h4>
+                                </span>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row" style="margin-bottom: 12px;">
+                          <div class="col-xs-12 col-lg-4">
+                            <input class="form-control input-vin font-common" maxlength="17" type="text"  (input)="filterTableData()"  [(ngModel)]="searchbyVinNumber" placeholder="Search VIN / Vehicle Name">
+                        </div>
+                        <div class="col-xs-12 col-lg-4">
+                          <ng-select
+                          [items]="eventOptions"
+                          bindLabel="name"
+                          bindValue="id"
+                          placeholder="Search by Event"
+                          [multiple]="true"
+                          [(ngModel)]="searchByStatus"
+                          (change)="filterTableData()"
+                          [hideSelected]="true"
+                          [closeOnSelect]="false"
+                          class="font-common">
+
+                          <!-- Select All Option -->
+                          <ng-template ng-option-tmp let-item="item" let-selected="selected">
+                              <input type="checkbox" [checked]="selected" (click)="toggleSelectAll(item, $event)" *ngIf="item.id === 'select_all'"/>
+                              <input type="checkbox" [checked]="selected" *ngIf="item.id !== 'select_all'"/>
+                              {{ item.name }}
+                          </ng-template>
+                      </ng-select>
+
+
+                        </div>
+                        <div class="col-xs-12 col-lg-4">
+                          <ng-select
+                          [items]="waringOptions"
+                          bindLabel="name"
+                          bindValue="id"
+                          placeholder="Search by Warning"
+                          [multiple]="true"
+                          [(ngModel)]="searchByWarning"
+                          (change)="filterTableData()"
+                          [hideSelected]="true"
+                          [closeOnSelect]="false"
+                          class="font-common">
+
+                          <!-- Select All Option -->
+                          <ng-template ng-option-tmp let-item="item" let-selected="selected">
+                              <input type="checkbox" [checked]="selected" (click)="toggleSelectAlls(item, $event)" *ngIf="item.id === 'select_all'"/>
+                              <input type="checkbox" [checked]="selected" *ngIf="item.id !== 'select_all'"/>
+                              {{ item.name }}
+                          </ng-template>
+                      </ng-select>
+                      </div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                          <div class="col-xs-12 col-lg-12">
+                              <div class="table-responsive table-b table-scrooling">
+                                  <table class="table table01" style="margin-bottom: 0px;">
+                                      <thead class="table-head">
+                                          <tr>
+                                              <th class="tablecol1">Vehicle Name</th>
+                                              <th class="tablecol2">Events Date/Time
+                                                <span *ngIf="filteredTableData?.length > 0" (click)="sortByEventDateTime()" class="sort-icon">
+                                                  <i *ngIf="isEventSort !== 'asc'" class="bx bx-sort-up sort-icon-up"
+                                                    [class.active-sort]="isEventSort === 'dsc'"></i>
+                                                  <i *ngIf="isEventSort === 'asc'" class="bx bx-sort-down sort-icon-down"
+                                                    [class.active-sort]="isEventSort === 'asc'"></i>
+                                                </span>
+                                              </th>
+                                              <th class="tablecol9">Event Location</th>
+                                              <th class="tablecol5">Event</th>
+                                              <th class="tablecol5">Warning</th>
+                                              <th class="tablecol2">Trip Start Date/Time</th>
+                                              <th class="tablecol2">Trip End Date/Time</th>
+                                              <th class="tablecol">Action</th>
+                                          </tr>
+                                      </thead>
+                                          <tbody class="table-body">
+                                              <tr *ngFor="let data of filteredTableData">
+                                                  <td>{{ maskVinNumberr(data?.vin) }}</td>
+                                                  <td>
+                                                    <ng-container *ngIf="data?.formattedDate && data?.formattedTime ; else defaultView">
+                                                      {{ data.formattedDate }}, <br>
+                                                    </ng-container>
+
+                                                    <ng-template #defaultView>
+                                                      <ng-container *ngIf="data?.eventDate">
+                                                        {{ data.eventDate | date: 'MMM d, y' }},
+                                                      </ng-container>
+                                                    </ng-template>
+                                                  </td>
+                                                  <td style="text-align: justify">
+                                                      <a style="color: #000!important;text-decoration: underline; cursor: pointer;">
+                                                        <span class="address" [ngbTooltip]="data?.eventLocation">
+                                                          {{ data?.eventLocation.split(',')[0] }}
+                                                        </span>
+                                                      </a>
+                                                    </td>
+                                                    <td class="event-type-cell"
+                                                    (mouseover)="data.hoveredEventType = extractEventType(data.event)"
+                                                    (mouseout)="data.hoveredEventType = ''">
+                                                  <img
+                                                    [src]="getEventTypeImage(extractEventType(data.event), data.hoveredEventType === extractEventType(data.event))"
+                                                    placement="top"
+                                                    alt="{{ extractEventType(data.event) }}"
+                                                    ngbTooltip="{{ extractEventType(data.event) }}"
+                                                    tooltipClass="custom-tooltip"
+                                                    class="icons-events"
+                                                  />
+                                                </td>
+                                                <td >
+                                                  <ng-container *ngIf="getExtractedEventType(data.detectedWarnings); else noWarnings">
+                                                    <img
+                                                      [src]="getEventTypeImage(getExtractedEventType(data.detectedWarnings), data.hoveredEventType === getExtractedEventType(data.detectedWarnings))"
+                                                      placement="left"
+                                                      alt="{{ getExtractedEventType(data.detectedWarnings) }}"
+                                                      ngbTooltip="{{ getExtractedEventType(data.detectedWarnings) }}"
+                                                      tooltipClass="custom-tooltip"
+                                                      class="icons-events"
+                                                    />
+                                                  </ng-container>
+
+                                                  <ng-template #noWarnings> -- </ng-template>
+
+                                                </td>
+                                                  <td>
+                                                    <ng-container *ngIf="data?.creationFormattedDate && data?.creationFormattedTime ; else defaultView">
+                                                      {{ data.creationFormattedDate}},<br>
+                                                      {{ data.creationFormattedTime}}
+                                                    </ng-container>
+                                                    <ng-template #defaultView>
+                                                      <ng-container *ngIf="data?.tripStartTimestamp">
+                                                        {{ data.tripStartTimestamp | date: 'MMM d, y' }}, <br>
+                                                        {{ data.tripStartTimestamp | date: 'HH:mm' }}
+                                                      </ng-container>
+                                                    </ng-template>
+                                                  </td>
+                                                  <td>
+                                                    <ng-container *ngIf="data?.creationFormattedDateNew && data?.creationFormattedTimeNew ; else defaultView">
+                                                      {{ data.creationFormattedDateNew}},<br>
+                                                      {{ data.creationFormattedTimeNew}}
+                                                    </ng-container>
+                                                    <ng-template #defaultView>
+                                                      <ng-container *ngIf="data?.tripEndTimeStamp">
+                                                        {{ data.tripEndTimeStamp | date: 'MMM d, y' }}, <br>
+                                                        {{ data.tripEndTimeStamp | date: 'HH:mm' }}
+                                                      </ng-container>
+                                                    </ng-template>
+                                                  </td>
+                                                  <td>
+                                                    <div class="row">
+                                                      <div class="col-xs-12 col-lg-3">
+                                                          <a class="btn-outline-secondary-grey" title="Download" (click)="collisionSummaryReportDownload(data)">
+                                                              <i class='bx bx-download'></i>
+                                                            </a>
+                                                      </div>
+                                                      <div class="col-xs-12 col-lg-3">
+                                                        <ng-container *ngIf="data?.vehicleDtc && data.vehicleDtc !== '[]'">
+                                                          <button class="btn-outline-secondary-red"
+                                                             placement="left"
+                                                             container="body"
+                                                             [ngbTooltip]="'DTCs Triggered: \n '+ (parseDtcCode(data.vehicleDtc))"
+                                                             tooltipClass="custom-tooltip">
+                                                            <i class='bx bx-bell'></i>
+                                                      </button>
+                                                        </ng-container>
+
+                                                      </div>
+                                                    </div>
+                                                  </td>
+                                                </tr>
+                                                <tr *ngIf="filteredTableData.length === 0">
+                                                  <td colspan="10" class="text-center">No data found</td>
+                                                </tr>
+                                          </tbody>
+                                      </table>
+                              </div>
+                          </div>
+                      </div>
+                    </div>
+                    <!--Summary of collision end-->
+                    <!-- Monthly trends of event -->
+                    <div class="row medium-row">
+                        <div class="row">
+                            <div class="col-xs-12 col-lg-10 summary-detail">
+                                <span class="user-icon f-le">
+                                    <img src="../../../../../assets/images/icon/aggresive.svg" class="icon">
+                                </span>
+                                <span class="f-le">
+                                    <h4 class="card-title card-heading mb-4">Monthly Trend</h4>
+                                </span>
+                            </div>
+                            <div class="col-xs-12 col-lg-2">
+                                <ng-select style="margin-top: 6px;margin-right: -30px;"
+                                [items]="dataOfMonths"
+                                (clear)="clearFleetSelection()"
+                                bindLabel="label"
+                                bindValue="value"
+                                placeholder="Select Time Period"
+                                [(ngModel)]="selectedTimePeriodss"
+                                class="newSelecting"
+                                (change)="onTimePeriodChanges($event.value)"
+                              ></ng-select>
+                              </div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-xs-12 col-lg-12">
+                                <ng-container *ngIf="chartOptions">
+                                    <apx-chart [series]="chartOptions.series" [chart]="chartOptions.chart" [legend]="chartOptions.legend"
+                                    [xaxis]="chartOptions.xaxis" [dataLabels]="chartOptions.dataLabels" [grid]="chartOptions.grid"
+                                    [stroke]="chartOptions.stroke" [tooltip]="chartOptions.tooltip" [yaxis]="chartOptions.yaxis"
+                                    [fill]="chartOptions.fill" [colors]="chartOptions.colors"></apx-chart>
+
+                            </ng-container>
+                            </div>
+                        </div>
+                        <div class="row" style="margin-bottom: 24px; margin-left: 24px;">
+                              <ng-container *ngIf="chartOptions">
+                                <ng-container *ngFor="
+                                    let label of chartOptions.labels;
+                                    let i = index
+                                  " class="legend-item">
+                                  <div class="col-xs-12 col-lg-2">
+                                    <span class="legend-color" [style.background-color]="chartOptions.colors[i]"></span>
+                                    <span class="chart-label">{{ label }}</span>
+                                  </div>
+                                </ng-container>
+                              </ng-container>
+                          </div>
+                    </div>
+                    <!-- Monthly trends of event end -->
+                     <!-- Print Report-->
+                     <div class="row" style="margin-left: 0px; margin-top: 24px;" *ngIf="dataShow">
+                        <div class="col-xs-12 col-lg-12">
+                              <div class="row" >
+                                <div class="col-xs-12 col-lg-12">
+                                  <div #pdfContent class="pdf-container">
+                                    <div class="row">
+                                      <div class="col-xs-12 col-lg-12">
+                                        <div class="row">
+                                          <div class="col-xs-12 col-lg-6">
+                                             <img src="../../../../../../assets/images/logo_main.png" class="form-logo">
+                                         </div>
+                                         <div class="col-xs-12 col-lg-6">
+                                          <div class="row">
+                                            <div class="col-xs-12 col-lg-6">
+                                              <h4 class="mainsectionheading-report">Report generated date</h4>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-6 box-1">
+                                              <div class="mainsection-data">{{ downloadReport?.reportGenerationDate | date:'mediumDate'}}
+                                            </div>
+                                          </div>
+                                          </div>
+                                          <div class="row mr-top">
+                                            <div class="col-xs-12 col-lg-6">
+                                              <h4 class="mainsectionheading-report">Fleet Id</h4>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-6 box-1">
+                                              <div class="mainsection-data">{{ downloadReport?.fleetId}}</div>
+                                            </div>
+                                          </div>
+                                         </div>
+                                        </div>
+                                         <div class="row mr-t-b">
+                                           <div class="col-xs-12 col-lg-12">
+                                             <h4 class="report-heading"> EVENT REPORT</h4>
+                                           </div>
+                                         </div>
+                                         <div class="row">
+                                          <div class="col-xs-12 col-lg-12">
+                                            <div class="row">
+                                              <div class="col-xs-12 col-lg-1" style="width: 12.5%!important;">&nbsp;</div>
+                                              <div class="col-xs-12 col-lg-3" style="width: 25%!important;">
+                                                <label class="form-label">VIN</label>
+                                                <div class="mainsection-data mar-top">{{ downloadReport?.vin}}</div>
+                                              </div>
+                                              <div class="col-xs-12 col-lg-3" style="width: 25%!important;">
+                                                <label class="form-label">Date of event</label>
+                                                <div class="mainsection-data mar-top">{{ downloadReport?.formattedDate}}</div>
+                                              </div>
+                                              <div class="col-xs-12 col-lg-3" style="width: 25%!important;">
+                                                <label class="form-label">Time of event</label>
+                                                <div class="mainsection-data mar-top">{{ downloadReport?.formattedTime }}</div>
+                                              </div>
+                                            </div>
+                                            <div class="row" style="margin-top: 20px;">
+                                                <div class="col-xs-12 col-lg-1" style="width: 12.5%!important;">&nbsp;</div>
+                                                <div class="col-xs-12 col-lg-3" style="width: 37.5%!important;">
+                                                  <label class="form-label">Make/Model/Year</label>
+                                                  <div class="mainsection-data mar-top">{{downloadReport?.make}} / {{downloadReport?.model}} / {{downloadReport?.year}}</div>
+                                                </div>
+                                                <div class="col-xs-12 col-lg-3" style="width: 37.5%!important;">
+                                                  <label class="form-label">Event Type</label>
+                                                  <div class="mainsection-data mar-top">{{downloadReport?.eventType}}</div>
+                                                </div>
+                                              </div>
+                                              <div class="row" style="margin-top: 20px;">
+                                                <div class="col-xs-12 col-lg-1" style="width: 12.5%!important;">&nbsp;</div>
+                                                <div class="col-xs-12 col-lg-9">
+                                                  <label class="form-label">Location </label>
+                                                  <div class="mainsection-data mar-top">{{downloadReport?.eventLocation}}</div>
+                                                </div>
+                                              </div>
+                                          </div>
+                                         </div>
+                                         <div class="row mr-t-b">
+                                          <div class="col-xs-12 col-lg-12">
+                                            <h4 class="report-page-heading"> TRIP SUMMARY</h4>
+                                          </div>
+                                        </div>
+                                        <div class="row" style="height: auto;">
+                                          <div class="col-xs-12 col-lg-12">
+                                            <div class="table-responsive table-b my-2">
+                                              <table class="table" style="border-collapse: collapse; width: 100%; border: 1px solid #999999;">
+                                                <thead class="table-head" style="border: 1px solid #999999;">
+                                                    <tr>
+                                                        <th class="theading1">Trip Start Date / Time</th>
+                                                        <th class="theading1">Trip End Date / Time</th>
+                                                        <th class="theading">Start<br> Location</th>
+                                                        <th class="theading">End <br>Location</th>
+                                                        <th class="theading1">Miles<br> Driven</th>
+                                                        <th class="theading">Event <br>&nbsp;</th>
+                                                        <th class="theading1">Indicated <br>Signals</th>
+                                                        <th class="theading1">DTC <br>&nbsp;</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody style="border: 1px solid #999999;">
+                                                    <tr *ngFor="let data of dataForTable">
+                                                        <td class="small-data">{{ data?.formattedDateEvtnData}},{{data?.formattedTimeEvtnData}}</td>
+                                                        <td class="small-data">{{ data?.formattedDateEvtnTime}},{{ data?.formattedTimeEvtnTime }}</td>
+                                                        <td class="small-data address-cell">{{ data?.startLatLongAddress }}</td>
+                                                        <td class="small-data  address-cell">{{ data?.endLatLongAddress }}</td>
+                                                        <td class="small-data">{{ data?.distance | number:'1.2-2' }}</td>
+                                                        <td class="small-data">{{ data?.events?.length ? data?.events.join(', ') : '--' }} </td>
+                                                        <td class="small-data  address-cell">{{ data?.detectedWarnings?.length ? data?.detectedWarnings.join(', ') : '--' }} </td>
+                                                        <td class="small-data ">{{ data?.vehicleDtc?.length ? data?.vehicleDtc.join(', ') : '--' }}</td>
+                                                      </tr>
+
+                                                    <!-- <tr *ngIf="dataForTable.length === 0">
+                                                      <td colspan="8" class="text-center">No Trip Found...</td>
+                                                    </tr> -->
+
+                                                  </tbody>
+                                            </table>
+
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div class="row">
+                                          <div class="col-xs-12 col-lg-1">&nbsp;</div>
+                                          <div class="col-xs-12 col-lg-10">
+                                            <div class="map-container">
+                                              <agm-map
+                                                id="map"
+                                                [latitude]="waypoints[0]?.latitude"
+                                                [longitude]="waypoints[0]?.longitude"
+                                                class="img-map"
+                                                [styles]="mapStyles"
+                                                [fullscreenControl]="false"
+                                                [zoomControl]="false"
+                                                [mapTypeControl]="false"
+                                                [streetViewControl]="false"
+                                                [rotateControl]="false"
+                                                [scaleControl]="false"
+                                                [disableDefaultUI]="true"
+                                                [zoom]="zoom"
+                                              >
+                                                <!-- Start and End Markers -->
+                                                <agm-marker
+                                                  *ngFor="let marker of start_end_mark"
+                                                  [latitude]="marker.latitude"
+                                                  [longitude]="marker.longitude"
+                                                  [iconUrl]="{
+                                                    url: marker.iconUrl,
+                                                    scaledSize: { height: 15, width: 15 }
+                                                  }"
+                                                ></agm-marker>
+
+                                                <!-- Event Marker for Collision Location -->
+                                                <agm-marker
+                                                  *ngIf="event_marker"
+                                                  [latitude]="event_marker.latitude"
+                                                  [longitude]="event_marker.longitude"
+                                                  [iconUrl]="{
+                                                    url: event_marker.iconUrl,
+                                                    scaledSize: { height: 15, width: 15 }
+                                                  }"
+                                                ></agm-marker>
+
+                                                <!-- Polyline -->
+                                                <agm-polyline
+                                                  [visible]="true"
+                                                  [strokeWeight]="3"
+                                                  [strokeColor]="'#49CF19'"
+                                                >
+                                                  <agm-polyline-point
+                                                    *ngFor="let coordinate of waypoints"
+                                                    [latitude]="coordinate.latitude"
+                                                    [longitude]="coordinate.longitude"
+                                                  >
+                                                  </agm-polyline-point>
+                                                </agm-polyline>
+                                              </agm-map>
+                                            </div>
+
+                                          </div>
+
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <!-- PDF Viewer -->
+                              <div class="row">
+                                <div class="col-xs-12 col-lg-12">
+                                  <ngx-extended-pdf-viewer [src]="'assets/reports/report.pdf'" useBrowserLocale="true" height="600px"></ngx-extended-pdf-viewer>
+                                </div>
+                              </div>
+
+                        </div>
+                      </div>
+                </div>
+            </div>
+            <!--Main section end-->
+        </div>
+        <!--Right  side content-->
+    </div>
+</div>
+</div>
+<!--Page main content end-->

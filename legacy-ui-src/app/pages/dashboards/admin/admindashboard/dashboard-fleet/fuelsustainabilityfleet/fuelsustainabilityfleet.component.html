@@ -1,0 +1,1144 @@
+<!--Page main content-->
+  <div class="page-content page-content-main">
+    <div class="row sideMenuItem">
+      <div class="container">
+            <!--Right  side content-->
+            <div class="col-xs-12 content-right">
+        <div class="row">
+          <div class="col-xs-12 col-lg-12">
+            <span class="breadcrumb-left" style="width: 50%;">
+              <h1 class="login-headline heading-title">Fuel</h1>
+              <ng-container *ngIf="user !='role_user_fleet' && user !='role_org_group'">
+                  <ng-container *ngIf="customConsumer != 'Onwardfleet'">
+                      <div class="row">
+                          <div class="col-xs-12 col-lg-3">
+                              <h1 class="activeSinceFleet">{{customConsumer}}
+                              </h1>
+                          </div>
+                            <div class="col-xs-12 col-lg-6" style="margin-left: 12px;">
+                              <h1 class="activeSinceFleet">Active Since:
+                                <ng-container *ngIf="customConsumer === 'Guidepoint'">05-04-2023</ng-container>
+                                <ng-container *ngIf="customConsumer === 'Smallboard'">07-13-2022</ng-container>
+                                <ng-container *ngIf="customConsumer === 'Assetworks'">07-14-2024</ng-container>
+                                <ng-container *ngIf="customConsumer === 'DPL Telematics'">06-25-2024</ng-container>
+                                <ng-container *ngIf="customConsumer === 'Btracking'">02-15-2024</ng-container>
+                                <ng-container *ngIf="customConsumer === 'Satrack'">04-11-2025</ng-container>
+                                <ng-container *ngIf="customConsumer === 'GPSInsight'">04-14-2025</ng-container>
+                              </h1>
+                          </div>
+                      </div>
+                      </ng-container>
+                      <ng-container  *ngIf="customConsumer === 'Onwardfleet'">
+                          <div class="row">
+                              <div class="col-xs-12 col-lg-4">
+                                  <h1 class="activeSinceFleet">Onward Connected
+                                  </h1>
+                              </div>
+                              <div class="col-xs-12 col-lg-8">
+                                <h1 class="activeSinceFleet">Active Since: 05-16-2024
+                                </h1>
+                              </div>
+                          </div>
+                    </ng-container>
+                    <ng-container  *ngIf="customConsumer === 'Btracking'">
+                      <div class="row">
+                          <div class="col-xs-12 col-lg-4">
+                              <h1 class="activeSinceFleet">Btracking
+                              </h1>
+                          </div>
+                          <div class="col-xs-12 col-lg-8">
+                            <h1 class="activeSinceFleet">Active Since: 02-15-2024
+                            </h1>
+                          </div>
+                      </div>
+                </ng-container>
+          </ng-container>
+          <ng-container *ngIf="user ==='role_user_fleet'">
+            <div class="content-text" style="margin-top: 12px;">
+                <span class="vin_container">
+                  <span class="content-sub-text">Fleet Id</span>
+                </span>
+                <span class="content-sub-text2">{{fleetIdValueNew}}</span>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="user ==='role_org_group'">
+              <div class="content-text" style="margin-top: 12px;">
+                  <span class="vin_container">
+                    <span class="content-sub-text">Fleet Id</span>
+                  </span>
+                  <span class="content-sub-text2">{{fleetIdValueNew}}</span>
+                </div>
+              </ng-container>
+            </span>
+            <span class="breadcrumb-right" style="width: 50%;">
+              <div class="row">
+                <ng-container *ngIf="user ==='role_user_fleet' || user ==='role_org_group'">
+                  <div class="col-xs-12 col-lg-4"> &nbsp;</div>
+                </ng-container>
+                  <div class="col-xs-12 col-lg-4"> &nbsp;</div>
+                  <div class="col-xs-12 col-lg-4" *ngIf="user !='role_user_fleet' && user !='role_org_group'">
+                      <ng-select [searchable]="true" class="newSelect1" (clear)="clearFleetSelection()" [clearable]="true"
+                          placeholder="Organization Id/Name" (change)="selectFleetId()" [(ngModel)]="fleetIdData">
+                          <ng-option *ngFor="let fleet of fleetList" value="{{fleet.id}}">{{fleet.id}} -
+                              [{{fleet.name}}]</ng-option>
+                      </ng-select>
+                  </div>
+                  <div class="col-xs-12 col-lg-4">
+                    <ng-select
+                    [searchable]="true"
+                    class="newSelect1"
+                    [clearable]="true"
+                    placeholder="Group Name"
+                    [items]="groupList"
+                    bindLabel="name"
+                    bindValue="id"
+                    [(ngModel)]="groupIdData"
+                    (change)="onGroupIdChange($event)">
+
+                    <ng-template ng-option-tmp let-item="item">
+                      <span [ngStyle]="{ 'padding-left.px': item.level * 18 }">
+                        {{ item.name }}
+                      </span>
+                    </ng-template>
+                  </ng-select>
+                  </div>
+                  <!-- <div class="col-xs-12 col-lg-4" *ngIf="user ==='role_user_fleet' && user ==='role_org_group'">&nbsp;</div> -->
+
+              </div>
+          </span>
+          </div>
+        </div>
+        <div class="row consumer-pad">
+       <div class="card-container">
+          <div class="card-item card-item-height">
+            <div class="card-heading">
+              <div class="row" style="height: 36px;">
+                <div class="col-xs-12 col-lg-6">
+                  <img src="../../assets/images/summary.svg" alt="" class="card-heading-img" />Summary
+                </div>
+                <div class="col-xs-12 col-lg-6">
+                  <h5 class="active-vehicle">Active Vehicles :
+                    <span *ngIf="totalActivatedVehicles === undefined || totalActivatedVehicles === null">
+                      <i class="fa fa-spinner fa-spin icon-loading"></i>
+                    </span>
+                    <span style="color:#000000!important"
+                      *ngIf="totalActivatedVehicles !== undefined && totalActivatedVehicles !== null">
+                      {{totalActivatedVehicles | number : "1.0-0"}}
+                    </span>
+                  </h5>
+                </div>
+
+              </div>
+
+            </div>
+            <div class="cards-subsection">
+              <div class="header-card brdr-red">
+                <div class="header-card-text">
+                  <div class="row">
+                    <!-- Spinner -->
+                    <span *ngIf="totalTimePeriodDataTop === undefined && !noDataFound" style="line-height: 25px;">
+                      <i class="fa fa-spinner fa-spin icon-loading"></i>
+                    </span>
+
+                    <!-- No Data -->
+                    <span *ngIf="noDataFound" style="line-height: 25px; width: 100%; float: left; margin-left: -1px;">
+                      No data found
+                    </span>
+
+                    <!-- Valid Data -->
+                    <ng-container *ngIf="!noDataFound && totalTimePeriodDataTop !== null && totalTimePeriodDataTop !== undefined">
+                      <span style="line-height: 25px; width: 50%; float: left; margin-left: -1px;">
+                        {{ totalTimePeriodDataTop }}
+                      </span>
+                      <span style="font-size: 12px; width: 50%; font-weight: 500; margin-top: 5px; float: left;">
+                        Days:hh:mm
+                      </span>
+                    </ng-container>
+                  </div>
+                </div>
+                <div class="content-section-text">Total Duration</div>
+              </div>
+
+              <div class="header-card brdr-fuel-consumed">
+                <div class="header-card-text">
+                  <span style="line-height: 25px; width: 100%; display: inline-block;">
+
+                    <!-- Spinner while data is loading and no error -->
+                    <span *ngIf="totalFuelConsumedData === undefined && !noDataFound" style="line-height: 25px;">
+                      <i class="fa fa-spinner fa-spin icon-loading"></i>
+                    </span>
+
+                    <!-- No data found message -->
+                    <span *ngIf="noDataFound">
+                      No data found
+                    </span>
+
+                    <!-- Data display -->
+                    <ng-container *ngIf="!noDataFound && totalFuelConsumedData !== null && totalFuelConsumedData !== undefined">
+                      {{ totalFuelConsumedData | number : "1.0-0" }}
+                      <span style="font-size: 12px; font-weight: 500; font-family: 'Poppins', sans-serif;">
+                        gal
+                      </span>
+                    </ng-container>
+
+                  </span>
+                </div>
+                <div class="content-section-text">Fuel Consumed</div>
+              </div>
+
+              <div class="header-card brdr-yellow">
+                <div class="header-card-text">
+                  <span style="line-height: 25px; width: 100%; display: inline-block;">
+
+                    <!-- Show loading spinner -->
+                    <span *ngIf="totalMileageDataNew === undefined && !noDataFound" style="line-height: 25px;">
+                      <i class="fa fa-spinner fa-spin icon-loading"></i>
+                    </span>
+
+                    <!-- Show 'No data found' -->
+                    <span *ngIf="noDataFound">
+                      No data found
+                    </span>
+
+                    <!-- Show data and 'mpg' if value is valid -->
+                    <ng-container *ngIf="!noDataFound && totalMileageDataNew !== null && totalMileageDataNew !== undefined">
+                      {{ totalMileageDataNew | number:'1.2-2' }}
+                      <span style="font-size: 12px; font-weight: 500; font-family: 'Poppins', sans-serif;">
+                        mpg
+                      </span>
+                    </ng-container>
+
+                  </span>
+                </div>
+                <div class="content-section-text">Average Mileage</div>
+              </div>
+
+              <div class="header-card brdr-blue">
+                <div class="header-card-text">
+                  <span style="line-height: 25px; width: 100%; display: inline-block;">
+
+                    <!-- Show loading spinner when data is not yet available AND not marked as noDataFound -->
+                    <span *ngIf="totalFuelConsumedCostData === undefined && !noDataFound" style="line-height: 25px;">
+                      <i class="fa fa-spinner fa-spin icon-loading"></i>
+                    </span>
+
+                    <!-- Show "No data found" if flag is set -->
+                    <span *ngIf="noDataFound">
+                      No data found
+                    </span>
+
+                    <!-- Show value + dollar symbol when data is available and valid -->
+                    <ng-container *ngIf="!noDataFound && totalFuelConsumedCostData !== null && totalFuelConsumedCostData !== undefined">
+                      {{ totalFuelConsumedCostData | number : "1.0-0" }}
+                      <span style="font-size: 12px; font-weight: 500; font-family: 'Poppins', sans-serif;">
+                        $
+                      </span>
+                    </ng-container>
+
+                  </span>
+                </div>
+                <div class="content-section-text">Fuel Cost</div>
+              </div>
+
+              <div class="header-card brdr-green">
+                <div class="header-card-text">
+                  <span style="line-height: 25px; width: 100%; display: inline-block;">
+
+                    <!-- Show spinner while data is undefined or null and not marked as noDataFound -->
+                    <span *ngIf="avgFuelCostData === undefined && !noDataFound" style="line-height: 25px;">
+                      <i class="fa fa-spinner fa-spin icon-loading"></i>
+                    </span>
+
+                    <!-- Show "No data found" only if flag is true -->
+                    <span *ngIf="noDataFound">
+                      No data found
+                    </span>
+
+                    <!-- Show data if it's defined and not noDataFound -->
+                    <ng-container *ngIf="!noDataFound && avgFuelCostData !== null && avgFuelCostData !== undefined">
+                      {{ avgFuelCostData | number:'1.2-2' }}
+                      <span style="font-size: 12px; font-weight: 500; font-family: 'Poppins', sans-serif;">
+                        $
+                      </span>
+                    </ng-container>
+
+                  </span>
+                </div>
+                <div class="content-section-text">Avg. Fuel Cost Per Mile</div>
+              </div>
+
+
+            </div>
+          </div>
+
+        </div>
+        <!-- main container start -->
+        <div class="pt-4 main-content-row">
+          <div class="pt-3">
+            <div class="sub-card">
+              <div class="row" style="margin-bottom: 12px;">
+                <div class="col-xs-12 col-lg-10">&nbsp;</div>
+                <div class="col-xs-12 col-lg-2">
+                  <ng-select [searchable]="true" class="newSelect" [clearable]="true"  (clear)="clearMonthSelection()" (change)="onTimePeriodChange($event)"
+                                                  placeholder="Select Period"
+                                                  [(ngModel)]="monthData">
+                                                  <ng-option value="" disabled>Select Time Period</ng-option>
+                                                  <ng-option value="monthly">Monthly</ng-option>
+                                                  <ng-option value="weekly">Weekly</ng-option>
+                                                  <ng-option value="daily">Daily</ng-option>
+                                              </ng-select>
+                </div>
+              </div>
+
+              <div class="row" style="height: 330px;">
+                <div class="col-3">
+                  <div class="chart-header-card">
+                    <img src="../../../../../../assets/images/fuel-consumed.svg" alt="" class="chart-img" />
+                    <span class="card-heading">Fuel Consumption (gal)</span>
+                  </div>
+                  <ng-container *ngIf="chartOptionsFleetMileage">
+                    <apx-chart [series]="chartOptionsFuelConsumed.series" [chart]="chartOptionsFuelConsumed.chart"
+                      [dataLabels]="chartOptionsFuelConsumed.dataLabels"
+                      [plotOptions]="chartOptionsFuelConsumed.plotOptions" [xaxis]="chartOptionsFuelConsumed.xaxis"
+                      [tooltip]="chartOptionsFuelConsumed.tooltip" [yaxis]="chartOptionsFuelConsumed.yaxis"
+                      [legend]="chartOptionsFuelConsumed.legend" [colors]="chartOptionsFuelConsumed.colors"
+                      [grid]="chartOptionsFuelConsumed.grid"></apx-chart>
+                  </ng-container>
+                </div>
+                <div class="col-3">
+                  <div class="chart-header-card">
+                    <img src="../../../../../../assets/images/fuel_mileage.svg" alt="" class="chart-img" />
+                    <span class="card-heading">Mileage (mpg)</span>
+                  </div>
+                  <ng-container *ngIf="chartOptionsFuelConsumed">
+                    <apx-chart [series]="chartOptionsFleetMileage.series" [chart]="chartOptionsFleetMileage.chart"
+                      [dataLabels]="chartOptionsFleetMileage.dataLabels"
+                      [plotOptions]="chartOptionsFleetMileage.plotOptions" [xaxis]="chartOptionsFleetMileage.xaxis"
+                      [tooltip]="chartOptionsFleetMileage.tooltip" [yaxis]="chartOptionsFleetMileage.yaxis"
+                      [legend]="chartOptionsFleetMileage.legend" [colors]="chartOptionsFleetMileage.colors"
+                      [grid]="chartOptionsFleetMileage.grid"></apx-chart>
+                  </ng-container>
+                </div>
+                <div class="col-6">
+                  <div>
+                    <div class="flex-space-between chart-header-card">
+                      <div>
+                        <img src="../../../../../../assets/images/fuel-cost.svg" alt="" class="chart-img" />
+                        <span class="card-heading">Fuel Cost ($)</span>
+                      </div>
+                      <div class="flex-legend">
+                        <div class="legend_text">
+                          <div class="legend_symbol fuel_cost"></div>
+                          Fuel Cost
+                        </div>
+                        <div class="legend_text">
+                          <div class="legend_symbol fuel_costpermile"></div>
+                          Fuel cost per mile
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <ng-container *ngIf="chartOptionsFuelCost">
+                    <apx-chart [series]="chartOptionsFuelCost.series" [chart]="chartOptionsFuelCost.chart"
+                      [dataLabels]="chartOptionsFuelCost.dataLabels" [plotOptions]="chartOptionsFuelCost.plotOptions"
+                      [xaxis]="chartOptionsFuelCost.xaxis" [tooltip]="chartOptionsFuelCost.tooltip"
+                      [yaxis]="chartOptionsFuelCost.yaxis" [legend]="chartOptionsFuelCost.legend"
+                      [colors]="chartOptionsFuelCost.colors" [grid]="chartOptionsFuelCost.grid"
+                      [stroke]="chartOptionsFuelCost.stroke"></apx-chart>
+                  </ng-container>
+                </div>
+              </div>
+
+              <div class="row pt-4" style="height: 300px;">
+                <div class="col-6">
+                  <div class="fleet-idle">
+                    <div class="total-fleet-idle">
+                      <img src="../../../../../../assets/images/truck-pickup.svg" alt="" />
+                      <div class="description">Total Fleet Idle</div>
+                      <span class="hours">
+                        <span [ngClass]="{ 'loading-background': isloading2 }" style="line-height: 35px; width: 60%">
+                          {{ totalIdlingDurationcard }}
+                        </span>
+                      </span>
+                      <span class="hour-text">Hours</span>
+                    </div>
+                    <div class="arrow-section">
+                      <img style="height: 50px" src="../../../../../../assets/images/Group1000006202.png" alt="" />
+                    </div>
+                    <div class="approx-fuel-waste">
+                      <img src="../../../../../../assets/images/fuel-svg.svg" alt="" />
+                      <div class="description">Approx Fuel Waste</div>
+                      <span class="hours red">
+                        <span [ngClass]="{ 'loading-background': isloading2 }" style="line-height: 35px; width: 60%">
+                          {{ totalIdlingCost }}
+                        </span>
+                      </span>
+                      <span class="hour-text red">gal</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div>
+                    <div class="flex-space-between chart-header-card">
+                      <div>
+                        <img src="../../../../../../assets/images/idling-time-d.svg" alt="" class="chart-img" />
+                        <span class="card-heading">Idling (hrs:mm)</span>
+                      </div>
+                      <div class="flex-legend">
+                        <div class="legend_text">
+                          <div class="legend_symbol idle_duration"></div>
+                          Idling duration
+                        </div>
+                        <div class="legend_text">
+                          <div class="legend_symbol idle_percentage"></div>
+                          Idling percentage
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <ng-container *ngIf="chartOptionsFuelidling">
+                    <apx-chart [series]="chartOptionsFuelidling.series" [chart]="chartOptionsFuelidling.chart"
+                      [dataLabels]="chartOptionsFuelidling.dataLabels" [plotOptions]="chartOptionsFuelidling.plotOptions"
+                      [xaxis]="chartOptionsFuelidling.xaxis" [tooltip]="chartOptionsFuelidling.tooltip"
+                      [yaxis]="chartOptionsFuelidling.yaxis" [legend]="chartOptionsFuelidling.legend"
+                      [colors]="chartOptionsFuelidling.colors" [grid]="chartOptionsFuelidling.grid"
+                      [stroke]="chartOptionsFuelidling.stroke"></apx-chart>
+                  </ng-container>
+                </div>
+
+              </div>
+              <div class="row pt-4" style="height: 350px;">
+                <div class="col-6">
+                    <div class="flex-space-between chart-header-card">
+                      <div>
+                        <img src="../../../../../../assets/images/idling-time-d.svg" alt="" class="chart-img" />
+                        <span class="card-heading">Top 5 Drivers
+                          With Worst Mileage&nbsp;&nbsp; </span>
+                      </div>
+                    </div>
+                  <ng-container
+                  *ngIf="chartOptionsWrostMileage && wrostDriverNull != null">
+                  <apx-chart [series]="chartOptionsWrostMileage.series"
+                      [chart]="chartOptionsWrostMileage.chart"
+                      [dataLabels]="chartOptionsWrostMileage.dataLabels"
+                      [plotOptions]="chartOptionsWrostMileage.plotOptions"
+                      [xaxis]="chartOptionsWrostMileage.xaxis"
+                      [yaxis]="chartOptionsWrostMileage.yaxis"
+                      [tooltip]="chartOptionsWrostMileage.tooltip"
+                      [legend]="chartOptionsWrostMileage.legend"
+                      [colors]="chartOptionsWrostMileage.colors"
+                      [grid]="chartOptionsWrostMileage.grid"></apx-chart>
+              </ng-container>
+                </div>
+                <div class="col-6">
+                    <div class="flex-space-between chart-header-card">
+                      <div>
+                        <img src="../../../../../../assets/images/idling-time-d.svg" alt="" class="chart-img" />
+                        <span class="card-heading">Top 5 Expensive
+                          Drivers Per Mile</span>
+                      </div>
+                    </div>
+
+                  <ng-container *ngIf="chartOptionsexpensiveCase">
+                    <apx-chart [series]="chartOptionsexpensiveCase.series"
+                        [chart]="chartOptionsexpensiveCase.chart"
+                        [dataLabels]="chartOptionsexpensiveCase.dataLabels"
+                        [plotOptions]="chartOptionsexpensiveCase.plotOptions"
+                        [xaxis]="chartOptionsexpensiveCase.xaxis"
+                        [yaxis]="chartOptionsexpensiveCase.yaxis"
+                        [legend]="chartOptionsexpensiveCase.legend"
+                        [tooltip]="chartOptionsexpensiveCase.tooltip"
+                        [colors]="chartOptionsexpensiveCase.colors"
+                        [grid]="chartOptionsexpensiveCase.grid"></apx-chart>
+                </ng-container>
+                </div>
+
+              </div>
+              <div class="row mr24">
+                <div class="col-xs-12 col-lg-12">
+                  <div class="card card-mid-trip">
+                      <div class="card-body">
+                          <div class="row">
+                              <div class="col-xs-12 col-lg-12" style="width: 98%">
+                                  <span class="user-icon f-le">
+                                      <img src="../../../../../assets/images/icon/aggresive.svg"
+                                          class="icon">
+                                  </span>
+                                  <span class="f-le">
+                                      <h4 class="card-title card-heading mb-4">Efficiency Coaching  <div ngbTooltip="Applicable only for vehicles with mileage less than 12 MPG" style="margin-top: -15px;
+    margin-left: 135px;"> <i class="fa fa-question-circle" aria-hidden="true" style="font-size: 14px;"
+                                        ngbTooltip="Applicable only for vehicles with mileage less than 12 MPG"></i></div>
+                                     </h4>
+
+
+                                  </span>
+                                  <span class="f-ri">
+                                      <a (click)="largeModal3(driverriskCoaching)" href="javascript:(void)"
+                                      class="view-more">View More</a>
+                                  </span>
+                              </div>
+                          </div>
+                          <hr class="line">
+                          <ng-container *ngIf="risckyCoachNodata != null">
+                          <div class="row insight-box">
+                              <div class="col-xs-12 col-lg-12" style="margin-top: 12px;">
+                                  <div class="table-responsive table-b" style="height: 370px;">
+                                      <table class="table" style="width: 170%!important;">
+                                        <thead class="table-head" style="font-family: 'Poppins';">
+                                        <tr>
+                                            <th>Vehicle Name</th>
+                                            <th style="width: 14%;">Harsh Acceleration (count)</th>
+                                            <th style="width: 12%;">Harsh Braking (count)</th>
+                                            <th style="width:8%;">Idling (percentage)</th>
+                                            <th>Overspeed_55 (miles)</th>
+                                            <th>Overspeed_90 (miles)</th>
+                                            <th style="width:9%;">No of Trips (count)</th>
+                                            <th>Delta Positive</th>
+                                            <th style="width:14%;">Front Left Tirepressure (psi)</th>
+                                            <th style="width:14%;">Front Rear Tirepressure (psi)</th>
+                                            <th style="width:14%;">Right Left Tirepressure (psi)</th>
+                                            <th style="width:19%;">Right Rear Tirepressure (psi)</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        <tr *ngFor="let item of riskyCoach">
+                                          <td class="tbody-colum"><span *ngIf="isVin(item?.alias); else showAlias">
+                                            {{ maskVinNumber(item?.alias) }}
+                                          </span>
+                                          <ng-template #showAlias>
+                                            {{ item?.alias }}
+                                          </ng-template></td>
+                                            <td>
+                                                <ng-container *ngIf="item.harshAcceleration == '-9999'">&nbsp;</ng-container>
+                                                <ng-container *ngIf="item.harshAcceleration < 2475 && item.harshAcceleration > -9998">
+                                                    <div class="top-red  custom-title" ngbTooltip="Distance travelled {{ item.harshAcceleration | number :'1.2-2' }} times higher Harsh Acceleration than benchmark">
+                                                    </div>
+                                                </ng-container>
+                                                <ng-container
+                                                    *ngIf="item.harshAcceleration == 2475 && item.harshAcceleration == 4358">
+                                                    <div class="right-red" ngbTooltip="Distance travelled {{ item.harshAcceleration  | number :'1.2-2'}} times higher Harsh Acceleration than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container
+                                                    *ngIf="item.harshAcceleration == 4358 && item.harshAcceleration == 8346">
+                                                    <div class="left-red" ngbTooltip="Distance travelled {{ item.harshAcceleration | number :'1.2-2' }} times higher Harsh Acceleration than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.harshAcceleration > 8346">
+                                                    <div class="bottom-red" ngbTooltip="Distance travelled {{ item.harshAcceleration | number :'1.2-2' }} times higher Harsh Acceleration than benchmark"></div>
+                                                </ng-container>
+                                            </td>
+                                            <td>
+                                                <ng-container *ngIf="item.harshBraking == '-9999'">&nbsp;</ng-container>
+                                                <ng-container *ngIf="item.harshBraking < 644 && item.harshBraking> -9998">
+                                                    <div class="top-blue" ngbTooltip="Distance travelled {{ item.harshBraking | number :'1.2-2' }} times higher Harsh Braking than benchmark">
+                                                    </div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.harshBraking == 644 && item.harshBraking == 911">
+                                                    <div class="right-blue" ngbTooltip="Distance travelled {{ item.harshBraking | number :'1.2-2' }} times higher Harsh Braking than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.harshBraking == 912 && item.harshBraking == 1137">
+                                                    <div class="left-blue" ngbTooltip="Distance travelled {{ item.harshBraking | number :'1.2-2' }} times higher Harsh Braking than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.harshBraking > 1137">
+                                                    <div class="bottom-blue" ngbTooltip="Distance travelled {{ item.harshBraking  | number :'1.2-2'}} times higher Harsh Braking than benchmark"></div>
+                                                </ng-container>
+                                            </td>
+                                            <td>
+                                                <ng-container *ngIf="item.idling_percent == '-9999'">&nbsp;</ng-container>
+                                                <ng-container *ngIf="item.idling_percent < 89 && item.idling_percent > -9998">
+                                                    <div class="top-red" ngbTooltip="Distance travelled {{ item.idling_percent | number :'1.2-2' }} times higher Idling Percent than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.idling_percent == 89 && item.idling_percent == 132">
+                                                    <div class="right-red" ngbTooltip="Distance travelled {{ item.idling_percent | number :'1.2-2' }} times higher Idling Percent than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.idling_percent == 133 && item.idling_percent == 192">
+                                                    <div class="left-red" ngbTooltip="Distance travelled {{ item.idling_percent | number :'1.2-2' }} times higher Idling Percent than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.idling_percent > 192">
+                                                    <div class="bottom-red" ngbTooltip="Distance travelled {{ item.idling_percent | number :'1.2-2' }} times higher Idling Percent than benchmark"></div>
+                                                </ng-container>
+                                            </td>
+                                            <td>
+                                                <ng-container *ngIf="item.os55 == '-9999'">&nbsp;</ng-container>
+                                                <ng-container *ngIf="item.os55 < 54 && item.os55 > 9999">
+                                                    <div class="top-red" ngbTooltip="Distance travelled {{ item.os55 | number :'1.2-2' }} times higher Overspeed than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.os55 >= 55 && item.os55 <= 90">
+                                                    <div class="bottom-red" ngbTooltip="Distance travelled {{ item.os55 | number :'1.2-2' }} times higher Overspeed than benchmark"></div>
+                                                </ng-container>
+                                            </td>
+                                            <td>
+                                                <ng-container *ngIf="item.os90 == '-9999'">&nbsp;</ng-container>
+                                                <ng-container *ngIf="item.os90 < 54 && item.os90 > 9999">
+                                                    <div class="top-red" ngbTooltip="Distance travelled {{ item.os90 | number :'1.2-2' }} times higher Overspeed than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.os90 >90">
+                                                    <div class="bottom-red" ngbTooltip="Distance travelled {{ item.os90 | number :'1.2-2' }} times higher Overspeed than benchmark"></div>
+                                                </ng-container>
+                                            </td>
+                                            <td>
+                                                <ng-container *ngIf="item.tripCount == '-9999'">&nbsp;</ng-container>
+                                                <ng-container *ngIf="item.tripCount < 80 && item.tripCount > -9998">
+                                                    <div class="top-red" ngbTooltip="Distance travelled {{ item.tripCount | number :'1.2-2' }} times Trip Count than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.tripCount == 80 && item.tripCount == 110">
+                                                    <div class="right-red" ngbTooltip="Distance travelled {{ item.tripCount | number :'1.2-2' }} times Trip Count than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.tripCount == 111 && item.tripCount == 148">
+                                                    <div class="left-red" ngbTooltip="Distance travelled {{ item.tripCount | number :'1.2-2' }} times Trip Count than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.tripCount > 148">
+                                                    <div class="bottom-red" ngbTooltip="Distance travelled {{ item.tripCount | number :'1.2-2'}} times Trip Count than benchmark"></div>
+                                                </ng-container>
+                                            </td>
+                                            <td>
+                                                <ng-container *ngIf="item.deltaPositive == '-9999'">&nbsp;</ng-container>
+                                                <ng-container *ngIf="item.deltaPositive < 80 && item.deltaPositive > -9998">
+                                                    <div class="top-red" ngbTooltip="Distance travelled {{ item.deltaPositive | number :'1.2-2' }} times Delta Positive than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.deltaPositive == 80 && item.deltaPositive == 110">
+                                                    <div class="right-red" ngbTooltip="Distance travelled {{ item.deltaPositive | number :'1.2-2' }} times Delta Positive than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.deltaPositive == 111 && item.deltaPositive == 148">
+                                                    <div class="left-red" ngbTooltip="Distance travelled {{ item.deltaPositive | number :'1.2-2' }} times Delta Positive than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.deltaPositive > 148">
+                                                    <div class="bottom-red" ngbTooltip="Distance travelled {{ item.deltaPositive | number :'1.2-2' }} times Delta Positive than benchmark"></div>
+                                                </ng-container>
+                                            </td>
+                                            <td>
+                                                <ng-container *ngIf="item.flTirepress == '-9999'">&nbsp;</ng-container>
+                                                <ng-container *ngIf="item.flTirepress < 60 && item.flTirepress > -9998">
+                                                    <div class="top-red" ngbTooltip="Distance travelled on low tire pressure (Front left) is {{ item.flTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.flTirepress == 60 && item.flTirepress == 78">
+                                                    <div class="right-red" ngbTooltip="Distance travelled on low tire pressure (Front left) is {{ item.flTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.flTirepress == 79 && item.flTirepress == 92">
+                                                    <div class="left-red" ngbTooltip="Distance travelled on low tire pressure (Front left) is {{ item.flTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.flTirepress > 92">
+                                                    <div class="bottom-red" ngbTooltip="Distance travelled on low tire pressure (Front left) is {{ item.flTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                                </ng-container>
+                                            </td>
+                                            <td>
+                                                <ng-container *ngIf="item.frTirepress == '-9999'">&nbsp;</ng-container>
+                                                <ng-container *ngIf="item.frTirepress < 73 && item.frTirepress > -9998">
+                                                    <div class="top-red" ngbTooltip="Distance travelled on low tire pressure (Front Rear) is {{ item.frTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.frTirepress == 73 && item.frTirepress == 84">
+                                                    <div class="right-red" ngbTooltip="Distance travelled on low tire pressure (Front Rear) is {{ item.frTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.frTirepress == 85 && item.frTirepress == 112">
+                                                    <div class="left-red" ngbTooltip="Distance travelled on low tire pressure (Front Rear) is {{ item.frTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.frTirepress > 112">
+                                                    <div class="bottom-red" ngbTooltip="Distance travelled on low tire pressure (Front Rear) is {{ item.frTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                                </ng-container>
+                                            </td>
+                                            <td>
+                                                <ng-container *ngIf="item.rlTirepress == '-9999'">&nbsp;</ng-container>
+                                                <ng-container *ngIf="item.rlTirepress < 63 && item.rlTirepress > -9998">
+                                                    <div class="top-red" ngbTooltip="Distance travelled on low tire pressure (Rear Left) is {{ item.rlTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.rlTirepress == 63 && item.rlTirepress == 90">
+                                                    <div class="right-red" ngbTooltip="Distance travelled on low tire pressure (Rear Left) is {{ item.rlTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.rlTirepress == 91 && item.rlTirepress == 113">
+                                                    <div class="left-red" ngbTooltip="Distance travelled on low tire pressure (Rear Left) is {{ item.rlTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.rlTirepress > 113">
+                                                    <div class="bottom-red" ngbTooltip="Distance travelled on low tire pressure (Rear Left) is {{ item.rlTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                                </ng-container>
+                                            </td>
+                                            <td>
+                                                <ng-container *ngIf="item.rrTirepress == '-9999'">&nbsp;</ng-container>
+                                                <ng-container *ngIf="item.rrTirepress < 64 && item.rrTirepress > -9998">
+                                                    <div class="top-red " ngbTooltip="Distance travelled on low tire pressure (Rear Right) is {{ item.rrTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.rrTirepress == 64 && item.rrTirepress == 87">
+                                                    <div class="right-red" ngbTooltip="Distance travelled on low tire pressure (Rear Right) is {{ item.rrTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.rrTirepress == 88 && item.rrTirepress == 100">
+                                                    <div class="left-red" ngbTooltip="Distance travelled on low tire pressure (Rear Right) is {{ item.rrTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                                </ng-container>
+                                                <ng-container *ngIf="item.rrTirepress > 100">
+                                                    <div class="bottom-red" ngbTooltip="Distance travelled on low tire pressure (Rear Right) is {{ item.rrTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                                </ng-container>
+                                            </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    </div>
+                               </div>
+                              </div>
+                          </ng-container>
+                              <ng-container *ngIf="risckyCoachNodata == null" >
+                          <div class="row" style="height: 333px;">
+                              <div class="col-xs-12 col-lg-12">
+                                    <img src="../../../../../assets/images/info-icon.svg" style="margin-left: 47%; margin-right: 47%; height: 60px; margin-top: 105px;">
+
+                                <!-- <span style="float: left;"><img src="../../../../../assets/images/Minimalist_info_Icon.png"></span> -->
+                                <h5 class="login-headlines">No Data Found</h5>
+                              </div>
+                          </div>
+                      </ng-container>
+                      </div>
+                  </div>
+              </div>
+              </div>
+              <div class="row pt-4" style="height: 400px; margin-top: -12px;">
+                <div class="col-xs-12 col-lg-12">
+                  <div class="section-heading">Mileage trend</div>
+                </div>
+                <div class="col-xs-12 col-lg-6">
+                  <div class="flex-space-between chart-header-card">
+                    <div>
+                      <img src="../../../../../../assets/images/idling-time-d.svg" alt="" class="chart-img" />
+                      <span class="card-heading">By Vehicle Class&nbsp;&nbsp; </span>
+                    </div>
+                  </div>
+                  <div *ngIf="!showChart">
+                    <div class="row" style="margin-top: 50px; margin-bottom: 20px;">
+                      <div class="col-xs-12 col-lg-12">
+                        <img src="../../../../../assets/images/info-icon.svg"
+                             style="margin-left: 43%; margin-right: 47%; height: 60px;">
+                      </div>
+                      <div class="col-xs-12 text-center">
+                        <h5 class="login-headlines">No Data Found</h5>
+                      </div>
+                    </div>
+                  </div>
+                  <ng-container *ngIf="showChart">
+                  <ng-container *ngIf="vehicleclass">
+                    <apx-chart
+                      [series]="vehicleclass.series"
+                      [chart]="vehicleclass.chart"
+                      [dataLabels]="vehicleclass.dataLabels"
+                      [plotOptions]="vehicleclass.plotOptions"
+                      [yaxis]="vehicleclass.yaxis"
+                      [legend]="vehicleclass.legend"
+                      [labels]="vehicleclass.labels"
+                      [fill]="vehicleclass.fill"
+                      [stroke]="vehicleclass.stroke"
+                      [tooltip]="vehicleclass.tooltip"
+                      [xaxis]="vehicleclass.xaxis"
+                      [colors]="vehicleclass.colors"
+                      [grid]="vehicleclass.grid"
+                    ></apx-chart>
+                  </ng-container>
+                </ng-container>
+                </div>
+                <div class="col-6">
+                  <div class="flex-space-between chart-header-card">
+                    <div>
+                      <img src="../../../../../../assets/images/idling-time-d.svg" alt="" class="chart-img" />
+                      <span class="card-heading">City vs Highway</span>
+                    </div>
+                  </div>
+                  <div *ngIf="!showChart">
+                    <div class="row" style="margin-top: 50px; margin-bottom: 20px;">
+                      <div class="col-xs-12 col-lg-12">
+                        <img src="../../../../../assets/images/info-icon.svg"
+                             style="margin-left: 43%; margin-right: 47%; height: 60px;">
+                      </div>
+                      <div class="col-xs-12 text-center">
+                        <h5 class="login-headlines">No Data Found</h5>
+                      </div>
+                    </div>
+                  </div>
+                  <ng-container *ngIf="showChart">
+                    <ng-container *ngIf="cityHighway">
+                      <apx-chart
+                        [series]="cityHighway.series"
+                        [chart]="cityHighway.chart"
+                        [dataLabels]="cityHighway.dataLabels"
+                        [plotOptions]="cityHighway.plotOptions"
+                        [yaxis]="cityHighway.yaxis"
+                        [legend]="cityHighway.legend"
+                        [labels]="cityHighway.labels"
+                        [fill]="cityHighway.fill"
+                        [stroke]="cityHighway.stroke"
+                        [tooltip]="cityHighway.tooltip"
+                        [xaxis]="cityHighway.xaxis"
+                        [colors]="cityHighway.colors"
+                        [grid]="cityHighway.grid"
+                      ></apx-chart>
+                    </ng-container>
+                  </ng-container>
+
+                </div>
+              </div>
+             </div>
+          </div>
+
+          <div class="row mr24 pt-2">
+            <div class="col-xs-12 col-lg-12" style="">
+              <div class="card card-mid-trip he427 sub-card">
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-xs-12 col-lg-12" style="width: 98%; gap: 1rem">
+                      <span class="user-icon f-le">
+                        <img src="../../../../../assets/images/fuelrefuling.svg" class="chart-img" />
+                      </span>
+                      <span class="f-le" style="margin-top: -6px;margin-left: -6px;">
+                        <h4 class="card-title card-heading mb-4">
+                          Refuel Summary
+                        </h4>
+                      </span>
+                      <span class="f-ri">
+                        <h4 class="card-title card-heading mb-4 months-text">
+                          <a href="javascript:(void)" class="view-more"
+                            (click)="vinwiseReportDownload(vinWiseRefuling)">Download Report By VIN</a>
+                        </h4>
+                      </span>
+                    </div>
+                  </div>
+                  <hr class="line" />
+                  <div class="row">
+                    <div class="col-xs-12 col-lg-12" style="margin-top: 12px">
+                      <div class="table-responsive table-b">
+                        <table class="table" style="margin-top: -12px">
+                          <thead class="table-head" style="background-color: grey">
+                            <tr style="font-family: 'Poppins'">
+                              <th style="color: #989EA5; font-size: 12px;width: 10%; font-weight: 500;">Vehicle Name</th>
+                              <th style="color: #989EA5; font-size: 12px; width: 18%; font-weight: 500;">
+                                Time
+                              </th>
+                              <th style="color: #989EA5; font-size: 12px;  width: 20%; font-weight: 500;">
+                                Location
+                              </th>
+                              <th style="color: #989EA5; font-size: 12px; width: 15%; font-weight: 500;">
+                                Odometer (Mile)
+                              </th>
+                              <th style="color: #989EA5; font-size: 12px; width: 10%; font-weight: 500;">
+                                Fuel (gal)
+                              </th>
+                              <th style="color: #989EA5; font-size: 12px; width: 10%; font-weight: 500;">
+                                Cost ($)
+                              </th>
+                              <th style="color: #989EA5; font-size: 12px; width: 25%; font-weight: 500;">
+                                Cost Per Mile($)
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr *ngFor="let data of refulingPoint" style="
+                                      font-family: 'Poppins';
+                                      font-size: 11px !important;
+                                      color: black !important;
+                                      font-weight: 500 !important;
+                                    ">
+                               <td>  {{ data.alias.length === 17
+                                ? maskVins(data.alias)
+                                : data.alias.substring(0, 5) + '...' + data.alias.slice(-5)
+                            }}</td>
+                               <td>
+                                <ng-container *ngIf="data?.formattedDate && data?.formattedTime ; else defaultView">
+                                  {{ data.formattedDate }}, <br>
+                                  {{ data.formattedTime }}
+                                </ng-container>
+
+                                <ng-template #defaultView>
+                                  <ng-container *ngIf="data?.dateTime">
+                                    {{ data.dateTime | date: 'MMM d, y' }}, <br>
+                                    {{ data.dateTime | date: 'HH:mm' }}
+                                  </ng-container>
+                                </ng-template>
+                              </td>
+                              <!-- Time conversion for onward connected UTC TO CDT end-->
+                              <td style="text-align: justify">
+                                <a style="color: #000!important;text-decoration: underline; cursor: pointer;">
+                                  <span class="address" [ngbTooltip]="data?.address">
+                                    {{ data?.address.split(',')[0] }}
+                                  </span>
+                                </a>
+                              </td>
+                              <td>
+                                <ng-container *ngIf="data?.odometer <= -1">
+                                  NA
+                                </ng-container>
+                                <ng-container *ngIf="data?.odometer == null ">
+                                  NA
+                                </ng-container>
+                                <ng-container *ngIf="data?.odometer > -1">
+                                  {{data.odometer | number:'1.2-2'}}</ng-container>
+                              </td>
+                              <td>
+                                {{ data?.amtFuelRefuelled | number : '1.2-2' }}
+                              </td>
+                              <td>
+                                <ng-container *ngIf="isInvalidRefuelCost(data?.refuelCost)">
+                                  --
+                                </ng-container>
+                                <ng-container *ngIf="!isInvalidRefuelCost(data?.refuelCost)">
+                                  {{ data?.refuelCost | number: '1.2-2' }}
+                                </ng-container>
+                              </td>
+                              <td>{{data?.costPerMile | number: '1.2-2'}}</td>
+                            </tr>
+                            <ng-container *ngIf="loading && refulingPoint.length === 0">
+                              <tr *ngIf="refulingPoint?.length < 1">
+                                <td colspan="5">
+                                  <h5 class="heaidng-c">No Data Found ...</h5>
+                                </td>
+                              </tr>
+                            </ng-container>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-xs-12 col-lg-12">
+              **NA: Data not available
+            </div>
+          </div>
+        </div>
+        <!-- main container end -->
+      </div>
+    </div>
+  </div>
+  </div>
+  </div>
+ <ng-template #vinWiseRefuling let-modal class="modal-width">
+    <div class="modal-header">
+      <h5 class="modal-title mt-0" style="font-family: 'Poppins'">Select Vehicle Name</h5>
+      <button type="button" class="btn-close" (click)="modal.dismiss('Cross click')" aria-hidden="true"></button>
+    </div>
+    <div class="modal-body">
+      <div class="row">
+        <div class="col-xs-12 col-lg-12">
+          <ng-select [items]="vinList" bindLabel="Alias" bindValue="VIN" placeholder="Vehicle Name" style="font-family: 'Poppins'" [(ngModel)]="vinListData">
+          </ng-select>
+        </div>
+      </div>
+      <div class="row" style="margin-top: 12px">
+        <div class="col-xs-12 col-lg-12">
+          <button class="data-demo btn btn-primary" style="float: right" (click)="dataDownloadOnVinChange('csv'); modal.dismiss('Cross click')">
+            Download Report
+          </button>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #driverriskCoaching let-modal class="modal-width" style="margin-top: -30px;">
+    <div class="modal-header">
+        <h5 class="modal-title mt-0">List of Efficiency Coaching</h5>
+        <!-- <button type="button"
+        class="signal-btn btn-primary view-more featurs150 btmn-main" (click)="getefficiencyCoachDownlaod()" title="download"  style="float: right;"><i
+            class="fa fa-download" style="color: #45b01f;"></i></button> -->
+        <!-- <button type="button" class="btn-close" (click)="modal.dismiss('Cross click')" aria-hidden="true"></button> -->
+    </div>
+    <div class="modal-body" style="height: 400px;">
+        <div class="row mr-table">
+            <div class="col-lg-12 col-xs-12">
+              <ng-container *ngIf="risckyCoachNodata != null" >
+                <div class="table-responsive table-b" style="height: 350px;">
+                    <table class="table" style="width: 130%;">
+                      <thead class="table-head" style="font-family: 'Poppins';">
+                        <tr>
+                          <th>Vehicle Name</th>
+                          <th style="width: 14%;">Harsh Acceleration (count)</th>
+                          <th style="width: 12%;">Harsh Braking (count)</th>
+                          <th style="width:8%;">Idling (percentage)</th>
+                          <th>Overspeed_55 (miles)</th>
+                          <th>Overspeed_90 (miles)</th>
+                          <th style="width:9%;">No of Trips (count)</th>
+                          <th>Delta Positive</th>
+                          <th style="width:14%;">Front Left Tirepressure (psi)</th>
+                          <th style="width:14%;">Front Rear Tirepressure (psi)</th>
+                          <th style="width:14%;">Right Left Tirepressure (psi)</th>
+                          <th style="width:19%;">Right Rear Tirepressure (psi)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                          <tr *ngFor="let item of riskyCoachAll">
+                            <td class="tbody-colum"><span *ngIf="isVin(item?.alias); else showAlias">
+                              {{ maskVinNumber(item?.alias) }}
+                            </span>
+                            <ng-template #showAlias>
+                              {{ item?.alias }}
+                            </ng-template></td>
+                              <td>
+                                  <ng-container *ngIf="item.harshAcceleration == '-9999'">&nbsp;</ng-container>
+                                  <ng-container *ngIf="item.harshAcceleration < 2475 && item.harshAcceleration > -9998">
+                                      <div class="top-red  custom-title" ngbTooltip="Distance travelled {{ item.harshAcceleration | number :'1.2-2' }} times higher Harsh Acceleration than benchmark">
+                                      </div>
+                                  </ng-container>
+                                  <ng-container
+                                      *ngIf="item.harshAcceleration == 2475 && item.harshAcceleration == 4358">
+                                      <div class="right-red" ngbTooltip="Distance travelled {{ item.harshAcceleration  | number :'1.2-2'}} times higher Harsh Acceleration than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container
+                                      *ngIf="item.harshAcceleration == 4358 && item.harshAcceleration == 8346">
+                                      <div class="left-red" ngbTooltip="Distance travelled {{ item.harshAcceleration | number :'1.2-2' }} times higher Harsh Acceleration than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.harshAcceleration > 8346">
+                                      <div class="bottom-red" ngbTooltip="Distance travelled {{ item.harshAcceleration | number :'1.2-2' }} times higher Harsh Acceleration than benchmark"></div>
+                                  </ng-container>
+                              </td>
+                              <td>
+                                  <ng-container *ngIf="item.harshBraking == '-9999'">&nbsp;</ng-container>
+                                  <ng-container *ngIf="item.harshBraking < 644 && item.harshBraking> -9998">
+                                      <div class="top-blue" ngbTooltip="Distance travelled {{ item.harshBraking | number :'1.2-2' }} times higher Harsh Braking than benchmark">
+                                      </div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.harshBraking == 644 && item.harshBraking == 911">
+                                      <div class="right-blue" ngbTooltip="Distance travelled {{ item.harshBraking | number :'1.2-2' }} times higher Harsh Braking than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.harshBraking == 912 && item.harshBraking == 1137">
+                                      <div class="left-blue" ngbTooltip="Distance travelled {{ item.harshBraking | number :'1.2-2' }} times higher Harsh Braking than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.harshBraking > 1137">
+                                      <div class="bottom-blue" ngbTooltip="Distance travelled {{ item.harshBraking  | number :'1.2-2'}} times higher Harsh Braking than benchmark"></div>
+                                  </ng-container>
+                              </td>
+                              <td>
+                                  <ng-container *ngIf="item.idling_percent == '-9999'">&nbsp;</ng-container>
+                                  <ng-container *ngIf="item.idling_percent < 89 && item.idling_percent > -9998">
+                                      <div class="top-red" ngbTooltip="Distance travelled {{ item.idling_percent | number :'1.2-2' }} times higher Idling Percent than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.idling_percent == 89 && item.idling_percent == 132">
+                                      <div class="right-red" ngbTooltip="Distance travelled {{ item.idling_percent | number :'1.2-2' }} times higher Idling Percent than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.idling_percent == 133 && item.idling_percent == 192">
+                                      <div class="left-red" ngbTooltip="Distance travelled {{ item.idling_percent | number :'1.2-2' }} times higher Idling Percent than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.idling_percent > 192">
+                                      <div class="bottom-red" ngbTooltip="Distance travelled {{ item.idling_percent | number :'1.2-2' }} times higher Idling Percent than benchmark"></div>
+                                  </ng-container>
+                              </td>
+                              <td>
+                                  <ng-container *ngIf="item.os55 == '-9999'">&nbsp;</ng-container>
+                                  <ng-container *ngIf="item.os55 < 54 && item.os55 > 9999">
+                                      <div class="top-red" ngbTooltip="Distance travelled {{ item.os55 | number :'1.2-2' }} times higher Overspeed than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.os55 >= 55 && item.os55 <= 90">
+                                      <div class="bottom-red" ngbTooltip="Distance travelled {{ item.os55 | number :'1.2-2' }} times higher Overspeed than benchmark"></div>
+                                  </ng-container>
+                              </td>
+                              <td>
+                                  <ng-container *ngIf="item.os90 == '-9999'">&nbsp;</ng-container>
+                                  <ng-container *ngIf="item.os90 < 54 && item.os90 > 9999">
+                                      <div class="top-red" ngbTooltip="Distance travelled {{ item.os90 | number :'1.2-2' }} times higher Overspeed than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.os90 >90">
+                                      <div class="bottom-red" ngbTooltip="Distance travelled {{ item.os90 | number :'1.2-2' }} times higher Overspeed than benchmark"></div>
+                                  </ng-container>
+                              </td>
+                              <td>
+                                  <ng-container *ngIf="item.tripCount == '-9999'">&nbsp;</ng-container>
+                                  <ng-container *ngIf="item.tripCount < 80 && item.tripCount > -9998">
+                                      <div class="top-red" ngbTooltip="Distance travelled {{ item.tripCount | number :'1.2-2' }} times Trip Count than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.tripCount == 80 && item.tripCount == 110">
+                                      <div class="right-red" ngbTooltip="Distance travelled {{ item.tripCount | number :'1.2-2' }} times Trip Count than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.tripCount == 111 && item.tripCount == 148">
+                                      <div class="left-red" ngbTooltip="Distance travelled {{ item.tripCount | number :'1.2-2' }} times Trip Count than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.tripCount > 148">
+                                      <div class="bottom-red" ngbTooltip="Distance travelled {{ item.tripCount | number :'1.2-2'}} times Trip Count than benchmark"></div>
+                                  </ng-container>
+                              </td>
+                              <td>
+                                  <ng-container *ngIf="item.deltaPositive == '-9999'">&nbsp;</ng-container>
+                                  <ng-container *ngIf="item.deltaPositive < 80 && item.deltaPositive > -9998">
+                                      <div class="top-red" ngbTooltip="Distance travelled {{ item.deltaPositive | number :'1.2-2' }} times Delta Positive than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.deltaPositive == 80 && item.deltaPositive == 110">
+                                      <div class="right-red" ngbTooltip="Distance travelled {{ item.deltaPositive | number :'1.2-2' }} times Delta Positive than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.deltaPositive == 111 && item.deltaPositive == 148">
+                                      <div class="left-red" ngbTooltip="Distance travelled {{ item.deltaPositive | number :'1.2-2' }} times Delta Positive than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.deltaPositive > 148">
+                                      <div class="bottom-red" ngbTooltip="Distance travelled {{ item.deltaPositive | number :'1.2-2' }} times Delta Positive than benchmark"></div>
+                                  </ng-container>
+                              </td>
+                              <td>
+                                  <ng-container *ngIf="item.flTirepress == '-9999'">&nbsp;</ng-container>
+                                  <ng-container *ngIf="item.flTirepress < 60 && item.flTirepress > -9998">
+                                      <div class="top-red" ngbTooltip="Distance travelled on low tire pressure (Front left) is {{ item.flTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.flTirepress == 60 && item.flTirepress == 78">
+                                      <div class="right-red" ngbTooltip="Distance travelled on low tire pressure (Front left) is {{ item.flTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.flTirepress == 79 && item.flTirepress == 92">
+                                      <div class="left-red" ngbTooltip="Distance travelled on low tire pressure (Front left) is {{ item.flTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.flTirepress > 92">
+                                      <div class="bottom-red" ngbTooltip="Distance travelled on low tire pressure (Front left) is {{ item.flTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                  </ng-container>
+                              </td>
+                              <td>
+                                  <ng-container *ngIf="item.frTirepress == '-9999'">&nbsp;</ng-container>
+                                  <ng-container *ngIf="item.frTirepress < 73 && item.frTirepress > -9998">
+                                      <div class="top-red" ngbTooltip="Distance travelled on low tire pressure (Front Rear) is {{ item.frTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.frTirepress == 73 && item.frTirepress == 84">
+                                      <div class="right-red" ngbTooltip="Distance travelled on low tire pressure (Front Rear) is {{ item.frTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.frTirepress == 85 && item.frTirepress == 112">
+                                      <div class="left-red" ngbTooltip="Distance travelled on low tire pressure (Front Rear) is {{ item.frTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.frTirepress > 112">
+                                      <div class="bottom-red" ngbTooltip="Distance travelled on low tire pressure (Front Rear) is {{ item.frTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                  </ng-container>
+                              </td>
+                              <td>
+                                  <ng-container *ngIf="item.rlTirepress == '-9999'">&nbsp;</ng-container>
+                                  <ng-container *ngIf="item.rlTirepress < 63 && item.rlTirepress > -9998">
+                                      <div class="top-red" ngbTooltip="Distance travelled on low tire pressure (Rear Left) is {{ item.rlTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.rlTirepress == 63 && item.rlTirepress == 90">
+                                      <div class="right-red" ngbTooltip="Distance travelled on low tire pressure (Rear Left) is {{ item.rlTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.rlTirepress == 91 && item.rlTirepress == 113">
+                                      <div class="left-red" ngbTooltip="Distance travelled on low tire pressure (Rear Left) is {{ item.rlTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.rlTirepress > 113">
+                                      <div class="bottom-red" ngbTooltip="Distance travelled on low tire pressure (Rear Left) is {{ item.rlTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                  </ng-container>
+                              </td>
+                              <td>
+                                  <ng-container *ngIf="item.rrTirepress == '-9999'">&nbsp;</ng-container>
+                                  <ng-container *ngIf="item.rrTirepress < 64 && item.rrTirepress > -9998">
+                                      <div class="top-red " ngbTooltip="Distance travelled on low tire pressure (Rear Right) is {{ item.rrTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.rrTirepress == 64 && item.rrTirepress == 87">
+                                      <div class="right-red" ngbTooltip="Distance travelled on low tire pressure (Rear Right) is {{ item.rrTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.rrTirepress == 88 && item.rrTirepress == 100">
+                                      <div class="left-red" ngbTooltip="Distance travelled on low tire pressure (Rear Right) is {{ item.rrTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                  </ng-container>
+                                  <ng-container *ngIf="item.rrTirepress > 100">
+                                      <div class="bottom-red" ngbTooltip="Distance travelled on low tire pressure (Rear Right) is {{ item.rrTirepress | number :'1.2-2' }} times higher than benchmark"></div>
+                                  </ng-container>
+                              </td>
+                          </tr>
+                      </tbody>
+                  </table>
+                </div>
+                </ng-container>
+                <ng-container *ngIf="risckyCoachNodata == null" >
+                  <div class="row" style="height: 333px;">
+                      <div class="col-xs-12 col-lg-12">
+                            <img src="../../../../../assets/images/info-icon.svg" style="margin-left: 47%; margin-right: 47%; height: 60px; margin-top: 105px;">
+
+                        <!-- <span style="float: left;"><img src="../../../../../assets/images/Minimalist_info_Icon.png"></span> -->
+                        <h5 class="login-headlines">No Data Found</h5>
+                      </div>
+                  </div>
+              </ng-container>
+                <h5 style="font-size: 13px;font-weight: 400; font-family: 'Poppins'; padding-top:12px;">* Disclaimer: That each column contains ratio of actual and ideal values of events.</h5>
+            </div>
+          </div>
+    </div>
+  </ng-template>

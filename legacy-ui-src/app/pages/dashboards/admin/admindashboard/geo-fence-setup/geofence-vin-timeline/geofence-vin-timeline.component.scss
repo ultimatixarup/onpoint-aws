@@ -1,0 +1,716 @@
+.geofence-vin-timeline-container {
+  width: 100%;
+  padding: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Page Header & Breadcrumb */
+.page-header {
+  margin-bottom: 24px;
+}
+
+.heading-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+  font-family: 'Poppins';
+}
+
+.breadcrumb-left {
+  float: left;
+}
+
+.breadcrumb-right {
+  float: right;
+}
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 0;
+  margin-bottom: 0;
+  list-style: none;
+  background-color: transparent;
+}
+
+.breadcrumb-item {
+  display: flex;
+  font-size: 13px;
+  color: #6b7280;
+
+  &:not(:first-child)::before {
+    content: "/";
+    padding: 0 8px;
+    color: #9ca3af;
+  }
+
+  a {
+    color: #6b7280;
+    text-decoration: none;
+
+    &:hover {
+      color: #fa751a;
+    }
+  }
+
+  &.active {
+    color: #fa751a;
+    font-weight: 500;
+  }
+}
+
+/* Vehicle Info Bar */
+.vehicle-info-bar {
+  background: linear-gradient(135deg, #fa751a 0%, #ff9f4d 100%);
+  border-radius: 12px;
+  padding: 16px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(250, 117, 26, 0.2);
+}
+
+.vehicle-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: #ffffff;
+
+  i {
+    font-size: 32px;
+  }
+}
+
+.vehicle-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vehicle-name {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.vehicle-vin {
+  font-size: 13px;
+  opacity: 0.9;
+  font-family: 'Courier New', monospace;
+}
+
+.vehicle-info-bar .btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  font-weight: 500;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+}
+
+/* Geofence Info Section */
+.geofence-info-section {
+  margin-bottom: 24px;
+}
+
+.geofence-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  i {
+    color: #fa751a;
+  }
+}
+
+/* Time Period Dropdown Styles */
+::ng-deep .timePeriod.ng-select .ng-dropdown-panel .ng-option.ng-option-marked {
+  background-color: #fa751a !important;
+  color: #ffffff !important;
+  font-family: 'Poppins' !important;
+  font-size: 12px !important;
+}
+
+::ng-deep .timePeriod.ng-select .ng-dropdown-panel .ng-option {
+  background-color: #fff !important;
+  color: #000000 !important;
+  font-family: 'Poppins' !important;
+  font-size: 12px !important;
+}
+
+::ng-deep .timePeriod.ng-select .ng-select-container {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  min-height: 36px;
+  font-family: 'Poppins' !important;
+}
+
+::ng-deep .timePeriod.ng-select .ng-value {
+  font-family: 'Poppins' !important;
+  font-size: 13px !important;
+  color: #374151 !important;
+}
+
+.fleet-dropdown {
+  .ng-select {
+    font-family: 'Poppins', sans-serif;
+  }
+}
+
+/* Timeline Section */
+.timeline-section {
+  margin-bottom: 24px;
+}
+
+.timeline-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.timeline-table-wrapper {
+  overflow-x: auto;
+}
+
+/* Table Styles */
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 0;
+}
+
+.table-head {
+  background-color: #f9fafb;
+
+  th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e5e7eb;
+    white-space: nowrap;
+  }
+}
+
+.table tbody {
+  tr {
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: #f9fafb;
+    }
+
+    td {
+      padding: 14px 16px;
+      font-size: 14px;
+      color: #374151;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: middle;
+    }
+  }
+
+  tr.event-inside {
+    background-color: #f0fdf4;
+
+    &:hover {
+      background-color: #dcfce7;
+    }
+  }
+}
+
+/* Status Badge */
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+
+  &.status-inside {
+    background-color: #d1fae5;
+    color: #065f46;
+  }
+
+  &.status-outside {
+    background-color: #fee2e2;
+    color: #991b1b;
+  }
+
+  &.status-inside-ongoing {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #3b82f6;
+  }
+
+  &.status-outside-ongoing {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #f59e0b;
+  }
+}
+
+/* Event Type Badge */
+.event-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+
+  i {
+    font-size: 14px;
+  }
+
+  &.event-type-in {
+    background-color: #d1fae5;
+    color: #065f46;
+  }
+
+  &.event-type-out {
+    background-color: #fee2e2;
+    color: #991b1b;
+  }
+}
+
+/* Timestamp Info */
+.timestamp-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  strong {
+    font-weight: 600;
+    color: #374151;
+  }
+
+  .paired-time {
+    font-size: 11px;
+    color: #6b7280;
+    font-style: italic;
+  }
+}
+
+/* Duration Text */
+.duration-text {
+  font-weight: 500;
+  color: #374151;
+
+  &.ongoing-duration {
+    color: #059669;
+    font-style: italic;
+  }
+}
+
+/* Odometer Value */
+.odometer-value {
+  font-weight: 500;
+  color: #374151;
+  font-family: 'Courier New', monospace;
+}
+
+/* Fuel Level */
+.fuel-level {
+  font-weight: 600;
+  color: #059669;
+
+  &.low-fuel {
+    color: #dc2626;
+  }
+}
+
+/* Vehicle Health Badge */
+.health-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+
+  i {
+    font-size: 14px;
+  }
+
+  &.clickable {
+    cursor: pointer;
+
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  // New health status classes based on GREEN/ORANGE/RED
+  &.health-normal {
+    background-color: #d1fae5;
+    color: #065f46;
+
+    &.clickable:hover {
+      background-color: #a7f3d0;
+    }
+  }
+
+  &.health-warning {
+    background-color: #fef3c7;
+    color: #92400e;
+
+    &.clickable:hover {
+      background-color: #fde68a;
+    }
+  }
+
+  &.health-critical {
+    background-color: #fee2e2;
+    color: #991b1b;
+
+    &.clickable:hover {
+      background-color: #fecaca;
+    }
+  }
+
+  &.health-unknown {
+    background-color: #f3f4f6;
+    color: #6b7280;
+
+    &.clickable:hover {
+      background-color: #e5e7eb;
+    }
+  }
+
+  // Keep old classes for backward compatibility
+  &.health-good {
+    background-color: #d1fae5;
+    color: #065f46;
+
+    &.clickable:hover {
+      background-color: #a7f3d0;
+    }
+  }
+
+  &.health-not-good {
+    background-color: #fee2e2;
+    color: #991b1b;
+
+    &.clickable:hover {
+      background-color: #fecaca;
+    }
+  }
+}
+
+/* Row Styling */
+.event-inside {
+  background-color: #f0fdf4;
+
+  &:hover {
+    background-color: #dcfce7;
+  }
+}
+
+.event-outside {
+  background-color: #fef2f2;
+
+  &:hover {
+    background-color: #fee2e2;
+  }
+}
+
+.event-ongoing {
+  border-left: 3px solid #3b82f6;
+  font-weight: 500;
+}
+
+/* Loading State */
+.loading-cell {
+  padding: 60px 20px !important;
+}
+
+.icon-loading {
+  font-size: 32px;
+  color: #fa751a;
+  margin-bottom: 12px;
+}
+
+.loading-text {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 12px 0 0 0;
+}
+
+/* No Data State */
+.no-data-cell {
+  padding: 60px 20px !important;
+}
+
+.no-data-text {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 16px 0 0 0;
+}
+
+/* Error State */
+.error-cell {
+  padding: 60px 20px !important;
+}
+
+.error-text {
+  font-size: 14px;
+  color: #991b1b;
+  margin: 16px 0 0 0;
+}
+
+/* Modal Overlay Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  width: 700px;
+  max-width: 90%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #6b7280;
+
+  &:hover {
+    color: #374151;
+  }
+}
+
+.option-column {
+  margin-left: -20px;
+  margin-right: 12px;
+}
+
+.option {
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: #374151;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #f3f4f6;
+  }
+
+  &.selected {
+    background-color: #fa751a;
+    color: white;
+    font-weight: 500;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .vehicle-info-bar {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .vehicle-info {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .timeline-table-wrapper {
+    overflow-x: scroll;
+  }
+
+  .table {
+    min-width: 900px;
+  }
+
+  .modal-card {
+    width: 95%;
+    padding: 15px;
+  }
+
+  .option-column {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+// Vehicle Health Modal Styles
+.health-modal-card {
+  max-width: 900px;
+  width: 90%;
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #dee2e6;
+
+    .modal-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #999;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: #f0f0f0;
+        color: #333;
+      }
+    }
+  }
+
+  .modal-body {
+    padding: 20px;
+    max-height: 70vh;
+    overflow-y: auto;
+
+    .health-details-table {
+      margin-bottom: 0;
+
+      th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #333;
+        padding: 12px;
+        text-align: center;
+        border: 1px solid #dee2e6;
+        white-space: nowrap;
+      }
+
+      td {
+        padding: 15px;
+        vertical-align: middle;
+        text-align: center;
+        border: 1px solid #dee2e6;
+
+        .tire-pressure {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+          text-align: left;
+          padding: 5px;
+
+          div {
+            font-size: 0.9rem;
+            padding: 4px 8px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+
+            strong {
+              color: #555;
+              margin-right: 5px;
+            }
+          }
+        }
+
+        .health-badge {
+          display: inline-block;
+          padding: 6px 12px;
+          border-radius: 20px;
+          font-size: 0.9rem;
+          font-weight: 500;
+
+          i {
+            margin-right: 5px;
+          }
+        }
+
+        &.health-reason-cell {
+          text-align: left;
+          max-width: 300px;
+          font-size: 0.85rem;
+          color: #555;
+          line-height: 1.4;
+          white-space: normal;
+          word-wrap: break-word;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .health-modal-card {
+    width: 95%;
+    max-width: none;
+
+    .modal-body {
+      padding: 15px;
+
+      .health-details-table {
+        font-size: 0.85rem;
+
+        th, td {
+          padding: 8px;
+        }
+
+        .tire-pressure {
+          grid-template-columns: 1fr;
+          gap: 5px;
+
+          div {
+            font-size: 0.8rem;
+            padding: 3px 6px;
+          }
+        }
+      }
+    }
+  }
+}

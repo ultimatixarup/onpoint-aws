@@ -1,0 +1,215 @@
+<!--Spinner for full page-->
+<ngx-spinner bdColor="rgba(0,0,0,0.8)" size="large" color="#fff" type="ball-elastic-dots" [fullScreen]="true">
+    <div class="custom-spinner">
+      <img src="../../../../../assets/images/spinner3.svg" alt="Your Logo">
+    </div>
+    <div class="loading-text">Please wait, we are getting information...</div>
+  </ngx-spinner>
+  <!--Spinner for full page end-->
+ <!--Main content-->
+  <div class="page-content page-content-main">
+    <div class="row sideMenuItem">
+      <div class="container">
+      <!-- Left side menu-->
+      <div [class.hide-sidebar]="isSidebarHidden" class="col-xs-12 col-lg-2 navbar-side-menu">
+        <ng-container *ngIf="user =='admin'">
+            <app-commonsidebar></app-commonsidebar>
+        </ng-container>
+        <ng-container *ngIf="user =='role_consumer_fleet' || user == 'role_user_fleet'">
+        <app-commonsidebar-fleet></app-commonsidebar-fleet>
+        </ng-container>
+      </div>
+      <!-- Left side menu end -->
+      <!-- Right side menu -->
+     <!--right side content -->
+     <div class="col-xs-12 content-right" [ngClass]="{ 'col-lg-10': !isSidebarHidden, 'col-lg-12': isSidebarHidden }">
+      <div class="row" style="margin-left: -24px;">
+        <div class="col-xs-12 col-lg-12">
+          <button (click)="toggleSidebar()"
+          class="toggle-btn expand"
+          placement="right">
+    <i class='bx'
+       [ngClass]="isSidebarHidden ? 'bx-chevron-right' : 'bx-chevron-left'">
+    </i>
+  </button>
+        </div>
+      </div>
+        <!-- Left side heading and right side Breadcrumb-->
+        <div class="row">
+          <div class="col-xs-12 col-lg-12">
+            <span class="breadcrumb-left">
+              <h1 class="login-headline heading-title">Frequently Asked
+              </h1>
+            </span>
+            <span class="breadcrumb-right mr-8">
+                <ol class="breadcrumb">
+                    <ng-container *ngIf="user == 'admin'">
+                      <li class="breadcrumb-item">
+                        <a routerLink="/adlp/admin/dashboardAdmin" class="breadcrumb-h6"><i class="bx bx-home-circle"></i></a>
+                      </li>
+                     </ng-container>
+                    <ng-container *ngIf="user != 'admin'">
+                      <li class="breadcrumb-item">
+                        <a routerLink="/adlp/admin/admindashboard/dashboardfleet" class="breadcrumb-h6"><i class="bx bx-home-circle"></i></a>
+                      </li> <li class="breadcrumb-item inactive-bread"><a routerLink="/adlp/admin/admindashboard/dashboardfleet">Dashboard</a></li>
+                    </ng-container>
+                    <li class="breadcrumb-item text-selected active-bread">Frequently Asked</li>
+                  </ol>
+            </span>
+          </div>
+        </div>
+        <!-- Left side heading and right side Breadcrumb end-->
+        <!-- Button for add a question -->
+        <div class="row consumer-pad">
+          <div class="col-xs-12 col-lg-10">&nbsp;</div>
+          <div class="col-xs-12 col-lg-2 mr-6" *ngIf="addQuestionBtn">
+            <button class="addaquestionn-btn" (click)="openRemarkModal(remarks)">+ Add a question</button>
+          </div>
+        </div>
+        <!-- Button for add a question end-->
+         <!-- Main FAQ question and answer accordian-->
+         <div class="row mr-24" *ngFor="let question of allData">
+          <div class="col-xs-12 col-lg-12">
+           <div class="card">
+             <div class="card-body">
+               <div class="row">
+                 <div class="col-xs-12 col-lg-12">
+                  <div class="row">
+                    <div class="col-xs-12 col-lg-10">
+                      <span style="float: left"><i class="fa fa-star " style="font-size: 14px;"></i></span>
+                      <span style="float: left;margin-top: 4px; margin-left: 10px;"><h5 class="question">{{question?.question}}</h5> </span>
+                    </div>
+                    <div class="col-xs-12 col-lg-2" *ngIf="addQuestionBtn">
+                      <a href="javascript:void(0)" style="float: right;" class="" title="Delete" (click)="deleteFaq(question.faqId)">
+                        <img src="../../../../assets/images/delete-fleet-icon.svg" alt="" class="edit-manage-delete delete-fleet" style="height: 20px;" />
+                      </a>
+                      <a style="float: right;" href="javascript:void(0)" class="" title="Edit" (click)="openEditQuestionModal(editQuestion, question.faqId)">
+                        <img src="../../../../assets/images/edit-fleet-icon.svg" alt="" title="Edit" class="edit-manage-delete edit-fleet" style="height: 20px;" /> &nbsp;&nbsp;
+                      </a>
+                    </div>
+                  </div>
+
+                 </div>
+                 <div class="col-xs-12 col-lg-12">
+                   <span class="panel-ans">
+                     <h5 class="answer-main">{{question?.answer}}
+                   </h5>
+                 </span>
+                 </div>
+               </div>
+             </div>
+           </div>
+          </div>
+         </div>
+        <!-- Main FAQ question and answer accordian end-->
+       </div>
+      </div>
+      <!-- Right side menu end-->
+    </div>
+    </div>
+  <!--Main content-->
+   <!--Failure reason when click on info-->
+   <ng-template #remarks let-modal class="modal-width">
+    <div class="modal-header">
+      <h5 class="modal-title mt-0 font-weight-bold">Add a question</h5>
+      <button type="button" class="btn-close" (click)="modal.dismiss('Cross click')" aria-hidden="true"></button>
+    </div>
+    <div class="modal-body">
+      <div class="row">
+        <div class="col-xs-12 col-lg-12">
+          <label for="question" class="question">Question</label>
+          <div>
+            <textarea type="text" rows="2" class="question-box custom-textarea" placeholder="Enter your question here..."
+              style="width: 100%;" [(ngModel)]="question" #questionInput="ngModel" required></textarea>
+          </div>
+          <small class="text-danger" *ngIf="questionInput.invalid && questionInput.touched">
+            Question is required.
+          </small>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top: 12px;">
+        <div class="col-xs-12 col-lg-12">
+          <label for="answer" class="question">Answer</label>
+          <div>
+            <textarea type="text" class="question-box custom-textarea" placeholder="Enter your answer here..." rows="5"
+              style="width: 100%;" [(ngModel)]="answer" #answerInput="ngModel" required></textarea>
+          </div>
+          <small class="text-danger" *ngIf="answerInput.invalid && answerInput.touched">
+            Answer is required.
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <div class="row">
+        <div class="col-xs-12 col-lg-12">
+          <button
+            class="submit-btn"
+            (click)="submitFaq(); modal.dismiss('Cross click')"
+            [disabled]="!question || !answer"
+            [ngClass]="{'enabled-btn': question && answer, 'disabled-btn': !question || !answer}">
+            Submit
+          </button> &nbsp;&nbsp;
+          <button class="cancel-btn" (click)="modal.dismiss('Cross click')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+    <!--Add update model-->
+    <ng-template #editQuestion let-modal class="modal-width">
+      <div class="modal-header">
+        <h5 class="modal-title mt-0 font-weight-bold">Edit Question</h5>
+        <button type="button" class="btn-close" (click)="modal.dismiss('Cross click')" aria-hidden="true"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-xs-12 col-lg-12">
+            <label for="userpassword" class="question">Question</label>
+            <div>
+              <textarea
+                type="text"
+                rows="2"
+                class="question-box custom-textarea"
+                placeholder="Enter your question here..."
+                style="width: 100%;"
+                [(ngModel)]="question"
+                (ngModelChange)="validateFields()"
+              ></textarea>
+            </div>
+            <span *ngIf="isQuestionEmpty" class="error-message">Question is required</span>
+          </div>
+        </div>
+        <div class="row" style="margin-top: 12px;">
+          <div class="col-xs-12 col-lg-12">
+            <label for="userpassword" class="question">Answer</label>
+            <div>
+              <textarea
+                type="text"
+                class="question-box custom-textarea"
+                placeholder="Enter your answer here..."
+                rows="5"
+                style="width: 100%;"
+                [(ngModel)]="answer"
+                (ngModelChange)="validateFields()"
+              ></textarea>
+            </div>
+            <span *ngIf="isAnswerEmpty" class="error-message">Answer is required</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="row">
+          <div class="col-xs-12 col-lg-12">
+            <button class="submit-btn" [disabled]="isUpdateDisabled" (click)="submitFaqUpdate(); modal.dismiss('Cross click')">
+              Update
+            </button>
+            &nbsp;&nbsp;
+            <button class="cancel-btn" (click)="modal.dismiss('Cross click')">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+      <!--Add update model end-->

@@ -1,0 +1,5 @@
+﻿Data Classification,Data Type,,Sub-category,Parameter ID,Parameter Description,Format,Direct/Derived,UOM,Range,Meaning
+NPII,Collision,Collision,,cx_collision_severity,Collision severity,String,Direct,,,"(very-high, high, medium, low)"
+NPII,Collision,Collision,,cx_tipped_over,Tipped over status,boolean,Direct,,,
+NPII,Collision,Collision,,cx_pedestrain_crash,Pedestrain crash status,boolean,Direct,,,
+NPII,Collision,Collision,,cx_airbag_status,Airbag Deployment Status,boolean,Direct,,,

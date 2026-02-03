@@ -1,0 +1,900 @@
+{
+  "openapi": "3.0.0",
+  "x-stoplight": {
+    "id": "x9y1ertl5arow"
+  },
+  "servers": [
+    {
+      "url": "https://adlp-prod-api.cerebrumx.ai/api"
+    }
+  ],
+  "paths": {
+  "/v1/insurance/historical/complete-driver-data/{vin}": {
+    "parameters": [
+      {
+        "$ref": "#/components/parameters/vin"
+      }
+    ],
+    "post": {
+      "summary": "Get Complete Driver Data - Historical",
+      "operationId": "post-v1-insurance-historical-complete-driver-data-vin",
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/CompleteDriverData"
+        }
+      },
+      "x-stoplight": {
+        "id": "50i3twybwxpl9"
+      },
+      "description": "Get Complete Driver Data for 'vin' for last 'n' days from date 'endDate'.",
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/days"
+        },
+        {
+          "$ref": "#/components/parameters/endDate"
+        }
+      ],
+      "requestBody": {
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "type": "string",
+              "format": "byte",
+              "description": "Upload Valid Consent doc in pdf format. Max size 100 MB."
+            }
+          }
+        },
+        "description": "Upload Valid Consent doc in pdf format. Max size 100 MB."
+      },
+      "tags": [
+        "Historical"
+      ]
+    }
+  },
+  "/v1/insurance/historical/miles-driven/{vin}": {
+    "parameters": [
+      {
+        "schema": {
+          "type": "string"
+        },
+        "name": "vin",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "post": {
+      "summary": "Get Miles Driven - Historical",
+      "operationId": "post-v1-insurance-historical-miles-driven-vin",
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/MilesDriven"
+        }
+      },
+      "x-stoplight": {
+        "id": "w96soztdud1z6"
+      },
+      "description": "Get Miles Driven - Historical, for 'vin' using data of last 'n' days from date 'endDate'.",
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/days"
+        },
+        {
+          "$ref": "#/components/parameters/endDate"
+        }
+      ],
+      "requestBody": {
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "type": "string",
+              "format": "binary",
+              "description": "Upload valid consent doc in 'pdf' format. Max size 100 MB."
+            }
+          }
+        },
+        "description": "Upload valid consent doc in 'pdf' format. Max size 100 MB."
+      },
+      "tags": [
+        "Historical"
+      ]
+    }
+  },
+  "/v1/insurance/historical/driver-summary/{vin}": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "vin",
+          "in": "path",
+          "required": true
+        }
+      ],
+      "post": {
+        "summary": "Get Driver Summary - Historical",
+        "operationId": "post-v1-insurance-historical-driver-summary-vin",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/DriverSummary"
+          }
+        },
+        "x-stoplight": {
+          "id": "wiw6pr5d76mr5"
+        },
+        "description": "Get Driver Summary - Historical, for 'vin' for last 'n' days from date 'endDate'.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/days"
+          },
+          {
+            "$ref": "#/components/parameters/endDate"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "string",
+                "format": "binary",
+                "description": "Upload valid consent doc in 'pdf' format. Max size 100 MB."
+              }
+            }
+          },
+          "description": "Upload valid consent doc in 'pdf' format. Max size 100 MB."
+        },
+        "tags": [
+          "Historical"
+        ]
+      }
+  }
+  },
+  "components": {
+    "schemas": {
+      "LossLiftChartIntervalItem": {
+        "type": "object",
+        "properties": {
+          "intervalMin": {
+            "type": "integer"
+          },
+          "intervalMax": {
+            "type": "integer"
+          },
+          "relativeLoss": {
+            "type": "number"
+          }
+        },
+        "x-examples": {
+          "Example 1": {
+            "intervalMin": 0,
+            "intervalMax": 10,
+            "relativeLoss": 1.2
+          }
+        }
+      },
+      "FrequencyLiftChartIntervalItem": {
+        "title": "FrequencyLiftChartIntervalItem",
+        "x-stoplight": {
+          "id": "mpipif9ytc3nu"
+        },
+        "type": "object",
+        "properties": {
+          "intervalMin": {
+            "type": "integer",
+            "x-stoplight": {
+              "id": "0hnakd1rwlo8q"
+            }
+          },
+          "intervalMax": {
+            "type": "integer",
+            "x-stoplight": {
+              "id": "xxsbg3uvrzswt"
+            }
+          },
+          "frequency": {
+            "type": "number",
+            "x-stoplight": {
+              "id": "21ey167ap8xc0"
+            }
+          }
+        }
+      },
+      "VinWiseCollisionCountItem": {
+        "title": "VinWiseCollisionCountItem",
+        "x-stoplight": {
+          "id": "91cnpx8ngbl2x"
+        },
+        "type": "object",
+        "properties": {
+          "vin": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "b1r145fbhandy"
+            }
+          },
+          "count": {
+            "type": "integer",
+            "x-stoplight": {
+              "id": "tey7n40bffukn"
+            }
+          }
+        }
+      },
+      "Warning": {
+        "title": "Warning",
+        "x-stoplight": {
+          "id": "iympxpozgvaub"
+        },
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "veyu5ofrfbkcg"
+            }
+          },
+          "speed": {
+            "type": "number",
+            "x-stoplight": {
+              "id": "uqru9lqb2suox"
+            }
+          },
+          "acceleration": {
+            "type": "number",
+            "x-stoplight": {
+              "id": "90bgm0fjup17k"
+            }
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "message": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "wwxcsgmq6auk0"
+            }
+          },
+          "warningId": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "9cpo9ngqvu4c3"
+            }
+          }
+        }
+      },
+      "Location": {
+        "title": "Location",
+        "x-stoplight": {
+          "id": "b0qbyxfeotsz8"
+        },
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "x-stoplight": {
+              "id": "3qpek7vabmhn5"
+            }
+          },
+          "longitude": {
+            "type": "number",
+            "x-stoplight": {
+              "id": "rb0tv9l8x6z00"
+            }
+          }
+        }
+      },
+      "CollisionSummaryItem": {
+        "title": "CollisionSummaryItem",
+        "x-stoplight": {
+          "id": "gqmbe0ffol9wr"
+        },
+        "type": "object",
+        "properties": {
+          "tripId": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "ypb2z57udfdrx"
+            }
+          },
+          "eventList": {
+            "type": "array",
+            "x-stoplight": {
+              "id": "g50zj3kb5e94s"
+            },
+            "items": {
+              "$ref": "#/components/schemas/EventItem"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "x-stoplight": {
+              "id": "idk2ezm97jffj"
+            },
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/TripSummary"
+          }
+        }
+      },
+      "EventItem": {
+        "title": "EventItem",
+        "x-stoplight": {
+          "id": "1i01to3z27178"
+        },
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "tfsqa56q403af"
+            }
+          },
+          "speed": {
+            "type": "number",
+            "x-stoplight": {
+              "id": "ziv37smvebp26"
+            }
+          },
+          "acceleration": {
+            "type": "number",
+            "x-stoplight": {
+              "id": "ezh4iek1kesxg"
+            }
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          }
+        }
+      },
+      "TripSummary": {
+        "type": "object",
+        "x-stoplight": {
+          "id": "8d9adca4b6545"
+        },
+        "x-examples": {
+          "Example 1": {
+            "milesDriven": 3.14,
+            "driveTime": 1.21,
+            "nightTimeDrive": 0.141,
+            "rapidAccCount": 1,
+            "harshBrakingCount": 2,
+            "sharpTurnCount": 1,
+            "overSpeedingCount": 1,
+            "overSpeedingDuration": 0.314,
+            "collisionCount": 1,
+            "timeWithoutSeatbeltDriver": 0.21,
+            "airBagDeployedCount": 1,
+            "avgSpeed": 2.9
+          }
+        },
+        "properties": {
+          "milesDriven": {
+            "type": "number"
+          },
+          "driveTime": {
+            "type": "number"
+          },
+          "nightTimeDrive": {
+            "type": "number"
+          },
+          "rapidAccCount": {
+            "type": "integer"
+          },
+          "harshBrakingCount": {
+            "type": "integer"
+          },
+          "sharpTurnCount": {
+            "type": "integer"
+          },
+          "overSpeedingCount": {
+            "type": "integer"
+          },
+          "overSpeedingDuration": {
+            "type": "number"
+          },
+          "collisionCount": {
+            "type": "integer"
+          },
+          "timeWithoutSeatbeltDriver": {
+            "type": "number"
+          },
+          "airBagDeployedCount": {
+            "type": "integer"
+          },
+          "avgSpeed": {
+            "type": "number"
+          },
+          "seatBeltStatus": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "bh80uobg6b8la"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "clientCredentials": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://adlp-prod-api.cerebrumx.ai/ouath2/token",
+            "refreshUrl": "https://adlp-prod-api.cerebrumx.ai/ouath2/token",
+            "scopes": {}
+          }
+        }
+      }
+    },
+    "responses": {
+      "CompleteDriverData": {
+        "description": "completeDriverDataResponse",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "startDate": {
+                  "type": "string"
+                },
+                "endDate": {
+                  "type": "string"
+                },
+                "noOfTrips": {
+                  "type": "integer"
+                },
+                "tripFileUrls": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "summary": {
+                  "type": "object",
+                  "properties": {
+                    "milesDriven": {
+                      "type": "number"
+                    },
+                    "driveTime": {
+                      "type": "number"
+                    },
+                    "nightTimeDrive": {
+                      "type": "number"
+                    },
+                    "rapidAccCount": {
+                      "type": "integer"
+                    },
+                    "harshBrakingCount": {
+                      "type": "integer"
+                    },
+                    "sharpTurnCount": {
+                      "type": "integer"
+                    },
+                    "overSpeedingCount": {
+                      "type": "integer"
+                    },
+                    "overSpeedingDuration": {
+                      "type": "number"
+                    },
+                    "collisionCount": {
+                      "type": "integer"
+                    },
+                    "timeWithoutSeatbeltDriver": {
+                      "type": "number"
+                    },
+                    "airBagDeployedCount": {
+                      "type": "integer"
+                    },
+                    "avgSpeed": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "x-examples": {
+                "Example 1": {
+                  "startDate": "2023-08-12",
+                  "endDate": "2023-09-12",
+                  "noOfTrips": 2,
+                  "tripFileUrls": [
+                    "s3://path-to-trip-file-1.json",
+                    "s3://path-to-trip-file-2.json"
+                  ],
+                  "summary": {
+                    "milesDriven": 3.14,
+                    "driveTime": 1.21,
+                    "nightTimeDrive": 0.141,
+                    "rapidAccCount": 1,
+                    "harshBrakingCount": 2,
+                    "sharpTurnCount": 1,
+                    "overSpeedingCount": 1,
+                    "overSpeedingDuration": 0.314,
+                    "collisionCount": 1,
+                    "timeWithoutSeatbeltDriver": 0.21,
+                    "airBagDeployedCount": 1,
+                    "avgSpeed": 2.9
+                  }
+                }
+              }
+            }
+          },
+          "application/xml": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "startDate": {
+                  "type": "string"
+                },
+                "endDate": {
+                  "type": "string"
+                },
+                "noOfTrips": {
+                  "type": "integer"
+                },
+                "tripFileUrls": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "summary": {
+                  "type": "object",
+                  "properties": {
+                    "milesDriven": {
+                      "type": "number"
+                    },
+                    "driveTime": {
+                      "type": "number"
+                    },
+                    "nightTimeDrive": {
+                      "type": "number"
+                    },
+                    "rapidAccCount": {
+                      "type": "integer"
+                    },
+                    "harshBrakingCount": {
+                      "type": "integer"
+                    },
+                    "sharpTurnCount": {
+                      "type": "integer"
+                    },
+                    "overSpeedingCount": {
+                      "type": "integer"
+                    },
+                    "overSpeedingDuration": {
+                      "type": "number"
+                    },
+                    "collisionCount": {
+                      "type": "integer"
+                    },
+                    "timeWithoutSeatbeltDriver": {
+                      "type": "number"
+                    },
+                    "airBagDeployedCount": {
+                      "type": "integer"
+                    },
+                    "avgSpeed": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "x-examples": {
+                "Example 1": {
+                  "startDate": "2023-08-12",
+                  "endDate": "2023-09-12",
+                  "noOfTrips": 2,
+                  "tripFileUrls": [
+                    "s3://path-to-trip-file-1.json",
+                    "s3://path-to-trip-file-2.json"
+                  ],
+                  "summary": {
+                    "milesDriven": 3.14,
+                    "driveTime": 1.21,
+                    "nightTimeDrive": 0.141,
+                    "rapidAccCount": 1,
+                    "harshBrakingCount": 2,
+                    "sharpTurnCount": 1,
+                    "overSpeedingCount": 1,
+                    "overSpeedingDuration": 0.314,
+                    "collisionCount": 1,
+                    "timeWithoutSeatbeltDriver": 0.21,
+                    "airBagDeployedCount": 1,
+                    "avgSpeed": 2.9
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "DriverSummary": {
+        "description": "Example response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "x-examples": {
+                "Example 1": {
+                  "startDate": "2023-08-12",
+                  "endDate": "2023-09-12",
+                  "noOfTrips": 2,
+                  "summary": {
+                    "milesDriven": 3.14,
+                    "driveTime": 1.21,
+                    "nightTimeDrive": 0.141,
+                    "rapidAccCount": 1,
+                    "harshBrakingCount": 2,
+                    "sharpTurnCount": 1,
+                    "overSpeedingCount": 1,
+                    "overSpeedingDuration": 0.314,
+                    "collisionCount": 1,
+                    "timeWithoutSeatbeltDriver": 0.21,
+                    "airBagDeployedCount": 1,
+                    "avgSpeed": 2.9
+                  }
+                }
+              },
+              "properties": {
+                "startDate": {
+                  "type": "string"
+                },
+                "endDate": {
+                  "type": "string"
+                },
+                "noOfTrips": {
+                  "type": "integer"
+                },
+                "summary": {
+                  "$ref": "#/components/schemas/TripSummary"
+                }
+              }
+            }
+          }
+        }
+      },
+      "MilesDriven": {
+        "description": "Example response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "milesDriven": {
+                  "type": "number"
+                }
+              },
+              "x-examples": {
+                "Example 1": {
+                  "milesDriven": 10.9
+                }
+              }
+            }
+          }
+        }
+      },
+      "DriveRiskScore": {
+        "description": "Example response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "driverRiskScore": {
+                  "type": "number"
+                },
+                "suggestedDriverInsuranceFactor": {
+                  "type": "number"
+                }
+              },
+              "x-examples": {
+                "Example 1": {
+                  "driverRiskScore": 3.14,
+                  "suggestedDriverInsuranceFactor": 0.141
+                }
+              }
+            }
+          }
+        }
+      },
+      "LossLiftChart": {
+        "description": "Example response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "baseValue": {
+                  "type": "number",
+                  "x-stoplight": {
+                    "id": "drfr22eb4tgmv"
+                  }
+                },
+                "imageUrl": {
+                  "type": "string",
+                  "x-stoplight": {
+                    "id": "c5ufwmr1qrpf6"
+                  }
+                },
+                "intervalwiseRelativeLoss": {
+                  "type": "array",
+                  "x-stoplight": {
+                    "id": "qp6tkt3kn97n8"
+                  },
+                  "items": {
+                    "$ref": "#/components/schemas/LossLiftChartIntervalItem"
+                  }
+                }
+              }
+            }
+          },
+          "application/xml": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "baseValue": {
+                  "type": "string",
+                  "x-stoplight": {
+                    "id": "wxoeimhjirfxk"
+                  }
+                }
+              }
+            }
+          },
+          "multipart/form-data": {
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        }
+      },
+      "FrequencyLiftChart": {
+        "description": "Example response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "CollisionCount": {
+        "description": "Example response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "totalCollisionCount": {
+                  "type": "integer",
+                  "x-stoplight": {
+                    "id": "qtgon1kza963n"
+                  }
+                },
+                "vinWiseCollisionCount": {
+                  "type": "array",
+                  "x-stoplight": {
+                    "id": "y1p49cy215fzj"
+                  },
+                  "items": {
+                    "$ref": "#/components/schemas/VinWiseCollisionCountItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "CollisionSummary": {
+        "description": "Example response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "tripWiseCollisionSummary": {
+                  "type": "array",
+                  "x-stoplight": {
+                    "id": "i80vlb6gmlicb"
+                  },
+                  "items": {
+                    "$ref": "#/components/schemas/CollisionSummaryItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "days": {
+        "name": "days",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 90,
+          "default": 1
+        },
+        "description": "past no of days from endDate"
+      },
+      "endDate": {
+        "name": "endDate",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "format": "date",
+          "pattern": "yyyy-MM-dd"
+        },
+        "description": "Use data till this date"
+      },
+      "vin": {
+        "name": "vin",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 17,
+          "maxLength": 17
+        },
+        "description": "17 digit  unique vehicle identifier"
+      },
+      "startDate": {
+        "name": "startDate",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "format": "date",
+          "pattern": "yyyy-MM-dd"
+        },
+        "description": "Use data from this date."
+      },
+      "collisionDate": {
+        "name": "collisionDate",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "date",
+          "pattern": "yyyy-MM-dd"
+        },
+        "description": "Date of Collision"
+      }
+    },
+    "requestBodies": {
+      "HistoricalAPIRequest": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object"
+            }
+          },
+          "multipart/form-data": {
+            "schema": {
+              "type": "string",
+              "format": "binary",
+              "description": "Consent doc in pdf format. Max size 100MB."
+            }
+          }
+        },
+        "description": "Historical API Request"
+      }
+    }
+  },
+  "security": [
+    {
+      "clientCredentials": []
+    }
+  ]
+}

@@ -1,0 +1,483 @@
+ .content-sub-text {
+  background: #fa751a;
+  padding: 1px 6px;
+  font-size: 14px;
+  color: white;
+  font-weight: 500;
+  font-family: 'Poppins';
+}
+.viewMore{
+  background-color: transparent; color:#fa751a; font-size: 12px; font-weight: 500; font-family: 'Poppins'; background-color: none!important;
+  border:none!important
+  }
+
+  .nodatefound{
+    text-align: center;
+    margin-top: 27%;
+    font-size: 14px;
+    font-weight: 500;
+    color:#495057
+  }
+
+.dtc-icon{
+  height: 30px!important;
+  margin-top: 2px!important;
+}
+
+
+.content-right {
+  flex-grow: 1; /* Allows expansion */
+  width: 84%!important;
+}
+
+.chart-container {
+  position: relative; // This ensures the inner circle can be positioned relative to the chart
+}
+
+.table0{
+  height: 310px!important;
+  margin-left: -20px!important;
+  margin-right: -20px!important;
+}
+.content-sub-text2 {
+  color: #fa751a;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 5px;
+  font-family: 'Poppins';
+}
+
+.line{
+margin-left: -20px;
+margin-right: -20px;
+margin-top: -6px;
+}
+
+::ng-deep.apexcharts-xaxis-label {
+color: #000000 !important;
+font-size: 10px !important;
+font-family: 'Poppins' !important;
+font-weight: 400 !important;
+}
+
+.f-le{
+float: left;
+}
+
+.f-ri{
+float: right;
+margin-top: 5px;
+}
+
+.view-more{
+font-size: 12px;
+}
+
+.top-heading{
+  font-family: 'Poppins'!important;
+  font-size: 1.2rem!important;
+  font-weight: 600!important;
+  color:#000
+}
+
+.newFleet{
+  background-color: #FA751A!important;
+  border: 1px solid #FA751A;
+  font-family: 'Poppins';
+  color:#ffffff;
+  width: 100%;
+}
+
+::ng-deep .ng-select-container{
+  background-color: #fb8a3c!important;
+  border:1px solid #fb8a3c!important
+}
+.card-heading {
+  font-family: 'Poppins' !important;
+  font-size: 0.900rem !important;
+  font-weight: 500 !important;
+  color: #000
+}
+
+.text{
+  text-decoration: none!important;
+}
+
+.months-text {
+  font-size: 10px !important;
+  color: #6C757E !important;
+}
+
+.chart-label {
+  font-size: 10px;
+  color: #000;
+  font-family: 'Poppins';
+}
+
+.mr-12-left{
+  margin-left:-30px
+}
+
+::ng-deep .chart-label-x {
+  fill: #000000 !important;
+  font-size: 11px!important;
+  font-family: 'Poppins'!important;
+}
+
+::ng-deep .apex-charts text {
+  color: #000000;
+  text-shadow: none!important;
+  font-family: 'Poppins' !important;
+}
+.newSelect {
+  color: #9fa19f;
+  width: 100%;
+  height: 37px !important;
+  background-size: 10px 12px !important;
+  font-family: "Poppins" !important;
+  border-radius: 10px !important
+}
+
+.page-aling-l {
+  float: left !important;
+}
+
+
+.loading-text {
+  color: white;
+}
+
+.heading-title {
+  line-height: 33px !important;
+  text-align: left !important;
+  font-weight: 600 !important;
+}
+
+
+.bd-w {
+  width: 40% !important;
+}
+
+.page-align-r {
+  float: right !important;
+}
+
+.per-icon {
+  height: 24px !important
+}
+
+.no-img-m {
+  margin-top: -16px !important
+}
+
+.miles-chart {
+  margin-left: -20px;
+  margin-right: -15px;
+}
+
+.h-box {
+  height: 290px !important;
+}
+
+.mr-t09 {
+  margin-top: 9px !important;
+}
+
+.mr-15 {
+  margin-top: 15px !important;
+}
+
+.mr-7 {
+  margin-top: -7px !important
+}
+
+.mr-6 {
+  margin-top: 6px;
+}
+
+.mr-co {
+  color: grey !important
+}
+
+
+.options-icon {
+  height: 18px;
+  margin: 4px 10px 6px 0px;
+}
+
+.nav-tabs .nav-link.active, .nav-tabs .nav-item.show .nav-link {
+  color: #ef8321!important;
+
+  font-family: 'Poppins';
+}
+
+.nav-tabs .nav-link {
+font-family: 'Poppins'!important;
+}
+
+.actives {
+  color:#fff;
+  font-family: 'Neo Sans Pro', 'Helvetica', 'Arial', 'Lucida', sans-serif!important;
+ }
+.maintenance-table{
+  width: 150%;
+  }
+.maintenance-table-heading{
+width: 60%!important;
+}
+
+.consumer{
+  color: #9fa19f!important;
+  font-family: "Poppins" !important;
+  font-size: 1rem!important;
+  font-weight: 400!important;
+  line-height: 1.5!important;
+  margin-top: -6px;
+}
+
+.maintenance-table-heading2{
+width: 20%!important;
+}
+
+.f-ril {
+float: right;
+}
+
+.months-text {
+font-size: 10px !important;
+color: #6C757E !important;
+}
+
+
+.user-icon{
+float: left;
+margin-top: -10px;
+margin-right: 10px;
+}
+
+.user-icon-font{
+font-size: 26px;
+  font-weight: 400;
+}
+
+.icon{
+height: 20px;
+margin-top: 10px;
+}
+
+.line{
+margin-left: -20px;
+margin-right: -20px;
+margin-top: -6px;
+}
+
+::ng-deep.apexcharts-xaxis-label {
+color: #000000 !important;
+font-size: 10px !important;
+font-family: 'Poppins' !important;
+font-weight: 400 !important;
+}
+
+.f-le{
+float: left;
+}
+
+.f-ri{
+float: right;
+margin-top: 5px;
+}
+
+.newSelect1 {
+  color: #9fa19f;
+  width: 100%;
+  height: 37px !important;
+  background-size: 10px 12px !important;
+  font-family: 'Poppins' !important;
+  height: 37px !important;
+  border-radius: 10px !important
+}
+
+::ng-deep.newSelect1 .ng-select-container{
+  background-color: #FA751A!important;
+}
+
+::ng-deep.newSelect1.ng-select .ng-select-container .ng-value-container .ng-placeholder {
+  color: #ffffff!important;
+}
+
+::ng-deep.newSelect1.ng-select.ng-select-opened>.ng-select-container .ng-arrow {
+  top: -2px;
+  border-color: transparent transparent #ffffff!important;
+  border-width: 0 5px 5px;
+}
+
+::ng-deep.newSelect1.ng-select.ng-select-single .ng-select-container .ng-value-container .ng-value {
+  color:#ffffff!important
+}
+
+::ng-deep.newSelect1.ng-select .ng-clear-wrapper {
+  color: #ffffff!important;
+}
+
+::ng-deep.newSelect1.ng-select .ng-arrow-wrapper .ng-arrow {
+  border-color: #fff transparent transparent!important;
+  border-style: solid;
+  border-width: 5px 5px 2.5px;
+}
+
+.active-heading{
+  float: right;
+  color: #808593!important;
+  font-weight: 500;
+  font-size: 13px;
+  font-family: 'Poppins';
+  width: 14%!important;
+}
+
+.active-data{
+  color: #3d3d3d!important;
+  font-size:14px;
+  font-weight: 600;
+  font-family: 'Poppins';
+}
+
+.box {
+  height: 80px;
+  border: 1px solid #F6C5C5;
+  border-radius: 8px;
+  margin-right: 12px;
+  width: 48.5%
+}
+
+.content-section-heading {
+  padding-top: 4%;
+  padding-left: 1%;
+  color: #3d3d3d;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: "Poppins";
+  height: 45px;
+
+  .text_number {
+    font-size: 22px;
+    font-weight: 600;
+    font-family: 'Poppins';
+  }
+
+  .text_number2 {
+    font-size: 22px;
+    font-weight: 600;
+    font-family: 'Poppins';
+  }
+}
+
+.icon-loading{
+  font-size: 20px;
+}
+
+
+.tablecol{
+  width: 16%!important;
+  padding-top: 20px;
+  font-size: 12px;
+  color: #989EA5;
+  font-weight: 600;
+  font-family: 'Poppins';
+}
+
+.tablecol1{
+  width: 12%!important;
+  padding-top: 20px;
+  font-size: 12px;
+  color: #989EA5;
+  font-weight: 600;
+  font-family: 'Poppins';
+}
+
+.tablecol2{
+  width: 13%!important;
+  padding-top: 20px;
+  font-size: 12px;
+  color: #989EA5;
+  font-weight: 600;
+  font-family: 'Poppins';
+}
+
+.tablecol3{
+  width: 8%!important;
+  padding-top: 20px;
+  font-size: 12px;
+  color: #989EA5;
+  font-weight: 600;
+  font-family: 'Poppins';
+}
+
+.tablecol5{
+  width: 8%;
+  padding-top: 20px;
+  font-size: 12px;
+  color: #989EA5;
+  font-weight: 600;
+  font-family: 'Poppins';
+}
+
+.input-vin {
+  text-transform: capitalize !important;
+  border-radius: 10px !important;
+  height: 37px !important;
+  font-family: 'Poppins' !important;
+}
+
+.table-head {
+  background-color: #fff !important;
+  font-family: 'Poppins' !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+.table-body {
+  max-height: 350px;
+  /* Adjust based on header height */
+  overflow-y: auto;
+}
+
+.table-body table {
+  width: 100%;
+}
+
+.data-container {
+  margin-top: -200px;
+  text-align: center;
+}
+
+
+.tire-img{
+  height: 160px;
+}
+
+
+
+.table-scrooling {
+  height: 290px;
+  margin-top: 12px;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
+.line {
+  margin-left: -20px;
+  margin-right: -20px;
+  margin-top: -6px;
+}
+
+.summary-detail {
+  padding-top: 16px;
+  padding-left: 24px;
+  margin-bottom: -8px;
+}
+
+.top-row {
+  margin-top: 36px;
+  margin-left: 10px;
+  margin-bottom: 36px;
+}

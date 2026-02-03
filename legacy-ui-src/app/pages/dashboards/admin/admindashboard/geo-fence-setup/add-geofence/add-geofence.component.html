@@ -1,0 +1,373 @@
+<!--Page main content-->
+<div class="page-content page-content-main">
+  <div class="row sideMenuItem">
+    <div class="container">
+     <!-- Main Content Right-->
+     <div class="col-xs-12 content-right">
+      <div class="row">
+        <div class="col-xs-12 col-lg-12">
+          <span class="breadcrumb-left">
+            <h1 class="login-headline heading-title">Set Geofence</h1>
+          </span>
+          <span class="breadcrumb-right mr-8">
+            <ol class="breadcrumb">
+              <ng-container *ngIf="user =='admin'">
+                <li class="breadcrumb-item">
+                  <a routerLink="/adlp/admin" class="breadcrumb-h6"><i class="bx bx-home-circle"></i></a>
+                </li>
+                <li class="breadcrumb-item inactive-bread"><a routerLink="/adlp/admin/dashboardAdmin">Dashboard</a></li>
+                <li class="breadcrumb-item text-selected active-bread"><a
+                    routerLink="/adlp/admin/admindashboard/geoFenceSetup/geofence">Manage Geofence</a></li>
+                <li class="breadcrumb-item text-selected active-bread">Set Geofence</li>
+              </ng-container>
+              <ng-container *ngIf="user !='admin'">
+                <li class="breadcrumb-item">
+                  <a routerLink="/adlp/admin/admindashboard/dashboardfleet" class="breadcrumb-h6"><i
+                      class="bx bx-home-circle"></i></a>
+                </li>
+                <li class="breadcrumb-item inactive-bread"><a
+                    routerLink="/adlp/admin/admindashboard/dashboardfleet">Dashboard</a></li>
+                <li class="breadcrumb-item inactive-bread"><a
+                    routerLink="/adlp/admin/admindashboard/geoFenceSetup/geofence">Manage Geofence</a></li>
+                <li class="breadcrumb-item text-selected active-bread">Set Geofence</li>
+              </ng-container>
+            </ol>
+          </span>
+        </div>
+      </div>
+      <!-- Heading and Breadcrumb End-->
+      <!-- Consumer and Fleet Id Filter -->
+      <form [formGroup]="geofenceForm">
+      <div class="row consumer-pad">
+        <div class="col-xs-12 col-lg-2">
+          <ng-container *ngIf="this.user === 'admin'">
+            <select class="form-select consumer-select no-border"
+            [formControl]="geofenceForm.get('consumerId')"
+            (change)="selectConsumer()">
+      <option value="" disabled hidden>Select Consumer</option>
+      <option value="All">Consumer</option>
+      <option *ngFor="let consumer of consumerList" [value]="consumer.id">
+        {{ consumer.name }}
+      </option>
+    </select>
+          </ng-container>
+        </div>
+      </div>
+      <!-- Consumer End-->
+      <!-- Form Start-->
+        <div class="row">
+          <ng-container *ngIf="user === 'admin'"><div class="col-xs-12 col-lg-6">&nbsp;</div></ng-container>
+          <ng-container *ngIf="user === 'role_consumer_fleet'"><div class="col-xs-12 col-lg-6">&nbsp;</div></ng-container>
+          <ng-container *ngIf="user === 'role_user_fleet'"><div class="col-xs-12 col-lg-8">&nbsp;</div></ng-container>
+          <ng-container *ngIf="user === 'role_org_group'"><div class="col-xs-12 col-lg-10">&nbsp;</div></ng-container>
+          <ng-container *ngIf="user === 'admin'">
+            <div class="col-xs-12 col-lg-2" style="margin-top: -24px;">
+            <div class="add-button" tooltip="Add Bulk Geofence" (click)="bulkGeofenceData()"><b>+</b> Bulk Geofence</div>
+            </div>
+            <div class="col-xs-12 col-lg-2" style="margin-top: -24px;">
+              <ng-select [searchable]="true" class="newSelect1" [clearable]="true" placeholder="Organization Id/Name"
+                [(ngModel)]="fleetIdData" formControlName="fleetId"  (change)="onFleetIdChange()">
+                <ng-option *ngFor="let fleet of fleetList" value="{{ fleet.id }}">{{ fleet.id }} - [{{ fleet.name
+                  }}]</ng-option>
+              </ng-select>
+            </div>
+            <div class="col-xs-12 col-lg-2" style="margin-top: -24px;">
+              <ng-select
+            [searchable]="true"
+            class="newSelect1"
+            [clearable]="true"
+            placeholder="Group Name"
+            [items]="groupList"
+            bindLabel="name"
+            bindValue="id"
+            [(ngModel)]="groupIdData"
+            (change)="onGroupIdChange($event)">
+
+            <ng-template ng-option-tmp let-item="item">
+              <span [ngStyle]="{ 'padding-left.px': item.level * 18 }">
+                {{ item.name }}
+              </span>
+            </ng-template>
+          </ng-select>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="user === 'role_consumer_fleet'">
+            <div class="col-xs-12 col-lg-2">
+            <div class="add-button" tooltip="Add Bulk Geofence" (click)="bulkGeofenceData()"><b>+</b> Bulk Geofence</div>
+            </div>
+            <div class="col-xs-12 col-lg-2">
+              <ng-select [searchable]="true" class="newSelect1" [clearable]="true" placeholder="Organization Id/Name"
+                [(ngModel)]="fleetIdData" formControlName="fleetId" (change)="onFleetIdChange()">
+                <ng-option *ngFor="let fleet of fleetList" value="{{ fleet.id }}">{{ fleet.id }} - [{{ fleet.name
+                  }}]</ng-option>
+              </ng-select>
+            </div>
+            <div class="col-xs-12 col-lg-2">
+              <ng-select
+            [searchable]="true"
+            class="newSelect1"
+            [clearable]="true"
+            placeholder="Group Name"
+            [items]="groupList"
+            bindLabel="name"
+            bindValue="id"
+            [(ngModel)]="groupIdData"
+            (change)="onGroupIdChange($event)">
+
+            <ng-template ng-option-tmp let-item="item">
+              <span [ngStyle]="{ 'padding-left.px': item.level * 18 }">
+                {{ item.name }}
+              </span>
+            </ng-template>
+          </ng-select>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="user === 'role_org_group'">
+          <div class="col-xs-12 col-lg-2" style="margin-top: 6px;">
+            <ng-select
+            [searchable]="true"
+            class="newSelect1"
+            [clearable]="true"
+            placeholder="Group Name"
+            [items]="groupList"
+            bindLabel="name"
+            bindValue="id"
+            [(ngModel)]="groupIdData"
+            (change)="onGroupIdChange($event)">
+
+            <ng-template ng-option-tmp let-item="item">
+              <span [ngStyle]="{ 'padding-left.px': item.level * 18 }">
+                {{ item.name }}
+              </span>
+            </ng-template>
+          </ng-select>
+          </div>
+        </ng-container>
+        <ng-container *ngIf="user === 'role_user_fleet'">
+          <div class="col-xs-12 col-lg-2">
+            <div class="add-button" tooltip="Add Bulk Geofence" (click)="bulkGeofenceData()"><b>+</b> Bulk Geofence</div>
+            </div>
+          <div class="col-xs-12 col-lg-2">
+            <ng-select
+            [searchable]="true"
+            class="newSelect1"
+            [clearable]="true"
+            placeholder="Group Name"
+            [items]="groupList"
+            bindLabel="name"
+            bindValue="id"
+            [(ngModel)]="groupIdData"
+            (change)="onGroupIdChange($event)">
+
+            <ng-template ng-option-tmp let-item="item">
+              <span [ngStyle]="{ 'padding-left.px': item.level * 18 }">
+                {{ item.name }}
+              </span>
+            </ng-template>
+          </ng-select>
+          </div>
+        </ng-container>
+        </div>
+       <!-- Form Start-->
+       <div class="row">
+        <div class="col-5">
+          <div class="card">
+            <div class="row" style="line-height: 20px;">
+              <div class="col-7">
+                <input type="text" formControlName="name" class="form-input" id=""
+                  placeholder="Enter Geofence name" />
+                  <div *ngIf="geofenceForm.get('name')?.errors && geofenceForm.get('name')?.touched" style="height:12px; margin-top: 3px; color:#ff0000">
+                    Enter geofence name
+                  </div>
+              </div>
+              <div class="col-5">
+                <ng-select
+                [items]="locationType"
+                bindLabel="label"
+                [addTag]="true"
+                [hideSelected]="true"
+                [searchable]="true"
+                placeholder="Enter Location Type"
+                formControlName="locationType"
+                [notFoundText]="' '">
+              </ng-select>
+
+              <!-- Validation -->
+              <div *ngIf="geofenceForm.get('locationType')?.errors && geofenceForm.get('locationType')?.touched"
+                   style="height:12px!important; margin-top: 3px; color:#ff0000">
+                Enter location type
+              </div>
+
+              </div>
+            </div>
+
+            <div class="row" style="margin-top: 12px; margin-bottom: 6px;">
+              <div class="col-xs-12 col-lg-6">
+                <label class="form-label geofenceAdd">Geofence Type
+                </label>
+                <ng-select
+                [items]="geofenceTypes"
+                bindLabel="label"
+                bindValue="value"
+                placeholder="Geofence Type"
+                formControlName="geofenceType">
+              </ng-select>
+              </div>
+             <!-- Radius Input for Circle -->
+<div class="col-xs-12 col-lg-6" *ngIf="geofenceForm.get('geofenceType')?.value === 'CIRCLE'">
+<label class="form-label geofenceAdd">Radius (in meters)</label>
+<input
+disabled
+type="number"
+formControlName="radius"
+class="form-input"
+placeholder="Radius" />
+</div>
+
+            </div>
+            <div class="row" style="margin-top: 6px; margin-bottom: 6px;">
+              <div class="col-xs-12 col-lg-12">
+                <label class="form-label geofenceAdd">Address
+                </label>
+                <input
+                #addressInput
+                id="address"
+                type="text"
+                class="form-input"
+                placeholder="Address"
+                formControlName="address"
+                autocomplete="off"
+              />
+
+              </div>
+            </div>
+            <div class="row" style="margin-top: 6px; margin-bottom: 6px;">
+              <div class="col-xs-12 col-lg-12">
+                <label class="form-label geofenceAdd">Selected Latitude/Longitude
+                </label>
+                <input
+                placeholder="Selected Latitude/Longitude"
+                formControlName="latlng"
+                type="textarea"
+                name="selectedLatLng"
+                class="form-input"
+                disabled
+              />
+              </div>
+            </div>
+            <div class="row" style="margin-top: 6px; margin-bottom: 6px;">
+              <div class="col-xs-12 col-lg-12">
+                <label class="form-label geofenceAdd">Speed Limit (mph)
+                </label>
+                <input
+                placeholder="Enter speed"
+                formControlName="speedLimit"
+                type="number"
+                class="form-input" min="0" />
+
+              <!-- Error Message -->
+              <div *ngIf="geofenceForm.get('speedLimit')?.errors?.['max'] && geofenceForm.get('speedLimit')?.touched" style=" height:12px!important; margin-top: 3px; color:#ff0000">
+                Speed should be less than 200
+              </div>
+              </div>
+            </div>
+            <div class="buttonend" style="margin-top: 12px;">
+              <ng-container *ngIf="this.user === 'admin'">
+                <button
+                  class="gray-button"
+                  (click)="validateBeforeSubmit(errorModal)">
+                  Save Geofence
+                </button>
+              </ng-container>
+              <ng-container *ngIf="this.user === 'role_consumer_fleet'">
+                <button
+                  class="gray-button"
+                  [ngClass]="{ 'disabled': !fleetIdData }"
+                  (click)="validateBeforeSubmit(errorModal)">
+                  Save Geofence
+                </button>
+              </ng-container>
+              <ng-container *ngIf="this.user === 'role_org_group'">
+                <button
+                  class="gray-button"
+                  (click)="validateBeforeSubmit(errorModal)">
+                  Save Geofence
+                </button>
+              </ng-container>
+              <ng-container *ngIf="this.user === 'role_user_fleet'">
+                <button
+                  class="gray-button"
+                  (click)="validateBeforeSubmit(errorModal)">
+                  Save Geofence
+                </button>
+              </ng-container>
+              <ng-template #errorModal let-modal>
+                <div class="modal-header">
+                  <button
+                    type="button"
+                    class="btn-close"
+                    aria-label="Close"
+                    (click)="modal.dismiss('Cross click')">
+                  </button>
+                </div>
+                <div class="modal-body modal-height">
+                  <h5 class="heading-show">{{ errorMessage }}</h5>
+                </div>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+        <div class="col-xs-12 col-lg-7">
+          <div class="map-container">
+          <div class="map-toggle-group">
+            <button [class.active]="currentMapType === 'roadmap'" (click)="setMapType('roadmap')">
+              Map
+            </button>
+            <button [class.active]="currentMapType === 'satellite'" (click)="setMapType('satellite')">
+              Satellite
+            </button>
+          </div>
+          <agm-map
+          [latitude]="latitude"
+          [longitude]="longitude"
+          [styles]="mapStyles"
+          [zoom]="zoom"
+          [mapTypeId]="currentMapType"
+          [fullscreenControl]="true"
+          (mapReady)="onMapReady($event)"
+          style="height: 29rem;"
+        >
+          <!-- marker will only render once we have valid coords -->
+          <agm-marker
+            *ngIf="latitude && longitude"
+            [latitude]="latitude"
+            [longitude]="longitude"
+            [markerDraggable]="true"
+          ></agm-marker>
+        </agm-map>
+        </div>
+        </div>
+      </div>
+    </form>
+    <!--Form End-->
+    </div>
+  </div>
+</div>
+</div>
+<!--Page main content end-->
+<!-- <div #mapContainer id="map" style="height: 500px; width: 100%;"></div> -->
+<!-- <agm-map
+[latitude]="latitude"
+[longitude]="longitude"
+[zoom]="zoom"
+style="height: 600px"
+>
+<agm-drawing-manager
+  (polygonComplete)="polygonCreated($event)"
+  [drawingControl]="managerOptions.drawingControl"
+  [drawingControlOptions]="managerOptions.drawingControlOptions"
+  [polygonOptions]="managerOptions.polygonOptions"
+  [drawingMode]="managerOptions.drawingMode"
+>
+</agm-drawing-manager>
+</agm-map> -->

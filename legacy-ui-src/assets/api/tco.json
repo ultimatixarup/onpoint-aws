@@ -1,0 +1,739 @@
+{
+  "openapi": "3.0.0",
+  "servers": [
+    {
+      "url": "https://adlp-prod-api.cerebrumx.ai/api"
+    }
+  ],
+  "paths": {
+    "/consumer/fleet/get-tco-by-vin/{vin}": {
+      "get": {
+        "tags": [
+          "Total Cost of Ownership (TCO)"
+        ],
+        "summary": "Get TCO by VIN",
+        "description": "Get TCO by VIN",
+        "operationId": "get-consumer-fleet-get-tco-by-vin-vin",
+        "parameters": [
+          {
+            "name": "vin",
+            "in": "path",
+            "description": "17 digit. unique vehicle identifier.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TCO"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ClientCredentials": []
+          }
+        ],
+        "servers": [
+          {
+            "url": "https://adlp-prod-api.cerebrumx.ai/api"
+          }
+        ]
+      }
+    },
+    "/consumer/fleet/get-tco-by-fleetId/{fleetId}": {
+      "get": {
+        "tags": [
+          "Total Cost of Ownership (TCO)"
+        ],
+        "summary": "GET TCO by fleetId",
+        "description": "GET TCO by fleetId",
+        "operationId": "get-consumer-fleet-get-tco-by-fleetId-fleetId",
+        "parameters": [
+          {
+            "name": "fleetId",
+            "in": "path",
+            "description": "unique integer fleetId of a Fleet",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TCO"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ClientCredentials": []
+          }
+        ],
+        "servers": [
+          {
+            "url": "https://adlp-prod-api.cerebrumx.ai/api"
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ClientCredentials": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "refreshUrl": "https://adlp-prod-api.cerebrumx.ai/oauth2/token",
+            "scopes": {},
+            "tokenUrl": "https://adlp-prod-api.cerebrumx.ai/oauth2/token"
+          }
+        }
+      }
+    },
+    "schemas": {
+      "AdlpVehicleAlertList": {
+        "type": "object",
+        "properties": {
+          "adlpVehicleAlertsList": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdlpVehicleAlert"
+            }
+          }
+        }
+      },
+      "AdlpVehicleAlert": {
+        "type": "object",
+        "properties": {
+          "alertId": {
+            "type": "string"
+          },
+          "alertDescription": {
+            "type": "string"
+          },
+          "alertTimeStamp": {
+            "type": "string"
+          },
+          "alertStatus": {
+            "type": "boolean"
+          },
+          "adlpVehicleLocation": {
+            "$ref": "#/components/schemas/AdlpVehicleLocation"
+          }
+        }
+      },
+      "AdlpVehicleLocation": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "heading": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "TyreStatus": {
+        "type": "object",
+        "properties": {
+          "fl": {
+            "type": "number",
+            "description": "Front left.",
+            "format": "double"
+          },
+          "fr": {
+            "type": "number",
+            "description": "Front right.",
+            "format": "double"
+          },
+          "bl": {
+            "type": "number",
+            "description": "Back left.",
+            "format": "double"
+          },
+          "br": {
+            "type": "number",
+            "description": "Back right.",
+            "format": "double"
+          }
+        }
+      },
+      "AdlpVehicleEngineOil": {
+        "type": "object",
+        "properties": {
+          "lifeRemaining": {
+            "type": "number",
+            "description": "OilLife in percent.",
+            "format": "double"
+          }
+        }
+      },
+      "AdlpOdometer": {
+        "type": "object",
+        "properties": {
+          "odometer": {
+            "type": "number",
+            "format": "double"
+          },
+          "unit": {
+            "type": "string",
+            "description": "possible value km/mi."
+          }
+        }
+      },
+      "FuelRange": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number",
+            "format": "double"
+          },
+          "unit": {
+            "type": "string",
+            "description": "possible value km/mi."
+          }
+        }
+      },
+      "FuelLevel": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number",
+            "format": "double"
+          },
+          "percentageRemaining": {
+            "type": "number",
+            "format": "double"
+          },
+          "unit": {
+            "type": "string",
+            "description": "value in gallon"
+          }
+        }
+      },
+      "EVRange": {
+        "type": "object",
+        "properties": {
+          "evRange": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unit": {
+            "type": "string",
+            "description": "possible values in km/mi."
+          }
+        }
+      },
+      "EVLevel": {
+        "type": "object",
+        "properties": {
+          "evLevel": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unit": {
+            "type": "string",
+            "description": "value in percent."
+          }
+        }
+      },
+      "AdlpVehicleBattery": {
+        "type": "object",
+        "properties": {
+          "batteryLevel": {
+            "type": "number",
+            "format": "double"
+          },
+          "percentageRemaining": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "Speed": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number",
+            "format": "double"
+          },
+          "unit": {
+            "type": "string",
+            "description": "possible value km/h,m/s."
+          }
+        }
+      },
+      "Acceleration": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number",
+            "format": "double"
+          },
+          "unit": {
+            "type": "string",
+            "description": "possible value m/s^2."
+          }
+        }
+      },
+      "TCO": {
+        "type": "object",
+        "description": "TCO",
+        "properties": {
+          "years": {
+            "type": "integer"
+          },
+          "fuelCostInDollarPerGallon": {
+            "type": "number"
+          },
+          "averageMilesPerGallon": {
+            "type": "number"
+          },
+          "fuelTaxInDollarPerGallon": {
+            "type": "integer"
+          },
+          "odometerReadingInMiles": {
+            "type": "integer"
+          },
+          "costOfVehicleInDollarAsPerNHTSA": {
+            "type": "integer"
+          },
+          "state": {
+            "type": "string"
+          },
+          "mileagePerYearInMiles": {
+            "type": "object",
+            "properties": {
+              "2023": {
+                "type": "integer"
+              },
+              "2024": {
+                "type": "integer"
+              },
+              "2025": {
+                "type": "integer"
+              },
+              "2026": {
+                "type": "integer"
+              }
+            }
+          },
+          "fuelCostInDollarPerYear": {
+            "type": "object",
+            "properties": {
+              "2023": {
+                "type": "number"
+              },
+              "2024": {
+                "type": "number"
+              },
+              "2025": {
+                "type": "number"
+              }
+            }
+          },
+          "fuelTaxInDollarPerYear": {
+            "type": "object"
+          },
+          "totalEstimatedYearlyCost": {
+            "type": "object",
+            "properties": {
+              "2023": {
+                "type": "number"
+              },
+              "2024": {
+                "type": "number"
+              },
+              "2025": {
+                "type": "number"
+              }
+            }
+          },
+          "totalEstimatedYearlyOverAllCost": {
+            "type": "number"
+          },
+          "resaleValueInDollar": {
+            "type": "integer"
+          },
+          "yearlyDepreciationCostInDollarPerYear": {
+            "type": "object",
+            "properties": {
+              "2023": {
+                "type": "number"
+              },
+              "2024": {
+                "type": "number"
+              },
+              "2025": {
+                "type": "number"
+              },
+              "2026": {
+                "type": "number"
+              },
+              "2027": {
+                "type": "number"
+              },
+              "2028": {
+                "type": "number"
+              },
+              "2029": {
+                "type": "number"
+              },
+              "2030": {
+                "type": "number"
+              },
+              "2031": {
+                "type": "number"
+              }
+            }
+          },
+          "insuranceCostInDollarPerYear": {
+            "type": "object"
+          },
+          "repairCostInDollarPerYear": {
+            "type": "object",
+            "properties": {
+              "2020": {
+                "type": "integer"
+              },
+              "2021": {
+                "type": "integer"
+              },
+              "2022": {
+                "type": "integer"
+              },
+              "2023": {
+                "type": "integer"
+              },
+              "2024": {
+                "type": "integer"
+              },
+              "2025": {
+                "type": "integer"
+              },
+              "2026": {
+                "type": "integer"
+              }
+            }
+          },
+          "maintenanceCostInDollarPerYear": {
+            "type": "object",
+            "properties": {
+              "2023": {
+                "type": "number"
+              },
+              "2024": {
+                "type": "number"
+              },
+              "2025": {
+                "type": "number"
+              },
+              "2026": {
+                "type": "number"
+              }
+            }
+          },
+          "basePrice": {
+            "type": "integer"
+          },
+          "stateFee": {
+            "type": "integer"
+          },
+          "annualInsurance": {
+            "type": "integer"
+          },
+          "annualMaintenance": {
+            "type": "number"
+          },
+          "totalFuelConsumed": {
+            "type": "number"
+          },
+          "cxTotalFuelConsumedPerYear": {
+            "type": "number"
+          }
+        },
+        "x-examples": {
+          "Example 1": {
+            "years": 0,
+            "fuelCostInDollarPerGallon": 3.6697331378299145,
+            "averageMilesPerGallon": 42157.11397371124,
+            "fuelTaxInDollarPerGallon": 0,
+            "odometerReadingInMiles": 0,
+            "costOfVehicleInDollarAsPerNHTSA": 0,
+            "state": "Pennsylvania",
+            "mileagePerYearInMiles": {
+              "2023": 17868817,
+              "2024": 17868817,
+              "2025": 17868817,
+              "2026": 17868817
+            },
+            "fuelCostInDollarPerYear": {
+              "2023": 683308.6691693728,
+              "2024": 717474.1026278415,
+              "2025": 753347.8077592336
+            },
+            "fuelTaxInDollarPerYear": {},
+            "totalEstimatedYearlyCost": {
+              "2023": 5020658.370569375,
+              "2024": 6012186.432827841,
+              "2025": 6877806.507559231
+            },
+            "totalEstimatedYearlyOverAllCost": 17910651.310956437,
+            "resaleValueInDollar": 0,
+            "yearlyDepreciationCostInDollarPerYear": {
+              "2023": 21.969736070381266,
+              "2024": 28.241114369501492,
+              "2025": 34.38542521994134,
+              "2026": 41.230410557184776,
+              "2027": 48.66689149560121,
+              "2028": 46.68692082111438,
+              "2029": 43.5609384164223,
+              "2030": 19.62278592375365,
+              "2031": 2.8861290322580655
+            },
+            "insuranceCostInDollarPerYear": {},
+            "repairCostInDollarPerYear": {
+              "2020": 4092,
+              "2021": 5797,
+              "2022": 6138,
+              "2023": 6479,
+              "2024": 7502,
+              "2025": 9889,
+              "2026": 10230
+            },
+            "maintenanceCostInDollarPerYear": {
+              "2023": 1029696.3531000005,
+              "2024": 1258258.8741000004,
+              "2025": 1373695.9540999993,
+              "2026": 1390608.5940999996
+            },
+            "basePrice": 11583373,
+            "stateFee": 14626,
+            "annualInsurance": 737422,
+            "annualMaintenance": 1029696.3531000005,
+            "totalFuelConsumed": 215198.4456603736,
+            "cxTotalFuelConsumedPerYear": 186108.1305082722
+          }
+        }
+      },
+      "DriverScoreRequest": {
+        "type": "object",
+        "description": "Driver Score Request",
+        "properties": {
+          "vin": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          }
+        },
+        "x-examples": {
+          "Example 1": {
+            "vin": "1HD1KEM15CB610062",
+            "duration": "MONTH",
+            "startDate": "yyyy-MM-dd",
+            "endDate": "yyyy-MM-dd"
+          }
+        }
+      },
+      "DriverScoreResponse": {
+        "type": "object",
+        "description": "Driver Score Response",
+        "properties": {
+          "driverRiskFactor": {
+            "type": "integer"
+          },
+          "driverScore": {
+            "type": "integer"
+          },
+          "duration": {
+            "type": "integer"
+          }
+        },
+        "x-examples": {
+          "Example 1": {
+            "driverRiskFactor": 0,
+            "driverScore": 0,
+            "duration": 0
+          }
+        }
+      },
+      "DriverSummaryRequest": {
+        "type": "object",
+        "description": "Driver Summary Request",
+        "properties": {
+          "vin": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          }
+        },
+        "x-examples": {
+          "Example 1": {
+            "vin": "1HD1KEM15CB610062",
+            "duration": "MONTH",
+            "startDate": "yyyy-MM-dd",
+            "endDate": "yyyy-MM-dd"
+          }
+        }
+      },
+      "DriverSummaryResponse": {
+        "type": "object",
+        "description": "Driver Summary Response",
+        "properties": {
+          "milesDriven": {
+            "type": "integer"
+          },
+          "driveTime": {
+            "type": "integer"
+          },
+          "nightTimeDrive": {
+            "type": "integer"
+          },
+          "rapidAccCount": {
+            "type": "integer"
+          },
+          "harshBrakingCount": {
+            "type": "integer"
+          },
+          "sharpTurnCount": {
+            "type": "integer"
+          },
+          "overSpeedingCount": {
+            "type": "integer"
+          },
+          "overSpeedingDuration": {
+            "type": "integer"
+          },
+          "collisionCount": {
+            "type": "integer"
+          },
+          "days": {
+            "type": "integer"
+          }
+        },
+        "x-examples": {
+          "Example 1": {
+            "milesDriven": 0,
+            "driveTime": 0,
+            "nightTimeDrive": 0,
+            "rapidAccCount": 0,
+            "harshBrakingCount": 0,
+            "sharpTurnCount": 0,
+            "overSpeedingCount": 0,
+            "overSpeedingDuration": 0,
+            "collisionCount": 0,
+            "days": 0
+          }
+        }
+      },
+      "CrashForensicRequest": {
+        "type": "object",
+        "description": "Crash Forensic Request",
+        "properties": {
+          "vin": {
+            "type": "string"
+          },
+          "crashDate": {
+            "type": "string"
+          }
+        },
+        "x-examples": {
+          "Example 1": {
+            "vin": "1HD1KEM15CB610062",
+            "crashDate": "yyyy-MM-dd"
+          }
+        }
+      },
+      "CrashForensicResponse": {
+        "type": "object",
+        "description": "Crash Forensic Response",
+        "properties": {
+          "timeStamp": {
+            "type": "string"
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "latitude": {
+                "type": "integer"
+              },
+              "longitude": {
+                "type": "integer"
+              }
+            }
+          },
+          "speed": {
+            "type": "number"
+          },
+          "acceleration": {
+            "type": "number"
+          },
+          "seatbeltStatus": {
+            "type": "string"
+          },
+          "airBagStatus": {
+            "type": "string"
+          },
+          "dashCamVideoUrl": {
+            "type": "string"
+          }
+        },
+        "x-examples": {
+          "Example 1": {
+            "timeStamp": "yyyy-MM-ddTHH:MM:ss.SSSz",
+            "location": {
+              "latitude": 0,
+              "longitude": 0
+            },
+            "speed": 10.2,
+            "acceleration": 3.7,
+            "seatbeltStatus": "FASTENED",
+            "airBagStatus": "DEPLOYED",
+            "dashCamVideoUrl": ""
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "ClientCredentials": []
+    }
+  ]
+}

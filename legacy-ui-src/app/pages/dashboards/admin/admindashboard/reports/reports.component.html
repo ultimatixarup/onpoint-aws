@@ -1,0 +1,1412 @@
+<div class="page-content page-content-main">
+  <div class="row sideMenuItem">
+    <div class="container">
+    <div class="col-xs-12 content-right">
+      <div class="row">
+        <div class="col-xs-12 col-lg-12">
+          <span class="breadcrumb-left">
+            <h1 class="login-headline heading-title">Reports</h1>
+          </span>
+          <span class="breadcrumb-right mr-8">
+            <ol class="breadcrumb">
+              <ng-container *ngIf="user =='admin'">
+                <li class="breadcrumb-item">
+                  <a routerLink="/adlp/admin" class="breadcrumb-h6"><i class="bx bx-home-circle"></i></a>
+                </li>
+                <li class="breadcrumb-item inactive-bread"><a routerLink="/adlp/admin/dashboardAdmin">Dashboard</a></li>
+              </ng-container>
+              <ng-container *ngIf="user !='admin'">
+                <li class="breadcrumb-item">
+                  <a routerLink="/adlp/admin/admindashboard/dashboardfleet" class="breadcrumb-h6"><i
+                      class="bx bx-home-circle"></i></a>
+                </li>
+                <li class="breadcrumb-item inactive-bread"><a
+                    routerLink="/adlp/admin/admindashboard/dashboardfleet">Dashboard</a></li>
+              </ng-container>
+              <li class="breadcrumb-item text-selected active-bread">Reports</li>
+            </ol>
+          </span>
+        </div>
+      </div>
+      <div class="row">
+      <!--Right Content-->
+      <div class="col-xs-12 content-right">
+         <!-- Breadcrumb and Search Consumer or Fleet Id End-->
+        <div class="row">
+          <ng-container *ngIf="user =='admin'">
+            <div class="col-xs-12 col-lg-2 topMar">
+              <app-common-consumer (consumerChange)="selectConsumer($event)"></app-common-consumer>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="user =='role_consumer_fleet'">
+            <div class="col-xs-12 col-lg-10">
+              <ng-container *ngIf="customConsumer != 'Onwardfleet'">
+                <div class="row">
+                  <div class="col-xs-12 col-lg-3">
+                    <h1 class="activeSinceFleet">{{customConsumer}}
+                    </h1>
+                  </div>
+                  <div class="col-xs-12 col-lg-3" style="margin-left: 12px;">
+                    <h1 class="activeSinceFleet">Active Since:
+                      <ng-container *ngIf="customConsumer === 'Guidepoint'">05-04-2023</ng-container>
+                      <ng-container *ngIf="customConsumer === 'Smallboard'">07-13-2022</ng-container>
+                      <ng-container *ngIf="customConsumer === 'Assetworks'">07-14-2024</ng-container>
+                      <ng-container *ngIf="customConsumer === 'DPL Telematics'">06-25-2024</ng-container>
+                      <ng-container *ngIf="customConsumer === 'Btracking'">02-15-2024</ng-container>
+                      <ng-container *ngIf="customConsumer === 'EcoTrack'">03-25-2025</ng-container>
+                      <ng-container *ngIf="customConsumer === 'Satrack'">04-11-2025</ng-container>
+                    </h1>
+                  </div>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="customConsumer === 'Onwardfleet'">
+                <div class="row">
+                  <div class="col-xs-12 col-lg-3">
+                    <h1 class="activeSinceFleet">Onward Connected
+                    </h1>
+                  </div>
+                  <div class="col-xs-12 col-lg-3" style="margin-left: 12px;">
+                    <h1 class="activeSinceFleet">Active Since:
+                      <ng-container *ngIf="customConsumer === 'Onwardfleet'">05-16-2024</ng-container>
+                    </h1>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="user ==='role_user_fleet' && user ==='role_org_group'">
+            <div class="content-text">
+              <span class="vin_container">
+                <span class="content-sub-text">Fleet Id</span>
+              </span>
+              <span class="content-sub-text2">{{fleetIdValueNew}}</span>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="selectedReport === 'productivity'">
+            <ng-container *ngIf="user =='role_consumer_fleet'">
+              <div class="col-xs-12 col-lg-6">&nbsp;</div>
+            </ng-container>
+            <ng-container *ngIf="user =='admin'">
+              <div class="col-xs-12 col-lg-4">&nbsp;</div>
+            </ng-container>
+            <ng-container *ngIf="user ==='role_user_fleet' || user ==='role_org_group'">
+              <div class="col-xs-12 col-lg-10"> &nbsp;</div>
+            </ng-container>
+            <div class="col-xs-12 col-lg-2" *ngIf="user !='role_user_fleet' && user !='role_org_group'">
+              <ng-select [searchable]="true" class="newSelect1" (clear)="clearFleetSelection()" [clearable]="true"
+                placeholder="Orgnization Id/Name" (change)="selectFleetId()" [(ngModel)]="fleetIdData">
+                <ng-option *ngFor="let fleet of fleetList" value="{{fleet.id}}">{{fleet.id}} -
+                  [{{fleet.name}}]</ng-option>
+              </ng-select>
+            </div>
+            <div class="col-xs-12 col-lg-2">
+              <ng-select
+              [searchable]="true"
+              class="newSelect1"
+              [clearable]="true"
+              placeholder="Group Name"
+              [items]="groupList"
+              bindLabel="name"
+              bindValue="id"
+              [(ngModel)]="groupIdData"
+              (change)="onGroupIdChange($event)">
+
+              <ng-template ng-option-tmp let-item="item">
+                <span [ngStyle]="{ 'padding-left.px': item.level * 18 }">
+                  {{ item.name }}
+                </span>
+              </ng-template>
+            </ng-select>
+            </div>
+            <div class="col-xs-12 col-lg-2" *ngIf="user !='role_user_fleet' && user !='role_org_group'">
+              <ng-select bindLabel="label" bindValue="value" placeholder="Select Time Period"
+                [(ngModel)]="selectedPeriod" (change)="onTimePeriodChangeData($event)"
+                class="newSelect  timePeriod current-month-dropdown ">
+                <ng-option *ngFor="let period of timePeriods" [value]="period.value">
+                  {{ period.label }}
+                </ng-option>
+              </ng-select>
+            </div>
+          </ng-container>
+        </div>
+        <!-- Breadcrumb and Search Consumer or Fleet Id End-->
+        <!-- Reprot Button-->
+        <ng-container *ngIf="user === 'admin' || user == 'role_consumer_fleet' || user == 'role_user_fleet' ||  user ==='role_org_group'">
+          <div class="row" style="margin-bottom: 30px;">
+            <!-- <div class="col-xs-12 col-lg-4">
+              <a href="javascript:(void)" class="report-btn" [ngClass]="{'active': selectedReport === 'productivity'}"
+                (click)="selectReport('productivity')">
+                PRODUCTIVITY REPORTS
+              </a>
+            </div> -->
+            <div class="col-xs-12 col-lg-4">
+              <a href="javascript:(void)" class="report-btn" [ngClass]="{'active': selectedReport === 'custom'}"
+                (click)="selectReport('custom');getReport()">
+                CUSTOM REPORTS
+              </a>
+            </div>
+          </div>
+        </ng-container>
+        <!-- Reprot Button-->
+        <!--Productivity Report Main Content Start-->
+        <ng-container *ngIf="user === 'admin'">
+          <ng-container *ngIf="selectedReport === 'productivity'">
+            <div class="row row-mar">
+              <div class="col-6">
+                <div class="report-container" style="height: 153px;">
+                  <div class="flex-space-between-nocenter">
+                    <div class="display-flex-gap pt-2">
+                      <div>
+                        <img src="../../assets/images/fleet-summary-report.svg" alt="" class="report-icon" />
+                      </div>
+                      <div class="text-container">
+                        <div class="main-text">Fleet Summary</div>
+                        <div class="sub-text pt-3">
+                          Get comprehensive overview of fleet activities and key metrics
+                          by VIN within a selected timeframe.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="display-flex-gap">
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/download-report-icon.svg" alt="" class="download-report-icon"
+                          (click)="downloadFleetReportSection()" />
+                        <span class="downloadTooltip">Download report</span>
+                      </div>
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/view-report.svg" alt=""  class="download-report-icons"
+                      (click)="getFleetSummary(fleetSummaryView)"/>
+                      <span class="downloadTooltip">View report</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="report-container">
+                  <div class="flex-space-between-nocenter">
+                    <div class="display-flex-gap pt-2">
+                      <div>
+                        <img src="../../assets/images/agressive-driver-report.svg" alt="" class="report-icon" />
+                      </div>
+                      <div class="text-container">
+                        <div class="main-text">Fleet Safety</div>
+                        <div class="sub-text pt-3">
+                          Monitor harsh driving events which are crucial for fleet safety and can help mitigate
+                          accidents
+                          and
+                          injuries.<br>&nbsp;
+                        </div>
+                      </div>
+                    </div>
+                    <div class="display-flex-gap">
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/download-report-icon.svg" alt="" class="download-report-icon"
+                          (click)="downloadFleetSaeftyReportSection()" />
+                        <span class="downloadTooltip">Download report</span>
+                      </div>
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/view-report.svg" alt=""  class="download-report-icons"    (click)="getFleetSummarySafety(fleetSafetyView)"/>
+                      <span class="downloadTooltip">View report</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row row-mar">
+              <div class="col-6">
+                <div class="report-container" style="height: 153px;">
+                  <div class="flex-space-between-nocenter">
+                    <div class="display-flex-gap pt-2">
+                      <div>
+                        <img src="../../assets/images/worst-mileage-report.svg" alt="" class="report-icon" />
+                      </div>
+                      <div class="text-container">
+                        <div class="main-text">Idling</div>
+                        <div class="sub-text pt-3">
+                          Idling increases fuel consumption unnecessarily. Track vehicles with poor mileage driven by
+                          excessive idling, and set goals for reducing it.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="display-flex-gap">
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/download-report-icon.svg" alt="" class="download-report-icon"
+                          (click)="downloadIdlingReportSection()" />
+                        <span class="downloadTooltip">Download report</span>
+                      </div>
+
+   <div class="download-icon-container">
+    <img src="../../assets/images/view-report.svg" alt=""  class="download-report-icons" (click)="getIdling(idlingView) "/>
+  <span class="downloadTooltip">View report</span>
+  </div>
+
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="report-container">
+                  <div class="flex-space-between-nocenter">
+                    <div class="display-flex-gap pt-2">
+                      <div>
+                        <img src="../../assets/images/fuel-summary.svg" alt="" class="report-icon" />
+                      </div>
+                      <div class="text-container">
+                        <div class="main-text">Vehicle Mileage</div>
+                        <div class="sub-text pt-3">
+                          Compare fuel usage across vehicles to establish performance benchmarks and improve overall
+                          fuel
+                          efficiency.<br> &nbsp;
+                        </div>
+                      </div>
+                    </div>
+                    <div class="display-flex-gap">
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/download-report-icon.svg" alt="" class="download-report-icon"
+                          (click)="downloadVehicleMileageReportSection()" />
+                        <span class="downloadTooltip">Download report</span>
+                      </div>
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/view-report.svg" alt=""  class="download-report-icons" (click)="vehiclemileageView(mileage)"/>
+                      <span class="downloadTooltip">View report</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row row-mar" style="margin-bottom: 50px;">
+              <div class="col-6">
+                <div class="report-container">
+                  <div class="flex-space-between-nocenter">
+                    <div class="display-flex-gap pt-2">
+                      <div>
+                        <img src="../../assets/images/fuel-refuel.svg" alt="" class="report-icon" />
+                      </div>
+                      <div class="text-container">
+                        <div class="main-text">Fuel Summary</div>
+                        <div class="sub-text pt-3">
+                          Track fuel expenses and get a detailed record of fuel location for tax deductions and
+                          maintenance planning.<br>&nbsp;
+                        </div>
+                      </div>
+                    </div>
+                    <div class="display-flex-gap">
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/download-report-icon.svg" alt="" class="download-report-icon"
+                          (click)="fuelSummaryDownloadReport()" />
+                        <span class="downloadTooltip">Download report</span>
+                      </div>
+  <div class="download-icon-container">
+    <img src="../../assets/images/view-report.svg" alt=""  class="download-report-icons" (click)="fuelSumamryView(fuelSumamry)"/>
+  <span class="downloadTooltip">View report</span>
+  </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="report-container" style="height: 153px;">
+                  <div class="flex-space-between-nocenter">
+                    <div class="display-flex-gap pt-2">
+                      <div>
+                        <img src="../../assets/images/batteries.svg" alt="" class="report-icon" />
+                      </div>
+                      <div class="text-container">
+                        <div class="main-text">EV Summary</div>
+                        <div class="sub-text pt-3">
+                          Idling increases fuel consumption unnecessarily. Track vehicles with poor mileage driven by
+                          excessive idling, and set goals for reducing it.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="display-flex-gap">
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/download-report-icon.svg" alt="" class="download-report-icon"
+                          (click)="downloadEVvehicleReportSection()" />
+                        <span class="downloadTooltip">Download report</span>
+                      </div>
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/view-report.svg" alt=""  class="download-report-icons"  (click)="evSummary(evSumamryData)"/>
+                      <span class="downloadTooltip">View report</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        </ng-container>
+        <ng-container *ngIf="user == 'role_consumer_fleet' || user == 'role_user_fleet' || user =='role_org_group'">
+          <ng-container *ngIf="selectedReport === 'productivity'">
+            <div class="row row-mar">
+              <div class="col-6">
+                <div class="report-container" style="height: 153px;">
+                  <div class="flex-space-between-nocenter">
+                    <div class="display-flex-gap pt-2">
+                      <div>
+                        <img src="../../assets/images/fleet-summary-report.svg" alt="" class="report-icon" />
+                      </div>
+                      <div class="text-container">
+                        <div class="main-text">Fleet Summary</div>
+                        <div class="sub-text pt-3">
+                          Get comprehensive overview of fleet activities and key metrics
+                          by VIN within a selected timeframe.<br><br>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="display-flex-gap">
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/download-report-icon.svg" alt="" class="download-report-icon"
+                          (click)="downloadFleetReportSection()" />
+                        <span class="downloadTooltip">Download report</span>
+                      </div>
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/view-report.svg" alt=""  class="download-report-icons"
+                      (click)="getFleetSummary(fleetSummaryView)"/>
+                      <span class="downloadTooltip">View report</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="report-container">
+                  <div class="flex-space-between-nocenter">
+                    <div class="display-flex-gap pt-2">
+                      <div>
+                        <img src="../../assets/images/agressive-driver-report.svg" alt="" class="report-icon" />
+                      </div>
+                      <div class="text-container">
+                        <div class="main-text">Fleet Safety</div>
+                        <div class="sub-text pt-3">
+                          Monitor harsh driving events which are crucial for fleet safety and can help mitigate
+                          accidents
+                          and
+                          injuries.<br>&nbsp;
+                        </div>
+                      </div>
+                    </div>
+                    <div class="display-flex-gap">
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/download-report-icon.svg" alt="" class="download-report-icon"
+                          (click)="downloadFleetSaeftyReportSection()" />
+                        <span class="downloadTooltip">Download report</span>
+                      </div>
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/view-report.svg" alt=""  class="download-report-icons"    (click)="getFleetSummarySafety(fleetSafetyView)"/>
+                      <span class="downloadTooltip">View report</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row row-mar">
+              <div class="col-6">
+                <div class="report-container" style="height: 153px;">
+                  <div class="flex-space-between-nocenter">
+                    <div class="display-flex-gap pt-2">
+                      <div>
+                        <img src="../../assets/images/worst-mileage-report.svg" alt="" class="report-icon" />
+                      </div>
+                      <div class="text-container">
+                        <div class="main-text">Idling</div>
+                        <div class="sub-text pt-3">
+                          Idling increases fuel consumption unnecessarily. Track vehicles with poor mileage driven by
+                          excessive idling, and set goals for reducing it.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="display-flex-gap">
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/download-report-icon.svg" alt="" class="download-report-icon"
+                          (click)="downloadIdlingReportSection()" />
+                        <span class="downloadTooltip">Download report</span>
+                      </div>
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/view-report.svg" alt=""  class="download-report-icons" (click)="getIdling(idlingView) "/>
+                      <span class="downloadTooltip">View report</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6" style="margin-bottom: 50px;">
+                <div class="report-container">
+                  <div class="flex-space-between-nocenter">
+                    <div class="display-flex-gap pt-2">
+                      <div>
+                        <img src="../../assets/images/fuel-summary.svg" alt="" class="report-icon" />
+                      </div>
+                      <div class="text-container">
+                        <div class="main-text">Vehicle Mileage</div>
+                        <div class="sub-text pt-3">
+                          Compare fuel usage across vehicles to establish performance benchmarks and improve overall
+                          fuel
+                          efficiency.<br> &nbsp;
+                        </div>
+                      </div>
+                    </div>
+                    <div class="display-flex-gap">
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/download-report-icon.svg" alt="" class="download-report-icon"
+                          (click)="downloadVehicleMileageReportSection()" />
+                        <span class="downloadTooltip">Download report</span>
+                      </div>
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/view-report.svg" alt=""  class="download-report-icons" (click)="vehiclemileageView(mileage)"/>
+                      <span class="downloadTooltip">View report</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row" style="margin-bottom: 50px; margin-top: -24px;">
+              <div class="col-6">
+                <div class="report-container">
+                  <div class="flex-space-between-nocenter">
+                    <div class="display-flex-gap pt-2">
+                      <div>
+                        <img src="../../assets/images/fuel-refuel.svg" alt="" class="report-icon" />
+                      </div>
+                      <div class="text-container">
+                        <div class="main-text">Fuel Summary</div>
+                        <div class="sub-text pt-3">
+                          Track fuel expenses and get a detailed record of fuel location for tax deductions and
+                          maintenance planning.<br>&nbsp;
+                        </div>
+                      </div>
+                    </div>
+                    <div class="display-flex-gap">
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/download-report-icon.svg" alt="" class="download-report-icon"
+                          (click)="fuelSummaryDownloadReport()" />
+                        <span class="downloadTooltip">Download report</span>
+                      </div>
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/view-report.svg" alt=""  class="download-report-icons" (click)="fuelSumamryView(fuelSumamry)"/>
+                      <span class="downloadTooltip">View report</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="report-container" style="height: 153px;">
+                  <div class="flex-space-between-nocenter">
+                    <div class="display-flex-gap pt-2">
+                      <div>
+                        <img src="../../assets/images/batteries.svg" alt="" class="report-icon" />
+                      </div>
+                      <div class="text-container">
+                        <div class="main-text">EV Summary</div>
+                        <div class="sub-text pt-3">
+                          Idling increases fuel consumption unnecessarily. Track vehicles with poor mileage driven by
+                          excessive idling, and set goals for reducing it.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="display-flex-gap">
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/download-report-icon.svg" alt="" class="download-report-icon"
+                          (click)="downloadEVvehicleReportSection()" />
+                        <span class="downloadTooltip">Download report</span>
+                      </div>
+                      <div class="download-icon-container">
+                        <img src="../../assets/images/view-report.svg" alt=""  class="download-report-icons"  (click)="evSummary(evSumamryData)"/>
+                      <span class="downloadTooltip">View report</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        </ng-container>
+        <!--Productivity Report Main Content End -->
+        <!--Custom Report Main Content Start-->
+        <ng-container *ngIf="user === 'admin' || user == 'role_consumer_fleet' || user == 'role_user_fleet' || user ==='role_org_group'">
+          <ng-container *ngIf="selectedReport === 'custom'">
+            <!-- Top level view-->
+            <div class="row">
+              <div class="col-xs-12 col-lg-12">
+                <div class="card"
+                  style="border-radius: 10px !important; border: 1px solid #DEE4ED !important; height: 160px!important;">
+                  <div class="card-body">
+                    <!-- Custom report top level-->
+                    <ng-container *ngIf="selectedReport === 'custom'">
+                      <div class="row">
+                        <div class="col-xs-12 col-lg-12">
+                          <div class="sub-text pt-3">
+                            Custom reports are tailored to meet the specific needs of your fleet. Choose critical data
+                            parameters that matters to you, enabling quick assessments of performance and proactive
+                            decision-making
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Select Fleet Id, VIN and Time period-->
+                      <div class="row" style="margin-top: 20px;">
+                        <div class="col-xs-12 col-lg-3" *ngIf="user !='role_user_fleet' &&  user !='role_org_group'">
+                          <ng-select *ngIf="consumer" [searchable]="true" class="newSelect1" (clear)="clearFleetSelection()"
+                            [clearable]="true" placeholder="Orgnization Id/Name" (change)="selectFleetId()"
+                            [(ngModel)]="fleetIdData">
+                            <ng-option *ngFor="let fleet of fleetList" value="{{fleet.id}}">{{fleet.id}} -
+                              [{{fleet.name}}]</ng-option>
+                          </ng-select>
+                        </div>
+                        <!-- <div class="col-xs-12 col-lg-3">
+                          <ng-select
+                    [searchable]="true"
+                    class="newSelect1"
+                    [clearable]="true"
+                    placeholder="Group Name"
+                    [items]="groupList"
+                    bindLabel="name"
+                    bindValue="id"
+                    [(ngModel)]="groupIdData"
+                    (change)="onGroupIdChange($event)">
+
+                    <ng-template ng-option-tmp let-item="item">
+                      <span [ngStyle]="{ 'padding-left.px': item.level * 18 }">
+                        {{ item.name }}
+                      </span>
+                    </ng-template>
+                  </ng-select>
+                        </div> -->
+                        <div class="col-xs-12 col-lg-3">
+                          <button class="btn-add-vin" (click)="vinListDataPops(VinListPopup)">
+                            <i class="fa fa-plus"></i> &nbsp; Select Vehicle(s)
+                          </button><br>
+                            <h5 class="totalCountSelected">Vehicles ({{ selectedVinCount }}) </h5>
+                        </div>
+                        <div class="col-xs-12 col-lg-3">
+                          <ng-select bindLabel="label" style="font-family: 'Poppins'!important;" [clearable]="true"
+                            bindValue="value" placeholder="Select Time Period" [(ngModel)]="selectedPeriod"
+                            (change)="onTimePeriodChangeData($event)"
+                            class="newSelect  timePeriod current-month-dropdown">
+                            <ng-option *ngFor="let period of timePeriods" [value]="period.value">
+                              {{ period.label }}
+                            </ng-option>
+                          </ng-select>
+                        </div>
+                      </div>
+                       <!-- Select Fleet Id, VIN and Time period end-->
+                    </ng-container>
+                       <!-- Custom report top level end-->
+                  </div>
+                </div>
+              </div>
+            </div>
+              <!-- Top level view end-->
+            <!-- Filter selection and report download -->
+            <div class="row">
+              <div class="col-xs-12 col-lg-12">
+                <div class="card card-bg">
+                  <div class="card-body">
+                    <div class="row card-bg-heading">
+                      <div class="col-xs-12 col-md">Trip</div>
+                      <div class="col-xs-12 col-md">Safety</div>
+                      <div class="col-xs-12 col-md">Fuel</div>
+                      <div class="col-xs-12 col-md">Maintenance</div>
+                    </div>
+                    <hr class="htline">
+                    <!-- Check box with label for filter and download data-->
+                    <div class="row">
+                      <div class="col-xs-12 col-md">
+                        <div class="row" *ngFor="let item of distanceTravelledForVIN">
+                          <div class="col-xs-12 col-lg-12">
+                            <label class="checkBoxLabel">
+                              <input type="checkbox" [value]="item" [(ngModel)]="item.selected" class="checkBoxInput" />
+                              <span class="checkBoxText">{{ item.name }}</span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-xs-12 col-md">
+                        <div *ngFor="let group of driverEventsForVIN">
+                          <h5 class="dataHeading-new">{{ group.heading }}</h5>
+
+                          <div class="row" *ngFor="let item of group.items">
+                            <div class="col-xs-12 col-lg-12">
+                              <label class="checkBoxLabel">
+                                <input
+                                  type="checkbox"
+                                  [(ngModel)]="item.selected"
+                                  class="checkBoxInput"
+                                />
+                                <span class="checkBoxText">{{ item.name }}</span>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+                      <div class="col-xs-12 col-md">
+                        <div class="row" *ngFor="let item of mileageForVin">
+                          <div class="col-xs-12 col-lg-12">
+                            <label class="checkBoxLabel">
+                              <input type="checkbox" [value]="item" [(ngModel)]="item.selected" class="checkBoxInput" />
+                              <span class="checkBoxText">{{ item.name }}</span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-xs-12 col-md">
+                        <div class="row" *ngFor="let item of vinDetails">
+                          <div class="col-xs-12 col-lg-12">
+                            <label class="checkBoxLabel">
+                              <input type="checkbox" [value]="item" [(ngModel)]="item.selected" class="checkBoxInput" />
+                              <span class="checkBoxText">{{ item.name }}</span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                     <!-- Check box with label for filter and download data end-->
+                    <div class="row">
+                      <div class="col-xs-12 col-lg-7">&nbsp;</div>
+                      <!-- Download Report btn-->
+                      <div class="col-xs-12 col-lg-3">
+                        <button class="btn-download-report" (click)="downloadCustomReport()">Download Report <img
+                            src="../../../../../../assets/images/orange-download.svg" style="height: 15px;"> </button>
+                      </div>
+                      <!-- Create Filter btn for open popup-->
+                      <div class="col-xs-12 col-lg-2">
+                        <button class="btn-download-report" (click)="createFilterPopup(createFilter)"> Create Report <img src="../../../../../../assets/images/aright-alt.png"> </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Filter selection and report download end-->
+             <!-- Table for save report View-->
+             <div class="row row-mar" style="margin-bottom: 100px;">
+              <div class="col-lg-12 col-xs-12 report-details" style="margin-top: 6px;" *ngFor="let reportItem of reportList;">
+                <div class="row" style="margin-top: 14px;" >
+                  <div class="col-xs-12 col-lg-2">
+                    <span class="reprotName">{{reportItem?.reportName}}</span>
+                  </div>
+                  <div class="col-xs-12 col-lg-3">
+                    <span class="reprotCreated">Created By:</span><br>
+                    <span class="reprotCreatedEmail">{{reportItem?.emailId}}</span>
+                  </div>
+                  <div class="col-xs-12 col-lg-4">
+                    <span class="reprotScheudle" (click)="editFilterPopup(createFilter,reportItem)" style="cursor: pointer;" *ngIf="!reportItem?.occurrenceUnit"><i class="fa fa-calendar" style="color:blue;cursor: pointer; " ></i> Schedule</span>
+                    <span class="reprotCreatedEmail" *ngIf="reportItem?.occurrenceUnit"><a class="reprotCreated">Scheduled</a><br>
+                      {{reportItem?.occurrenceUnit}}: <span *ngIf="reportItem?.occurrenceUnit == 'Daily'">Day</span> {{reportItem?.scheduleDay | titlecase }} at {{ ('1970-01-01T' + reportItem?.scheduleTime) | date : 'mediumTime'}}</span>
+                  </div>
+                  <div class="col-xs-12 col-lg-2" >
+                    <span class="reprotCreated">
+                      <i class="fa fa-eye"></i>
+                    </span>
+
+                    <span
+                      class="reprotviewEmail"
+                      (click)="toggleEmail(reportItem?.id)"
+                      [ngStyle]="{
+                        'text-decoration': reportItem?.emailIds ? 'underline' : 'none',
+                        'text-underline-offset': reportItem?.emailIds ? '3px' : '',
+                        'display': 'inline-block'
+                      }"
+                    >
+                      View Email
+                    </span>
+                    <br>
+
+                    <ng-container *ngIf="showEmail">
+                      <span *ngIf="reportItem?.id == reportId" class="email-content">
+                        <span class="reprotCreatedEmail">{{ reportItem?.emailIds }}</span>
+                      </span>
+                    </ng-container>
+
+
+                  </div>
+                 <!-- edit-delete.component.html -->
+<div class="col-xs-12 col-lg-1 position-relative">
+  <span class="reprotCreated">
+    <img src="../../../../../../assets/images/filterDownload.svg" (click)="downloadFilterReport(reportItem)" class="download-icon">
+  </span>
+
+  <span class="reprotCreated" style="margin-left: 6px;" (click)="toggleMenu(reportItem); $event.stopPropagation()">
+    <img src="../../../../../../assets/images/edit-delete.svg" class="editDelete-icon">
+  </span>
+
+  <!-- Popup Menu -->
+  <div *ngIf="menuOpenId === reportItem.id" class="popup-menu">
+    <div class="menu-item-new" (click)="editReportPopUp(EditReport,reportItem)">
+      <i class="fa fa-edit"></i> Edit
+    </div>
+    <div class="menu-item-new" (click)="deletePopUp(deleteConfirmationPopup, reportItem.id,reportItem.reportName)">
+      <i class="fa fa-delete"></i> Delete
+    </div>
+  </div>
+</div>
+
+                </div>
+              </div>
+            </div>
+
+             <!-- Table for save report View End-->
+          </ng-container>
+        </ng-container>
+        <!--Custom Report Main Content End-->
+      </div>
+      <!--Right Content-->
+    </div>
+  </div>
+  </div>
+</div>
+<!--Popup for create filter-->
+<ng-template #createFilter let-modal class="modal-width">
+  <div class="modal-header">
+    <h5 class="modal-title mt-0">
+    <span *ngIf="!isEditFilter">
+      Create Report
+    </span>
+    <span *ngIf="isEditFilter">
+      Edit Report
+    </span>
+    </h5>
+    <span (click)="modal.close();timeIntervalUnit = '';displayDate='';selectedTime='';reportName=''" class="cl-b">X</span>
+
+  </div>
+  <div class="modal-body modal-height">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12">
+        <label class="custom-report-label">Report Name</label>
+        <input class="form-control input-vin font-common"  type="text"
+        placeholder="Report Name"  [(ngModel)]="reportName" style="height: 37px!important; border:1px solid #161616!important" [readonly] = "isEditFilter">
+      </div>
+    </div>
+
+    <div class="row mr-24">
+      <div class="col-xs-12 col-lg-4">
+          <label class="custom-report-label">Schedule</label>
+          <div class="custom-datepicker">
+            <div class="date-picker-wrapper" (click)="toggleCalendars()">
+              <input type="text" placeholder="Select Date" [(ngModel)]="displayDate" [value]="displayDate" readonly
+                (click)="toggleCalendars()" />
+              <i class="fa fa-calendar calendar-icon"></i>
+            </div>
+            <div class="calendar" *ngIf="showCalendar">
+              <!-- Calendar Header -->
+              <div class="calendar-header">
+                <button (click)="prevMonth()">&lt;</button>
+                <span class="months">{{ months[currentMonth] }} {{ currentYear }}</span>
+                <button (click)="nextMonth()">&gt;</button>
+              </div>
+              <!-- Day Names -->
+              <div class="calendar-days">
+                <div *ngFor="let day of dayNames">{{ day }}</div>
+              </div>
+              <!-- Dates -->
+              <div class="calendar-dates">
+                <div *ngFor="let date of dates"
+                  [class.disabled]="!date.active"
+                  [class.today]="isToday(date)" (click)="selectDate(date)"  (mouseleave)="resetHover()">
+                  {{ date.day }}
+                </div>
+              </div>
+            </div>
+          </div>
+      </div>
+      <div class="col-xs-12 col-lg-4">
+        <label class="custom-report-label">&nbsp;</label>
+        <select [(ngModel)]="selectedTime" class="clock" placeholder="Select Time">
+          <option  value="">Select Time</option>
+          <option *ngFor="let time of timeSlots" [value]="time">{{ time }}</option>
+        </select>
+      </div>
+      <div class="col-xs-12 col-lg-4">
+        <select [(ngModel)]="timeIntervalUnit" class="timeFilter">
+          <option value="" selected>Select Period</option>
+          <option value="Daily" selected>Daily</option>
+          <option value="Weekly">Weekly</option>
+          <option value="Monthly">Monthly</option>
+          <!-- <option value="Yearly">Year(s)</option> -->
+        </select>
+      </div>
+    </div>
+    <div class="row mr-24" *ngIf="timeIntervalUnit">
+      <div class="col-xs-12 col-lg-12">
+        <label class="checkbox-label">
+          <h5 class="valueCheckbox" *ngIf="timeIntervalUnit != 'Monthly'">
+            {{timeIntervalUnit}},
+            <span *ngIf="timeIntervalUnit != 'Daily'">Every {{selectedDayName}}</span>  at {{selectedTime}}</h5>
+            <h5 class="valueCheckbox" *ngIf="timeIntervalUnit == 'Monthly'">
+              {{timeIntervalUnit}},
+            <span>Day {{displayDate | date: 'd'}} every month</span>  at {{selectedTime}}</h5>
+        </label>
+      </div>
+    </div>
+     <!--Fifth row-->
+     <div class="row mr-24">
+      <!-- Add email id buttom-->
+      <div class="col-xs-12 col-lg-10">
+        <a href="javascript:void(0)" class="serviceTaskLink" (click)="showEmailInput = true">
+          + Add Email Id
+        </a>
+        <!-- Input Box for New Email -->
+        <div *ngIf="showEmailInput" class="email-input-container mt-2">
+          <div class="row">
+            <div class="col-xs-12 col-lg-7">
+              <input type="email" [(ngModel)]="newEmail" class="form-control"
+                placeholder="Enter email address" />
+            </div>
+            <div class="col-xs-12 col-lg-2">
+              <button (click)="addEmail()" class="btn btn-sm mt-1"><i class="fa fa-plus"></i></button>
+            </div>
+          </div>
+        </div>
+        <!-- Display Added Emails -->
+        <ul class="email-list mt-2">
+          <li *ngFor="let email of emails; let i = index">
+            {{ email }}
+            <button (click)="removeEmail(i)" class="btn btn-link text-danger btn-sm" style="width: 10% !important;">x</button>
+          </li>
+        </ul>
+      </div>
+      <!-- Add email id end-->
+    </div>
+    <!--Fifth row end-->
+    </div>
+  <div class="modal-footer">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12">
+        <button *ngIf="!isEditFilter" class="btn btn-primary" (click)="submitScheduleReport();modal.close();">Submit</button>
+        <button *ngIf="isEditFilter" class="btn btn-primary" (click)="editFilterSubmit();modal.close();">Submit</button>
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+
+<!--Popup for create filter end-->
+<!--Custom date range calendar-->
+<div class="modal-overlay" *ngIf="isCardOpen">
+  <div class="modal-card">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12">
+        <button (click)="closeCard()" class="close-button"
+          style="float: right; width: 0%; margin-right: 15px;">X</button>
+      </div>
+    </div>
+    <div class=" row">
+      <div class="col-3 option-column" style="    margin-left: -20px;
+  margin-right: 12px;">
+        <div style="margin-top: 20px;">
+          <div class="option" [class.selected]="selectedOption === 'DAILY'" (click)="handleOption('DAILY')">Yesterday
+          </div>
+          <div class="option" [class.selected]="selectedOption === 'WEEKLY'" (click)="handleOption('WEEKLY')">
+            Current Week</div>
+          <div class="option" [class.selected]="selectedOption === 'MONTHLY'" (click)="handleOption('MONTHLY')">Current
+            Month</div>
+          <div class="option" [class.selected]="selectedOption === 'lastmonth'" (click)="handleOption('lastmonth')">
+            Previous Month</div>
+          <div class="option" [class.selected]="selectedOption === 'customRange'" selected
+            (click)="handleOption('customRange')">Custom Range</div>
+        </div>
+      </div>
+      <div class="col-9" style="margin-top:20px;">
+        <app-calendar (dateRangeSelected)="onDateRangeSelected($event);closeCard()"></app-calendar>
+      </div>
+    </div>
+  </div>
+</div>
+<!--Custom date range calendar-->
+<!-- No data Found -->
+<ng-template #nodatafound let-modal class="modal-width">
+  <div class="modal-body modal-height">
+    <h5>
+      <img src="../../../../../assets/images/info-icon.svg" class="img-data2">
+      <h5 class="heading-show">Data not found</h5>
+    </h5>
+  </div>
+</ng-template>
+<!-- No data Found End-->
+<!-- Vin List Popup open -->
+<ng-template #VinListPopup let-modal class="modal-width">
+  <div class="modal-header">
+    <h5 class="modal-title mt-0">
+      Select Vehicles
+    </h5>
+  </div>
+  <div class="modal-body modal-height">
+    <div class="row modal-heights" *ngIf="vinList.length != 0">
+      <div class="col-xs-12 col-lg-12" style="margin-bottom: 16px;">
+        <input class="form-check-input" type="checkbox" class="checkBoxInputVin" [(ngModel)]="selectAll"
+          (change)="onSelectAllChange()" /> Select All
+      </div>
+      <div class="col-xs-12 col-lg-12" *ngFor="let vin of vinList" style="height: 35px; margin-bottom:6px;">
+        <input class="form-check-input" type="checkbox" class="checkBoxInputVin" [(ngModel)]="vin.selected"
+          (change)="onIndividualSelectChange()" />&nbsp;
+        <label class="form-check-label">{{ vin.name }}</label>
+      </div>
+    </div>
+    <div class="row modal-heights" *ngIf="vinList.length === 0">
+      <div class="col-xs-12 col-lg-12">
+        <p class="noVins">No VINs attached</p>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12">
+        <button class="btn-submit" (click)="modal.close()">Submit</button>
+      </div>
+    </div>
+  </div>
+</ng-template>
+<!-- Vin List Popup open End-->
+ <!--Fleet Symmary-->
+ <ng-template #fleetSummaryView let-modal class="modal-width">
+  <div class="modal-header">
+    <h5 class="modal-title mt-0">
+      Fleet Summary Report ({{ customConsumer}} {{fleetIdData}})
+    </h5>
+  </div>
+  <div class="modal-body modal-height">
+     <div class="table-responsive table-b table-scrooling" style="height: 325px;">
+    <table class="table" style="margin-bottom: 0px;">
+        <thead class="table-head">
+          <tr>
+            <td><strong>Fleet Id</strong></td>
+            <td><strong>Vehicle Name</strong></td>
+            <td><strong>Make</strong></td>
+            <td><strong>Model</strong></td>
+            <td><strong>Year</strong></td>
+            <td><strong>Class</strong></td>
+            <td><strong>Fuel Type</strong></td>
+            <td><strong>Tire Pressure FL (psi)</strong></td>
+            <td><strong>Tire Pressure FR (psi)</strong></td>
+            <td><strong>Tire Pressure RL (psi)</strong></td>
+            <td><strong>Tire Pressure RR (psi)</strong></td>
+            <td><strong>Battery (v)</strong></td>
+            <td><strong>Total Trips (count)</strong></td>
+            <td><strong>Distance travelled (miles)</strong></td>
+            <td><strong>Maximum Distance Covered (miles)</strong></td>
+            <td><strong>Maximum Duration (hrs:min)</strong></td>
+            <td><strong>Average Trip Distance (miles)</strong></td>
+            <td><strong>Average Trip Duration (hrs:min)</strong></td>
+            <td><strong>Average Speed (mph)</strong></td>
+            <td><strong>Odometer (mi)</strong></td>
+            <td><strong>Top Speed (mph)</strong></td>
+            <td><strong>HA (count per 100 miles)</strong></td>
+            <td><strong>HB (count per 100 miles)</strong></td>
+            <td><strong>HC (count per 100 miles)</strong></td>
+            <td><strong>OS (% distance travelled)</strong></td>
+            <td><strong>ND (% distance travelled)</strong></td>
+            <td><strong>Safety Score</strong></td>
+            <td><strong>Total Idling Duration (hrs:mm)</strong></td>
+            <td><strong>Idling Percentage (%)</strong></td>
+            <td><strong>Total Fuel Consumed (gal)</strong></td>
+            <td><strong>Average Fuel Mileage (mpg)</strong></td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let data of vehicleList">
+            <td>{{data?.fleetId}}</td>
+            <td>{{ data.alias }}</td>
+            <td>{{data?.make }}</td>
+            <td>{{ data?.model }}</td>
+            <td>{{data?.modelYear }}</td>
+            <td>{{ data?.bodyClass }}</td>
+            <td>{{data?.fuelType}}</td>
+            <td>{{data?.flTirepress | number:'1.2-2' }}</td>
+            <td>{{data?.frTirepress | number:'1.2-2' }}</td>
+            <td>{{data?.rlTirepress | number:'1.2-2' }}</td>
+            <td>{{data?.rrTirepress | number:'1.2-2' }}</td>
+            <td>{{data?.batteryStatus }}</td>
+            <td>{{data?.tripCount }}</td>
+            <td>{{data?.tripDistance | number:'1.2-2' }}</td>
+            <td>{{data?.maxDistance | number:'1.2-2' }}</td>
+            <td>{{data?.maxDuration }}</td>
+            <td>{{data?.averageDistance | number:'1.2-2' }}</td>
+            <td>{{data?.averageTime  }}</td>
+            <td>{{data?.avgVehicleSpeed | number:'1.2-2' }}</td>
+            <td>{{data?.odometer | number:'1.0-0'}}</td>
+            <td>{{data?.maxSpeed | number:'1.2-2' }}</td>
+            <td>{{data?.harshAcc | number:'1.2-2' }}</td>
+            <td>{{data?.harshBrake | number:'1.2-2' }}</td>
+            <td>{{data?.harshCornering | number:'1.2-2' }}</td>
+            <td>{{data?.os7590 | number:'1.2-2' }}</td>
+            <td>{{data?.nightDistance | number:'1.2-2' }}</td>
+            <td>{{data?.driverBehaviourScore | number:'1.2-2' }}</td>
+            <td>{{data?.idlingDuration }}</td>
+            <td>{{data?.idlingPercentage | number:'1.2-2' }}</td>
+            <td>{{data?.fuelConsumed | number:'1.2-2' }}</td>
+            <td>{{data?.avgMileage | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  <div class="modal-footer">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12">
+        <button class="btn-submit" (click)="downloadFleetReportSection()">Download Report</button>
+      </div>
+    </div>
+  </div>
+</ng-template>
+ <!-- Fleet Safety-->
+<ng-template #fleetSafetyView let-modal class="modal-width">
+  <div class="modal-header">
+    <h5 class="modal-title mt-0">
+      Fleet Safety Report ({{ customConsumer}} {{fleetIdData}})
+    </h5>
+  </div>
+  <div class="modal-body modal-height">
+     <div class="table-responsive table-b table-scrooling" style="height: 325px;">
+    <table class="table" style="margin-bottom: 0px;">
+        <thead class="table-head">
+          <tr>
+            <td><strong>Vehicle Name</strong></td>
+            <td><strong>Vehicle Name</strong></td>
+            <td><strong>Distance Travelled (miles)</strong></td>
+            <td><strong>Safety Score</strong></td>
+            <td><strong>Score Classification</strong></td>
+            <td><strong>HA</strong></td>
+            <td><strong>HB</strong></td>
+            <td><strong>HC</strong></td>
+            <td><strong>OS</strong></td>
+            <td><strong>ND</strong></td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let data of vehicleList">
+            <td>{{data?.alias}}</td>
+            <td>{{ data.tripDistance | number:'1.2-2' }}</td>
+            <td>{{data?.driverBehaviourScore | number:'1.2-2' }}</td>
+            <td>{{ getBehaviorScoreLabel(data?.driverBehaviourScore) }}</td>
+            <td>{{data?.harshAcc | number:'1.2-2' }}</td>
+            <td>{{ data.harshBrake | number:'1.2-2' }}</td>
+            <td>{{data?.harshCornering | number:'1.2-2' }}</td>
+            <td>{{data?.os7590 | number:'1.2-2' }}</td>
+            <td>{{data?.nightDistance | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  <ng-container *ngIf="user != 'admin'">
+  <div class="modal-footer">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12">
+        <button class="btn-submit" (click)="downloadFleetReportSection()">Download Report</button>
+      </div>
+    </div>
+  </div>
+</ng-container>
+</ng-template>
+  <!-- idling View-->
+<ng-template #idlingView let-modal class="modal-width">
+  <div class="modal-header">
+    <h5 class="modal-title mt-0">
+      Idling Report ({{ customConsumer}} {{fleetIdData}})
+    </h5>
+  </div>
+  <div class="modal-body modal-height">
+     <div class="table-responsive table-b table-scrooling" style="height: 325px;">
+    <table class="table" style="margin-bottom: 0px;">
+        <thead class="table-head">
+          <tr>
+            <td><strong>Vehicle Name</strong></td>
+            <td><strong>Total Idling Duration (hrs:mm)</strong></td>
+            <td><strong>Idling Percentage (%)</strong></td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let data of vehicleList">
+            <td>{{data?.alias}}</td>
+            <td>{{data?.idlingDuration }}</td>
+            <td>{{data?.idlingPercentage | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  <ng-container *ngIf="user != 'admin'">
+  <div class="modal-footer">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12">
+        <button class="btn-submit" (click)="downloadIdlingReportSection()">Download Report</button>
+      </div>
+    </div>
+  </div>
+</ng-container>
+</ng-template>
+   <!-- Vehicle Mileage-->
+<ng-template #mileage let-modal class="modal-width">
+  <div class="modal-header">
+    <h5 class="modal-title mt-0">
+      Vehicle Mileage Report ({{ customConsumer}} {{fleetIdData}})
+    </h5>
+  </div>
+  <div class="modal-body modal-height">
+     <div class="table-responsive table-b table-scrooling" style="height: 325px;">
+    <table class="table" style="margin-bottom: 0px;">
+        <thead class="table-head">
+          <tr>
+            <td><strong>Fleet Id</strong></td>
+            <td><strong>Vehicle Name</strong></td>
+            <td><strong>Fuel Type</strong></td>
+            <td><strong>Total Distance travelled (miles)</strong></td>
+            <td><strong>Total Fuel Consumed (gal)</strong></td>
+            <td><strong>Average Fuel Mileage (mpg)</strong></td>
+            <td><strong>Total Fuel Cost ($)</strong></td>
+            <td><strong>Average Fuel Cost Per Mile ($)</strong></td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let data of vehicleList">
+            <td>{{data?.fleetId}}</td>
+            <td>{{ data.alias }}</td>
+            <td>{{data?.fuelType}}</td>
+            <td>{{data?.tripDistance | number:'1.2-2' }}</td>
+            <td>{{data?.fuelConsumed | number:'1.2-2' }}</td>
+            <td>{{data?.avgMileage | number:'1.2-2' }}</td>
+            <td>{{data?.fuelConsumedCost | number:'1.2-2' }}</td>
+            <td>{{data?.averageCostPerMile | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  <ng-container *ngIf="user != 'admin'">
+  <div class="modal-footer">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12">
+        <button class="btn-submit" (click)="downloadVehicleMileageReportSection()">Download Report</button>
+      </div>
+    </div>
+  </div>
+</ng-container>
+</ng-template>
+<!-- refuelDetails-->
+<ng-template #fuelSumamry let-modal class="modal-width">
+  <div class="modal-header">
+    <h5 class="modal-title mt-0">
+      Fuel Summary Report ({{ customConsumer}} {{fleetIdData}})
+    </h5>
+  </div>
+  <div class="modal-body modal-height">
+     <div class="table-responsive table-b table-scrooling" style="height: 325px;">
+    <table class="table" style="margin-bottom: 0px;">
+        <thead class="table-head">
+          <tr>
+            <td><strong>Vehicle Name</strong></td>
+            <td><strong>Date/Time</strong></td>
+            <td><strong>Refuel Location</strong></td>
+            <td><strong>Amount (gal)</strong></td>
+            <td><strong>Cost($)</strong></td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let data of refuelDetailsData">
+            <td>{{ data.alias }}</td>
+            <td>{{ data?.dateTime | date: 'MMM d, y HH:mm' }}</td>
+            <td>{{data?.address}}</td>
+            <td>{{data?.amtFuelRefuelled | number:'1.2-2' }}</td>
+            <td>{{data?.refuelCost | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  <ng-container *ngIf="user != 'admin'">
+  <div class="modal-footer">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12">
+        <button class="btn-submit" (click)="fuelSummaryDownloadReport()">Download Report</button>
+      </div>
+    </div>
+  </div>
+</ng-container>
+</ng-template>
+<!-- EV Summary-->
+<ng-template #evSumamryData let-modal class="modal-width">
+  <div class="modal-header">
+    <h5 class="modal-title mt-0">
+      EV Summary Report ({{ customConsumer}} {{fleetIdData}})
+    </h5>
+  </div>
+  <div class="modal-body modal-height">
+     <div class="table-responsive table-b table-scrooling" style="height: 325px;">
+    <table class="table" style="margin-bottom: 0px;">
+      <tr>
+        <td>No data found</td>
+      </tr>
+      </table>
+      </div>
+    </div>
+  <ng-container *ngIf="user != 'admin'">
+  <div class="modal-footer">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12">
+        <button class="btn-submit" (click)="downloadEVvehicleReportSection()">Download Report</button>
+      </div>
+    </div>
+  </div>
+</ng-container>
+</ng-template>
+
+<!--Edit Custom Report-->
+<ng-template #EditReport let-modal class="modal-width">
+  <div class="modal-header">
+    <h5 class="modal-title mt-0">
+    <span>
+      Edit Report
+    </span>
+    </h5>
+    <span (click)="modal.close();timeIntervalUnit = '';displayDate='';selectedTime='';reportName=''" class="cl-b">X</span>
+
+  </div>
+  <div class="modal-body modal-height">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12">
+        <label class="custom-report-label">Report Name</label>
+        <input class="form-control input-vin font-common"  type="text"
+        placeholder="Report Name"  [(ngModel)]="reportName" style="height: 37px!important; border:1px solid #161616!important">
+      </div>
+    </div>
+
+    <div class="row mr-24">
+      <div class="col-xs-12 col-lg-4">
+          <label class="custom-report-label">Schedule</label>
+          <div class="custom-datepicker">
+            <div class="date-picker-wrapper" (click)="toggleCalendars()">
+              <input type="text" placeholder="Select Date" [(ngModel)]="displayDate" [value]="displayDate" readonly
+                (click)="toggleCalendars()" />
+              <i class="fa fa-calendar calendar-icon"></i>
+            </div>
+            <div class="calendar" *ngIf="showCalendar">
+              <!-- Calendar Header -->
+              <div class="calendar-header">
+                <button (click)="prevMonth()">&lt;</button>
+                <span class="months">{{ months[currentMonth] }} {{ currentYear }}</span>
+                <button (click)="nextMonth()">&gt;</button>
+              </div>
+              <!-- Day Names -->
+              <div class="calendar-days">
+                <div *ngFor="let day of dayNames">{{ day }}</div>
+              </div>
+              <!-- Dates -->
+              <div class="calendar-dates">
+                <div *ngFor="let date of dates"
+                  [class.disabled]="!date.active"
+                  [class.today]="isToday(date)" (click)="selectDate(date)" (mouseleave)="resetHover()">
+                  {{ date.day }}
+                </div>
+              </div>
+            </div>
+          </div>
+      </div>
+      <div class="col-xs-12 col-lg-4">
+        <label class="custom-report-label">&nbsp;</label>
+        <select [(ngModel)]="selectedTime" class="clock" placeholder="Select Time">
+          <option value="">Select Time</option>
+          <option *ngFor="let time of timeSlots" [value]="time">{{ time }}</option>
+        </select>
+      </div>
+      <div class="col-xs-12 col-lg-4">
+        <select [(ngModel)]="timeIntervalUnit" class="timeFilter">
+          <option value="" selected>Select Period</option>
+          <option value="Daily" selected>Daily</option>
+          <option value="Weekly">Weekly</option>
+          <option value="Monthly">Monthly</option>
+          <!-- <option value="Yearly">Year(s)</option> -->
+        </select>
+      </div>
+    </div>
+    <div class="row mr-24" *ngIf="timeIntervalUnit">
+      <div class="col-xs-12 col-lg-12">
+        <label class="checkbox-label">
+          <h5 class="valueCheckbox" *ngIf="timeIntervalUnit != 'Monthly'">
+            {{timeIntervalUnit}},
+            <span *ngIf="timeIntervalUnit != 'Daily'">Every {{selectedDayName}}</span>
+            at {{selectedTime}}
+          </h5>
+          <h5 class="valueCheckbox" *ngIf="timeIntervalUnit == 'Monthly'">
+            {{timeIntervalUnit}},
+            <span>Day {{displayDate | date: 'd'}} every month</span>
+            at {{selectedTime}}
+          </h5>
+
+        </label>
+      </div>
+    </div>
+     <!--Fifth row-->
+     <div class="row mr-24">
+      <!-- Add email id buttom-->
+      <div class="col-xs-12 col-lg-10">
+        <a href="javascript:void(0)" class="serviceTaskLink" (click)="showEmailInput = true">
+          + Add Email Id
+        </a>
+        <!-- Input Box for New Email -->
+        <div *ngIf="showEmailInput" class="email-input-container mt-2">
+          <div class="row">
+            <div class="col-xs-12 col-lg-7">
+              <input type="email" [(ngModel)]="newEmail" class="form-control"
+                placeholder="Enter email address" />
+            </div>
+            <div class="col-xs-12 col-lg-2">
+              <button (click)="addEmail()" class="btn btn-sm mt-1"><i class="fa fa-plus"></i></button>
+            </div>
+          </div>
+        </div>
+        <!-- Display Added Emails -->
+        <ul class="email-list mt-2">
+          <li *ngFor="let email of emails; let i = index">
+            {{ email }}
+            <button (click)="removeEmail(i)" class="btn btn-link text-danger btn-sm" style="width: 10% !important;">x</button>
+          </li>
+        </ul>
+      </div>
+      <!-- Add email id end-->
+    </div>
+    <!--Fifth row end-->
+    </div>
+  <div class="modal-footer">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12">
+        <button *ngIf="isEditFilter" class="btn btn-primary" (click)="editFilterSubmit();modal.close();">Submit</button>
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+<!-- Delete Custom Report-->
+<ng-template #deleteConfirmationPopup let-modal class="modal-width">
+  <div class="modal-header">
+    <div class="row" style="width: 100%;">
+      <div class="col-xs-12 col-lg-11">
+        <h5 class="modal-title mt-0" style="font-family: 'Poppins'">Delete Custom Report</h5>
+      </div>
+      <div class="col-xs-12 col-lg-1">
+        <button type="button" class="btn-close" (click)="modal.dismiss('Cross click')" aria-hidden="true" style="background-color: transparent!important;"></button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12">
+       <h5 style="text-align: center; font-size: 14px; font-weight: 400; font-family: 'Poppins';">Do you want to delete schedule report <strong style="color: #ff0000;">{{ selectedReportName || '--' }}</strong> ?</h5>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <div class="row" style="margin-top: 12px">
+      <div class="col-xs-12 col-lg-6">&nbsp;</div>
+      <div class="col-xs-12 col-lg-6">
+        <button class="data-demo-no btn-primary" style="margin-left: -85px;" (click)="modal.dismiss('Cross click')">No</button>
+         <button class="data-demo-yes btn-primary" style="float: right; margin-right: 0px;" (click)="confirmDelete()">Yes</button>
+      </div>
+    </div>
+  </div>
+</ng-template>

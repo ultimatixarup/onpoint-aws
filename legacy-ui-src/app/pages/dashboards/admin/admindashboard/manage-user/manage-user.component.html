@@ -1,0 +1,330 @@
+<!--Page main content-->
+<div class="page-content page-content-main">
+  <div class="row sideMenuItem">
+    <div class="container">
+      <!-- Main Content Right-->
+      <div class="col-xs-12 content-right">
+        <!-- Heading and Breadcrumb-->
+        <div class="row">
+          <div class="col-xs-12 col-lg-12">
+            <span class="breadcrumb-left">
+              <h1 class="login-headline heading-title">Manage Users</h1>
+            </span>
+            <span class="breadcrumb-right mr-8">
+              <ol class="breadcrumb">
+                <ng-container *ngIf="user =='admin'">
+                  <li class="breadcrumb-item">
+                    <a routerLink="/adlp/admin" class="breadcrumb-h6"><i class="bx bx-home-circle"></i></a>
+                  </li>
+                  <li class="breadcrumb-item inactive-bread"><a routerLink="/adlp/admin/dashboardAdmin">Dashboard</a>
+                  </li>
+                  <li class="breadcrumb-item text-selected active-bread">Settings</li>
+                  <li class="breadcrumb-item text-selected active-bread">Manage Users</li>
+                </ng-container>
+                <ng-container *ngIf="user !='admin'">
+                  <li class="breadcrumb-item">
+                    <a routerLink="/adlp/admin/admindashboard/dashboardfleet" class="breadcrumb-h6"><i
+                        class="bx bx-home-circle"></i></a>
+                  </li>
+                  <li class="breadcrumb-item inactive-bread"><a
+                      routerLink="/adlp/admin/admindashboard/dashboardfleet">Dashboard</a></li>
+                  <li class="breadcrumb-item inactive-bread">Settings</li>
+                  <li class="breadcrumb-item text-selected active-bread">Manage Users</li>
+                </ng-container>
+              </ol>
+            </span>
+          </div>
+        </div>
+        <!-- Heading and Breadcrumb End-->
+        <!-- Consumer and Fleet Id and Group Id Filter-->
+        <div class="row consumer-pad">
+          <div class="col-xs-12 col-lg-2">
+            <ng-container *ngIf="this.user === 'admin'">
+              <select class="form-select consumer-select no-border" [(ngModel)]="consumer" (change)="selectConsumer()">
+                <option value="" disabled hidden>Select Consumer</option>
+                <option value="All" selected>Consumer</option>
+                <option *ngFor="let consumer of consumerList" [value]="consumer.name"> {{ consumer.name }} </option>
+              </select>
+            </ng-container>
+          </div>
+        </div>
+        <!-- Consumer and Fleet Id and Group Id Filter End-->
+        <div class="row" style="margin-top: 12px;">
+          <div class="col-xs-12 col-lg-12">
+            <div class="card" style="height: auto; margin-bottom: 600px;">
+              <div class="card-body">
+                <ng-container *ngIf="user === 'admin'">
+                  <h5 *ngIf="notification" class="heading-no-data">Please select consumer for users information</h5>
+                </ng-container>
+                <ul class="flat-tree" style="list-style-type: none;">
+                  <ng-container *ngFor="let node of userTreeData">
+                    <li>
+                      <ng-container *ngTemplateOutlet="treeItem; context: { $implicit: node }"></ng-container>
+                    </li>
+                  </ng-container>
+                </ul>
+                <ng-template #treeItem let-node>
+                  <div class="flat-tree-item" [style.marginLeft.px]="node.level * 20">
+                    <div class="tree-box">
+                      <div class="tree-left" (click)="toggleNode(node)">
+                        <span class="arrow">
+                          {{ node.children?.length ? (node.expanded ? 'v' : '>') : '' }}
+                        </span>
+                        <span class="node-row" *ngIf="!node.isEditing">
+                          {{ node.name }}
+                          <span *ngIf="node.type === 'email'"
+                            style="  color: gray;
+                            font-weight: normal;
+                            text-align: left;">
+                            {{ node.emailId }}
+                          </span>
+                        </span>
+                      </div>
+                      <!-- Tree Actions (conditionally shown) -->
+                      <!-- Tree Actions -->
+                      <div class="tree-actions">
+                        <!-- For email type only: show edit, save, delete -->
+
+                        <ng-container *ngIf="node.type === 'email'">
+                          <a (click)="openViewMore(viewMore, node)" class="viewMore"> View More </a>
+                          <!-- Edit Button -->
+                          <ng-container *ngIf="user != 'admin'">
+                          <button *ngIf="!node.isEditing" class="icon-button delete-btn" ngbTooltip="Edit"
+                            placement="bottom" (mouseenter)="tooltip.open()" (click)="openEditPopup(editData,node)"
+                            (mouseleave)="tooltip.close()" #tooltip="ngbTooltip" tooltipClass="custom-tooltip">
+                            <img src="../../../../../../../assets/images/pencil.svg" style="height: 14px;">
+                          </button>
+
+                          <!-- Save Button -->
+                          <button *ngIf="node.isEditing" class="icon-button delete-btn" ngbTooltip="Save"
+                            placement="bottom" (mouseenter)="tooltip.open()" (mouseleave)="tooltip.close()"
+                            #tooltip="ngbTooltip" tooltipClass="custom-tooltip">
+                            <img src="../../../../../../../assets/images/save-d.svg"
+                              style="height: 14px; opacity: 70%;">
+                          </button>
+
+                          <!-- Delete Button -->
+                          <button class="icon-button delete-btn" ngbTooltip="Delete" placement="bottom"
+                            (mouseenter)="tooltip.open()" (click)="openDeletePopup(deleteData,node)"
+                            (mouseleave)="tooltip.close()" #tooltip="ngbTooltip" tooltipClass="custom-tooltips">
+                            <img src="../../../../../../../assets/images/del.svg" style="height: 14px;">
+                          </button>
+                          </ng-container>
+                        </ng-container>
+
+                        <!-- For only level 0 and 1 (Admin, Organization, All, Fleet, Group): show Add -->
+                         <ng-container *ngIf="user != 'admin'">
+                        <ng-container *ngIf="node.type === 'admin'">
+                          <button class="icon-button delete-btn" ngbTooltip="Add User" placement="bottom"
+                            (mouseenter)="tooltip.open()" (mouseleave)="tooltip.close()" #tooltip="ngbTooltip"
+                            tooltipClass="custom-tooltip" (click)="openAddUserModal(addUserAdmin)">
+                            <img src="../../../../../../../assets/images/add-group.svg"
+                              style="height: 9px; opacity: 70%;">
+                          </button>
+                        </ng-container>
+                        <ng-container *ngIf=" node.type === 'fleet'">
+                          <button class="icon-button delete-btn" ngbTooltip="Add User" placement="bottom"
+                            (mouseenter)="tooltip.open()" (mouseleave)="tooltip.close()" #tooltip="ngbTooltip"
+                            tooltipClass="custom-tooltip" (click)="openAddUserModal(addUser)">
+                            <img src="../../../../../../../assets/images/add-group.svg"
+                              style="height: 9px; opacity: 70%;">
+                          </button>
+                        </ng-container>
+                      </ng-container>
+                      </div>
+                    </div>
+                    <!-- Recursive children -->
+                    <ul *ngIf="node.expanded && node.children" style="list-style-type: none;">
+                      <li *ngFor="let child of node.children">
+                        <ng-container *ngTemplateOutlet="treeItem; context: { $implicit: child }"></ng-container>
+                      </li>
+                    </ul>
+                  </div>
+                </ng-template>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- main container end -->
+      </div>
+    </div>
+  </div>
+</div>
+<ng-template #addUser let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title mt-0">For Organization</h5>
+    <button type="button" class="btn-close" (click)="modal.dismiss('Cross click')" aria-hidden="true"></button>
+  </div>
+
+  <div class="model-body">
+    <div class="row" style="margin:12px 30px 12px 12px ;">
+
+      <div class="row">
+        <div class="col-lg-12 d-flex" style="margin-left: 0px; margin-bottom: 12px;">
+          <div class="col-xs-12 col-lg-12" style="margin-top: 12px;" *ngIf="user !='role_user_fleet'">
+            <ng-select [(ngModel)]="fleetData" [multiple]="false" class="modal-select" (change)="selectFleet($event)"
+              placeholder="Select Organization">
+              <ng-option *ngIf="!fleetData" [value]="null" disabled>Select Organization</ng-option>
+              <ng-option [value]="fleetItem?.id" *ngFor="let fleetItem of fleetList ;"> {{fleetItem?.id}} -
+                {{fleetItem?.name}}</ng-option>
+            </ng-select>
+          </div>
+
+          <!-- Group ID dropdown commented out -->
+          <!-- <div class="col-xs-12 col-lg-6" style="margin-top: 12px;margin-left: 21px;">
+            <ng-select [(ngModel)]="groupData" [multiple]="false" class="modal-select" placeholder="Select Group">
+              <ng-option *ngIf="!groupData" [value]="null" disabled>Select Group</ng-option>
+              <ng-option [value]="groupItem?.id" *ngFor="let groupItem of groupList;">{{groupItem?.name}}</ng-option>
+            </ng-select>
+          </div> -->
+        </div>
+      </div>
+
+
+      <div class="form-group" style="margin-bottom: 12px;">
+        <input type="text" class="form-control" placeholder="Contact Person Name" id="userName"
+          [(ngModel)]="userDetails.name">
+      </div>
+      <div class="form-group">
+        <input type="email" class="form-control" placeholder="Email Id" id="userEmail"
+          [(ngModel)]="userDetails.emailId">
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12 d-flex">
+        <button type="submit" (click)="submitForm();modal.dismiss('Cross click')" class="data-demo-yes btn-primary">
+          Save</button>&nbsp;&nbsp;
+        <button type="submit" class="data-demo-no btn-primary" (click)="modal.dismiss('Cross click')">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</ng-template>
+<ng-template #addUserAdmin let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title mt-0">For Admin</h5>
+    <button type="button" class="btn-close" (click)="modal.dismiss('Cross click')" aria-hidden="true"></button>
+  </div>
+
+  <div class="model-body">
+    <div class="row" style="margin:12px;">
+      <div class="col-xs-12 col-lg-12">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Contact Person Name" id="userName"
+            [(ngModel)]="userDetails.name">
+        </div>
+      </div>
+    </div>
+    <div class="row" style="margin:12px;">
+      <div class="col-xs-12 col-lg-12">
+        <div class="form-group">
+          <input type="email" class="form-control" placeholder="Email Id" id="userEmail"
+            [(ngModel)]="userDetails.emailId">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12 d-flex">
+        <button type="submit" (click)="submitFormTSP();modal.dismiss('Cross click')" class="data-demo-yes btn-primary">
+          Save</button>&nbsp;&nbsp;
+        <button type="submit" class="data-demo-no btn-primary" (click)="modal.dismiss('Cross click')">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</ng-template>
+<ng-template #deleteData let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title mt-0 ">Are you sure to want delete <span class="ft-b">{{selectedBAOption?.name}}</span> ?
+    </h5>
+    <button type="button" class="btn-close" (click)="modal.dismiss('Cross click');this.selectedBAOption = null;"
+      aria-hidden="true"></button>
+  </div>
+  <div class="modal-footer">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12">
+        <button type="button" class="data-demo-yes btn-primary"
+          (click)="deleteUser();modal.dismiss('Cross click')">Yes</button>
+        <button class="data-demo-no btn-primary" style="float: right"
+          (click)="modal.dismiss('Cross click'); this.selectedBAOption = null;">No
+        </button>
+      </div>
+    </div>
+  </div>
+</ng-template>
+<ng-template #editData let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title mt-0 ">Edit User </h5>
+    <button type="button" class="btn-close" (click)="modal.dismiss('Cross click');this.selectedBAOption = null;"
+      aria-hidden="true"></button>
+  </div>
+  <div class="modal-body">
+
+    <div class="input-group font-bx">
+      <div class="input-group-prepend col-lg-12">
+        <div class="input-group-textN">
+          <input type="text" [(ngModel)]="editName" class="form-input" [ngModelOptions]="{standalone: true}">
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div class="modal-footer">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12">
+        <button type="button" class="data-demo-yes btn-primary"
+          (click)="editUser();modal.dismiss('Cross click')">Yes</button>
+        <button class="data-demo-no btn-primary" style="float: right"
+          (click)="modal.dismiss('Cross click'); this.selectedBAOption = null;">No
+        </button>
+      </div>
+    </div>
+  </div>
+</ng-template>
+<ng-template #viewMore let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title mt-0 ">View Details</h5>
+    <button type="button" class="btn-close" (click)="modal.dismiss('Cross click');this.selectedBAOption = null;"
+      aria-hidden="true"></button>
+  </div>
+  <div class="modal-body">
+    <table class="table table-bordered table-striped">
+      <!-- <thead>
+        <tr>
+          <th>Field</th>
+          <th>Value</th>
+        </tr>
+      </thead> -->
+      <tbody>
+        <!-- <tr>
+          <td>Name</td>
+          <td>{{ selectedUserDetails.name }}</td>
+        </tr>
+        <tr>
+          <td>Email ID</td>
+          <td>{{ selectedUserDetails.emailId }}</td>
+        </tr> -->
+        <tr>
+          <td style="font-weight: 600; font-family: 'Poppins'; font-size: 12px;">Created By</td>
+          <td>{{ selectedUserDetails.createdBy || '-' }}</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600; font-family: 'Poppins'; font-size: 12px;">Created On</td>
+          <td>{{ selectedUserDetails.createdOn ? (selectedUserDetails.createdOn | date:'medium') : '-' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+</ng-template>
+<ngx-spinner bdColor="rgba(0, 0, 0, 0.8)" size="large" color="#fff" type="ball-circus" [fullScreen]="true">
+  <p style="color: white">Loading...</p>
+</ngx-spinner>

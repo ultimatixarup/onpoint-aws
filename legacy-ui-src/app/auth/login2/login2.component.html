@@ -1,0 +1,256 @@
+<ng-template #sectionOne>
+<body class="p-0 page-container-height" >
+  <!-- Top Section-->
+  <section class="auth-section new login-section text-center">
+    <!-- Login Form-->
+    <div class="auth-wrapper mx-auto shadow p-5 rounded page-container-box">
+      <!-- Whitelabel Logo-->
+      <div class="logo-box">
+        <img [src]="imageUrl" class="logo-image">
+      </div>
+       <!-- Whitelabel Logo End-->
+      <!--Main Heading-->
+      <h1 class="login-headlines font-weight-bold mb-3 heading-main-row">Welcome to FleetTrack!</h1>
+      <!--Main Heading End-->
+      <!-- Form Container-->
+      <div class="auth-form-container text-start mx-auto">
+        <form [formGroup]="loginForm" (ngSubmit)="login(loginForm.value)">
+          <div class="mb-3 mb-h">
+            <label for="email" class="headingLog">User ID<span class="required">*</span></label>
+            <input type="email" class="form-control" id="email" formControlName="username" name="username"
+              [ngClass]="{ 'is-invalid': submitted && f.username.errors }" placeholder="example@address.com"
+              autocomplete="off">
+            <ng-container class="po-re"
+              *ngIf="loginForm.controls['username'].touched && !loginForm.controls['username'].valid">
+              <small class="text-danger" *ngIf="loginForm.controls['username'].hasError('required')">
+                Please enter userid
+              </small>
+            </ng-container>
+            <ng-container class="po-re"
+              *ngIf="loginForm.controls['username'].touched && !loginForm.controls['username'].valid">
+              <small class="text-danger" *ngIf="loginForm.controls['username'].hasError('pattern')">
+                Please enter a valid userid
+              </small>
+            </ng-container>
+          </div>
+          <div class="mb-3 mb-h">
+            <label for="userpassword" class="headingLog">Password <span class="required">*</span>
+            </label>
+            <div class="input-group auth-pass-inputgroup" style="background-color: #e8f0fe!important;">
+              <input type="password" class="form-control" formControlName="password" [type]="hide ? 'password' : 'text'"
+                [ngClass]="{ 'is-invalid': submitted && f.password.errors }" placeholder="Enter Password"
+                aria-label="Password" aria-describedby="password-addon">
+              <button class="btn btn-light " type="button" id="password-addon" (click)="myFunction()">
+                <i [ngClass]="hide ? 'mdi mdi-eye-off':'mdi mdi-eye-outline'"></i>
+              </button>
+              <div *ngIf="submitted && f.password.errors" class="invalid-feedback">
+                <span *ngIf="f.password.errors.required">Password is required</span>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="isTempPassword">
+            <div class="input-group auth-pass-inputgroup" style="background-color: #e8f0fe!important;">
+              <input type="password" class="form-control" id="password" name="password" placeholder="New Password" autocomplete="off" [(ngModel)]="newPassword"
+              [ngModelOptions]="{standalone: true}" [type]="hideNew ? 'password' : 'text'" [ngClass]="{ 'is-invalid': submitted && f.password.errors }"
+              aria-label="Password" aria-describedby="password-addon"/>
+              <button class="btn btn-light " type="button" id="password-addon" (click)="myFunctionN()">
+                <i [ngClass]="hideNew ? 'mdi mdi-eye-off':'mdi mdi-eye-outline'"></i>
+
+              </button>
+
+              <!-- <i (click)="hideNew = !hideNew" class="mdi mdi-eye-outline eye-button"></i> -->
+            </div>
+            <div class="newPass">New password must contain atleast One Uppercase, One Special character and One Numerical value</div>
+          </div>
+          <div class="forogt">
+            <a href="javascript:(void)" (click)="forgotPassword()" class="head-forgot">Reset Password</a>
+          </div>
+
+
+
+          <div class="mt-3 d-grid mt-btn">
+            <div class="row">
+              <div class="col-xs-12 col-lg-12">
+                <button class="data-demo" type="submit">Log In</button>
+              </div>
+              <div class="col-xs-12 col-lg-12" style="text-align: center; margin-top: 20px;">
+                <span style="font-size: 10px; font-weight: 600; padding:6px; color:#000; border-radius: 5px; height: 10px; font-family: 'Poppins';"> Beta Version 8.2.6 <sup><img src="assets/images/new.svg" style="height: 15px;"> </sup></span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 d-grid mt-btn">&nbsp;
+          </div>
+        </form>
+      </div>
+
+      <!-- Form Container End-->
+    </div>
+     <!-- Bottom Image-->
+    <div class="row mr-top30">
+      <div class="col-xs-12 col-lg-12">
+        <img src="../../../assets/images/group1.png" class="bottom-img">
+        <img src="../../../assets/images/group2.png" class="bottom-img">
+        <img src="../../../assets/images/group3.png" class="bottom-img">
+        <img src="../../../assets/images/group4.png" class="bottom-img">
+        <img src="../../../assets/images/group5.png" class="bottom-ig">
+      </div>
+    </div>
+    <!-- <div class="row" style="margin-top: -75px; margin-right: 28px;">
+      <div class="col-xs-12 col-lg-12 text-end">
+        <div style="
+        position: fixed;
+        bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+        background-color: white;
+        border-radius: 50%;
+        box-shadow: rgba(200, 200, 200, 0.5) 0px 4px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        cursor: pointer;
+      " (click)=" openChatBot()">
+      <img src="../../../assets/images/chatbot-log.svg" style="height: 30px; width: 30px;">
+      </div>
+
+      </div>
+    </div>
+     -->
+
+
+
+     <!-- Bottom Image End-->
+  </section>
+  <!-- Top Section End-->
+    <!--Footer-->
+  <div class="row footerl">
+    <div class="col-xs-12 col-lg-12 row-backdrop">
+      <div class="row">
+        <div class="col-xs-12 col-lg-5">
+          <h4 class="copyright">©2025-2026 CerebrumX Labs Inc. All rights reserved</h4>
+        </div>
+        <div class="col-xs-12 col-lg-7">
+          <a href="javascript:(void)" (click)="termsConditions()" class="termsandconditions">Terms and Conditions</a>
+          <a href="javascript:(void)" (click)="privacyPolicy()" class="termsandconditions">Privacy Policy</a>
+        </div>
+      </div>
+    </div>
+  </div>
+   <!--Footer End-->
+</body>
+</ng-template>
+
+<body class="p-0 page-container-height" *ngIf="isOnwardConnectedUrl(); else sectionOne">
+  <!-- Top Section-->
+  <section class="auth-section my-background login-section text-center">
+    <!-- Login Form-->
+    <div class="auth-wrapper mx-auto shadow p-5 rounded page-container-box">
+      <!-- Whitelabel Logo-->
+      <div class="logo-box">
+        <img [src]="imageUrl" class="logo-image">
+      </div>
+       <!-- Whitelabel Logo End-->
+      <!--Main Heading-->
+      <h1 class="login-headlines font-weight-bold mb-3 heading-main-row">Welcome to FleetTrack!</h1>
+      <!--Main Heading End-->
+      <!-- Form Container-->
+      <div class="auth-form-container text-start mx-auto">
+        <form [formGroup]="loginForm" (ngSubmit)="login(loginForm.value)">
+          <div class="mb-3 mb-h">
+            <label for="email" class="headingLog">User ID<span class="required">*</span></label>
+            <input type="email" class="form-control" id="email" formControlName="username" name="username"
+              [ngClass]="{ 'is-invalid': submitted && f.username.errors }" placeholder="example@address.com"
+              autocomplete="off">
+            <ng-container class="po-re"
+              *ngIf="loginForm.controls['username'].touched && !loginForm.controls['username'].valid">
+              <small class="text-danger" *ngIf="loginForm.controls['username'].hasError('required')">
+                Please enter userid
+              </small>
+            </ng-container>
+            <ng-container class="po-re"
+              *ngIf="loginForm.controls['username'].touched && !loginForm.controls['username'].valid">
+              <small class="text-danger" *ngIf="loginForm.controls['username'].hasError('pattern')">
+                Please enter a valid userid
+              </small>
+            </ng-container>
+          </div>
+          <div class="mb-3 mb-h">
+            <label for="userpassword" class="headingLog">Password <span class="required">*</span>
+            </label>
+            <div class="input-group auth-pass-inputgroup" style="background-color: #e8f0fe!important;">
+              <input type="password" class="form-control" formControlName="password" [type]="hide ? 'password' : 'text'"
+                [ngClass]="{ 'is-invalid': submitted && f.password.errors }" placeholder="Enter Password"
+                aria-label="Password" aria-describedby="password-addon">
+              <button class="btn btn-light " type="button" id="password-addon" (click)="myFunction()">
+                <i [ngClass]="hide ? 'mdi mdi-eye-off':'mdi mdi-eye-outline'"></i>
+              </button>
+              <div *ngIf="submitted && f.password.errors" class="invalid-feedback">
+                <span *ngIf="f.password.errors.required">Password is required</span>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="isTempPassword">
+            <div class="input-group auth-pass-inputgroup" style="background-color: #e8f0fe!important;">
+              <input type="password" class="form-control" id="password" name="password" placeholder="New Password" autocomplete="off" [(ngModel)]="newPassword"
+              [ngModelOptions]="{standalone: true}" [type]="hideNew ? 'password' : 'text'" [ngClass]="{ 'is-invalid': submitted && f.password.errors }"
+              aria-label="Password" aria-describedby="password-addon"/>
+              <button class="btn btn-light " type="button" id="password-addon" (click)="myFunctionN()">
+                <i [ngClass]="hideNew ? 'mdi mdi-eye-off':'mdi mdi-eye-outline'"></i>
+
+              </button>
+
+              <!-- <i (click)="hideNew = !hideNew" class="mdi mdi-eye-outline eye-button"></i> -->
+            </div>
+            <div class="newPass">New password must contain atleast One Uppercase, One Special character and One Numerical value</div>
+          </div>
+          <div class="forogt">
+            <a href="javascript:(void)" (click)="forgotPassword()" class="head-forgot">Reset Password </a>
+          </div>
+          <div class="mt-3 d-grid mt-btn">
+            <div class="row">
+              <div class="col-xs-12 col-lg-12">
+                <button class="data-demo" type="submit">Log In</button>
+              </div>
+              <div class="col-xs-12 col-lg-12" style="text-align: center; margin-top: 20px;">
+                <span style="font-size: 10px; font-weight: 600; padding:6px; color:#000; border-radius: 5px; height: 10px; font-family: 'Poppins';"> Beta Version 8.2.6 <sup><img src="assets/images/new.svg" style="height: 15px;"> </sup></span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 d-grid mt-btn">&nbsp;
+          </div>
+        </form>
+      </div>
+      <!-- Form Container End-->
+    </div>
+     <!-- Bottom Image-->
+    <div class="row mr-top30">
+      <div class="col-xs-12 col-lg-12">
+        <img src="../../../assets/images/group1.png" class="bottom-img">
+        <img src="../../../assets/images/group2.png" class="bottom-img">
+        <img src="../../../assets/images/group3.png" class="bottom-img">
+        <img src="../../../assets/images/group4.png" class="bottom-img">
+        <img src="../../../assets/images/group5.png" class="bottom-ig">
+      </div>
+    </div>
+
+     <!-- Bottom Image End-->
+  </section>
+  <!-- Top Section End-->
+    <!--Footer-->
+  <div class="row footerl">
+    <div class="col-xs-12 col-lg-12 row-backdrop">
+      <div class="row">
+        <div class="col-xs-12 col-lg-5">
+          <h4 class="copyright">©2025-2026 CerebrumX Labs Inc. All rights reserved</h4>
+        </div>
+        <div class="col-xs-12 col-lg-7">
+          <a href="javascript:(void)" (click)="termsConditions()"  class="termsandconditions">Terms and Conditions</a>
+          <a href="javascript:(void)" (click)="privacyPolicy()" class="termsandconditions">Privacy Policy</a>
+        </div>
+      </div>
+    </div>
+  </div>
+   <!--Footer End-->
+</body>

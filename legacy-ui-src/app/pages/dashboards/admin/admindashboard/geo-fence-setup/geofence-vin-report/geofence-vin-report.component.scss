@@ -1,0 +1,675 @@
+.geofence-vin-report-container {
+  width: 100%;
+  padding: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Page Header & Breadcrumb */
+.page-header {
+  margin-bottom: 24px;
+}
+
+.heading-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+  font-family: 'Poppins';
+}
+
+.breadcrumb-left {
+  float: left;
+}
+
+.breadcrumb-right {
+  float: right;
+}
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 0;
+  margin-bottom: 0;
+  list-style: none;
+  background-color: transparent;
+}
+
+.breadcrumb-item {
+  display: flex;
+  font-size: 13px;
+  color: #6b7280;
+
+  &:not(:first-child)::before {
+    content: "/";
+    padding: 0 8px;
+    color: #9ca3af;
+  }
+
+  a {
+    color: #6b7280;
+    text-decoration: none;
+    transition: color 0.2s;
+
+    &:hover {
+      color: #fa751a;
+    }
+  }
+
+  &.active {
+    color: #fa751a;
+    font-weight: 500;
+  }
+}
+
+.breadcrumb-h6 {
+  font-size: 16px;
+}
+
+/* Geofence Selector */
+.geofence-selector-section {
+  margin: 24px 0;
+}
+
+.selector-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.selector-header {
+  text-align: center;
+  margin-bottom: 32px;
+
+  h3 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 8px;
+
+    i {
+      color: #fa751a;
+      margin-right: 12px;
+    }
+  }
+
+  p {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+  }
+}
+
+.selector-body {
+  min-height: 300px;
+}
+
+.geofence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.geofence-card {
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: #fa751a;
+    background: #fff3e0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(250, 117, 26, 0.15);
+  }
+}
+
+.geofence-card-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #fa751a 0%, #ff9f4d 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  i {
+    font-size: 24px;
+    color: #ffffff;
+  }
+}
+
+.geofence-card-content {
+  flex: 1;
+
+  h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 4px 0;
+  }
+
+  .geofence-id {
+    font-size: 12px;
+    color: #9ca3af;
+    margin: 0 0 6px 0;
+    font-family: 'Courier New', monospace;
+  }
+
+  .geofence-address {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 0;
+
+    i {
+      margin-right: 4px;
+    }
+  }
+}
+
+.geofence-card-action {
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  i {
+    font-size: 18px;
+    color: #9ca3af;
+    transition: color 0.3s ease;
+  }
+
+  .geofence-card:hover & i {
+    color: #fa751a;
+  }
+}
+
+/* Selected Geofence Bar */
+.selected-geofence-bar {
+  background: linear-gradient(135deg, #fa751a 0%, #ff9f4d 100%);
+  border-radius: 12px;
+  padding: 16px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(250, 117, 26, 0.2);
+}
+
+.selected-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #ffffff;
+
+  i {
+    font-size: 20px;
+  }
+
+  .selected-name {
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .selected-id {
+    font-size: 13px;
+    opacity: 0.9;
+    font-family: 'Courier New', monospace;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 12px;
+    border-radius: 6px;
+  }
+}
+
+.selected-geofence-bar .btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  font-weight: 500;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+}
+
+/* Date Range Filter Styles */
+.date-filter-row {
+  margin-bottom: 24px;
+}
+
+.trip-summary-row {
+  float: right !important;
+  width: 50% !important;
+}
+
+.trip-summary-date-label {
+  font-size: 12px !important;
+  font-family: 'Poppins' !important;
+  margin-right: 6px !important;
+  font-weight: 600 !important;
+}
+
+.input-box {
+  height: 36px !important;
+  border-radius: 10px !important;
+  border: 2px solid #e6e7e5 !important;
+  border-right: 2px solid transparent !important;
+  background-color: transparent !important;
+  margin-right: -12px;
+}
+
+.btn-outline-calander {
+  background-color: #e6e7e5 !important;
+  border-color: #e6e7e5 !important;
+  color: #ced4da !important;
+  border-radius: 10px !important;
+}
+
+.calendar {
+  cursor: pointer;
+}
+
+.input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.report-section {
+  background-color: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.section-header {
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 6px 0;
+  font-family: 'Poppins';
+}
+
+.section-subtitle {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+  font-family: 'Poppins';
+}
+
+/* Table Styles */
+.summary-table-wrapper,
+.detail-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 12px;
+}
+
+.table {
+  width: 100%;
+  margin-bottom: 0;
+  background-color: #ffffff;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-head {
+  background-color: #f9fafb;
+  font-family: 'Poppins';
+}
+
+.table th {
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 14px 16px;
+  font-size: 12px;
+  color: #1f2937;
+  font-family: 'system-ui', sans-serif;
+  font-weight: 400;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.summary-row:hover {
+  background-color: #f9fafb;
+}
+
+/* Expand Button */
+.expand-col {
+  width: 50px;
+  padding: 8px !important;
+}
+
+.expand-toggle {
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    background-color: #f9fafb;
+  }
+
+  &.is-open {
+    transform: rotate(90deg);
+    background-color: #fff3e0;
+    border-color: #fa751a;
+  }
+}
+
+.action-img {
+  width: 14px;
+  height: 14px;
+}
+
+/* VIN Cell */
+.vin-cell {
+  font-family: 'Courier New', monospace;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: 'Poppins';
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  &.status-inside {
+    background-color: #dcfce7;
+    color: #15803d;
+  }
+
+  &.status-outside {
+    background-color: #fee2e2;
+    color: #991b1b;
+  }
+
+  &.status-small {
+    padding: 3px 10px;
+    font-size: 10px;
+  }
+}
+
+/* Expandable Detail Panel */
+.detail-expand-row td {
+  padding: 0 !important;
+  border-bottom: none !important;
+}
+
+.detail-expand-panel {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, opacity 0.35s ease;
+
+  &.is-open {
+    max-height: 3000px;
+    opacity: 1;
+  }
+}
+
+.detail-panel-inner {
+  margin: 12px 16px 24px;
+  background-color: #f9fafb;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+}
+
+.detail-panel-header {
+  margin-bottom: 16px;
+}
+
+.detail-panel-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 4px 0;
+  font-family: 'Poppins';
+}
+
+.detail-panel-subtitle {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+  font-family: 'Poppins';
+}
+
+/* Detail Table Specific Styles */
+.detail-table-wrapper .table {
+  background-color: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.detail-table-wrapper .table-head {
+  background-color: #f3f4f6;
+}
+
+.detail-table-wrapper .table th {
+  font-size: 11px;
+  padding: 10px 12px;
+}
+
+.detail-table-wrapper .table td {
+  font-size: 11px;
+  padding: 12px;
+}
+
+/* Event Type Badge */
+.event-type-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: 'Poppins';
+  text-transform: uppercase;
+  background-color: #e5e7eb;
+  color: #374151;
+
+  &.type-inside {
+    background-color: #dcfce7;
+    color: #15803d;
+  }
+}
+
+/* Event Row Highlighting */
+.event-inside {
+  background-color: #f0fdf4;
+}
+
+.event-ongoing {
+  font-style: italic;
+  color: #16a34a;
+  font-weight: 500;
+}
+
+/* Loading Spinner */
+.icon-loading {
+  color: #fa751a;
+  margin: 20px 0;
+}
+
+/* No Data State */
+.no-data-text {
+  padding: 32px 16px !important;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
+  font-family: 'Poppins';
+  font-weight: 400;
+}
+
+/* Text Alignment */
+.text-center {
+  text-align: center !important;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .table th,
+  .table td {
+    font-size: 11px;
+    padding: 10px 12px;
+  }
+
+  .section-title {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .report-section {
+    padding: 16px;
+  }
+
+  .table th,
+  .table td {
+    font-size: 10px;
+    padding: 8px 10px;
+  }
+
+  .status-badge {
+    font-size: 9px;
+    padding: 3px 8px;
+  }
+}
+
+/* Time Period Dropdown Styles */
+::ng-deep .timePeriod.ng-select .ng-dropdown-panel .ng-option.ng-option-marked {
+  background-color: #fa751a !important;
+  color: #ffffff !important;
+  font-family: 'Poppins' !important;
+  font-size: 12px !important;
+}
+
+::ng-deep .timePeriod.ng-select .ng-dropdown-panel .ng-option {
+  background-color: #fff !important;
+  color: #000000 !important;
+  font-family: 'Poppins' !important;
+  font-size: 12px !important;
+}
+
+::ng-deep .timePeriod.ng-select .ng-select-container {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  min-height: 36px;
+  font-family: 'Poppins' !important;
+}
+
+::ng-deep .timePeriod.ng-select .ng-value {
+  font-family: 'Poppins' !important;
+  font-size: 13px !important;
+  color: #374151 !important;
+}
+
+.fleet-dropdown {
+  .ng-select {
+    font-family: 'Poppins', sans-serif;
+  }
+}
+
+/* Modal Overlay Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  width: 700px;
+  max-width: 90%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #6b7280;
+
+  &:hover {
+    color: #374151;
+  }
+}
+
+.option-column {
+  margin-left: -20px;
+  margin-right: 12px;
+}
+
+.option {
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: #374151;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #f3f4f6;
+  }
+
+  &.selected {
+    background-color: #fa751a;
+    color: white;
+    font-weight: 500;
+  }
+}

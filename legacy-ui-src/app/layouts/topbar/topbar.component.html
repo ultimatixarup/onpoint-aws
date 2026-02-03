@@ -1,0 +1,131 @@
+<header id="page-topbar">
+  <div class="navbar-header">
+    <div class="d-flex">
+      <div class="site-logo logo-big">
+        <a class="navbar-brand">
+            <img
+              [src]="imageUrl"
+              class="logo-icon me-2 cx-log"
+              [ngClass]="{ 'cx-log-special': fleetIdData === '101371' }"
+              alt="logo"
+            >
+          </a>
+          </div>
+        <button style="margin-bottom: 20px;" class="newTipIcon px-3 font-size-16 header-item btn-collapsed-menu4"
+          id="vertical-menu-btn"
+          (click)="toggleMobileMenu($event); isMenuCollapsed = !isMenuCollapsed">
+
+          <i class="fas newIcon custom-tooltip-icon2"
+          [ngClass]="isMenuCollapsed ? 'fa-angle-double-right' : 'fa-angle-double-left'"
+          [style.transform]="isMenuCollapsed ? 'rotate(180deg)' : 'rotate(0deg)'"
+          style="color: #000000;">
+       </i>
+          <span class="custom-tooltip2">
+            {{ isMenuCollapsed ? 'Collpase' : 'Expand' }}
+          </span>
+        </button>
+
+    </div>
+    <div class="d-flex mr-right">
+      <ng-container
+        *ngIf=" user === 'role_consumer_fleet'">
+        <div class="row mr-row-data" *ngIf="showTopbarElements">
+          <div class="col-xs-12 col-lg-12">
+            <div>
+              <span style="float: left; margin-left: -25px; margin-right: 6px;">
+                <img src="../../../assets/images/global-white.svg" style="height: 25px;">
+                {{ currentTime }}
+              </span>
+              <span style="max-width: 100%; float: left; width: 212px;">
+                <select [(ngModel)]="dropdownTimezone" (change)="onTimezoneChange($event.target.value)"
+                  class="timeData">
+                  <option value="" disabled hidden>Select Timezone</option>
+                  <option *ngFor="let tz of timezones" [value]="tz.value">{{ tz.label }}</option>
+                </select>
+              </span>
+            </div>
+          </div>
+        </div>
+   <div class="dropdown d-inline-block" ngbDropdown style="margin-right: 6px;">
+        </div>
+        <div class="dropdown d-inline-block" ngbDropdown style="margin-right: 12px;">
+          <button type="button" ngbTooltip="FAQ's" tooltipClass="custom-tooltipNew" placement="right" ngbDropdownToggle
+            id="page-header-user-dropdown " class="header-item" style="background-color: #fff" href="javascript:(void)">
+            <span class="d-none d-xl-inline-block ms-1" style="font-family: 'Poppins';"><img
+                src="../../../assets/images/faq-new.svg" class="top-img"></span>
+          </button>
+          <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
+            <div class="row">
+              <div class="col-xs-12 col-lg-9">
+                <a class="dropdown-item" href="javascript:void(0)"
+                  style="font-size: 13px; font-family: 'Poppins';">Vehicle Consent Process</a>
+              </div>
+              <div class="col-xs-12 col-lg-3">
+                <img src="../../../assets/images/consent-new.svg" class="top-img-consent">
+              </div>
+            </div>
+            <div class="dropdown-divider"></div>
+            <div class="row">
+              <div class="col-xs-12 col-lg-9">
+                <a class="dropdown-item" href="javascript:void(0)"
+                  style="font-size: 13px; font-family: 'Poppins';">FAQ's</a>
+              </div>
+              <div class="col-xs-12 col-lg-3">
+                <img src="../../../assets/images/faq-new.svg" class="top-img-consent">
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>&nbsp;&nbsp;
+      <div class="dropdown d-inline-block" ngbDropdown>
+        <button type="button" class="header-item top-name" ngbDropdownToggle id="page-header-user-dropdown ">
+          <span class="d-none d-xl-inline-block ms-1"
+            style="font-family: 'Poppins'; color:#fff; font-size: 12px; font-weight: 500;margin-left: -1px !important;">{{
+            loginUser?.name.split(' ')[0].charAt(0) | uppercase }}{{ loginUser?.name.split(' ')[1]?.charAt(0) |
+            uppercase }} </span>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
+          <div class="row" style="margin-top: 6px;">
+            <div class="col-xs-12 col-lg-4">
+              <button type="button" class="header-item" ngbDropdownToggle id="page-header-user-dropdown"
+                style="background-color: #fa751a ; border-radius: 50%; height: 30px; width: 30px; margin-left: 12px; margin-top: 4px; pointer-events: none;">
+                <span class="d-none d-xl-inline-block ms-1"
+                  style="font-family: 'Poppins'; color:#fff; font-size: 12px; font-weight: 500; margin-left: 0px!important;">{{
+                  loginUser?.name.split(' ')[0].charAt(0) | uppercase }}{{ loginUser?.name.split(' ')[1]?.charAt(0) |
+                  uppercase }} </span>
+              </button>
+            </div>
+            <div class="col-xs-12 col-lg-8 main-dropdown">
+              <h5 class="name-heading"> {{loginUser?.name | titlecase}}</h5>
+              <h5 class="email-heading">{{loginUser?.email}}</h5>
+            </div>
+          </div>
+          <div class="dropdown-divider"></div>
+          <div class="row">
+            <div class="col-xs-12 col-lg-9">
+              <a class="dropdown-item" href="javascript:void(0)" style="font-size: 13px; font-family: 'Poppins';"
+                (click)="logout()">Log out</a>
+            </div>
+            <div class="col-xs-12 col-lg-3">
+              <a class="dropdown-item item" styhref="javascript:void(0)" (click)="logout()"><i
+                  class="fa fa-sign-out"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- <div class="row" style="position: sticky;z-index: 1; margin-left: -5px;">
+    <div class="col-xs-12 col-lg-2">&nbsp;</div>
+    <div class="col-xs-12 col-lg-10" style="background-color: #d8d8d8; height: 35px; border-top: 2px solid #c4c4c4;">
+      <div class="row" style="margin-right: -34px;">
+        <div class="col-xs-12 col-lg-9"> &nbsp;</div>
+        <div class="col-xs-12 col-lg-3" style="margin-top: 2px;">
+          <ng-select [searchable]="true" class="newSelect1" [clearable]="true" style="max-height: 28px!important;"
+    placeholder="Organization Id" (change)="onFleetChange($event)" [(ngModel)]="fleetIdData">
+    <ng-option *ngFor="let fleet of fleetList" [value]="fleet.id">{{fleet.id}} - [{{fleet.name}}]</ng-option>
+</ng-select>
+        </div></div>
+    </div>
+  </div> -->
+</header>

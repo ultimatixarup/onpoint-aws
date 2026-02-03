@@ -1,0 +1,1828 @@
+.collapse0-widthP{
+    float: left!important; margin-left: 70px!important;
+}
+
+.wid-100{
+    width: 100% !important;
+  }
+
+  .data-col3{
+    width: 28%!important;
+  }
+
+  .data-col6{
+    width: 44%!important;
+  }
+
+
+
+  .section-heading{
+    // text-align: center;
+      color: 000000;
+      margin-bottom:20px;
+      font-weight: 600;
+      padding-left: 20px;
+      font-size: 20px;
+      font-family: 'Poppins';
+  }
+
+  .page-content-main {
+    padding-top: 0px !important;
+    margin-left: -12px !important;
+    margin-right: -12px !important;
+  }
+  .heading-title {
+    line-height: 33px !important;
+    text-align: left !important;
+    font-weight: 600 !important;
+  }
+  .heading-title-small {
+    font-size: 1.5rem !important;
+    font-weight: 400 !important;
+  }
+  .active-bread {
+    font-size: 12px !important;
+    color: #fa751a !important;
+    font-weight: 500 !important;
+    font-family: "Poppins" !important;
+  }
+  .inactive-bread {
+    font-size: 12px !important;
+    color: #6c757e !important;
+    font-weight: 400 !important;
+    font-family: "Poppins" !important;
+  }
+  .consumer-select {
+    color: #9fa19f;
+    width: 100%;
+    height: 37px !important;
+    background-color: transparent;
+    background-size: 10px 12px !important;
+    font-family: "Poppins" !important;
+    height: 37px !important;
+    border-radius: 10px !important;
+    border: none !important;
+  }
+  .consumer-pad {
+    margin-top: -12px;
+    margin-left: -24px;
+  }
+  .no-border:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+  .newSelect1 {
+    color: #9fa19f;
+    width: 100%;
+    height: 37px !important;
+    background-size: 10px 12px !important;
+    font-family: "Poppins" !important;
+    height: 37px !important;
+    border-radius: 10px !important;
+  }
+  ::ng-deep.newSelect1 .ng-select-container {
+    background-color: #fa751a !important;
+  }
+  ::ng-deep.newSelect1.ng-select
+    .ng-select-container
+    .ng-value-container
+    .ng-placeholder {
+    color: #ffffff !important;
+  }
+  ::ng-deep.newSelect1.ng-select.ng-select-opened
+    > .ng-select-container
+    .ng-arrow {
+    top: -2px;
+    border-color: transparent transparent #ffffff !important;
+    border-width: 0 5px 5px;
+  }
+  ::ng-deep.newSelect1.ng-select.ng-select-single
+    .ng-select-container
+    .ng-value-container
+    .ng-value {
+    color: #ffffff !important;
+  }
+  ::ng-deep.newSelect1.ng-select .ng-clear-wrapper {
+    color: #ffffff !important;
+  }
+  ::ng-deep.newSelect1.ng-select .ng-arrow-wrapper .ng-arrow {
+    border-color: #fff transparent transparent !important;
+    border-style: solid;
+    border-width: 5px 5px 2.5px;
+  }
+  .main-content-row {
+    font-family: "Poppins" !important;
+  }
+
+  .header-card {
+    background-color: white;
+    width: -webkit-fill-available;
+    border-radius: 10px;
+    padding: 15px 15px;
+    height: 80px;
+  }
+  .flex-four {
+    display: flex;
+    gap: 1rem;
+    background-color: white;
+    padding: 20px;
+    border-radius: 16px;
+    border: 1px solid rgba(186, 186, 186, 0.386);
+  }
+  .brdr-red {
+    border: 1px solid #ff8c8c;
+  }
+  .brdr-fuel-consumed{
+    border: 1px solid #7b9be0;
+  }
+  .brdr-green {
+    border: 1px solid green;
+  }
+  .brdr-yellow {
+    border: 1px solid #fb8a3c;
+  }
+  .brdr-blue {
+    border: 1px solid #55D3A9;
+  }
+
+
+  .header-card-text {
+    font-weight: 600;
+    font-size: 14px;
+    font-family: 'Poppins';
+  }
+  .header-card-sub-text {
+    color: #030229d1;
+    font-size: 10px;
+  }
+  .sub-card {
+    width: -webkit-fill-available;
+    background-color: white;
+    border-radius: 10px;
+    padding: 20px 15px;
+    border: 1px solid rgba(186, 186, 186, 0.386);
+  }
+  .chart-title {
+    font-weight: 500;
+    padding-left: 10px;
+  }
+  .chart-img {
+    height: 16px;
+  }
+  .chart-label-x {
+    color: #6c757e !important;
+  }
+  .flex-two {
+    display: flex;
+    gap: 1rem;
+  }
+  .bottom-flex-div {
+    width: -webkit-fill-available;
+  }
+  .h-100 {
+    height: 100%;
+  }
+
+  text-above-below {
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Centers text vertically with respect to the line */
+    text-align: center; /* Centers text horizontally */
+    width: 100%;
+  }
+
+  hr {
+    width: 100%;
+    margin: 10px 0; /* Adds spacing between text and line */
+  }
+
+  .above-text,
+  .below-text {
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .bottom-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+  }
+
+  .sub-text {
+    color: #6a769e;
+    font-size: 10px;
+  }
+
+  .main-text {
+    color: #403b4a;
+    font-size: 16px;
+    font-weight: 800;
+  }
+  .danger {
+    color: red !important;
+  }
+
+  ::ng-deep .table > :not(caption) > * > * {
+    background-color: white !important;
+  }
+
+  .fleet-idle {
+    width: auto;
+    height: auto;
+    min-height: 265px;
+    border-radius: 12px;
+    border: 1px;
+    background-color: #f8faff;
+    border: 1px solid #dee4ed;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    .description {
+      font-size: 15px;
+      font-weight: 500px;
+      margin-top: 1rem;
+    }
+    .hours {
+      margin-top: 1rem;
+      font-size: 26px !important;
+      font-weight: 600;
+    }
+    .hour-text {
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .red {
+      color: #ff0000;
+    }
+  }
+  .f-le {
+    float: left;
+  }
+
+  .f-ri {
+    float: right;
+  }
+
+  .content-section-text{
+    color: #808593;
+    padding-left: 0%;
+    font-size: 12px;
+    line-height: 20px;
+    font-weight: 500;
+    font-family: "Poppins";
+
+  }
+
+  .section-heading{
+    // text-align: center;
+      color: 000000;
+      margin-bottom:20px;
+      font-weight: 600;
+      padding-left: 20px;
+      font-size: 20px;
+      font-family: 'Poppins';
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+    overflow-y: scroll;
+    background: grey;
+    box-shadow: inset 0 0 4px #707070;
+}
+
+  ::ng-deep .tooltip-inner {
+    background-color: rgb(235, 234, 234); /* Background color of the tooltip */
+    color: #000000;            /* Text color inside the tooltip */
+    font-size: 12px;        /* Font size */
+    font-family: 'Poppins';
+    padding: 10px;          /* Padding inside the tooltip */
+    border-radius: 5px;     /* Rounded corners */
+  }
+
+  .flex-space-between{
+    display: flex;
+    justify-content: space-between;
+  }
+  .legend_symbol{
+    width: 7px;
+    height: 7px;
+    margin-right: 3px;
+    border-radius: 50%;
+  }
+  .fuel_cost{
+    background: #55D3A9;
+  }
+
+  .legend_text{
+    align-items: center;
+    display: flex;
+    color: #AEB9E1;
+    font-size: 10px;
+  }
+
+  .flex-legend{
+    display: flex;
+    gap: 0.8rem;
+  }
+  .fuel_costpermile{
+    background: #2CA87F;
+  }
+
+  .idle_duration{
+    background-color: #FF7878;
+  }
+
+  .idle_percentage{
+    background-color: #9F1D2C;
+  }
+
+  .chart-header-card{
+    padding: 0 20px;
+  }
+
+  .loading-background {
+    background: linear-gradient(90deg, #f0f0f0 40%, #e0e0e0 60%, #f0f0f0 80%);
+    background-size: 200% 150%; /* The background is wider than the element itself */
+    animation: loading 1.5s infinite;
+    width: 100px; /* The width of the element */
+    height: 25px; /* The height of the element */
+    display: inline-block; /* Ensure the background animation affects the element */
+    overflow: hidden; /* Hide any overflow to keep the background within the element */
+  }
+
+  .consumer-pad {
+    margin-top: -12px;
+    margin-left: -24px;
+  }
+
+  .no-border:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  .heading-title {
+    line-height: 33px !important;
+    text-align: left !important;
+    font-weight: 600 !important;
+  }
+
+  .card {
+    border-radius: 10px !important;
+    height: auto !important;
+    border-top-left-radius: 0px !important;
+    border-top-right-radius: 0px !important;
+  }
+
+  .legend-container {
+    display: flex;
+    gap: 0.5rem;
+    border-top: 1px solid #DEDEDE;
+    padding-bottom: 3%
+  }
+
+  .legend-item-container {
+    display: flex;
+  }
+
+  .flex-space-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .sub-text {
+    color: #878b92;
+    font-size: 11px !important;
+    font-weight: 500;
+    font-family: 'Poppins' !important;
+  }
+
+  .main-text {
+    color: black;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .main-s-heading {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    font-family: "Poppins" !important;
+    padding-top: 6px;
+  }
+
+  .card-container {
+    padding-top: 2rem;
+  }
+
+  .card-item {
+    background-color: white;
+    padding: 2%;
+    border: 1px solid #dee4ed;
+    border-radius: 8px;
+    width: -webkit-fill-available;
+  }
+
+  .card-item-height{
+    height: 180px;
+  }
+
+  .row-data{
+   margin-top: -12px!important; margin-bottom: 24px!important
+  }
+
+  .subtext-1{
+    margin-left: -6px;
+    margin-right: -9px;
+  }
+
+  .risky-Driver{
+   margin-top: 57px!important
+  }
+
+  .row-data-height{
+   height: 498px!important
+  }
+
+  .top-heading {
+    font-family: 'Neo Sans Pro', 'Helvetica', 'Arial', 'Lucida', sans-serif !important;
+    font-size: 24px !important;
+    font-weight: 600 !important;
+    color: #000
+  }
+
+  .login-headlines {
+    font-size: 16px;
+    line-height: 30px;
+    font-weight: 500;
+    font-family: "Poppins";
+    color: #9a9696;
+    text-align: center;
+  }
+
+
+  .card-mid-trip {
+    height: 480px!important;
+    border-radius: 12px;
+    border: 1px solid #E7EAEE;
+  }
+
+  .user-icon {
+    float: left;
+    margin-top: -10px;
+    margin-right: 10px;
+  }
+
+  .user-icon-font {
+    font-size: 26px;
+    font-weight: 400;
+  }
+
+  .icon {
+    height: 20px;
+    margin-top: 10px;
+  }
+
+  .line {
+    margin-left: -20px;
+    margin-right: -20px;
+    margin-top: -6px;
+  }
+
+  .months-text {
+    font-size: 10px !important;
+    color: #6C757E !important;
+  }
+
+  .f-le {
+    float: left;
+  }
+
+  .f-ri {
+    float: right!important;
+  }
+
+  .card-item-special {
+    background-color: white;
+    border: 1px solid #dee4ed;
+    border-radius: 8px;
+    width: -webkit-fill-available;
+  }
+
+  .mr24{
+    margin-top: 30px;
+  }
+
+  .card-heading-img {
+    height: 20px;
+    padding-right: 3px;
+  }
+
+  .card-subheading-img {
+    height: 14px;
+    padding-right: 5px;
+  }
+
+  .card-heading {
+    font-family: "Poppins" !important;
+    font-size: .890rem !important;
+    font-weight: 500 !important;
+    color: #000;
+    /* align-items: center; */
+    /* display: flex; */
+    padding-left: 6px;
+  }
+
+  .cards-subsection {
+    display: flex;
+    gap: 1rem
+  }
+
+  .card-sub-item {
+    text-align: center;
+  }
+
+  .blues {
+    color: #7EA6FE;
+  }
+
+  .oranges {
+    color: #FFCFAE;
+  }
+
+  .lightblues {
+    color: #B3CBFF;
+  }
+
+  .greys {
+    color: #9B9B9B;
+  }
+
+  .greens {
+    color: #FF7878;
+  }
+
+  .card-t-item {
+    width: -webkit-fill-available;
+    display: flex;
+    align-items: center;
+  }
+
+  .small-card-h-pos {
+    position: relative;
+    top: 0.9rem;
+    left: 7%;
+  }
+
+
+  .active-vehicle{
+    float: right;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'Poppins';
+    color: #878b92;
+  }
+
+  .sub-chart-container {
+    margin-bottom: -8%;
+  }
+
+  .padding-left-right {
+    padding-left: 2%;
+    padding-right: 1.5%;
+    padding-top: 6%;
+  .header-card-unit{
+    font-size: 12px !important;
+    font-weight: 500 !important;
+  }
+  .address {
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  }
+
+
+
+.top-red {
+  border-radius: 20px;
+  border-right-color: #E7EAEE;
+  border-top-color: red;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 18px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+  background-color: white;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.top-red::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.right-red {
+  border-radius: 20px;
+  border-right-color: red;
+  border-top-color: red;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.right-red::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.left-red {
+  border-radius: 20px;
+  border-right-color: red;
+  border-top-color: red;
+  border-bottom-color: red;
+  border-left-color: #E7EAEE;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.left-red::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.bottom-red {
+  border-radius: 20px;
+  border-right-color: red;
+  border-top-color: red;
+  border-bottom-color: red;
+  border-left-color: red;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.bottom-red::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+
+
+.top-blue {
+  border-radius: 20px;
+  border-right-color: #E7EAEE;
+  border-top-color: #457FFB;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 18px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+  background-color: white;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.top-blue::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.right-blue {
+  border-radius: 20px;
+  border-right-color: #457FFB;
+  border-top-color: #457FFB;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.right-blue::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.left-blue {
+  border-radius: 20px;
+  border-right-color: #457FFB;
+  border-top-color: #457FFB;
+  border-bottom-color: #457FFB;
+  border-left-color: #E7EAEE;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.left-blue::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.bottom-blue {
+  border-radius: 20px;
+  border-right-color: red;
+  border-top-color: red;
+  border-bottom-color: red;
+  border-left-color: red;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.bottom-blue::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+
+.top-green {
+  border-radius: 20px;
+  border-right-color: #E7EAEE;
+  border-top-color: #45b01f;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 18px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+  background-color: white;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.top-green::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.right-green {
+  border-radius: 20px;
+  border-right-color: #45b01f;
+  border-top-color: #45b01f;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.right-green::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.left-green {
+  border-radius: 20px;
+  border-right-color: #45b01f;
+  border-top-color: #45b01f;
+  border-bottom-color: #45b01f;
+  border-left-color: #E7EAEE;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.left-green::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.bottom-green {
+  border-radius: 20px;
+  border-right-color: #45b01f;
+  border-top-color: #45b01f;
+  border-bottom-color: #45b01f;
+  border-left-color: #45b01f;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.bottom-green::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.top-orange {
+  border-radius: 20px;
+  border-right-color: #E7EAEE;
+  border-top-color: #FA751A;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 18px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+  background-color: white;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.top-orange::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.right-orange {
+  border-radius: 20px;
+  border-right-color: #FA751A;
+  border-top-color: #FA751A;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.right-orange::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.left-orange {
+  border-radius: 20px;
+  border-right-color: #FA751A;
+  border-top-color: #FA751A;
+  border-bottom-color: #FA751A;
+  border-left-color: #E7EAEE;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.left-orange::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.bottom-orange {
+  border-radius: 20px;
+  border-right-color: #FA751A;
+  border-top-color: #FA751A;
+  border-bottom-color: #FA751A;
+  border-left-color: #FA751A;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.bottom-orange::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+
+
+.top-grey {
+  border-radius: 20px;
+  border-right-color: #E7EAEE;
+  border-top-color: grey;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 18px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+  background-color: white;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.top-grey::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.right-grey {
+  border-radius: 20px;
+  border-right-color: grey;
+  border-top-color: grey;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.right-grey::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.left-grey {
+  border-radius: 20px;
+  border-right-color: grey;
+  border-top-color: grey;
+  border-bottom-color: grey;
+  border-left-color: #E7EAEE;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.left-grey::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.bottom-grey {
+  border-radius: 20px;
+  border-right-color: grey;
+  border-top-color: grey;
+  border-bottom-color: grey;
+  border-left-color: grey;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.bottom-grey::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+
+.top-lightblue {
+  border-radius: 20px;
+  border-right-color: #E7EAEE;
+  border-top-color: #C7D9FF;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 18px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+  background-color: white;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.top-lightblue::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.right-lightblue {
+  border-radius: 20px;
+  border-right-color: #C7D9FF;
+  border-top-color: #C7D9FF;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.right-lightblue::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.left-lightblue {
+  border-radius: 20px;
+  border-right-color: #C7D9FF;
+  border-top-color: #C7D9FF;
+  border-bottom-color: #C7D9FF;
+  border-left-color: #E7EAEE;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.left-lightblue::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.bottom-lightblue {
+  border-radius: 20px;
+  border-right-color: #C7D9FF;
+  border-top-color: #C7D9FF;
+  border-bottom-color: #C7D9FF;
+  border-left-color: #C7D9FF;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.bottom-lightblue::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.top-lightGreen {
+  border-radius: 20px;
+  border-right-color: #E7EAEE;
+  border-top-color: #95D3BF;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 18px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+  background-color: white;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.top-lightGreen::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.bottom-lightGreen {
+  border-radius: 20px;
+  border-right-color: #95D3BF;
+  border-top-color: #95D3BF;
+  border-bottom-color: #95D3BF;
+  border-left-color: #95D3BF;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.bottom-lightGreen::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+
+.top-lightorange {
+  border-radius: 20px;
+  border-right-color: #E7EAEE;
+  border-top-color: #FCBA8C;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 18px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+  background-color: white;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.top-lightorange::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.right-lightorange {
+  border-radius: 20px;
+  border-right-color: #FCBA8C;
+  border-top-color: #FCBA8C;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.right-lightorange::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.left-lightorange {
+  border-radius: 20px;
+  border-right-color: #FCBA8C;
+  border-top-color: #FCBA8C;
+  border-bottom-color: #FCBA8C;
+  border-left-color: #E7EAEE;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.left-lightorange::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.bottom-lightorange {
+  border-radius: 20px;
+  border-right-color: #FCBA8C;
+  border-top-color: #FCBA8C;
+  border-bottom-color: #FCBA8C;
+  border-left-color: #FCBA8C;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.bottom-lightorange::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.top-black {
+  border-radius: 20px;
+  border-right-color: #E7EAEE;
+  border-top-color: #000;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 18px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+  background-color: white;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.top-black::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.right-black {
+  border-radius: 20px;
+  border-right-color: #000;
+  border-top-color: #000;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.right-black::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.left-black {
+  border-radius: 20px;
+  border-right-color: #000;
+  border-top-color: #000;
+  border-bottom-color: #000;
+  border-left-color: #E7EAEE;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.left-black::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.bottom-black {
+  border-radius: 20px;
+  border-right-color: #000;
+  border-top-color: #000;
+  border-bottom-color: #000;
+  border-left-color: #000;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.bottom-black::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+
+.top-brown {
+  border-radius: 20px;
+  border-right-color: #E7EAEE;
+  border-top-color: #7F441C;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 18px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+  background-color: white;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.top-brown::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.right-brown {
+  border-radius: 20px;
+  border-right-color: #7F441C;
+  border-top-color: #7F441C;
+  border-bottom-color: #E7EAEE;
+  border-left-color: #E7EAEE;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.right-brown::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+.left-brown {
+  border-radius: 20px;
+  border-right-color: #7F441C;
+  border-top-color: #7F441C;
+  border-bottom-color: #7F441C;
+  border-left-color: #E7EAEE;
+  border-width: 20px;
+  border-style: solid;
+  height: 0px;
+  width: 0px;
+
+  /* To ratate */
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.left-brown::after {
+  content: "";
+  position: absolute;
+  top: 50%; /* Position it vertically in the center */
+  left: 50%; /* Position it horizontally in the center */
+  transform: translate(-50%, -50%); /* Center it precisely */
+  width: 15px; /* Adjust the width of the circle */
+  height: 15px; /* Adjust the height of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: white; /* Set color to white */
+  z-index: 1; /* Ensure it's on top of the rotated shape */
+}
+
+
+.listP {
+  padding-top: .5rem;
+  padding-bottom: .5rem;
+  font-weight:400;
+  font-size: 14px;
+  font-family: 'Poppins';
+  text-align: justify!important;
+  color: #000!important;;
+  }
+
+
+.content-right {
+  flex-grow: 1; /* Allows expansion */
+  width: 84%!important;
+}
+
+.chart-container {
+  position: relative; // This ensures the inner circle can be positioned relative to the chart
+}

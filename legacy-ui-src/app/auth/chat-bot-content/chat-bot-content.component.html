@@ -1,0 +1,57 @@
+<div class="row chatbot-header">
+    <div class="col-xs-12 col-lg-6">
+        <img src="../../../assets/images/logo_main.png" class="logo">
+    </div>
+ <div class="col-xs-12 col-lg-6">
+  <div class="row" style="margin-top: 6px;">
+       <div class="col-xs-12 col-lg-8">&nbsp;</div>
+       <div class="col-xs-12 col-lg-4">
+        <button class="login-btn">Log in</button>
+       </div>
+      </div>
+    </div>
+</div>
+
+  <!-- Show only when there are no messages -->
+
+<div class="chatgpt-page" >
+  <div class="row" *ngIf="messages.length === 0">
+    <div class="col-xs-12 col-lg-12" style="margin-top: 130px;;">
+      <h5 style="font-family: 'Poppins'; font-size: 24px; font-weight: 600; text-align: center;">
+        How can I help you today?
+      </h5>
+    </div>
+  </div>
+  <div class="chatgpt-page" [class.has-messages]="messages.length > 0" style="margin-top: -70px; background-color: transparent!important;">
+    <div class="chatgpt-messages" #messagesContainer>
+      <div *ngFor="let msg of messages"
+           class="chatgpt-message"
+           [ngClass]="{'user-message': msg.isUser, 'bot-message': !msg.isUser}">
+
+        <!-- Bot message: avatar on left -->
+        <ng-container *ngIf="!msg.isUser">
+          <img src="../../../assets/images/bot-image.png" class="bot-image" />
+          <div class="bot-text" [innerHTML]="formattedDisplayedText + (isTyping ? '<span class=\'cursor\'>|</span>' : '')"></div>
+
+        </ng-container>
+
+        <!-- User message: avatar on right -->
+        <ng-container *ngIf="msg.isUser">
+          <div class="user-text">{{ msg.text }}</div>
+          <img src="../../../assets/images/user-image.png" class="user-image" />
+        </ng-container>
+      </div>
+    </div>
+    <!-- Input box -->
+    <div class="chatgpt-input-wrapper">
+      <input
+        type="text"
+        class="chatgpt-input"
+        placeholder="Ask anything"
+        (keydown.enter)="handleSend($event)"
+        [(ngModel)]="userMessage"
+        [ngModelOptions]="{ standalone: true }"
+      />
+    </div>
+  </div>
+</div>

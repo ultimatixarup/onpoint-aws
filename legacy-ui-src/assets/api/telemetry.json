@@ -1,0 +1,1222 @@
+{
+  "openapi": "3.0.0",
+  "x-stoplight": {
+    "id": "kufeewciov2ve"
+  },
+
+  "servers": [
+    {
+      "url": "https://mock.cerebrumx.ai/api/v2",
+      "description": "MOCK"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Telemetry Data APIs"
+    }
+  ],
+  "paths": {
+    "/odometer/{vin}": {
+      "get": {
+        "operationId": "getOdometerReadingByVin",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Odometer"
+                },
+                "examples": {
+                  "Example 1": {
+                    "value": {
+                      "value": 10000.5,
+                      "unit": "miles"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-stoplight": {
+          "id": "3ye2sluwjssaq"
+        },
+        "summary": "Get Odometer",
+        "tags": [
+          ""
+        ]
+      },
+      "parameters": [
+        {
+          "name": "vin",
+          "in": "path",
+          "schema": {
+            "type": "string",
+            "minLength": 17,
+            "maxLength": 17
+          },
+          "description": "17 digit unique vehicle identifier",
+          "required": true
+        }
+      ]
+    },
+    "/location/{vin}": {
+      "get": {
+        "operationId": "getCurrentLocationByVin",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Location"
+                },
+                "examples": {
+                  "Example 1": {
+                    "value": {
+                      "values": {
+                        "latitude": 38.876354,
+                        "longitude": -77.072296,
+                        "heading": 0
+                      },
+                      "unit": "degree"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-stoplight": {
+          "id": "95s7ojs3d6hhv"
+        },
+        "summary": "Get Current Location",
+        "tags": [
+          ""
+        ]
+      },
+      "parameters": [
+        {
+          "name": "vin",
+          "in": "path",
+          "schema": {
+            "type": "string",
+            "minLength": 17,
+            "maxLength": 17
+          },
+          "description": "17 digit unique vehicle identifier",
+          "required": true
+        }
+      ]
+    },
+    "/speed/{vin}": {
+      "get": {
+        "operationId": "getSpeedByVin",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Speed"
+                },
+                "examples": {
+                  "Example 1": {
+                    "value": {
+                      "value": 20.7,
+                      "unit": "mph"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-stoplight": {
+          "id": "xie15v93ohtts"
+        },
+        "summary": "Get Speed",
+        "tags": [
+          ""
+        ]
+      },
+      "parameters": [
+        {
+          "name": "vin",
+          "in": "path",
+          "schema": {
+            "type": "string",
+            "minLength": 17,
+            "maxLength": 17
+          },
+          "description": "17 digit unique vehicle identifier",
+          "required": true
+        }
+      ]
+    }
+
+  },
+  "components": {
+    "securitySchemes": {
+      "ClientCredentials": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "refreshUrl": "https://mock.cerebrumx.ai/oauth2/token",
+            "scopes": {},
+            "tokenUrl": "https://mock.cerebrumx.ai/oauth2/token"
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Alert": {
+        "type": "object",
+        "x-stoplight": {
+          "id": "0krgy646jrq6s"
+        },
+        "x-examples": {},
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-stoplight": {
+              "id": "c8w3xtifu28ql"
+            },
+            "description": "Alert Id."
+          },
+          "description": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "vfkmx5ltj458j"
+            },
+            "description": "ALert Description"
+          },
+          "timestamp": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "x0lxwsh7fgj4q"
+            },
+            "description": "timestamp when alert generated."
+          },
+          "severity": {
+            "x-stoplight": {
+              "id": "pbqhlyl51cwyw"
+            },
+            "enum": [
+              "LOW",
+              "HIGH",
+              "NA"
+            ],
+            "description": "LOW - low impact collision, airbag not deployed.\nHIGH - high impact collision, airbag deployed.\nNA - Not Available."
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          }
+        },
+        "required": [
+          "id",
+          "description"
+        ]
+      },
+      "Location": {
+        "type": "object",
+        "x-stoplight": {
+          "id": "b4hwsmeww2qbf"
+        },
+        "x-examples": {},
+        "properties": {
+          "values": {
+            "type": "object",
+            "x-stoplight": {
+              "id": "89jd46j5zym43"
+            },
+            "properties": {
+              "latitude": {
+                "type": "number",
+                "x-stoplight": {
+                  "id": "kgo3lckbts8tt"
+                },
+                "description": "unit = decimal degree.\nMin = -90.0\nMax = 90.0",
+                "format": "double",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "longitude": {
+                "type": "number",
+                "x-stoplight": {
+                  "id": "qw9np475cxo4f"
+                },
+                "description": "unit = decimal degree.\nMin = -180.0\nMax = 180.0",
+                "format": "double",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "heading": {
+                "type": "number",
+                "x-stoplight": {
+                  "id": "gki8peeziqr13"
+                },
+                "format": "double",
+                "minimum": -180,
+                "maximum": 180,
+                "description": "unit - decimal degrees.\nNorth is zero degree.\nVehicle has positive heading in counter-clockwise direction and negative value in clockwise direction."
+              }
+            }
+          },
+          "unit": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "6p9x72arppw81"
+            },
+            "description": "decimal degree."
+          }
+        }
+      },
+      "TireStatus": {
+        "type": "object",
+        "x-stoplight": {
+          "id": "qrxh2hvslyjhp"
+        },
+        "x-examples": {},
+        "properties": {
+          "unit": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "mi5qc7yxir2ip"
+            },
+            "description": "constant i.e. psi"
+          },
+          "values": {
+            "type": "object",
+            "x-stoplight": {
+              "id": "spiwcdfx1u0vm"
+            },
+            "properties": {
+              "frontLeft": {
+                "type": "number",
+                "x-stoplight": {
+                  "id": "reyak1cmsrqyl"
+                },
+                "format": "double",
+                "description": "Front left Tire pressure in psi."
+              },
+              "frontRight": {
+                "type": "number",
+                "x-stoplight": {
+                  "id": "8ja0huommfnup"
+                },
+                "format": "double",
+                "description": "Front right Tire pressure in psi."
+              },
+              "rearLeft": {
+                "type": "number",
+                "x-stoplight": {
+                  "id": "y4a0djeysx37c"
+                },
+                "format": "double",
+                "description": "Rear left Tire pressure in psi."
+              },
+              "rearRight": {
+                "type": "number",
+                "x-stoplight": {
+                  "id": "mthpjrx2tz9pq"
+                },
+                "format": "double",
+                "description": "Rear right Tire pressure in psi."
+              }
+            }
+          }
+        },
+        "description": ""
+      },
+      "OilLife": {
+        "type": "object",
+        "x-stoplight": {
+          "id": "lifpy7k6u3dc2"
+        },
+        "x-examples": {},
+        "properties": {
+          "value": {
+            "type": "number",
+            "description": "Remaining Oil Life in percentage.",
+            "format": "double",
+            "x-stoplight": {
+              "id": "rr3m6gos64jpu"
+            }
+          },
+          "unit": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "ul7x7yuv9x19q"
+            },
+            "description": "unit = percentage"
+          }
+        }
+      },
+      "Odometer": {
+        "type": "object",
+        "x-stoplight": {
+          "id": "ft23geass7n78"
+        },
+        "x-examples": {},
+        "properties": {
+          "value": {
+            "type": "number",
+            "format": "double",
+            "x-stoplight": {
+              "id": "ftta0kc5olseg"
+            },
+            "description": "Odomoter reading in miles."
+          },
+          "unit": {
+            "type": "string",
+            "description": "unit = miles."
+          }
+        }
+      },
+      "FuelRange": {
+        "type": "object",
+        "x-stoplight": {
+          "id": "142gftttdz9uh"
+        },
+        "x-examples": {},
+        "properties": {
+          "value": {
+            "type": "number",
+            "format": "double",
+            "description": "Fuel range in miles."
+          },
+          "unit": {
+            "type": "string",
+            "description": "unit = miles."
+          }
+        }
+      },
+      "FuelLevel": {
+        "type": "object",
+        "x-stoplight": {
+          "id": "imedk0hguy8xe"
+        },
+        "x-examples": {},
+        "properties": {
+          "value": {
+            "type": "number",
+            "format": "double",
+            "description": "Fuel level in liters."
+          },
+          "percentageRemaining": {
+            "type": "number",
+            "format": "double",
+            "description": "Represents percentage of fuel remaining."
+          },
+          "unit": {
+            "type": "string",
+            "description": "unit = liter"
+          }
+        }
+      },
+      "EVRange": {
+        "type": "object",
+        "x-stoplight": {
+          "id": "iga2lmzw90fhv"
+        },
+        "x-examples": {},
+        "properties": {
+          "value": {
+            "type": "number",
+            "x-stoplight": {
+              "id": "lq6a6wp09kn33"
+            },
+            "format": "double",
+            "description": "Represents EV Range in miles."
+          },
+          "unit": {
+            "type": "string",
+            "description": "unit = miles"
+          }
+        }
+      },
+      "EVLevel": {
+        "type": "object",
+        "x-stoplight": {
+          "id": "ifshbc2hmzsd0"
+        },
+        "x-examples": {},
+        "properties": {
+          "value": {
+            "type": "number",
+            "x-stoplight": {
+              "id": "4cytiy9m7nmv3"
+            },
+            "format": "double",
+            "description": "Represents EV Level in percentage.  "
+          },
+          "unit": {
+            "type": "string",
+            "description": "unit = percentage"
+          }
+        }
+      },
+      "Battery": {
+        "type": "object",
+        "x-stoplight": {
+          "id": "wntutj70627ab"
+        },
+        "x-examples": {},
+        "properties": {
+          "value": {
+            "type": "number",
+            "format": "double",
+            "description": "Represents Battery Level in Volts ",
+            "x-stoplight": {
+              "id": "r10b1hwrvk0om"
+            }
+          },
+          "unit": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "8g27kqsxkybd0"
+            },
+            "description": "unit = volt"
+          },
+          "percentageRemaining": {
+            "type": "number",
+            "format": "double",
+            "description": "Represents battery life in percentage."
+          }
+        }
+      },
+      "Speed": {
+        "type": "object",
+        "x-stoplight": {
+          "id": "n21yaup1zwmmz"
+        },
+        "properties": {
+          "value": {
+            "type": "number",
+            "format": "double",
+            "description": "Represents speed in miles per hour."
+          },
+          "unit": {
+            "type": "string",
+            "description": "unit = mph i.e. miles per hour."
+          }
+        }
+      },
+      "TCO": {
+        "type": "object",
+        "description": "TCO",
+        "properties": {
+          "years": {
+            "type": "integer"
+          },
+          "fuelCostInDollarPerGallon": {
+            "type": "number"
+          },
+          "averageMilesPerGallon": {
+            "type": "number"
+          },
+          "fuelTaxInDollarPerGallon": {
+            "type": "integer"
+          },
+          "odometerReadingInMiles": {
+            "type": "integer"
+          },
+          "costOfVehicleInDollarAsPerNHTSA": {
+            "type": "integer"
+          },
+          "state": {
+            "type": "string"
+          },
+          "mileagePerYearInMiles": {
+            "type": "object",
+            "properties": {
+              "2023": {
+                "type": "integer"
+              },
+              "2024": {
+                "type": "integer"
+              },
+              "2025": {
+                "type": "integer"
+              },
+              "2026": {
+                "type": "integer"
+              }
+            }
+          },
+          "fuelCostInDollarPerYear": {
+            "type": "object",
+            "properties": {
+              "2023": {
+                "type": "number"
+              },
+              "2024": {
+                "type": "number"
+              },
+              "2025": {
+                "type": "number"
+              }
+            }
+          },
+          "fuelTaxInDollarPerYear": {
+            "type": "object"
+          },
+          "totalEstimatedYearlyCost": {
+            "type": "object",
+            "properties": {
+              "2023": {
+                "type": "number"
+              },
+              "2024": {
+                "type": "number"
+              },
+              "2025": {
+                "type": "number"
+              }
+            }
+          },
+          "totalEstimatedYearlyOverAllCost": {
+            "type": "number"
+          },
+          "resaleValueInDollar": {
+            "type": "integer"
+          },
+          "yearlyDepreciationCostInDollarPerYear": {
+            "type": "object",
+            "properties": {
+              "2023": {
+                "type": "number"
+              },
+              "2024": {
+                "type": "number"
+              },
+              "2025": {
+                "type": "number"
+              },
+              "2026": {
+                "type": "number"
+              },
+              "2027": {
+                "type": "number"
+              },
+              "2028": {
+                "type": "number"
+              },
+              "2029": {
+                "type": "number"
+              },
+              "2030": {
+                "type": "number"
+              },
+              "2031": {
+                "type": "number"
+              }
+            }
+          },
+          "insuranceCostInDollarPerYear": {
+            "type": "object"
+          },
+          "repairCostInDollarPerYear": {
+            "type": "object",
+            "properties": {
+              "2020": {
+                "type": "integer"
+              },
+              "2021": {
+                "type": "integer"
+              },
+              "2022": {
+                "type": "integer"
+              },
+              "2023": {
+                "type": "integer"
+              },
+              "2024": {
+                "type": "integer"
+              },
+              "2025": {
+                "type": "integer"
+              },
+              "2026": {
+                "type": "integer"
+              }
+            }
+          },
+          "maintenanceCostInDollarPerYear": {
+            "type": "object",
+            "properties": {
+              "2023": {
+                "type": "number"
+              },
+              "2024": {
+                "type": "number"
+              },
+              "2025": {
+                "type": "number"
+              },
+              "2026": {
+                "type": "number"
+              }
+            }
+          },
+          "basePrice": {
+            "type": "integer"
+          },
+          "stateFee": {
+            "type": "integer"
+          },
+          "annualInsurance": {
+            "type": "integer"
+          },
+          "annualMaintenance": {
+            "type": "number"
+          },
+          "totalFuelConsumed": {
+            "type": "number"
+          },
+          "cxTotalFuelConsumedPerYear": {
+            "type": "number"
+          }
+        },
+        "x-examples": {
+          "Example_TCO": {
+            "years": 0,
+            "fuelCostInDollarPerGallon": 3.6697331378299145,
+            "averageMilesPerGallon": 42157.11397371124,
+            "fuelTaxInDollarPerGallon": 0,
+            "odometerReadingInMiles": 0,
+            "costOfVehicleInDollarAsPerNHTSA": 0,
+            "state": "Pennsylvania",
+            "mileagePerYearInMiles": {
+              "2023": 17868817,
+              "2024": 17868817,
+              "2025": 17868817,
+              "2026": 17868817
+            },
+            "fuelCostInDollarPerYear": {
+              "2023": 683308.6691693728,
+              "2024": 717474.1026278415,
+              "2025": 753347.8077592336
+            },
+            "fuelTaxInDollarPerYear": {},
+            "totalEstimatedYearlyCost": {
+              "2023": 5020658.370569375,
+              "2024": 6012186.432827841,
+              "2025": 6877806.507559231
+            },
+            "totalEstimatedYearlyOverAllCost": 17910651.310956437,
+            "resaleValueInDollar": 0,
+            "yearlyDepreciationCostInDollarPerYear": {
+              "2023": 21.969736070381266,
+              "2024": 28.241114369501492,
+              "2025": 34.38542521994134,
+              "2026": 41.230410557184776,
+              "2027": 48.66689149560121,
+              "2028": 46.68692082111438,
+              "2029": 43.5609384164223,
+              "2030": 19.62278592375365,
+              "2031": 2.8861290322580655
+            },
+            "insuranceCostInDollarPerYear": {},
+            "repairCostInDollarPerYear": {
+              "2020": 4092,
+              "2021": 5797,
+              "2022": 6138,
+              "2023": 6479,
+              "2024": 7502,
+              "2025": 9889,
+              "2026": 10230
+            },
+            "maintenanceCostInDollarPerYear": {
+              "2023": 1029696.3531000005,
+              "2024": 1258258.8741000004,
+              "2025": 1373695.9540999993,
+              "2026": 1390608.5940999996
+            },
+            "basePrice": 11583373,
+            "stateFee": 14626,
+            "annualInsurance": 737422,
+            "annualMaintenance": 1029696.3531000005,
+            "totalFuelConsumed": 215198.4456603736,
+            "cxTotalFuelConsumedPerYear": 186108.1305082722
+          }
+        },
+        "x-stoplight": {
+          "id": "nn7fn8yckcxxn"
+        }
+      },
+      "DriverScoreRequest": {
+        "type": "object",
+        "description": "Driver Score Request",
+        "properties": {
+          "vin": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          }
+        },
+        "x-examples": {
+          "Example_DriverScoreRequest": {
+            "vin": "1HD1KEM15CB610062",
+            "duration": "MONTH",
+            "startDate": "2023-05-15",
+            "endDate": "2023-09-15"
+          }
+        },
+        "x-stoplight": {
+          "id": "iozqwrrwg1mta"
+        }
+      },
+      "DriverScoreResponse": {
+        "type": "object",
+        "description": "Driver Score Response",
+        "x-examples": {
+          "Example_DriverScoreResponse": {
+            "driverRiskFactor": {
+              "milesDriven": 80,
+              "driveTime": 90,
+              "nightTimeDrive": 10,
+              "rapidAccCount": 1,
+              "harshBrakingCount": 1,
+              "sharpTurnCount": 1,
+              "overSpeedingCount": 2,
+              "overSpeedingDuration": 1,
+              "collisionCount": 0
+            },
+            "driverScore": 90
+          }
+        },
+        "x-stoplight": {
+          "id": "8u6i0tyieszk1"
+        },
+        "properties": {
+          "driverScore": {
+            "type": "integer"
+          },
+          "driverRiskFactor": {
+            "$ref": "#/components/schemas/DriverSummaryResponse"
+          }
+        }
+      },
+      "DriverSummaryRequest": {
+        "type": "object",
+        "description": "Driver Summary Request",
+        "properties": {
+          "vin": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          }
+        },
+        "x-examples": {
+          "Example_DriverSummaryRequest": {
+            "vin": "1HD1KEM15CB610062",
+            "duration": "MONTH",
+            "startDate": "2023-05-15",
+            "endDate": "2023-09-15"
+          }
+        },
+        "x-stoplight": {
+          "id": "hy49uqxh2a5ds"
+        }
+      },
+      "DriverSummaryResponse": {
+        "type": "object",
+        "description": "Driver Summary Response",
+        "x-examples": {
+          "Example_DriverSummaryResponse": {
+            "milesDriven": 80,
+            "driveTime": 90,
+            "nightTimeDrive": 10,
+            "rapidAccCount": 1,
+            "harshBrakingCount": 1,
+            "sharpTurnCount": 1,
+            "overSpeedingCount": 2,
+            "overSpeedingDuration": 1,
+            "collisionCount": 0
+          }
+        },
+        "x-stoplight": {
+          "id": "tyoavsdebfu8d"
+        },
+        "properties": {
+          "milesDriven": {
+            "type": "number"
+          },
+          "driveTime": {
+            "type": "number"
+          },
+          "nightTimeDrive": {
+            "type": "number"
+          },
+          "rapidAccCount": {
+            "type": "integer"
+          },
+          "harshBrakingCount": {
+            "type": "integer"
+          },
+          "sharpTurnCount": {
+            "type": "integer"
+          },
+          "overSpeedingCount": {
+            "type": "integer"
+          },
+          "overSpeedingDuration": {
+            "type": "integer"
+          },
+          "collisionCount": {
+            "type": "integer"
+          },
+          "days": {
+            "type": "integer"
+          }
+        }
+      },
+      "CrashForensicRequest": {
+        "type": "object",
+        "description": "Crash Forensic Request",
+        "properties": {
+          "vin": {
+            "type": "string"
+          },
+          "crashDate": {
+            "type": "string"
+          }
+        },
+        "x-examples": {
+          "Example_CrashForensicRequest": {
+            "vin": "1HD1KEM15CB610062",
+            "crashDate": "2023-09-15"
+          }
+        },
+        "x-stoplight": {
+          "id": "5znzu70a3mp3w"
+        }
+      },
+      "CrashForensicResponse": {
+        "type": "object",
+        "description": "Crash Forensic Response",
+        "x-examples": {
+          "Example_CrashForensicResponse": {
+            "timeStamp": "2023-09-15T15:16:17.001z",
+            "location": {
+              "latitude": null,
+              "longitude": 0
+            },
+            "speed": 10.2,
+            "acceleration": 3.7,
+            "seatbeltStatus": "FASTENED",
+            "airBagStatus": "DEPLOYED"
+          }
+        },
+        "x-stoplight": {
+          "id": "v21vhcc6siq9c"
+        },
+        "properties": {
+          "timeStamp": {
+            "type": "string"
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "latitude": {
+                "type": "number"
+              },
+              "longitude": {
+                "type": "number"
+              }
+            }
+          },
+          "speed": {
+            "type": "number"
+          },
+          "acceleration": {
+            "type": "number"
+          },
+          "seatbeltStatus": {
+            "type": "string"
+          },
+          "airBagStatus": {
+            "type": "string"
+          },
+          "dashCamVideoUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "EnrollRequest": {
+        "title": "EnrollRequest",
+        "x-stoplight": {
+          "id": "4gjo7c1lwxrhr"
+        },
+        "type": "object",
+        "properties": {
+          "vin": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "rugz6mepy03bn"
+            },
+            "description": "17 digit unique vehicle identifier.",
+            "minLength": 17,
+            "maxLength": 17
+          },
+          "fleetId": {
+            "type": "integer",
+            "x-stoplight": {
+              "id": "uxq0lh9bk7i9z"
+            },
+            "description": "id of Fleet in which VIN will be enrolled.",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "vin",
+          "fleetId"
+        ]
+      },
+      "EnrollResponse": {
+        "title": "EnrollResponse",
+        "x-stoplight": {
+          "id": "8cokga4c0hpi9"
+        },
+        "type": "object",
+        "properties": {
+          "vin": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "nzp1tujeilpyh"
+            },
+            "description": "17 digit unique vehicle identifier.\ne.g. '1GCZGTCB2E1122426' is valid Stellantis chevrolet Express vin."
+          },
+          "code": {
+            "type": "integer",
+            "x-stoplight": {
+              "id": "t66yrifnsmh3w"
+            },
+            "description": "code=200, if operation successful.\ncode-422, if operation unsuccessful."
+          },
+          "message": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "c70jcdmr6x96u"
+            }
+          },
+          "referenceId": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "lzjcx4d0cmero"
+            },
+            "description": "unique string id generated per enrollment request.\nIt is used for further debugging/communication purposed in case operation failed."
+          },
+          "failureReason": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "sxddmgyltjdqj"
+            }
+          }
+        }
+      },
+      "Eligibility": {
+        "title": "CheckEligibilityResponse",
+        "x-stoplight": {
+          "id": "f8d836a3httxb"
+        },
+        "type": "object",
+        "properties": {
+          "vin": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "17faywfeamj6x"
+            },
+            "description": "17 digit unique vehicle identifier. \nsame as sent in request."
+          },
+          "isEligible": {
+            "type": "boolean",
+            "x-stoplight": {
+              "id": "mbmk6f2dmquak"
+            },
+            "description": "true, if eligible.\nfalse, if not eligible."
+          }
+        }
+      },
+      "EnrollStatus": {
+        "title": "EnrollmentStatusResponse",
+        "x-stoplight": {
+          "id": "ea2d823s51124"
+        },
+        "type": "object",
+        "properties": {
+          "status": {
+            "x-stoplight": {
+              "id": "023hcjhboiqjw"
+            },
+            "enum": [
+              "PENDING",
+              "FAILED",
+              "ACTIVE",
+              "DEACTIVATION_PENDING",
+              "DEACTIVATION_FAILED"
+            ],
+            "description": "Represent current status of VIN Enrollment\nPENDING - Enroll Request Accepted, waiting for activation from OEM side.\nFAILED - Enroll Request Rejected.\nACTIVE - VIN is 'ACTIVE', OEM accepted enroll request. Data will be received as vehicle moves.\nDEACTIVATION_PENDING - UnEnroll request Accepted, waiting for unENroll from OEM side.\nDEACTIVATION_FAILED - UnEnroll request failed, retry after sometime.\n"
+          }
+        }
+      },
+      "DeleteEnroll": {
+        "$ref": "#/components/schemas/EnrollResponse",
+        "x-stoplight": {
+          "id": "42f946f19bdaa"
+        },
+        "title": ""
+      },
+      "FleetStatus": {
+        "title": "GetFleetStatusResponse",
+        "x-stoplight": {
+          "id": "qw4oq0ppcyf9j"
+        },
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-stoplight": {
+              "id": "nym64xb7dn5k1"
+            },
+            "description": "Fleet id. Long positive integer."
+          },
+          "name": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "k7b2r54bl15zg"
+            },
+            "description": "Fleet name."
+          },
+          "fleetStatus": {
+            "x-stoplight": {
+              "id": "6kxev7wodwsls"
+            },
+            "enum": [
+              "PENDING",
+              "ACTIVE",
+              "FAILED"
+            ],
+            "description": "Represents fleet Status.\nPENDING - Fleet is pending for validation & activation.\nACTIVE - Fleet validation & activation successful.\nFAILED - Fleet activation failed. 'Create Fleet' requested was rejected.\n\nVINs can be enrolled only against 'ACTIVE' fleet."
+          },
+          "fanId": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "vwi3ew3e35x10"
+            },
+            "description": "fanId for GM Vehicles."
+          }
+        }
+      },
+      "Package": {
+        "title": "PackageEnabledResponse",
+        "x-stoplight": {
+          "id": "p9hm5tod9z9fv"
+        },
+        "type": "object",
+        "properties": {
+          "packageName": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "0kc35qvgzioej"
+            },
+            "description": "Package enabled for partner.\nAll the VINs will be enrolled in this package."
+          }
+        }
+      },
+      "UpdateFleet": {
+        "title": "UpdateFleet",
+        "x-stoplight": {
+          "id": "iljr7fo5n9109"
+        },
+        "type": "object",
+        "properties": {
+          "fanId": {
+            "type": "string",
+            "x-stoplight": {
+              "id": "wt50nlgpanpvt"
+            },
+            "description": "fanID, required for GM vehicle's enrollment.\nIt is provided by GM to Fleet owners."
+          }
+        }
+      }
+    },
+    "parameters": {
+      "vin": {
+        "name": "vin",
+        "in": "path",
+        "schema": {
+          "type": "string",
+          "minLength": 17,
+          "maxLength": 17
+        },
+        "description": "17 digit unique vehicle identifier",
+        "required": true
+      },
+      "startDate": {
+        "name": "startDate",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^\\d{4}\\-(0?[1-9]|1[012])\\-(0?[1-9]|[12][0-9]|3[01])$"
+        },
+        "description": "Start Date ( yyyy-MM-dd format e.g. 2023-10-20)"
+      },
+      "endDate": {
+        "name": "endDate",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^\\d{4}\\-(0?[1-9]|1[012])\\-(0?[1-9]|[12][0-9]|3[01])$"
+        },
+        "description": "End Date ( yyyy-MM-dd format e.g. 2023-10-20)"
+      },
+      "crashDate": {
+        "name": "crashDate",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^\\d{4}\\-(0?[1-9]|1[012])\\-(0?[1-9]|[12][0-9]|3[01])$"
+        },
+        "description": "Crash Date( yyyy-MM-dd format e.g. 2023-10-20)"
+      },
+      "fleetId": {
+        "name": "fleetId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "description": "Fleet id"
+      }
+    },
+    "responses": {}
+  },
+  "x-internal": true,
+  "security": [
+    {
+      "ClientCredentials": []
+    }
+  ]
+}

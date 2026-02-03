@@ -1,0 +1,217 @@
+<div class="geofence-vin-report-container">
+  <!-- Page Header with Breadcrumb -->
+  <div class="page-header">
+    <div class="row">
+      <div class="col-12">
+        <span class="breadcrumb-left">
+          <h1 class="heading-title">Geofence VIN Report</h1>
+        </span>
+        <span class="breadcrumb-right">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+              <a routerLink="/adlp/admin/admindashboard/dashboardfleet" class="breadcrumb-h6">
+                <i class="bx bx-home-circle"></i>
+              </a>
+            </li>
+            <li class="breadcrumb-item">
+              <a routerLink="/adlp/admin/admindashboard/geoFenceSetup/geofence2">Geofence</a>
+            </li>
+            <li class="breadcrumb-item active">VIN Report</li>
+          </ol>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Geofence Selector (shown when no geofenceId) -->
+  <div class="geofence-selector-section" *ngIf="showGeofenceSelector">
+    <div class="selector-card">
+      <div class="selector-header">
+        <h3><i class="fa fa-map-marked-alt"></i> Select a Geofence</h3>
+        <p>Choose a geofence to view its vehicle report</p>
+      </div>
+
+      <div class="selector-body">
+        <!-- Loading State -->
+        <div *ngIf="isLoadingGeofences" class="text-center py-5">
+          <i class="fa fa-spinner fa-spin icon-loading" style="font-size: 24px;"></i>
+          <p class="mt-3">Loading geofences...</p>
+        </div>
+
+        <!-- Geofence List -->
+        <div *ngIf="!isLoadingGeofences && geofenceList.length > 0" class="geofence-grid">
+          <div *ngFor="let geofence of geofenceList"
+               class="geofence-card"
+               (click)="onGeofenceSelect(geofence)">
+            <div class="geofence-card-icon">
+              <i class="fa fa-map-marker-alt"></i>
+            </div>
+            <div class="geofence-card-content">
+              <h4>{{ geofence.geofenceName || geofence.name }}</h4>
+              <p class="geofence-address" *ngIf="geofence.address">
+                <i class="fa fa-location-arrow"></i> {{ geofence.address }}
+              </p>
+            </div>
+            <div class="geofence-card-action">
+              <i class="fa fa-chevron-right"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- No Data State -->
+        <div *ngIf="!isLoadingGeofences && geofenceList.length === 0" class="text-center py-5">
+          <i class="fa fa-map-marked-alt" style="font-size: 48px; color: #9ca3af;"></i>
+          <p class="mt-3 text-muted">No geofences found</p>
+          <p class="text-muted">Please create a geofence first</p>
+          <a routerLink="/adlp/admin/admindashboard/geoFenceSetup/geofence2" class="btn btn-primary mt-3">
+            <i class="fa fa-plus"></i> Go to Geofence Setup
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Section (shown when geofenceId is selected) -->
+  <div *ngIf="!showGeofenceSelector && geofenceId">
+    <!-- Selected Geofence Info with Time Period Filter -->
+    <div class="selected-geofence-bar">
+      <div class="selected-info">
+        <i class="fa fa-map-marker-alt"></i>
+        <span class="selected-name">{{ geofenceName || 'Geofence ' + geofenceId }}</span>
+      </div>
+      <div class="d-flex align-items-center gap-3">
+
+        <button class="btn btn-sm btn-outline-secondary" (click)="navigateToGeofenceList()">
+          <i class="fa fa-arrow-left" style="font-size: 14px;"></i> Geofence
+        </button>
+      </div>
+    </div>
+
+  <!-- SECTION 1: Geofence Summary Report -->
+  <div class="report-section summary-section">
+    <div class="section-header">
+      <h3 class="section-title">Geofence Summary Report</h3>
+      <p class="section-subtitle" *ngIf="geofenceName">{{ geofenceName }}</p>
+    </div>
+     <div class="fleet-dropdown" style="width: 180px;margin-left: auto;margin-bottom: 8px;">
+          <ng-select
+            bindLabel="label"
+            bindValue="value"
+            placeholder="Select Time Period"
+            [(ngModel)]="selectedPeriod"
+            (change)="onTimePeriodChange($event)"
+            class="newSelect timePeriod current-month-dropdown">
+            <ng-option *ngFor="let period of timePeriods" [value]="period.value">
+              {{ period.label }}
+            </ng-option>
+          </ng-select>
+        </div>
+    <div class="summary-table-wrapper">
+      <table class="table">
+        <thead class="table-head">
+          <tr>
+            <th class="expand-col"></th>
+            <th>Vehicle</th>
+            <th>VIN</th>
+            <th>Entries</th>
+            <th>Exits</th>
+            <th>Duration</th>
+            <th>Last Entry</th>
+            <th>Last Exit</th>
+            <th>Last Duration</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Loading State -->
+          <tr *ngIf="isLoadingSummary">
+            <td colspan="10" class="text-center">
+              <i class="fa fa-spinner fa-spin icon-loading" style="font-size: 20px;"></i>
+            </td>
+          </tr>
+
+          <!-- Data Rows -->
+          <ng-container *ngIf="!isLoadingSummary && vinSummaryRows.length > 0">
+            <ng-container *ngFor="let vinRow of vinSummaryRows">
+              <tr class="summary-row">
+                <td class="expand-col">
+                  <button
+                    type="button"
+                    class="expand-toggle"
+                    (click)="toggleVinDetails(vinRow)"
+                    [class.is-open]="vinRow._expanded"
+                    aria-label="Expand VIN details">
+                    <img
+                      src="../../../../../../../assets/images/add-group.svg"
+                      alt="Expand"
+                      class="action-img"
+                    />
+                  </button>
+                </td>
+                <td>{{ vinRow.vehicleName }}</td>
+                <td class="vin-cell">{{ vinRow.vin }}</td>
+                <td>{{ vinRow.entries }}</td>
+                <td>{{ vinRow.exits }}</td>
+                <td>{{ vinRow.duration }}</td>
+                <td>{{ vinRow.lastEntry }}</td>
+                <td>{{ vinRow.lastExit }}</td>
+                <td>{{ vinRow.lastDuration }}</td>
+                <td>
+                  <span
+                    class="status-badge"
+                    [ngClass]="{
+                      'status-inside': isInsideStatus(vinRow.status),
+                      'status-outside': !isInsideStatus(vinRow.status)
+                    }">
+                    {{ vinRow.status }}
+                  </span>
+                </td>
+              </tr>
+            </ng-container>
+          </ng-container>
+
+          <!-- No Data State -->
+          <tr *ngIf="!isLoadingSummary && vinSummaryRows.length === 0">
+            <td colspan="10" class="text-center no-data-text">
+              No vehicle data found for this geofence.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  </div>
+</div>
+
+<!-- Custom Range Modal -->
+<div class="modal-overlay" *ngIf="isCardOpen">
+  <div class="modal-card">
+    <button (click)="closeCard()" class="close-button">X</button>
+    <div class="row">
+      <div class="col-3 option-column">
+        <div style="margin-top: 20px;">
+          <div class="option" [class.selected]="selectedOption === 'today'" (click)="handleOption('today')">
+            Today
+          </div>
+          <div class="option" [class.selected]="selectedOption === 'weekly'" (click)="handleOption('weekly')">
+            Current Week
+          </div>
+          <div class="option" [class.selected]="selectedOption === 'monthly'" (click)="handleOption('monthly')">
+            Current Month
+          </div>
+          <div class="option" [class.selected]="selectedOption === 'lastmonth'" (click)="handleOption('lastmonth')">
+            Previous Month
+          </div>
+          <div class="option" [class.selected]="selectedOption === 'customRange'" selected (click)="handleOption('customRange')">
+            Custom Range
+          </div>
+        </div>
+      </div>
+
+      <div class="col-9" style="margin-top: 20px;">
+        <!-- Display calendar only if 'custom-range' is selected -->
+        <app-calendar (dateRangeSelected)="onDateRangeSelected($event)"></app-calendar>
+      </div>
+    </div>
+  </div>
+</div>

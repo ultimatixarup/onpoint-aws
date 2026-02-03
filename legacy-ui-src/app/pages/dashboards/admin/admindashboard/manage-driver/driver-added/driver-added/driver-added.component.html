@@ -1,0 +1,373 @@
+
+<ngx-spinner bdColor="rgba(0,0,0,0.8)" size="large" color="#fff" type="ball-elastic-dots" [fullScreen]="true">
+  <div class="custom-spinner">
+    <img src="../../../../../assets/images/spinner3.svg" alt="Your Logo">
+  </div>
+  <div class="loading-text">Please wait, we are getting information...</div>
+</ngx-spinner>
+<!--Page main content-->
+<div class="page-content page-content-main">
+  <div class="row left-navigation">
+    <div class="col-xs-12 col-lg-2 navbar-side-menu">
+      <app-sidebar></app-sidebar>
+    </div>
+  <!--Side bar Menu End-->
+  <!-- Main Content Right-->
+  <div class="col-xs-12 col-lg-12" style="margin-left: 1%; width: 100%;">
+    <!-- Heading and Breadcrumb -->
+      <!-- Heading and Breadcrumb -->
+      <div class="row">
+        <div class="col-xs-12 col-lg-12">
+          <span class="breadcrumb-left">
+            <h1 class="login-headline heading-title">Manage Driver</h1>
+          </span>
+          <span class="breadcrumb-right mr-8">
+            <ol class="breadcrumb">
+              <ng-container *ngIf="user =='admin'">
+                <li class="breadcrumb-item">
+                  <a routerLink="/adlp/admin" class="breadcrumb-h6"><i class="bx bx-home-circle"></i></a>
+                </li>
+                <li class="breadcrumb-item inactive-bread"><a routerLink="/adlp/admin/dashboardAdmin">Dashboard</a></li>
+                <li class="breadcrumb-item text-selected active-bread">Driver</li>
+              </ng-container>
+              <ng-container *ngIf="user !='admin'">
+                <li class="breadcrumb-item">
+                  <a routerLink="/adlp/admin/admindashboard/dashboardfleet" class="breadcrumb-h6"><i
+                      class="bx bx-home-circle"></i></a>
+                </li>
+                <li class="breadcrumb-item inactive-bread"><a
+                    routerLink="/adlp/admin/admindashboard/dashboardfleet">Dashboard</a></li>
+                <li class="breadcrumb-item text-selected active-bread">Driver</li>
+              </ng-container>
+            </ol>
+          </span>
+        </div>
+      </div>
+      <!-- Heading and Breadcrumb End-->
+      <!-- Consumer and Fleet Id Filter -->
+      <!-- <div class="row consumer-pad">
+        <div class="col-xs-12 col-lg-2"  style="margin-top: 6px">
+          <ng-container *ngIf="this.user === 'admin'">
+            <select class="form-select consumer-select no-border" [(ngModel)]="consumer" (change)="selectConsumer()">
+              <option value="" disabled hidden>Select Consumer</option>
+              <option value="All" selected>Consumer</option>
+              <option *ngFor="let consumer of consumerList"[ngValue]="consumer"> {{ consumer.name }} </option>
+            </select>
+          </ng-container>
+        </div>
+        <div class="col-xs-12 col-lg-8">&nbsp;</div>
+        <div class="col-xs-12 col-lg-2" style="margin-top: 6px">
+          <ng-select [searchable]="true" class="newSelect1" [clearable]="true" placeholder="Fleet Id"
+            [(ngModel)]="fleetIdData" (change)="onFleetIdChange()">
+            <ng-option *ngFor="let fleet of fleetList" value="{{ fleet.id }}">{{ fleet.id }} - [{{ fleet.name
+              }}]</ng-option>
+          </ng-select>
+        </div>
+      </div> -->
+      <div class="row">
+        <div class="col-xs-12 col-lg-6">
+          <!-- Filter Buttons -->
+          <div class="filter-buttons" style="margin-top: 15px">
+            <button class="filter-btn"
+                    [class.active]="!showUnassignedOnly"
+                    (click)="toggleFilter('all')"
+                    tooltip="Show All Drivers">
+              <i class="fas fa-users"></i> All Drivers ({{vehicle_names?.length || 0}})
+            </button>
+            <button class="filter-btn unassigned-filter"
+                    [class.active]="showUnassignedOnly"
+                    (click)="toggleFilter('unassigned')"
+                    tooltip="Show Drivers Without Vehicle">
+              <i class="fas fa-user-slash"></i> Unassigned ({{getUnassignedCount()}})
+            </button>
+          </div>
+        </div>
+        <div class="col-xs-12 col-lg-4" style="margin-top: 15px" *ngIf="user !== 'role_user_fleet'">
+          <ng-select [searchable]="true" class="newSelect1" [clearable]="true" placeholder="Organization Id/Name"
+            [(ngModel)]="fleetIdData" (change)="onFleetIdChange()">
+            <ng-option *ngFor="let fleet of fleetList" value="{{ fleet.id }}">{{ fleet.id }} - [{{ fleet.name
+              }}]</ng-option>
+          </ng-select>
+        </div>
+        <div class="col-xs-12 col-lg-2 text-end" style="margin-top: 15px">
+          <div class="button-group">
+            <button class="assign-vehicle-button"
+                    tooltip="Assign Vehicle to Driver"
+                    (click)="goToAssignVehicle()">
+              <i class="fas fa-car"></i> Assign
+            </button>
+            <button class="add-button" tooltip="Add Driver" (click)="addDriver()">
+              <b>+</b> Add
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Consumer and Fleet Id Filter -->
+      <!-- Debug Info (remove in production) -->
+      <!--
+      <div class="row" style="background: #f0f0f0; padding: 10px; margin: 10px 0;">
+        <small>Debug Info: vehicle_names.length = {{vehicle_names?.length || 0}}, fleetIdData = {{fleetIdData || 'null'}}, user = {{user}}</small>
+      </div>
+      -->
+      <!-- main container start -->
+      <div class="table-container" style="margin-top: 20px; height: auto;">
+        <div class="row mr-table mr-12">
+          <div class="col-lg-12 col-xs-12">
+            <div class="table-wrapper">
+              <div class="table-responsive table-b" >
+                <table class="table"  style="position: relative; width: 100%;">
+                    <thead class="table-head">
+                      <tr class="table-header">
+                        <th class="table-column-width6">Driver<br></th>
+                        <th class="table-column-width6">Mobile<br>Number</th>
+                        <th class="table-column-width5">Email<br>ID</th>
+                        <th class="table-column-width5">License<br>No</th>
+                        <th class="table-column-width6">Expiry<br>Date</th>
+                        <th class="table-column-width5">Issue<br>State</th>
+                        <th class="table-column-width5">Assigned<br>Vehicle Name</th>
+                        <th class="table-column-width5">Assigned<br>Vehicle</th>
+
+                        <!-- <th class="table-column-width6">Assigned<br>Vehicles</th> -->
+                        <!-- <th class="table-column-width6">Delete Association</th> -->
+                        <th class="table-column-width">Action<br></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let vehicle of paginatedDrivers"
+                          class="table-row"
+                          [class.unassigned-driver]="isDriverUnassigned(vehicle)">
+                        <!-- Driver details -->
+                        <td>
+                          <ng-container *ngIf="!vehicle.isEditing">
+                            {{ formatName(vehicle?.firstName) }} {{ formatName(vehicle?.lastName) }}
+                          </ng-container>
+                          <input
+                            *ngIf="vehicle.isEditing"
+                            [(ngModel)]="vehicle.firstName"
+                            placeholder="First Name"
+                            class="input-frame"
+                          />
+                          <input
+                            *ngIf="vehicle.isEditing"
+                            [(ngModel)]="vehicle.lastName"
+                            placeholder="Last Name"
+                            class="input-frame"
+                          />
+                        </td>
+                        <td>
+                          <ng-container *ngIf="!vehicle.isEditing">
+                            {{ vehicle?.phoneNo || '--' }}
+                          </ng-container>
+                          <div *ngIf="vehicle.isEditing">
+                            <input
+                              [(ngModel)]="vehicle.phoneNo"
+                              placeholder="Phone Number"
+                              class="input-frame"
+                              [ngClass]="{ 'is-invalid': phoneNoInvalid(vehicle) }"
+                              [ngModelOptions]="{ updateOn: 'blur' }"
+                            />
+                          </div>
+                        </td>
+
+                        <td>
+                          <ng-container *ngIf="!vehicle.isEditing">
+                            {{ vehicle?.email?.toLowerCase() || '--' }}
+                          </ng-container>
+                          <input
+                            *ngIf="vehicle.isEditing"
+                            [(ngModel)]="vehicle.email"
+                            placeholder="Email"
+                            class="input-frame"
+                          />
+                        </td>
+                        <td>
+                         {{ vehicle?.licenceNo || '--' }}
+                        </td>
+                        <td>
+                          {{ vehicle?.expiryDate || '--' }}
+                         </td>
+                        <td>
+                          {{ vehicle?.issueState || '--' }}
+                         </td>
+
+                        <td>
+                          <span *ngIf="vehicle?.vins?.length">
+                            {{ getLatestVin(vehicle.vins)?.alias || 'N/A' }}
+                          </span>
+                          <span *ngIf="!vehicle?.vins?.length" class="unassigned-text">
+                            <i class="fas fa-exclamation-circle"></i> No Vehicle
+                          </span>
+                        </td>
+                        <td>
+                          <span *ngIf="vehicle?.vins?.length">
+                            {{ getLatestVin(vehicle.vins)?.vin || 'N/A' }}
+                          </span>
+                          <span *ngIf="!vehicle?.vins?.length" class="unassigned-text">
+                            --
+                          </span>
+                        </td>
+
+
+                        <!-- <td style="display: flex; justify-content: left; align-items: left;">
+                          <div *ngIf="vehicle?.vins?.length" style="position: relative; padding-top: 9px; display: inline-block; width: 40px; height: 40px;">
+                            <img
+                              src="../../../../../../../../assets/images/blank-number.svg"
+                              style="width: 60%; height: 60%;"
+                              alt="Blank Number"
+                            />
+                            <span
+                              style="position: absolute;
+                              padding-top: 14px;
+                              top: 30%;
+                              left: 28%;
+                              transform: translate(-50%, -50%);
+                              font-size: 10px;
+                              font-weight: 500;
+                              font-family: Poppins;
+                              color: black;"
+                            >
+                              {{ vehicle?.vins?.length || 0 }}
+                            </span>
+                          </div>
+                          <div *ngIf="!vehicle?.vins?.length" class="no-vehicle-badge">
+                            <i class="fas fa-ban"></i> 0
+                          </div>
+                        </td> -->
+                        <!-- <td>
+                        <button style="margin-left: 30px;"
+
+                        class="btn btn-danger btn-sm"
+                        tooltip="Delete Association"
+                        (click)="handleDeleteAssociation(vehicle.vins[0]?.vin)">
+                        <i class="fa fa-trash"></i>
+                      </button>
+                       </td> -->
+                        <td>
+                          <span class="action-buttons">
+                              <button class="btn btn-info btn-sm" [routerLink]="['/adlp/admin/admindashboard/manageDriver/editDriver/', vehicle.id]">
+                                <i class="fas fa-edit"></i>
+                              </button>
+
+                              <!-- <button [routerLink]="['/adlp/admin/admindashboard/manageDriver/driverSummary', vehicle.id]"
+                              class="tooltip-button"
+                              ngbTooltip="Driver Summary">
+                            <img src="../../../../../assets/images/blackdot.svg" class="button-icon">
+                           </button> -->
+                            <img src="../../../../../../../../assets/images/delete-assign-driver.svg" (click)="openDeleteModal(vehicle, modalConfirm)" alt="" ngbTooltip="Delete" class="action-img" />
+                          </span>
+                        </td>
+                      </tr>
+
+                      <tr *ngIf="!vehicle_names || vehicle_names.length === 0">
+                        <td colspan="10" class="text-center">
+                          <h5 class="no-data">No drivers found</h5>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination and Page Size Selector in Same Row -->
+      <div class="pagination-container">
+        <div class="row align-items-center">
+          <!-- Left side: Page Size Selector -->
+          <div class="col-md-6 text-start">
+            <div class="page-size-wrapper">
+              <span class="pageination">Show</span>
+              <select class="form-select page-size-select" (change)="selectPage($event.target.value)" [(ngModel)]="pageSize">
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+              <span class="pageination">entries</span>
+            </div>
+          </div>
+
+          <!-- Right side: Pagination Controls -->
+          <div class="col-md-6" *ngIf="totalPages > 1">
+            <nav aria-label="Page navigation">
+              <ul class="pagination justify-content-end mb-0">
+                <!-- Previous Button -->
+                <li class="page-item" [class.disabled]="currentPage === 0">
+                  <a class="page-link" (click)="goToPage(currentPage - 1)" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                  </a>
+                </li>
+
+                <!-- Page Numbers -->
+                <li class="page-item"
+                    *ngFor="let page of getPageNumbers()"
+                    [class.active]="page === currentPage">
+                  <a class="page-link" (click)="goToPage(page)">{{ page + 1 }}</a>
+                </li>
+
+                <!-- Next Button -->
+                <li class="page-item" [class.disabled]="currentPage === totalPages - 1">
+                  <a class="page-link" (click)="goToPage(currentPage + 1)" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+      </div>
+
+      <!-- main container end -->
+    </div>
+    <!-- Main Content Right End-->
+  </div>
+</div>
+
+<ng-template #viewMore let-modal>
+  <div class="modal-header">
+    <h4 class="modal-title">Multiple Assign Driver Details</h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss('Cross click')"></button>
+  </div>
+  <div class="modal-body">
+    <div class="table-container" style="margin-top: 24px; height: auto;">
+      <div class="row mr-table mr-12">
+        <div class="col-lg-12 col-xs-12">
+          <div class="table-wrapper" style="position: relative">
+            <div class="table-responsive table-b">
+              <table class="table">
+                <thead class="table-head">
+                  <tr class="table-header">
+                    <th class="table-column-width7">Assigned Vehicle</th>
+
+                  </tr>
+                </thead>
+                <tbody>
+                  <ng-container *ngIf="selectedVehicle?.vins">
+                    <tr *ngFor="let vin of selectedVehicle.vins" class="table-row">
+                      <td>{{ vin?.vin }}</td>
+
+                    </tr>
+                  </ng-container>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-template>
+ <!-- Add Service Form -->
+ <ng-template #modalConfirm let-modal class="modal-width">
+  <div class="modal-body modal-height">
+    <h5 class="heading-show">Do you want to delete the driver <span class="error-data">{{selectedGeofence.firstName}} {{selectedGeofence.lastName}} </span>?</h5>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-add-vin deletebtn" (click)="deleteGeofenceById(selectedGeofence.id);modal.dismiss()">Yes</button>
+    <button class="btn-cancel cancelbtn" (click)="modal.dismiss()">No</button>
+  </div>
+</ng-template>
+<!-- Add Service Form End-->

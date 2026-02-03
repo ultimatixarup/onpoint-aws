@@ -1,0 +1,372 @@
+.collapse0-widthP{
+    float: left!important; margin-left: 70px!important;
+  }
+
+  .wid-100{
+    width: 100% !important;
+  }
+
+
+.map-controls {
+  // position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1000; /* Ensure it stays above the map */
+  margin-top: -61px;
+  margin-left: 10px;
+}
+
+.map-toggle-button {
+  width: 78px;
+  height: 60px;
+  border: 2px solid #d0d2cc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #c2c4bf;
+  background-size: cover;
+  background-position: top;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.map-toggle-button span {
+  position: absolute;
+  bottom: 0px;
+  width: 100%;
+  border-bottom-left-radius: 2px;
+  margin-left: -37px;
+  background-color: #bebfba;
+  color: #000;
+  font-family: "Poppins";
+  opacity: 0.8;
+  font-weight:500;
+  font-size: 12px;
+  padding: 0px 0;
+  border-bottom-right-radius: 2px;
+}
+
+.map-toggle-button:hover {
+  opacity: 0.9;
+}
+
+.map-toggle-button:hover {
+  opacity: 0.9;
+}
+.map-container {
+  position: relative;
+  font-family: "Poppins" !important;
+  border-radius: 15px;
+  border: 2px solid #dbecf3;
+  overflow: hidden;
+}
+
+.map-toggle-group {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  background: #f3f3f3;
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  z-index: 1000; /* ensure it's above map tools */
+
+  button {
+    padding: 4px 12px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 12px;
+    color: #000000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+
+    img {
+      width: 20px;
+      height: 20px;
+    }
+
+    &.active {
+      background-color: #FA751A;
+      color: white;
+    }
+
+    &:not(:last-child) {
+      border-right: 1px solid #ddd;
+    }
+  }
+}
+
+
+
+  .content-right {
+    flex-grow: 1; /* Allows expansion */
+    width: 84%!important;
+  }
+
+  .chart-container {
+    position: relative; // This ensures the inner circle can be positioned relative to the chart
+  }
+
+
+  .heading-show{
+    font-size: 16px;
+      font-weight: 600;
+      font-family: 'Poppins';
+      text-align: center;
+      padding-top: 12px;
+  }
+
+  .add-button{
+    background-color: #ffffff;
+    color: #fa751a;
+    border:1px solid #fa751a;
+    font-size: 12px;
+    font-weight: 400;
+    text-align: center;
+    border-radius: 5px;
+    cursor: pointer;
+    padding: 8px 15px;
+    font-family: "Poppins";
+  }
+  .cancel-btn{
+    background-color: #E0E0E0;
+    color: #606060;
+    border:1px solid #E0E0E0;
+    font-size: 12px;
+    font-weight: 400;
+    text-align: center;
+    border-radius: 5px;
+    cursor: pointer;
+    padding: 8px 15px;
+    font-family: "Poppins";
+  }
+
+  .submit-btn{
+    background-color: #fa751a;
+    color: #ffffff;
+    border:1px solid #fa751a;
+    font-size: 12px;
+    font-weight: 400;
+    text-align: center;
+    border-radius: 5px;
+    cursor: pointer;
+    padding: 8px 15px;
+    font-family: "Poppins";
+  }
+
+  .image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .image-container img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .uploaded-file{
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'Poppins';
+    color: #2b53bb;
+  }
+
+  .uploaded-file-error{
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'Poppins';
+    color: red;
+  }
+
+  .download-link{
+    color:#ef8321!important;
+    text-decoration: underline!important;
+  }
+
+  .max-file{
+    margin-top: 30px;
+      margin-right: -24px;
+      float: right;
+      font-size: 12px;
+      font-weight: 400;
+      font-family: 'Poppins';
+      color: #656565;
+      opacity: 60%;
+  }
+
+
+  .geofenceAdd{
+    font-size: 12px;
+    font-weight: 400;
+    font-family: 'Poppins';
+    color:#000
+  }
+
+  .page-content-main {
+      padding-top: 0px !important;
+      margin-left: -12px !important;
+      margin-right: -12px !important;
+    }
+    .heading-title {
+      line-height: 33px !important;
+      text-align: left !important;
+      font-weight: 600 !important;
+    }
+    .heading-title-small {
+      font-size: 1.5rem !important;
+      font-weight: 400 !important;
+    }
+    .active-bread {
+      font-size: 12px !important;
+      color: #fa751a !important;
+      font-weight: 500 !important;
+      font-family: "Poppins" !important;
+    }
+    .inactive-bread {
+      font-size: 12px !important;
+      color: #6c757e !important;
+      font-weight: 400 !important;
+      font-family: "Poppins" !important;
+    }
+    .consumer-select {
+      color: #9fa19f;
+      width: 100%;
+      height: 37px !important;
+      background-color: transparent;
+      background-size: 10px 12px !important;
+      font-family: "Poppins" !important;
+      height: 37px !important;
+      border-radius: 10px !important;
+      border: none !important;
+    }
+    .consumer-pad {
+      margin-top: -12px;
+      margin-left: -24px;
+    }
+    .no-border:focus {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+    .newSelect1 {
+      color: #9fa19f;
+      width: 100%;
+      height: 45px !important;
+      background-size: 10px 12px !important;
+      font-family: "Poppins" !important;
+      border-radius: 10px !important;
+    }
+    ::ng-deep.newSelect1 .ng-select-container {
+      background-color: #fa751a !important;
+    }
+    ::ng-deep.newSelect1.ng-select
+      .ng-select-container
+      .ng-value-container
+      .ng-placeholder {
+      color: #ffffff !important;
+    }
+    ::ng-deep.newSelect1.ng-select.ng-select-opened
+      > .ng-select-container
+      .ng-arrow {
+      top: -2px;
+      border-color: transparent transparent #ffffff !important;
+      border-width: 0 5px 5px;
+    }
+    ::ng-deep.newSelect1.ng-select.ng-select-single
+      .ng-select-container
+      .ng-value-container
+      .ng-value {
+      color: #ffffff !important;
+    }
+    ::ng-deep.newSelect1.ng-select .ng-clear-wrapper {
+      color: #ffffff !important;
+    }
+    ::ng-deep.newSelect1.ng-select .ng-arrow-wrapper .ng-arrow {
+      border-color: #fff transparent transparent !important;
+      border-style: solid;
+      border-width: 5px 5px 2.5px;
+    }
+
+    .card{
+      border: 1px solid #DEE4ED;
+      border-radius: 20px;
+      padding: 20px;
+      height: 32rem;
+    }
+    .form-input{
+      color: #495057 !important;
+      border: 1px solid #ced4da !important;
+      height: 37px;
+      border-radius: 10px !important;
+      width: -webkit-fill-available;
+      padding-left: 10px;
+      font-family: 'Poppins'!important;
+    }
+    .form-input:focus,
+      .form-input:hover,
+      .form-input:active {
+        border: none;
+        outline: none;
+      }
+
+
+    .buttonend{
+      margin-top: 18%;
+      display: flex;
+      justify-content: end;
+      gap: 1rem;
+    }
+    .orange-button{
+      color: white;
+      background-color: #fa751a;
+      border-radius: 4px;
+      padding: 10px 20px;
+      font-size: 10px;
+    }
+    .gray-button{
+      color: #FFF;
+      background-color: #FA751A;
+      border-radius: 4px;
+      border:1px solid #FA751A!important;
+      padding: 10px 20px;
+      font-size: 10px;
+      cursor: pointer;
+      font-family: 'Poppins';
+    }
+
+    .submit-btn.disabled {
+      background-color: #ccc;
+      color: #666;
+      border:none!important;
+      cursor: not-allowed;
+    }
+    .submit-btn.disabled:hover {
+      background-color: #ccc; /* No hover effect */
+    }
+
+    .popup{
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Poppins';
+      padding-top: 14px;
+    }
+    agm-map {
+      height: 300px;
+    }
+   .checkbox-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

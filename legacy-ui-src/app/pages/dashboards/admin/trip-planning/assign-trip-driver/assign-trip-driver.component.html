@@ -1,0 +1,87 @@
+<ngx-spinner bdColor="rgba(0,0,0,0.8)" size="large" color="#fff" type="ball-elastic-dots" [fullScreen]="true">
+  <div class="custom-spinner">
+    <img src="../../../../../assets/images/spinner3.svg" alt="Your Logo">
+  </div>
+  <div class="loading-text">Please wait, we are getting information...</div>
+</ngx-spinner>
+<div class="page-content page-content-main">
+    <div class="row" style="margin-left: -31px; margin-right: 0px;">
+      <!-- Left Sidebar -->
+      <div class="col-xs-12 col-lg-2 navbar-side-menu">
+        <app-sidebar></app-sidebar>
+      </div>
+      <!-- Left Sidebar End -->
+
+      <!-- Right Side Content -->
+      <div class="col-xs-12 col-lg-12">
+        <div class="page-content-main">
+          <div class="row">
+            <div class="col-xs-12 col-lg-12">
+              <span class="breadcrumb-left">
+                <h1 class="login-headline heading-title">
+                  Assign
+                  <span class="heading-title-small">VIN to Trip </span>
+                </h1>
+              </span>
+              <span class="breadcrumb-right mr-8">
+                <ol class="breadcrumb">
+                  <li class="breadcrumb-item">
+                    <a routerLink="/adlp/admin" class="breadcrumb-h6">
+                      <i class="bx bx-home-circle"></i>
+                    </a>
+                  </li>
+                  <li class="breadcrumb-item inactive-bread">
+                    <a routerLink="/adlp/admin/admindashboard/dashboardfleet">Dashboard</a>
+                  </li>
+                  <li class="breadcrumb-item text-selected active-bread">Manage VIN</li>
+                </ol>
+              </span>
+            </div>
+          </div>
+
+          <div class="container mt-4">
+            <div class="card" style="width: 100%;">
+              <!-- <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Assign VIN To Trip </h4>
+              </div> -->
+              <div class="card-body">
+                <form (ngSubmit)="tripFinalSubmit()">
+                  <div class="form-row">
+                    <input type="hidden" name="tripDetailId" [value]="tripDetailId">
+                    <div class="row mt-4" *ngIf="!isFleetUser">
+                      <div class="col-md-12">
+                        <label for="driverList" class="mb-2">Fleet Name </label>
+                        <ng-select [searchable]="true" class="newSelect1" [clearable]="true"
+                                    placeholder="Organization Id/Name" (change)="selectFleetId($event)"
+                                    [(ngModel)]="fleetIdData" name="fleetId">
+                                    <ng-option *ngFor="let fleet of fleetList" value="{{fleet.id}}">{{fleet.id}} -
+                                        [{{fleet.name}}]</ng-option>
+                         </ng-select>
+                      </div>
+                    </div>
+                    <div class="row mt-4">
+                      <div class="col-md-12">
+                        <label for="driverList" class="mb-2">Assign VIN to Trip</label>
+                        <select id="driverList" name="driverList" class="form-select" [(ngModel)]="selectedVinId" required>
+                          <option value="">Select VIN</option>
+                          <option *ngFor="let vin of availableVin" [value]="vin.vin">{{ vin.vin }} - ({{ vin.status }})</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row mt-4">
+                    <div class="col-md-12 text-center">
+                      <button type="submit" class="btn btn-primary">Final Submit Trip</button>
+                    </div>
+                  </div>
+                </form>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Right Side Content End -->
+    </div>
+  </div>

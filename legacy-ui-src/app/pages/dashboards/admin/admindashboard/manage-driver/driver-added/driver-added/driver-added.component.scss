@@ -1,0 +1,652 @@
+.page-content-main {
+  padding-top: 0px !important;
+  margin-left: -12px !important;
+  margin-right: -12px !important;
+}
+
+.navbar-side-menu {
+  margin-left: -36px !important;
+  margin-top: -19px !important;
+}
+  .heading-title {
+    line-height: 33px !important;
+    text-align: left !important;
+    font-weight: 600 !important;
+  }
+  .heading-title-small {
+    font-size: 1.5rem !important;
+    font-weight: 400 !important;
+  }
+  .active-bread {
+    font-size: 12px !important;
+    color: #fa751a !important;
+    font-weight: 500 !important;
+    font-family: "Poppins" !important;
+  }
+
+  .no-data{
+  font-size: 14px !important; font-weight: 500 !important; font-family: 'Poppins' !important;
+  }
+
+  .view-more-center{
+   color: #3E4150!important;; margin-left: -12px!important;; margin-top: 10px!important;;
+  }
+  .inactive-bread {
+    font-size: 12px !important;
+    color: #6c757e !important;
+    font-weight: 400 !important;
+    font-family: "Poppins" !important;
+  }
+  .consumer-select {
+    color: #9fa19f;
+    width: 100%;
+    height: 37px !important;
+    background-color: transparent;
+    background-size: 10px 12px !important;
+    font-family: "Poppins" !important;
+    height: 37px !important;
+    border-radius: 10px !important;
+    border: none !important;
+  }
+  .consumer-pad {
+    margin-top: -12px;
+    margin-left: -24px;
+  }
+  .no-border:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+  .newSelect1 {
+    color: #9fa19f;
+    height: 37px !important;
+    background-size: 10px 12px !important;
+    font-family: "Poppins" !important;
+    height: 37px !important;
+    border-radius: 10px !important;
+  }
+  ::ng-deep.newSelect1 .ng-select-container {
+    background-color: #fa751a !important;
+  }
+  ::ng-deep.newSelect1.ng-select
+    .ng-select-container
+    .ng-value-container
+    .ng-placeholder {
+    color: #ffffff !important;
+  }
+  ::ng-deep.newSelect1.ng-select.ng-select-opened
+    > .ng-select-container
+    .ng-arrow {
+    top: -2px;
+    border-color: transparent transparent #ffffff !important;
+    border-width: 0 5px 5px;
+  }
+  ::ng-deep.newSelect1.ng-select.ng-select-single
+    .ng-select-container
+    .ng-value-container
+    .ng-value {
+    color: #ffffff !important;
+  }
+  ::ng-deep.newSelect1.ng-select .ng-clear-wrapper {
+    color: #ffffff !important;
+  }
+  ::ng-deep.newSelect1.ng-select .ng-arrow-wrapper .ng-arrow {
+    border-color: #fff transparent transparent !important;
+    border-style: solid;
+    border-width: 5px 5px 2.5px;
+  }
+
+  .table-b {
+    border-radius: 25px !important;
+  }
+
+  .table-head {
+    background-color: #fff !important;
+    font-family: "Poppins" !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: #989ea5 !important;
+  }
+
+  .table th {
+    color: #989ea5 !important;
+    font-weight: 500 !important;
+    text-align: left !important;
+  }
+
+  .table td {
+    vertical-align: middle;
+    font-size: 11px !important;
+    color: #000000 !important;
+    font-family: "Poppins" !important;
+    font-weight: 500 !important;
+  }
+  .table {
+    --bs-table-accent-bg: #ffffff !important;
+      font-weight: 400!important;
+  }
+  tbody tr {
+    height: 40px !important;
+    border-bottom-color: #ffffff !important;
+    /* Set the height of the table rows to 30px */
+  }
+
+  .deletebtn{
+    background-color: #45B01F;
+    border:1px solid #45B01F;
+    border-radius: 5px;
+    color:#ffffff!important;
+    padding:6px;
+    width: 60px;
+    font-family: 'Poppins';
+  }
+
+  .cancelbtn{
+    background-color: #c0c0bf;
+    border:1px solid #c0c0bf;
+    border-radius: 5px;
+    color:#ffffff!important;
+    padding:6px;
+    width: 60px;
+    font-family: 'Poppins';
+  }
+
+
+  .action-img {
+    height: 20px;
+  }
+  .action-buttons {
+    display: flex;
+    gap: 1rem;
+  }
+  .address2 {
+    font-size: 10px;
+    color: #838282;
+    font-weight: 400;
+  }
+  .flex-center {
+    color:#338EF5;
+    font-family: 'Poppins';
+    font-size: 10px;
+    text-align: center!important;
+  }
+
+  .vehicle-column {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+
+  .assign-link {
+    margin-top: 10px;
+    color: #323D62;
+    text-decoration: underline;
+    font-size: 10px;
+  }
+
+  .assign-link:hover {
+    text-decoration: underline;
+  }
+
+  td {
+    vertical-align: middle;
+    text-align: left;
+  }
+
+
+  .flex-space-right {
+    display: flex;
+    justify-content: right;
+  }
+  .add-button {
+    background-color: #ffffff;
+    color: #fa751a;
+    font-size: 12px;
+    border-radius: 10px;
+    padding: 9px 15px;
+    text-align: center;
+    width: 108px;
+    border: 1px solid #fa751a;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Poppins';
+    font-weight: 500;
+
+    &:hover {
+      background-color: #fa751a;
+      color: #ffffff;
+    }
+  }
+
+  .assign-vehicle-button {
+    background-color: #fa751a;
+    color: #ffffff;
+    font-size: 12px;
+    border-radius: 10px;
+    padding: 9px 12px;
+    text-align: center;
+    border: 1px solid #fa751a;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Poppins';
+    font-weight: 500;
+    white-space: nowrap;
+
+    i {
+      margin-right: 5px;
+    }
+
+    &:hover {
+      background-color: #e56515;
+      border-color: #e56515;
+    }
+  }
+
+  .button-group {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  .blue-button {
+    background-color: #046ef9;
+    color: white;
+    font-size: 11px;
+    border-radius: 10px;
+    padding: 9px 15px;
+  }
+  .flex-gap {
+    display: flex;
+    gap: 1rem;
+  }
+  .search-input {
+    height: 37px;
+    width: 200px;
+    padding: 10px 15px 10px 36px; /* Space for icon on left */
+    font-size: 11px;
+    border: 1px solid #ced4da;
+    // border-radius: 10px;
+    // background: white url("../../../../../../../../assets/images/search-01.svg")
+    //   no-repeat 10px center;
+    background-size: 16px 14px;
+    outline: none;
+  }
+  .newSelect {
+    width: 200px !important;
+    border-radius: 10px !important;
+  }
+  ::ng-deep .newSelect .ng-select-container {
+    border-radius: 10px !important;
+    align-items: center; /* Centers content vertically */
+    font-size: 10px; /* Sets the font size */
+    padding: 0 8px; /* Adjust padding if necessary */
+  }
+
+  ::ng-deep .newSelect .ng-select-placeholder {
+    font-size: 10px !important;
+    opacity: 0.6;
+    color: gray !important;
+  }
+
+  ::ng-deep .newSelect.ng-select-multiple .ng-select-container .ng-value-container .ng-placeholder {
+    top: unset !important;
+    color: rgb(123, 123, 123) !important;
+  }
+
+  ::ng-deep .newSelect .ng-select-container .ng-value-container .ng-placeholder {
+    color: rgb(123, 123, 123) !important;
+    font-size: 10px !important;
+  }
+  ::ng-deep .newSelect1 .ng-select-placeholder {
+    font-size: 10px !important; }
+
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 638px;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-card {
+    background: white;
+    padding: 0 20px;
+    margin-top: 80px;
+    border-radius: 8px;
+    position: relative;
+    width: 1000px; /* Adjust as needed */
+    height: auto;
+    text-align: center;
+  }
+
+  .close-button {
+    position: absolute;
+    top: 10px;
+    right: 2px;
+    background: transparent;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  .option-column {
+    padding-right: 0px;
+    border-right: 1px solid #dadada;
+  }
+
+  .option {
+    color: black;
+    padding: 10px 10px 10px 25%;
+    text-align: left;
+    font-size: 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    border-radius: 0px;
+    transition: background-color 0.3s, color 0.3s;
+  }
+
+  .option:hover,
+  .option.selected {
+    background-color: #fa751a;
+    color: #ffffff;
+  }
+
+  .input-frame{
+    height: 30px;
+    border-radius: 4px;
+    border: 1px solid #d2cfcf;
+    font-size: 12px;
+    font-weight: 400;
+    color: #7e7c7c;
+    padding-left: 6px;
+  }
+
+  ::ng-deep .timePeriod.ng-select .ng-dropdown-panel .ng-option.ng-option-marked {
+    background-color: #fa751a !important;
+    color: #ffffff !important;
+    font-family: "Poppins" !important;
+    font-size: 12px !important;
+  }
+  ::ng-deep .timePeriod.ng-select .ng-dropdown-panel .ng-option {
+    background-color: #fff !important;
+    color: #000000 !important;
+    font-family: "Poppins" !important;
+    font-size: 12px !important;
+  }
+  .green_button{
+    width: -webkit-fill-available;
+    border-radius: 10px;
+    border: 1px solid #DDE5DC;
+    background: #E3F1E2;
+    width: 150px;
+    font-weight: 530;
+  }
+  .action-img{
+    // height: 20px;
+    width: 30px;
+  }
+  .action-img:hover{
+    content: url('../../../../../../../../assets/images/trash_red.svg');
+  }
+
+  .table-column-width {
+    width: 8% !important
+  }
+
+  .table-column-width5 {
+    width: 5% !important;
+  }
+
+  .table-column-width6 {
+    width: 10% !important;
+  }
+
+  .table-column-width7 {
+    width: 4% !important;
+  }
+
+  .table-column-width10 {
+    width: 15% !important;
+  }
+
+  .edit-action-img{
+    // height: 20px;
+    width: 20px;
+  }
+  // .edit-action-img:hover{
+  //   content: url('../../../../../../../../assets/images/edit-hover.svg');
+  // }
+
+  .add-field{
+    background-color: #D0D7DF;
+    color: #161616;
+    font-size: 12px;
+    border-radius: 3px;
+    padding: 10px;
+    text-align: center;
+  }
+  .table-header {
+    color: #696969 !important;
+  }
+
+  .table-row {
+    color: #696969 !important;
+    font-family: 'Poppins', sans-serif;
+    font-size: 10px;
+  }
+
+.table-row:nth-child(4n+1) {
+  background-color: #F8F9FA; /* 1st, 5th, 9th, etc. rows will be black */
+  color: #696969; /* White text for better contrast */
+}
+
+.table-row:nth-child(4n+2) {
+  background-color: #ffffff; /* 2nd, 6th, 10th, etc. rows will be green */
+  color: #696969;
+}
+
+.input-frame.is-invalid {
+  border-color: red;
+}
+
+.error-data{
+font-size: 14px!important; font-weight: 600!important; color:#ff0000!important; font-family: 'Poppins'!important
+}
+
+.error-message {
+  color: red;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+// Unassigned Driver Highlight
+.unassigned-driver {
+  background-color: #fff3cd !important; // Light yellow/warning color
+  border-left: 4px solid #ffc107 !important; // Orange-yellow border
+
+  &:hover {
+    background-color: #ffe69c !important;
+  }
+}
+
+.unassigned-text {
+  color: #856404;
+  font-weight: 500;
+  font-size: 12px;
+  font-family: 'Poppins';
+
+  i {
+    color: #ffc107;
+    margin-right: 4px;
+  }
+}
+
+.no-vehicle-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fff3cd;
+  border: 2px solid #ffc107;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  color: #856404;
+  font-weight: 600;
+  font-size: 12px;
+  font-family: 'Poppins';
+  padding-top: 9px;
+
+  i {
+    color: #ffc107;
+    margin-right: 3px;
+    font-size: 10px;
+  }
+}
+
+// Filter Buttons
+.filter-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
+  background-color: #ffffff;
+  color: #495057;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'Poppins';
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  i {
+    font-size: 12px;
+  }
+
+  &:hover {
+    background-color: #f8f9fa;
+    border-color: #fa751a;
+  }
+
+  &.active {
+    background-color: #fa751a;
+    color: white;
+    border-color: #fa751a;
+
+    i {
+      color: white;
+    }
+  }
+}
+
+.unassigned-filter {
+  &.active {
+    background-color: #ffc107;
+    color: #212529;
+    border-color: #ffc107;
+
+    &:hover {
+      background-color: #ffca2c;
+    }
+  }
+}
+
+// Pagination Styles
+.pagination-container {
+  margin-top: 20px;
+  padding: 15px 0;
+  border-top: 1px solid #dee2e6;
+}
+
+.pagination-wrapper {
+  margin-top: 20px;
+  padding: 10px 0;
+}
+
+.pagination {
+  margin-bottom: 0;
+}
+
+.page-link {
+  color: #fa751a;
+  border: 1px solid #dee2e6;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.page-link:hover {
+  background-color: #fff3e0;
+  border-color: #fa751a;
+  color: #fa751a;
+}
+
+.page-item.active .page-link {
+  background-color: #fa751a;
+  border-color: #fa751a;
+  color: white;
+}
+
+.page-item.disabled .page-link {
+  color: #6c757d;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+// Page Size Selector Styles
+.page-size-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-h {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.f-ri {
+  float: right !important;
+}
+
+.page-size-select {
+  width: 70px;
+  height: 35px;
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
+  font-size: 12px;
+  font-family: 'Poppins';
+  padding: 4px 8px;
+  color: #495057;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.page-size-select:focus {
+  border-color: #fa751a;
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(250, 117, 26, 0.25);
+}
+
+.pageination {
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'Poppins';
+  color: #495057;
+  display: inline-block;
+}

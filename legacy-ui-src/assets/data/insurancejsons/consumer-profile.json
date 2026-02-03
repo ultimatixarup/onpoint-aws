@@ -1,0 +1,29 @@
+{
+  "consumerDetails": {
+    "consumerName": "Rockingham",
+    "contractStatus": "Active",
+    "activeSince": "May 2022",
+    "consumerRegion": "North America",
+    "totalNumberOfVehicles": 11061,
+    "totalNumberOfTrips": 2477765
+  },
+  "dataConsumed": 37.17,
+  "dataPointsIngested": 220521085,
+  "vehicleWithActiveFaultCondition": 55,
+  "totalTripsChart": {
+    "series": [
+      {
+        "name": "Trips",
+        "type": "column",
+        "data": [162466, 274466, 303966, 403966, 433969, 442966, 464966]
+      },
+      {
+        "name": "Vehicle",
+        "type": "line",
+        "data": [3425, 2365, 3456, 4356, 6578, 5674, 8796]
+      }
+    ]
+  },
+  "dataPacks": ["Insurance datapack"],
+  "algoritm": ["Driver Score"]
+}

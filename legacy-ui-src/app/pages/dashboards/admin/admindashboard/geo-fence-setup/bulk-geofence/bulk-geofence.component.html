@@ -1,0 +1,115 @@
+<!--Page main content-->
+<div class="page-content page-content-main">
+    <div class="row sideMenuItem">
+      <div class="container">
+       <!-- Main Content Right-->
+       <div class="col-xs-12 content-right">
+        <div class="row">
+          <div class="col-xs-12 col-lg-12">
+            <span class="breadcrumb-left">
+              <h1 class="login-headline heading-title">Bulk Geofence</h1>
+            </span>
+            <span class="breadcrumb-right mr-8">
+              <ol class="breadcrumb">
+                <ng-container *ngIf="user =='admin'">
+                  <li class="breadcrumb-item">
+                    <a routerLink="/adlp/admin" class="breadcrumb-h6"><i class="bx bx-home-circle"></i></a>
+                  </li>
+                  <li class="breadcrumb-item inactive-bread"><a routerLink="/adlp/admin/dashboardAdmin">Dashboard</a></li>
+                  <li class="breadcrumb-item text-selected active-bread"><a
+                      routerLink="/adlp/admin/admindashboard/geoFenceSetup/geofence">Manage Geofence</a></li>
+                  <li class="breadcrumb-item text-selected active-bread">Bulk Geofence</li>
+                </ng-container>
+                <ng-container *ngIf="user !='admin'">
+                  <li class="breadcrumb-item">
+                    <a routerLink="/adlp/admin/admindashboard/dashboardfleet" class="breadcrumb-h6"><i
+                        class="bx bx-home-circle"></i></a>
+                  </li>
+                  <li class="breadcrumb-item inactive-bread"><a
+                      routerLink="/adlp/admin/admindashboard/dashboardfleet">Dashboard</a></li>
+                  <li class="breadcrumb-item inactive-bread"><a
+                      routerLink="/adlp/admin/admindashboard/geoFenceSetup/geofence">Manage Geofence</a></li>
+                  <li class="breadcrumb-item text-selected active-bread">Bulk Geofence</li>
+                </ng-container>
+              </ol>
+            </span>
+          </div>
+        </div>
+        <div class="row consumer-pad">
+          <div class="col-xs-12 col-lg-2">
+            <ng-container *ngIf="this.user === 'admin'">
+             <select class="form-select consumer-select no-border"  [(ngModel)]="consumer" [ngModelOptions]="{standalone: true}"   (change)="selectConsumer()">
+                <option value="" disabled hidden>Select Consumer</option>
+                <option value="All" selected>Consumer</option>
+                <option *ngFor="let consumer of consumerList" [value]="consumer.name"> {{ consumer.name }} </option>
+              </select>
+            </ng-container>
+          </div>
+        </div>
+        <div class="row" style="margin-top: 20px;">
+            <div class="row">
+              <div class="col-xs-12 col-lg-3">&nbsp;</div>
+              <div class="col-xs-12 col-lg-6">
+                  <div class="card" style="height: 21rem;">
+                    <div class="card-body">
+                      <div class="row" style="margin: 15px 15px 15px 15px; border:1px dashed #86B2FF; border-radius: 6px; height: 170px; background-color: #EDF2FC;">
+                        <div class="col-xs-12 col-lg-12">
+                          <div class="row" style="margin-top: 30px; margin-bottom: -20px;">
+                            <div class="col-xs-12 ">
+                              <div class="image-container">
+                                <img src="assets/images/upload-img.svg" alt="Upload Image" style="height: 100px;">
+                              </div>
+                            </div>
+                          </div>
+                          <div class="row">
+                            <div class="col-xs-12 col-lg-12" style="margin-top: 10px; text-align: center;">
+                             <span><a href="javascript:(void)" (click)="triggerFileUpload()" style="font-family: 'Poppins';">Click to upload</a> Uploaded data in .csv format</span>
+                            </div>
+                          </div>
+                          <input
+    type="file"
+    #fileInput
+    style="display: none;"
+    accept=".csv"
+    (change)="onFileSelected($event)"
+  />
+  <div class="row">
+    <div class="col-xs-12 col-lg-12" style="text-align: center;margin-top: 12px;">
+      <span *ngIf="uploadedFileName" class="uploaded-file">{{ uploadedFileName }}</span>
+      <span *ngIf="errorMessage" class="uploaded-file-error"> | {{ errorMessage }}</span>
+    </div>
+  </div>
+
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-xs-12 col-lg-12" style="text-align: center;">
+                         <a type="button" class="download-link"  (click)="downloadSamples()">Download Sample File</a>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-xs-12 col-lg-12">
+                          <h5 class="max-file">Max file size 50 mb</h5>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-xs-12 col-lg-6">
+                      <div class="cancel-btn" tooltip="Cancel" (click)="cancel()">Cancel</div>
+                    </div>
+                    <div class="col-xs-12 col-lg-6">
+                      <div class="submit-btn" tooltip="Submit" [ngClass]="{'disabled': !uploadedFileName}"
+                      (click)="submitFile()" [attr.disabled]="!uploadedFileName ? true : null">Submit</div>
+                    </div>
+                  </div>
+              </div>
+              <div class="col-xs-12 col-lg-3">&nbsp;</div>
+            </div>
+          </div>
+
+
+      </div>
+    </div>
+  </div>
+  </div>

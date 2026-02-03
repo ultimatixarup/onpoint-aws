@@ -1,0 +1,33 @@
+<div class="">
+  <!-- Boxes for showing selected dates -->
+  <div class="date-boxes">
+    <div class="date-box">
+      <span *ngIf="rangeDates && rangeDates[0]">{{ fromDate }}</span>
+      <span *ngIf="!rangeDates || !rangeDates[0]">Select start date</span>
+    </div> -
+    <div class="date-box">
+      <span *ngIf="rangeDates && rangeDates[1]">{{ toDate}}</span>
+      <span *ngIf="!rangeDates || !rangeDates[1]">Select end date</span>
+    </div>
+  </div>
+
+  <!-- PrimeNG Calendar Component -->
+  <p-calendar
+    [(ngModel)]="rangeDates"
+    selectionMode="range"
+    [numberOfMonths]="2"
+    [readonlyInput]="true"
+    [inline]="true"
+    [showOtherMonths]="false"
+    [selectOtherMonths]="false"
+    [monthNavigator]="true"
+    [yearNavigator]="true"
+    [viewDate]="viewDate"
+    (onSelect)="ngOnChanges()"
+    [prevIcon]="'pi pi-angle-left'"
+    [nextIcon]="'pi pi-angle-right'"
+  ></p-calendar>
+  <div class="submit_container">
+    <div class="Submit_button" (click)="onSubmit()">Submit</div>
+  </div>
+</div>

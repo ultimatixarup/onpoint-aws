@@ -1,0 +1,368 @@
+<div class="page-content page-content-main">
+  <div class="row sideMenuItem">
+    <div class="container">
+      <div class="col-xs-12 content-right">
+        <!-- Breadcrumb and Search Consumer or Fleet Id-->
+        <div class="row">
+          <div class="col-xs-12 col-lg-12">
+            <span class="breadcrumb-left">
+              <h1 class="login-headline heading-title">Service History
+              </h1>
+            </span>
+            <span class="breadcrumb-right mr-8">
+              <!-- Breadcurmb for admin-->
+              <ng-container *ngIf="user === 'admin'">
+                <ol class="breadcrumb">
+                  <li class="breadcrumb-item">
+                    <a routerLink="/adlp/admin/dashboardAdmin" class="breadcrumb-h6"><i
+                        class="bx bx-home-circle"></i></a>
+                  </li>
+                  <li class="breadcrumb-item inactive-bread"><a
+                      routerLink="/adlp/admin/admindashboard/maintenance">Maintenance</a></li>
+                  <li class="breadcrumb-item text-selected active-bread">Service History</li>
+                </ol>
+              </ng-container>
+              <!-- Breadcurmb for admin end-->
+              <!-- Breadcurmb for TSP, Fleet Owner-->
+              <ng-container *ngIf="user != 'admin'">
+                <ol class="breadcrumb">
+                  <li class="breadcrumb-item">
+                    <a routerLink="/adlp/admin/admindashboard/dashboardfleet" class="breadcrumb-h6"><i
+                        class="bx bx-home-circle"></i></a>
+                  </li>
+                  <li class="breadcrumb-item inactive-bread"><a
+                      routerLink="/adlp/admin/admindashboard/dashboardfleet/fleet-maintenance">Maintenance</a></li>
+                  <li class="breadcrumb-item text-selected active-bread">Service History</li>
+                </ol>
+              </ng-container>
+              <!-- Breadcurmb for TSP, Fleet Owner End-->
+            </span>
+          </div>
+        </div>
+        <!-- Breadcrumb and Search Consumer or Fleet Id end-->
+        <!-- Select consumer and admin-->
+        <div class="row consumer-pad">
+          <!-- Select Consumer for admin only-->
+          <ng-container *ngIf="user === 'admin'">
+            <div class="col-xs-12 col-lg-2">
+              <div class="custom-dropdown">
+                <div class="dropdown-selected" (click)="toggleDropdown()">
+                  {{ consumer && consumer !== 'All' ? consumer : 'Select Consumer' }}
+                  <span class="dropdown-arrow" [class.open]="isDropdownOpen"></span>
+                </div>
+                <div class="dropdown-options" *ngIf="isDropdownOpen">
+                  <div class="dropdown-option" *ngFor="let consumer of consumerList"
+                    [ngStyle]="{color: consumer.isActive ? '#000000' : '#9fa19f'}" (click)="selectConsumer(consumer)">
+                    <span class="consumer-name">{{ consumer.name }}</span>
+                    <span class="consumer-icon">
+                      <span [ngStyle]="{color: consumer.isActive ? '#45B01F' : '#9fa19f'}">●</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+          <!-- Select Consumer for admin only end-->
+          <ng-container *ngIf="user === 'admin'">
+            <div class="col-xs-12 col-lg-6">&nbsp;</div>
+          </ng-container>
+          <ng-container *ngIf="user === 'role_consumer_fleet'">
+            <div class="col-xs-12 col-lg-8">&nbsp;</div>
+          </ng-container>
+
+          <ng-container *ngIf="user ==='role_user_fleet' || user ==='role_org_group'">
+            <div class="col-xs-12 col-lg-10"> &nbsp;</div>
+          </ng-container>
+          <!-- Add service reminder btn and fleet id for customer and admin both-->
+
+          <ng-container *ngIf="user != 'role_user_fleet' && user != 'role_org_group'">
+            <div class="col-xs-12 col-lg-2 mr6">
+              <ng-select [searchable]="true" class="newSelect1" [clearable]="true" placeholder="Organization Id/Name"
+                (change)="selectFleetId()" [(ngModel)]="fleetIdData">
+                <ng-option *ngFor="let fleet of fleetList" value="{{fleet.id}}">{{fleet.id}} -
+                  [{{fleet.name}}]</ng-option>
+              </ng-select>
+            </div>
+
+          </ng-container>
+          <div class="col-xs-12 col-lg-2 mr6">
+            <ng-select
+            [searchable]="true"
+            class="newSelect1"
+            [clearable]="true"
+            placeholder="Group Name"
+            [items]="groupList"
+            bindLabel="name"
+            bindValue="id"
+            [(ngModel)]="groupIdData"
+            (change)="onGroupIdChange($event)">
+
+            <ng-template ng-option-tmp let-item="item">
+              <span [ngStyle]="{ 'padding-left.px': item.level * 18 }">
+                {{ item.name }}
+              </span>
+            </ng-template>
+          </ng-select>
+          </div>
+          <!-- Add service reminder btn and fleet id for customer and admin both-->
+        </div>
+        <!-- Select consumer and admin end-->
+        <!-- Boxed for Total Data-->
+        <div class="row mr-24">
+          <div class="col-xs-12 col-lg-12">
+            <div class="card">
+              <div class="card-body">
+                <div class="row">
+                  <!-- Total Service-->
+                  <div class="col-xs-12 col-md">
+                    <div class="box5 red-border">
+                      <div class="content-section-heading">
+                        <span class="text_number loding-back" style="color:#2ca67e!important;">
+                          <!-- Spinner when loading -->
+                          <span *ngIf="totalServiceCount === undefined && !noDataFound">
+                            <i class="fa fa-spinner fa-spin icon-loading"></i>
+                          </span>
+
+                          <!-- No data found message when flagged or data invalid -->
+                          <ng-container *ngIf="noDataFound || totalServiceCount === null || totalServiceCount === '--'">
+                            <span style="float: left;" class="failedData">No data found</span>
+                          </ng-container>
+
+                          <!-- Show data when available -->
+                          <ng-container
+                            *ngIf="!noDataFound && totalServiceCount !== undefined && totalServiceCount !== null && totalServiceCount !== '--'">
+                            <span style="float: left;">{{ totalServiceCount | number: '1.0-0' }}</span>
+                          </ng-container>
+
+                        </span>
+                        <span style="float: right">
+                          <h5 class="orange-badge">
+                            <ng-container
+                              *ngIf="noDataFound || totalServiceVehicleCount === null || totalServiceVehicleCount === undefined || totalServiceVehicleCount === '--'; else showServiceCount">
+                              --
+                            </ng-container>
+                            <ng-template #showServiceCount>{{ totalServiceVehicleCount | number: '1.0-0'
+                              }}</ng-template>
+                          </h5>
+                        </span>
+
+                      </div>
+                      <div class="content-section-text">Total Services</div>
+                    </div>
+                  </div>
+                  <!--Repair-->
+                  <div class="col-xs-12 col-md">
+                    <div class="box5 green-border">
+                      <div class="content-section-heading">
+                        <span class="text_number loding-back" style="color:#E3B82C">
+                          <!-- Repair -->
+                          <!-- Spinner when loading -->
+                          <span *ngIf="totalRepairCount === undefined && !noDataFound">
+                            <i class="fa fa-spinner fa-spin icon-loading"></i>
+                          </span>
+
+                          <!-- No data found message when flagged or data invalid -->
+                          <ng-container *ngIf="noDataFound || totalRepairCount === null || totalRepairCount === '--'">
+                            <span style="float: left;" class="failedData">No data found</span>
+                          </ng-container>
+
+                          <!-- Show data when available -->
+                          <ng-container
+                            *ngIf="!noDataFound && totalRepairCount !== undefined && totalRepairCount !== null && totalRepairCount !== '--'">
+                            <span style="float: left;">{{ totalRepairCount | number: '1.0-0' }}</span>
+                          </ng-container>
+
+                        </span>
+                        <span style="float: right">
+                          <h5 class="golden-badge">
+                            <ng-container
+                              *ngIf="noDataFound || totalRepiarVehicleCount === null || totalRepiarVehicleCount === undefined || totalRepiarVehicleCount === '--'; else showRepairCount">
+                              --
+                            </ng-container>
+                            <ng-template #showRepairCount>{{ totalRepiarVehicleCount | number: '1.0-0' }}</ng-template>
+                          </h5>
+                        </span>
+
+                      </div>
+                      <div class="content-section-text">Repair</div>
+                    </div>
+                  </div>
+                  <!-- PM-->
+                  <div class="col-xs-12 col-md">
+                    <div class="box5 purple-border">
+                      <div class="content-section-heading">
+                        <span class="text_number loding-back" style="color: #ff7d7d!important;">
+                          <!-- Spinner shown only when data is loading and no "no data" flag -->
+                          <span *ngIf="totalPMCount === undefined && !noDataFound">
+                            <i class="fa fa-spinner fa-spin icon-loading"></i>
+                          </span>
+
+                          <!-- Show "No data found" message when noDataFound is true OR data is null/undefined/ '--' -->
+                          <ng-container *ngIf="noDataFound || totalPMCount === null || totalPMCount === '--'">
+                            <span style="float: left;" class="failedData">No data found</span>
+                          </ng-container>
+
+                          <!-- Show actual count if no error and data is valid -->
+                          <ng-container
+                            *ngIf="!noDataFound && totalPMCount !== undefined && totalPMCount !== null && totalPMCount !== '--'">
+                            <span style="float: left;">{{ totalPMCount | number: '1.0-0' }}</span>
+                          </ng-container>
+
+                        </span>
+                        <span style="float: right">
+                          <h5 class="red-badge">
+                            <ng-container
+                              *ngIf="noDataFound || totalPMVehicleCount === null || totalPMVehicleCount === undefined || totalPMVehicleCount === '--'; else showPMCount">
+                              --
+                            </ng-container>
+                            <ng-template #showPMCount>{{ totalPMVehicleCount | number: '1.0-0' }}</ng-template>
+                          </h5>
+                        </span>
+
+                      </div>
+                      <div class="content-section-text">PM</div>
+                    </div>
+                  </div>
+                  <!-- Total Trips Taken-->
+                  <div class="col-xs-12 col-md">
+                    <div class="box5 leaf-border">
+                      <div class="content-section-heading">
+                        <span class="text_number loding-back" style="color:#87a9f7!important">
+
+                          <!-- Spinner shown only when data is loading (undefined) and noDataFound is false -->
+                          <span *ngIf="totalTiresCount === undefined && !noDataFound">
+                            <i class="fa fa-spinner fa-spin icon-loading"></i>
+                          </span>
+
+                          <!-- No data found shown when explicitly noDataFound OR data is null/undefined/ '--', but spinner is hidden -->
+                          <ng-container *ngIf="noDataFound || totalTiresCount === null || totalTiresCount === '--'">
+                            <span class="failedData">No data found</span>
+                          </ng-container>
+
+                          <!-- Show count only if there is valid data -->
+                          <ng-container
+                            *ngIf="!noDataFound && totalTiresCount !== undefined && totalTiresCount !== null && totalTiresCount !== '--'">
+                            <span>{{ totalTiresCount | number: '1.0-0' }}</span>
+                          </ng-container>
+
+
+                        </span>
+                        <span style="float: right">
+                          <h5 class="blue-badge">
+                            <ng-container
+                              *ngIf="noDataFound || totalTireVehicleCount === null || totalTireVehicleCount === undefined || totalTireVehicleCount === '--'; else showCount">
+                              --
+                            </ng-container>
+                            <ng-template #showCount>{{ totalTireVehicleCount | number: '1.0-0' }}</ng-template>
+                          </h5>
+                        </span>
+
+                      </div>
+                      <div class="content-section-text">Tires</div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Boxed for Total Data End-->
+        <!--Serach Area by vin, by category, by task-->
+        <div class="row">
+          <!-- Search by VIN-->
+          <div class="col-xs-12 col-lg-4 mr-left-20">
+            <input class="form-control input-vin font-common" maxlength="17" type="text"
+              placeholder="Search by Vehicle Name" [(ngModel)]="searchAlias">
+          </div>
+          <!-- Search by VIN end-->
+          <!-- Search by service category-->
+          <div class="col-xs-12 col-lg-3">
+            <ng-select [items]="serviceCategory" bindLabel="name" bindValue="id" placeholder="Select Service Category"
+              [(ngModel)]="selectedCategoryId" [multiple]="false" [clearable]="true" (change)="onCategoryChange($event)"
+              class="font-common">
+            </ng-select>
+
+          </div>
+          <!-- Search by service category end-->
+          <!-- Serach by service task-->
+          <div class="col-xs-12 col-lg-3">
+            <ng-select [items]="serviceTaskList" bindLabel="name" bindValue="id" placeholder="Search by Task"
+              [(ngModel)]="searchbyTask" (change)="onTaskChange()" [multiple]="true" [closeOnSelect]="false"
+              [clearable]="true" class="font-common">
+            </ng-select>
+
+          </div>
+          <!-- Serach by service task-->
+        </div>
+        <!-- Search Area End-->
+        <!-- Main data table-->
+        <div class="row mr-table" style="margin-top: 20px;">
+          <div class="col-lg-12 col-xs-12">
+            <div class="table-responsive table-b" style="overflow-y: scroll; overflow-x: hidden;">
+              <table class="table table01" style="width: 100%;">
+                <thead class="table-head">
+                  <tr>
+                    <th class="table-column-width">Vehicle Name</th>
+                    <th class="table-column-width">Service Category</th>
+                    <th class="table-column-width">Service Task</th>
+                    <th class="table-column-width">Odometer Reading</th>
+                    <th class="table-column-width">Completion Date</th>
+                    <th class="table-column-width">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let reminder of getFilteredSummaryData()">
+                    <td>{{ reminder.alias || '--' }}</td>
+                    <td>{{ reminder.serviceCategory || '--' }}</td>
+                    <td>{{ reminder.serviceTaskNames?.join(', ') || '--' }}</td>
+                    <td> {{ reminder.odometer | number:'1.0-0' || '--'}}</td>
+                    <td>{{ reminder.completionDate | date: 'MMM dd, y' || '--' }}</td>
+                    <td>
+                      <div class="resolve-container">
+                        <!-- Unresolved State -->
+                        <button class="icon-button edit-btn" title="Edit" (click)="toggleCalendar(reminder?.id)">
+                          <i class="fa fa-edit"></i>
+                        </button>
+
+                        <!-- Custom Calendar -->
+
+                      </div>
+                      <div *ngIf="openedCalendarId === reminder?.id" class="calendar-popup">
+                        <div class="calendar-header">
+                          <button (click)="prevMonth()"
+                            style="background-color: #fff; border:1px solid #d3d0d0">&lt;</button>
+                          <span>{{ currentMonth | date: 'MMMM yyyy' }}</span>
+                          <button (click)="nextMonth()"
+                            style="background-color: #fff; border:1px solid #d3d0d0">&gt;</button>
+                        </div>
+
+                        <div class="calendar-grid">
+                          <div class="day-label" *ngFor="let day of dayLabels">{{ day }}</div>
+                          <div class="date-cell" *ngFor="let day of calendarDays" [class.empty]="!day"
+                            [class.selected]="day && selectedDate && isSameDate(day, selectedDate)"
+                            [class.future]="day && isFutureDate(day)"
+                            (click)="day && !isFutureDate(day) && selectDate(day)">
+                            {{ day?.getDate() }}
+                          </div>
+                        </div>
+
+                        <div class="calendar-actions">
+                          <span>Selected: {{ selectedDate | date: 'MMM d, y' }}</span>
+                          <button class="nbtn submit" (click)="submitDate(reminder)">Submit</button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr *ngIf="getFilteredSummaryData().length === 0">
+                    <td colspan="6" class="text-center">No data found</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

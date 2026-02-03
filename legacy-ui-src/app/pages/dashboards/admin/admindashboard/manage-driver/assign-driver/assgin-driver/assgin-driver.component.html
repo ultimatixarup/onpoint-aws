@@ -1,0 +1,274 @@
+<!--Page main content-->
+<div class="page-content page-content-main">
+  <div class="row left-navigation">
+    <div class="col-xs-12 col-lg-2 navbar-side-menu">
+      <!-- <app-commonsidebar-fleet></app-commonsidebar-fleet> -->
+    </div>
+
+    <!-- Main Content Right-->
+    <div class="col-xs-12 col-lg-12" style="margin-left: 1%; width: 100%;">
+      <!-- Heading and Breadcrumb -->
+      <div class="row">
+        <div class="col-xs-12 col-lg-12">
+          <span class="breadcrumb-left">
+            <h1 class="login-headline heading-title">Assign Driver to Vehicle</h1>
+          </span>
+          <span class="breadcrumb-right mr-8">
+            <ol class="breadcrumb">
+              <ng-container *ngIf="user =='admin'">
+                <li class="breadcrumb-item">
+                  <a routerLink="/adlp/admin" class="breadcrumb-h6"><i class="bx bx-home-circle"></i></a>
+                </li>
+                <li class="breadcrumb-item inactive-bread"><a routerLink="/adlp/admin/dashboardAdmin">Dashboard</a></li>
+                <li class="breadcrumb-item inactive-bread"><a routerLink="/adlp/admin/admindashboard/manageDriver/viewDriver">Manage Driver</a></li>
+                <li class="breadcrumb-item text-selected active-bread">Assign Driver</li>
+              </ng-container>
+              <ng-container *ngIf="user !='admin'">
+                <li class="breadcrumb-item">
+                  <a routerLink="/adlp/admin/admindashboard/dashboardfleet" class="breadcrumb-h6"><i class="bx bx-home-circle"></i></a>
+                </li>
+                <li class="breadcrumb-item inactive-bread"><a routerLink="/adlp/admin/admindashboard/dashboardfleet">Dashboard</a></li>
+                <li class="breadcrumb-item inactive-bread"><a routerLink="/adlp/admin/admindashboard/manageDriver/viewDriver">Manage Driver</a></li>
+                <li class="breadcrumb-item text-selected active-bread">Assign Driver</li>
+              </ng-container>
+            </ol>
+          </span>
+        </div>
+      </div>
+      <!-- Heading and Breadcrumb End-->
+
+      <!-- Filter and Action Buttons -->
+      <div class="row">
+        <div class="col-xs-12 col-lg-10">
+          <div class="filter-buttons" style="margin-top: 15px">
+            <button
+                    class="filter-btn"
+                    [class.active]="!showOnlyUnassigned"
+                    (click)="toggleFilter()">
+              <i class="fas fa-car"></i> All Vehicles ({{filteredVehicles?.length || 0}})
+            </button>
+            <button
+                    class="filter-btn unassigned-filter"
+                    [class.active]="showOnlyUnassigned"
+                    (click)="toggleFilter()">
+              <i class="fas fa-car-side"></i> Unassigned ({{getUnassignedCount()}})
+            </button>
+          </div>
+        </div>
+        <div class="col-xs-12 col-lg-2 text-right">
+          <button class="back-button" (click)="backToDriverList()">
+            <i class="bx bx-arrow-back"></i> Back to Driver List
+          </button>
+        </div>
+      </div>
+
+      <!-- Vehicles Table -->
+      <div class="row" style="margin-top: 20px;">
+        <div class="col-xs-12">
+          <div class="card">
+            <div class="card-body table-container">
+              <div *ngIf="paginatedVehicles && paginatedVehicles.length > 0">
+                <table class="table" style="position: relative; width: 100%;">
+                  <thead class="table-head">
+                    <tr class="table-header">
+                      <th class="table-column-width6">Vehicle<br>Name</th>
+                      <th class="table-column-width6">VIN</th>
+
+                      <th class="table-column-width5">Current<br>Location</th>
+                      <th class="table-column-width5">Health<br>Status</th>
+                      <th class="table-column-width8">Health<br>Notes</th>
+                      <th class="table-column-width6">Current<br>Driver</th>
+                      <th class="table-column-width6">Driver<br>Phone</th>
+                      <th class="table-column-width7">Select<br>Driver</th>
+                      <th class="table-column-width">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let vehicle of paginatedVehicles"
+                        class="table-row"
+                        [class.unassigned-vehicle]="!vehicle.currentDriver">
+                      <!-- Vehicle Name -->
+                      <td>
+                        <span class="vehicle-name">{{ vehicle?.alias || 'Unknown' }}</span>
+                        <span *ngIf="!vehicle.currentDriver" class="unassigned-badge">
+                          <i class="fas fa-exclamation-circle"></i> Unassigned
+                        </span>
+                      </td>
+
+                      <!-- VIN -->
+                      <td>
+                        <span>{{ vehicle?.vin || '--' }}</span>
+                      </td>
+
+                      <!-- Fleet Name -->
+                      <!-- <td>{{ vehicle?.fleetName || '--' }}</td> -->
+
+                      <!-- Current Location -->
+                      <td>
+                        <i class="bx bx-map" style="color: #6c757d; margin-right: 4px;"></i>
+                        <span style="font-size: 11px;">{{ vehicle?.currentLocation || 'Unknown' }}</span>
+                      </td>
+
+                      <!-- Health Status -->
+                      <td>
+                        <span [ngClass]="getHealthStatusClass(vehicle.healthStatus)" class="health-badge">
+                          <i [ngClass]="getHealthStatusIcon(vehicle.healthStatus)"></i>
+                          {{ getHealthStatusText(vehicle.healthStatus) }}
+                        </span>
+                      </td>
+
+                      <!-- Health Notes -->
+                      <td>
+                        <div class="health-notes" [title]="vehicle?.healthNotes || 'No notes available'">
+                          <i class="bx bx-note" style="color: #6c757d; margin-right: 4px;"></i>
+                          <span class="notes-text">{{ vehicle?.healthNotes || 'No notes available' }}</span>
+                        </div>
+                      </td>
+
+                      <!-- Current Driver -->
+                      <td>
+                        <span *ngIf="vehicle.currentDriver" class="driver-assigned">
+                          <i class="fas fa-user-check"></i> {{ vehicle.currentDriver.name }}
+                        </span>
+                        <span *ngIf="!vehicle.currentDriver" class="no-driver">
+                          <i class="fas fa-user-slash"></i> No Driver
+                        </span>
+                      </td>
+
+                      <!-- Driver Phone -->
+                      <td>
+                        <span *ngIf="vehicle.currentDriver">{{ vehicle.currentDriver.phoneNo || '--' }}</span>
+                        <span *ngIf="!vehicle.currentDriver" class="text-muted">--</span>
+                      </td>
+
+                      <!-- Select Driver (Only for unassigned) -->
+                      <td>
+                        <ng-select
+                          *ngIf="!vehicle.currentDriver"
+                          [(ngModel)]="vehicle.selectedDriver"
+                          [items]="drivers"
+                          bindLabel="name"
+                          bindValue="id"
+                          placeholder="Select Driver"
+                          [clearable]="true"
+                          class="driver-select">
+                          <ng-template ng-option-tmp let-item="item">
+                            <div>{{ item.name }}</div>
+                            <small style="color: #6c757d;">{{ item.phoneNo }}</small>
+                          </ng-template>
+                        </ng-select>
+                        <span *ngIf="vehicle.currentDriver" class="text-muted">--</span>
+                      </td>
+
+                      <!-- Action -->
+                      <td>
+                        <div class="action-buttons">
+                          <!-- Assign Button (Only for unassigned) -->
+                          <button
+                            *ngIf="!vehicle.currentDriver"
+                            class="btn btn-success btn-sm"
+                            (click)="assignDriver(vehicle)"
+                            [disabled]="!vehicle.selectedDriver || vehicle.isAssigning">
+                            <i class="fas fa-user-plus"></i>
+                            {{ vehicle.isAssigning ? 'Assigning...' : 'Assign' }}
+                          </button>
+
+                          <!-- Remove Button (Only for assigned) -->
+                          <button
+                            *ngIf="vehicle.currentDriver"
+                            class="btn btn-danger btn-sm"
+                            (click)="openDisassociateModal(vehicle, modalConfirm)">
+                            <i class="fas fa-user-times"></i> Dissociation
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    <tr *ngIf="!paginatedVehicles || paginatedVehicles.length === 0">
+                      <td colspan="10" class="text-center">
+                        <div style="padding: 40px;">
+                          <i class="fas fa-inbox" style="font-size: 48px; color: #dee2e6; margin-bottom: 10px;"></i>
+                          <p class="no-data">No vehicles found</p>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- No Data Message -->
+              <div *ngIf="!paginatedVehicles || paginatedVehicles.length === 0" class="text-center" style="padding: 40px;">
+                <i class="fas fa-inbox" style="font-size: 48px; color: #dee2e6; margin-bottom: 10px;"></i>
+                <p class="no-data">No vehicles found</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="row pagination-container" *ngIf="paginatedVehicles && paginatedVehicles.length > 0">
+        <div class="col-md-6">
+          <div class="page-size-wrapper">
+            <span class="pageination">Rows per page:</span>
+            <select class="form-select page-size-select" (change)="selectPage($event.target.value)" [(ngModel)]="pageSize">
+              <option [value]="5">5</option>
+              <option [value]="10">10</option>
+              <option [value]="20">20</option>
+              <option [value]="50">50</option>
+              <option [value]="100">100</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="col-md-6" *ngIf="totalPages > 1">
+          <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-end">
+              <!-- Previous Button -->
+              <li class="page-item" [class.disabled]="currentPage === 0">
+                <a class="page-link" (click)="goToPage(currentPage - 1)" aria-label="Previous">
+                  <span aria-hidden="true">&laquo;</span>
+                </a>
+              </li>
+
+              <!-- Page Numbers -->
+              <li class="page-item"
+                  *ngFor="let page of getPageNumbers()"
+                  [class.active]="page === currentPage">
+                <a class="page-link" (click)="goToPage(page)">{{ page + 1 }}</a>
+              </li>
+
+              <!-- Next Button -->
+              <li class="page-item" [class.disabled]="currentPage === totalPages - 1">
+                <a class="page-link" (click)="goToPage(currentPage + 1)" aria-label="Next">
+                  <span aria-hidden="true">&raquo;</span>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Disassociation Confirmation Modal -->
+<ng-template #modalConfirm let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title heading-show">Confirm Driver Removal</h5>
+    <button type="button" class="close" aria-label="Close" (click)="modal.dismiss()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body modal-height">
+    <p class="heading-show">Are you sure you want to remove driver
+      <span class="error-data">{{selectedVehicle?.currentDriver?.name}}</span>
+      from vehicle
+      <span class="error-data">{{selectedVehicle?.alias}}</span>?
+    </p>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-add-vin deletebtn" (click)="disassociateDriver()">Yes, Remove</button>
+    <button class="btn cancelbtn" (click)="modal.dismiss()">Cancel</button>
+  </div>
+</ng-template>

@@ -1,0 +1,283 @@
+[
+    {
+        "dashboardName":"Azuga Dashboard",
+        "consumerDetails" : [
+            {
+                "ConsumerName" : "All",
+                "consumerContent":[
+                        {
+                            "totalEnrolled":3948,
+                            "totalTrips":240294,
+                            "packageEnrolled" :"Fleet Base Pro",
+                            "consentDueExpiryIn30Days":447,
+                            "vehicleEnrollded":130,
+                            "billingSummary" :[
+                                    {
+                                        "Jul":0,
+                                        "Aug" : 21000,
+                                        "Sep" : 39480
+                                    }
+                            ]
+                        }
+                ]
+            },
+            {
+                "ConsumerName" : "Stellantis US",
+                "consumerContent":[
+                        {
+                            "totalEnrolled":3214,
+                            "totalTrips":215338,
+                            "packageEnrolled" :"Fleet Base Pro",
+                            "consentDueExpiryIn30Days":447,
+                            "vehicleEnrollded":120,
+                            "billingSummary" :[
+                                    {
+                                        "Jul":0,
+                                        "Aug" : 21000,
+                                        "Sep" : 32140
+                                    }
+                            ]
+                        }
+                ]
+            },
+                {
+                    "ConsumerName" : "Toyota",
+                    "consumerContent":[
+                            {
+                                "totalEnrolled":734,
+                                "totalTrips":24956,
+                                "packageEnrolled" :"Fleet Base Pro",
+                                "consentDueExpiryIn30Days":0,
+                                "vehicleEnrollded":10,
+                                "billingSummary" :[
+                                        {
+
+                                            "Sep" : 7340
+                                        }
+                                ]
+                            }
+                    ]
+                }
+
+
+        ]
+    },
+
+    {
+        "dashboardName":"IMT Dashboard",
+        "consumerDetails" : [
+            {
+                "ConsumerName" : "All",
+                "consumerContent":[
+                        {
+                            "totalEnrolled":869,
+                            "totalTrips":33493,
+                            "packageEnrolled" :"Insurance Base Pro",
+                            "totalConsentedVehicle" : 344,
+                            "consentDueExpiryIn30Days":0,
+                            "billingSummary" :[
+                                    {
+                                        "Aug" : 4210,
+                                        "Sep" : 8690
+                                    }
+                            ]
+                        }
+                ]
+            },
+                {
+                    "ConsumerName" : "Stellantis US",
+                    "consumerContent":[
+                            {
+                                "totalEnrolled":625,
+                                "totalTrips":28125,
+                                "packageEnrolled" :"Insurance Base Pro",
+                                "totalConsentedVehicle" : 100,
+                                "consentDueExpiryIn30Days":0,
+                                "billingSummary" :[
+                                        {
+                                            "Aug" : 4210,
+                                            "Sep" : 6250
+                                        }
+                                ]
+                            }
+                    ]
+                },
+                {
+                    "ConsumerName" : "Toyota",
+                    "consumerContent":[
+                            {
+                                "totalEnrolled":244,
+                                "totalTrips":5368,
+                                "packageEnrolled" :"Insurance Base Pro",
+                                "totalConsentedVehicle" : 244,
+                                "consentDueExpiryIn30Days":0,
+                                "billingSummary" :[
+                                        {
+                                            "Sep" : 2440
+                                        }
+                                ]
+                            }
+                    ]
+                }
+
+        ]
+    },
+    {
+        "dashboardName":"Axiom Dashboard",
+        "consumerDetails" : [
+                {
+                    "ConsumerName" : "All",
+                    "consumerContent":[
+                            {
+                                "totalEnrolled":10984,
+                                "totalTrips":483880,
+                                "packageEnrolled" :"VSC Base,VSC B2B",
+                                "totalConsentedVehicle" : 9654,
+                                "consentDueExpiryIn30Days":167,
+                                "billingSummary" :[
+                                        {
+                                            "Aug" : 29250,
+                                            "Sep" : 53018
+                                        }
+                                ]
+                            }
+                    ]
+                },
+                {
+                    "ConsumerName" : "Stellantis US",
+                    "consumerContent":[
+                            {
+                                "totalEnrolled":9654,
+                                "totalTrips":434430,
+                                "packageEnrolled" :"VSC Base",
+                                "totalConsentedVehicle" : 9654,
+                                "consentDueExpiryIn30Days":167,
+                                "billingSummary" :[
+                                        {
+                                            "Aug" : 29250,
+                                            "Sep" : 43443
+                                        }
+                                ]
+                            }
+                    ]
+                },
+                {
+                    "ConsumerName" : "Toyota",
+                    "consumerContent":[
+                            {
+                                "totalEnrolled":810,
+                                "totalTrips":36450,
+                                "packageEnrolled" :"VSC B2B",
+                                "totalConsentedVehicle" : 810,
+                                "consentDueExpiryIn30Days":0,
+                                "billingSummary" :[
+                                        {
+                                            "Sep" : 6075
+                                        }
+                                ]
+                            }
+                    ]
+                },
+                {
+                    "ConsumerName" : "Nissan",
+                    "consumerContent":[
+                            {
+                                "totalEnrolled":520,
+                                "totalTrips":13000,
+                                "packageEnrolled" :"VSC B2B",
+                                "totalConsentedVehicle" : 520,
+                                "consentDueExpiryIn30Days":0,
+                                "billingSummary" :[
+                                        {
+                                            "Sep" : 3900
+                                        }
+                                ]
+                            }
+                    ]
+                }
+
+        ]
+    },
+
+    {
+        "dashboardName":"Inrix Dashboard",
+        "consumerDetails" : [
+            {
+                "ConsumerName" : "All",
+                "consumerContent":[
+                        {
+                            "totalVehicle":16793,
+                            "totalTrips":760433,
+                            "packageEnrolled" :"Smart City Pro",
+                            "billingSummary" :[
+                                    {
+                                        "Jul":0,
+                                        "Aug" : 8793,
+                                        "Sep" : 31672
+                                    }
+                            ]
+                        }
+                ]
+            },
+            {
+                "ConsumerName" : "Stellantis EU",
+                "consumerContent":[
+                        {
+                            "totalVehicle":16793,
+                            "totalTrips":760433,
+                            "packageEnrolled" :"Smart City Pro",
+                            "billingSummary" :[
+                                    {
+                                        "Jul":0,
+                                        "Aug" : 8793,
+                                        "Sep" : 31672
+                                    }
+                            ]
+                        }
+                ]
+            }
+        ]
+    },
+    {
+        "dashboardName":"Nielsen Dashboard",
+        "consumerDetails" : [
+            {
+                "ConsumerName" : "All",
+                "consumerContent":[
+                        {
+                            "totalVehicle":4400,
+                            "totalTrips":198000,
+                            "packageEnrolled" :"Media",
+                            "billingSummary" :[
+                                    {
+                                        "Jul" : 8929.25,
+                                            "Aug" : 14603,
+                                            "Sep" : 1
+                                    }
+                            ]
+                        }
+                ]
+            },
+                {
+                    "ConsumerName" : "Stellantis EU",
+                    "consumerContent":[
+                            {
+                                "totalVehicle":4400,
+                                "totalTrips":198000,
+                                "packageEnrolled" :"Media",
+                                "billingSummary" :[
+                                        {
+                                            "Jul" : 8929.25,
+                                            "Aug" : 14603,
+                                            "Sep" : 18700
+                                        }
+                                ]
+                            }
+                    ]
+                }
+
+
+        ]
+    }
+
+]

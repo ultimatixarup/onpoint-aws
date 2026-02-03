@@ -1,0 +1,359 @@
+// Filter Buttons
+.filter-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  border: 1px solid #dee2e6;
+  background-color: #fff;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.3s;
+
+  i {
+    margin-right: 5px;
+  }
+
+  &:hover {
+    background-color: #f8f9fa;
+    border-color: #fa751a;
+  }
+
+  &.active {
+    background-color: #fa751a;
+    color: #fff;
+    border-color: #fa751a;
+  }
+}
+
+.back-button {
+  padding: 8px 16px;
+  border: 1px solid #fa751a;
+  background-color: #fff;
+  color: #fa751a;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.3s;
+
+  i {
+    margin-right: 5px;
+  }
+
+  &:hover {
+    background-color: #fa751a;
+    color: #fff;
+  }
+}
+
+// Table Styles
+.table-container {
+  overflow-x: auto;
+}
+
+.table {
+  font-family: 'Poppins', sans-serif;
+  font-size: 11px;
+
+  th {
+    font-weight: 600;
+    text-align: center;
+    padding: 12px 8px;
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 12px 8px;
+    vertical-align: middle;
+    text-align: center;
+  }
+}
+
+// Unassigned Vehicle Highlighting
+.unassigned-vehicle {
+  background-color: #fff3cd;
+  border-left: 4px solid #fa751a;
+
+  &:hover {
+    background-color: #ffe69c;
+  }
+}
+
+// Vehicle and Driver Display
+.vehicle-name {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.unassigned-badge {
+  display: block;
+  color: #fa751a;
+  font-size: 10px;
+  margin-top: 4px;
+
+  i {
+    margin-right: 3px;
+  }
+}
+
+.vin-text {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #6c757d;
+}
+
+.driver-assigned {
+  color: #28a745;
+  font-weight: 500;
+
+  i {
+    margin-right: 4px;
+  }
+}
+
+.no-driver {
+  color: #dc3545;
+  font-style: italic;
+
+  i {
+    margin-right: 4px;
+  }
+}
+
+// Health Status Badges
+.health-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+
+  i {
+    margin-right: 4px;
+  }
+}
+
+.health-good {
+  background-color: #d4edda;
+  color: #155724;
+
+  i {
+    color: #28a745;
+  }
+}
+
+.health-warning {
+  background-color: #fff3cd;
+  color: #856404;
+
+  i {
+    color: #ffc107;
+  }
+}
+
+.health-critical {
+  background-color: #f8d7da;
+  color: #721c24;
+
+  i {
+    color: #dc3545;
+  }
+}
+
+.health-unknown {
+  background-color: #d1ecf1;
+  color: #0c5460;
+
+  i {
+    color: #17a2b8;
+  }
+}
+
+// Health Notes
+.health-notes {
+  max-width: 200px;
+  text-align: left;
+}
+
+.notes-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  line-height: 1.4;
+  color: #6c757d;
+}
+
+// Action Buttons
+.action-buttons {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+}
+
+.btn-success {
+  background-color: #28a745;
+  border-color: #28a745;
+  font-size: 11px;
+  padding: 5px 10px;
+
+  &:disabled {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
+    background-color: #218838;
+    border-color: #1e7e34;
+  }
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  font-size: 11px;
+  padding: 5px 10px;
+
+  &:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+  }
+}
+
+// Driver Select Dropdown
+.driver-select {
+  min-width: 150px;
+  font-size: 11px;
+}
+
+// Pagination
+.pagination-container {
+  margin-top: 20px;
+  padding: 15px 0;
+  border-top: 1px solid #dee2e6;
+}
+
+.page-size-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .pageination {
+    font-size: 12px;
+    font-family: 'Poppins', sans-serif;
+    color: #6c757d;
+  }
+
+  .page-size-select {
+    width: 80px;
+    font-size: 12px;
+    padding: 5px 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    font-family: 'Poppins', sans-serif;
+  }
+}
+
+.pagination {
+  margin-bottom: 0;
+
+  .page-link {
+    color: #fa751a;
+    border-color: #dee2e6;
+    font-size: 12px;
+    padding: 6px 12px;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #f8f9fa;
+      border-color: #fa751a;
+    }
+  }
+
+  .page-item.active .page-link {
+    background-color: #fa751a;
+    border-color: #fa751a;
+    color: #fff;
+  }
+
+  .page-item.disabled .page-link {
+    color: #6c757d;
+    cursor: not-allowed;
+  }
+}
+
+// Modal Styles
+.modal-height {
+  padding: 20px;
+}
+
+.heading-show {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+}
+
+.error-data {
+  color: #fa751a;
+  font-weight: 600;
+}
+
+.deletebtn {
+  background-color: #dc3545;
+  color: #fff;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 5px;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #c82333;
+  }
+}
+
+.cancelbtn {
+  background-color: #6c757d;
+  color: #fff;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 5px;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #5a6268;
+  }
+}
+
+// No Data Message
+.no-data {
+  color: #6c757d;
+  font-size: 14px;
+  margin-top: 10px;
+  font-family: 'Poppins', sans-serif;
+}
+
+// Loading Text for Spinner
+.loading-text {
+  color: #fff;
+  font-size: 14px;
+  margin-top: 15px;
+  font-family: 'Poppins', sans-serif;
+}
+
+// Card
+.card {
+  border-radius: 10px !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}

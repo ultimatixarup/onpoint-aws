@@ -1,0 +1,40 @@
+﻿Data Classification,Data Type,,Sub-category,Parameter ID,Parameter Description,Format,Direct/Derived,UOM,Range,Meaning,
+OEM,NPII,Trip Details,Telemetrey,,cx_timestamp,Timestamp at the time of signal sampling,Timestamp,Direct,Epoch Time,,
+OEM,NPII,Trip Details,Telemetrey,,cx_readable_timestamp,Timestamp at the time of signal sampling,Timestamp,Direct,UTC ,,
+OEM,NPII,Trip Details,Telemetrey,,cx_sending_timestamp,Timestamp at the time of signal sending,Timestamp,Direct,UTC ,,
+CerebrumX,NPII,Trip Details,Telemetrey,,cx_trip_id,Unique Trip identifier for each trip,String,Derived,,,
+OEM,NPII,Trip Details,Telemetrey,,cx_odometer,Odometer reading,Float,Direct,Miles,0 to 1677721.4,
+OEM,NPII,Trip Details,Telemetrey,,cx_vehicle_speed,Vehicle speed,Float,Direct,Miles per Hour,0 to 500,
+OEM,NPII,Trip Details,Telemetrey,Acceleration,cx_acc_x_axis,Acceleration along x axis,Float,Direct,m/s^2,-20 to 20,
+OEM,NPII,Trip Details,Telemetrey,Acceleration,cx_acc_y_axis,Acceleration along y axis,Float,Direct,m/s^2,-20 to 20,
+OEM,NPII,Trip Details,Telemetrey,Acceleration,cx_acc_z_axis,Acceleration along z axis,Float,Direct,m/s^2,-20 to 20,
+OEM,NPII,Trip Details,,Light ,cx_headlight_status,Headlight status,int,Direct,,0-1,0 - OFF
+,,,,,,,,,,,1 - RIGHT
+,,,Telemetrey,,,,,,,,2 - LEFT
+OEM,NPII,Trip Details,Telemetrey,Light ,cx_turn_indicator_status,Turn Indicator status,int,Direct,,0-2,0 - Petrol 1 - Diesel
+OEM,NPII,Trip Details,Telemetrey,Fuel,cx_fuel_type,Fuel Type,int,Direct,,0-1,
+OEM,NPII,Trip Details,Telemetrey,Fuel,cx_abs_fuel_level,Absolute Fuel Level,float,Direct,Gallons,0 to 255,
+OEM,NPII,Trip Details,Telemetrey,Fuel,cx_perc_fuel_level,Percentage Fuel Level,Percentage,Direct,Percentage,(0-100%),
+OEM,NPII,Trip Details,Telemetrey,Fuel,cx_distance_to_empty,Distance to empty,Float,Direct,Miles,,
+OEM,NPII,Trip Details,Telemetrey,Seatbelt,cx_driver_seatbelt,Driver Seatbelt status,boolean,Direct,,0 - 1,0 - Buckled
+,,,,,,,,,,,1 - Unbuckled
+OEM,NPII,Trip Details,Telemetrey,Seatbelt,cx_passenger_seatbelt_front,Front passenger seatbelt status,boolean,Direct,,0 - 1,0 - Buckled
+,,,,,,,,,,,1 - Unbuckled
+OEM,NPII,Trip Details,Telemetrey,Seatbelt,cx_passenger_seatbelt_center_right,Center passenger seatbelt status - Right,boolean,Direct,,0 - 1,0 - Buckled
+,,,,,,,,,,,1 - Unbuckled
+OEM,NPII,Trip Details,Telemetrey,Seatbelt,cx_passenger_seatbelt_center_left,Center passenger seatbelt status - Left,boolean,Direct,,0 - 1,0 - Buckled
+,,,,,,,,,,,1 - Unbuckled
+OEM,NPII,Trip Details,Telemetrey,Seatbelt,cx_passenger_seatbelt_center_middle,Center passenger seatbelt status - Middle,boolean,Direct,,0 - 1,0 - Buckled
+,,,,,,,,,,,1 - Unbuckled
+OEM,NPII,Trip Details,Telemetrey,Seatbelt,cx_passenger_seatbelt_rear_right,Rear passenger seatbelt status - Right,boolean,Direct,,0 - 1,0 - Buckled
+,,,,,,,,,,,1 - Unbuckled
+OEM,NPII,Trip Details,Telemetrey,Seatbelt,cx_passenger_seatbelt_rear_left,Rear passenger seatbelt status - Left,boolean,Direct,,0 - 1,0 - Buckled
+,,,,,,,,,,,1 - Unbuckled
+OEM,NPII,Trip Details,Telemetrey,Seatbelt,cx_passenger_seatbelt_rear_middle,Rear passenger seatbelt status - Middle,boolean,Direct,,0 - 1,
+OEM,NPII,ADAS,Telemetrey,Park Assist ,cx_front_alarm,Park assist front alarm,boolean,Direct,,,
+OEM,NPII,ADAS,Telemetrey,Park Assist,cx_rear_alarm,Park assist rear alarm,boolean,Direct,,,
+OEM,NPII,ADAS,Telemetrey,,cx_esp,Electronic Stability Program,boolean,Direct,,,
+OEM,NPII,ADAS,Telemetrey,,cx_abs,Anti Braking System,boolean,Direct,,,
+OEM,NPII,ADAS,Telemetrey,,cx_blind_spot_monitoring,Blind Spot Monitoring,boolean,Direct,,,
+OEM,NPII,ADAS,Telemetrey,Lane keep assist,cx_lane_keep_assist_right,Lane keep assist - Right,boolean,Direct,,,
+OEM,NPII,ADAS,Telemetrey,Lane keep assist,cx_lane_keep_assist_left,Lane keep assist - Left,boolean,Direct,,,

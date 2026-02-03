@@ -1,0 +1,656 @@
+
+<header class="header fixed-top pad70">
+    <div class="branding b-back">
+      <div class="container-fluid position-relative">
+        <nav class="navbar navbar-expand-lg">
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navigation"
+            aria-controls="navigation" aria-expanded="true" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="row" style="width: 100%;">
+            <div class="col-xs-12 col-lg-5">
+                <div class="collapse navbar-collapse justify-content-end" id="navigation" style="float: left; margin-left: 70px;">
+                    <ul class="navbar-nav">
+
+                     <li class="nav-item dropdown me-lg-4">
+                        <a class="nav-link" routerLink="/adlp/eligibility/eligibilityCheck">
+                            <img src="../../../../assets/images/VIN.svg" class="icon-left">VIN Eligibility</a>
+                      </li>
+                      <ng-container *ngIf="user =='admin'">
+                        <li class="nav-item dropdown me-lg-4">
+                            <a class="nav-link" routerLink="/adlp/admin/dashboardAdmin">
+                                <img src="../../../../assets/images/Dashboard.svg" class="icon-left"> Fleet Care</a>
+                          </li>
+                    </ng-container>
+                    <ng-container *ngIf="user == 'role_consumer_fleet'">
+                        <li class="nav-item dropdown me-lg-4">
+                            <a class="nav-link" routerLink="/adlp/admin/admindashboard/dashboardfleet">Dashboard</a>
+                          </li>
+                    </ng-container>
+                    </ul>
+                  </div>
+            </div>
+            <div class="col-xs-12 col-lg-7">
+                <div class="collapse navbar-collapse justify-content-end" id="navigation">
+                    <ul class="navbar-nav" style="float: left;">
+                      <li class="nav-item me-lg-4">
+                        <a class="nav-link" [routerLinkActive]="['actives']" [routerLinkActiveOptions]="{exact:true}"
+                          routerLink="/adlp/admin">Overview</a>
+                      </li>
+                      <li class="nav-item dropdown me-lg-4">
+                        <a class="nav-link" routerLink="/adlp/admin/process">Onboarding</a>
+                      </li>
+                      <li class="nav-item me-lg-4">
+                        <a class="nav-link" routerLink="/adlp/admin/cxtaxonomy">Signal Map</a>
+                      </li>
+                      <li class="nav-item me-lg-4" class="dropdown d-inline-block" ngbDropdown>
+                        <a class="nav-link" routerLink="/adlp/admin/cxtaxonomy">Developer Corner
+                            <i class="mdi mdi-chevron-down d-none d-xl-inline-block search arrow-h"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end mr-top-8" ngbDropdownMenu>
+                            <a class="dropdown-item linkdata menu-test" routerLink="/adlp/admin/htmlgenerator"><img src="../../../../../assets/images/document-icon.svg" class="img-h"> Documents</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item linkdata menu-test1" routerLink="/adlp/admin/swagger/Fleet"><img src="../../../../../assets/images/api-icon.svg" class="img-h"> APIs</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item linkdata menu-test2" routerLink="/adlp/admin/tools/trip-simulator"><img src="../../../../../assets/images/trip-icon.svg" class="img-h-16"> Trip Simulator</a>
+                            </div>
+                      </li>
+                    </ul>
+                  </div>
+            </div>
+          </div>
+
+        </nav>
+      </div>
+    </div>
+</header>
+
+<div class="page-content pad-t">
+    <div class="features-tab-content tab-content" id="features-tab-content">
+        <div class="feature-1-pane tab-pane fade show active" id="feature-1" role="tabpanel"
+            aria-labelledby="feature-tab-1">
+            <div class="zigzag-layout btn-mobile">
+              <div class="item mb-5">
+                    <div class="row">
+                        <div class="col-xs-12 col-lg-6">
+                            <h1 class="font-weight-bold mb-3 main-heading" style="font-size: 36px!important; font-family: 'Neo Sans Pro', 'Helvetica', 'Arial', 'Lucida', sans-serif!important;
+                            color: #102C52;">FleetConnect <sup class="font-sup">TM</sup></h1>
+                            <div class="row" style="margin-left: 48px;">
+                                <div class="col-xs-12 col-lg-12">
+                                    <p class="fleet-telemetryp">
+                                        FleetConnect<sup class="font-super">TM</sup> product is powered by CerebrumX's Augmented Deep Learning Platform (ADLP) that provides data-driven actionable insights for fleets to fine-tune operations that improve performance and create a great customer experience.
+                                    </p>
+                                </div>
+                                <div class="col-xs-12 col-lg-12">
+                                    <a class="data-demo btn-primary text-white view-more" routerLink="/adlp/admin/process" style="width: 30%;">How it works</a> &nbsp;&nbsp;
+
+                                </div>
+                            </div>
+                            <div class="row" style="margin-left: 48px;">
+                                <div class="col-xs-12 col-md">
+                                    <img src="../../../../assets/images/ford-logos.png" style="height: 90px; margin-top: 20px;">
+                                </div>
+                                <div class="col-xs-12 col-md">
+                                    <img src="../../../../assets/images/gm.png" style="height: 70px; margin-left: -20px; margin-top: 30px;">
+                                </div>
+                                <div class="col-xs-12 col-md">
+                                    <img src="../../../../assets/images/stellantis-1.png" style="height: 55px; margin-top: 36px; margin-left: -20px;">
+                                </div>
+                                <div class="col-xs-12 col-md">
+                                    <img src="../../../../assets/images/teslalogo.png" style="height: 60px; margin-top: 35px;">
+                                </div>
+                                <div class="col-xs-12 col-md">
+                                    <img src="../../../../assets/images/toyota.png" style="height: 45px; margin-top: 40px;">
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="col-xs-12 col-lg-6">
+                            <img src="../../../../assets/images/back-mage.png" style="height: 525px; margin-top: -20px;">
+                        </div>
+                    </div>
+                    <div class="row" style="margin-top: 80px;">
+                        <div class="col-xs-12 col-lg-12">
+                            <div class="card" style="height: auto; margin-left: 60px; margin-right: 60px; border-radius: 50px; box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;">
+                                <div class="card-body">
+                                    <h1 class="plan-heading">Supported Packages</h1>
+                                        <div class="col-xs-12 col-lg-9 box-package">
+                                                <div class="row">
+                                                    <div class="col-xs-12 col-lg-4">
+                                                        <button (click)="selectButton(1); basicPackage()" [ngClass]="{'selected': buttonSelected === 1}">Basic</button>
+                                                    </div>
+                                                    <div class="col-xs-12 col-lg-4">
+                                                        <button (click)="selectButton(2); advancePackage()" [ngClass]="{'selected': buttonSelected === 2}">Advanced</button>
+                                                    </div>
+                                                    <div class="col-xs-12 col-lg-4">
+                                                        <button (click)="selectButton(3); premiumPackage()" [ngClass]="{'selected': buttonSelected === 3}">Premium</button>
+                                                    </div>
+                                                </div>
+                                        </div>
+                                        <!-- Basic Package-->
+                                        <ng-container *ngIf="basic">
+                                        <div class="col-xs-12 col-lg-12">
+                                            <h5 class="plan-data"><a style="color: #EE8F31;">Basic package</a>
+                                               offers all the basic vehicle and driver behavior signals in real-time. Information received is rich in datasets for vehicle tracking, such as live location, miles driven, speed, acceleration, cornering, and more.
+                                            </h5>
+                                        </div>
+
+                                        <div class="row" style="margin-top: 40px; margin-bottom: 40px;">
+                                            <div class="col-xs-12 col-lg-2">&nbsp;</div>
+                                            <div class="col-xs-12 col-lg-1">&nbsp;</div>
+                                            <div class="col-xs-12 col-lg-2">
+                                                <button id="button1" (click)="selectButton1(1); telemetrey()" [ngClass]="{'selected': buttonSelected1 === 1}">Telemetry</button>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-2">
+                                                <button id="button1" (click)="selectButton1(2); driverBehaviour()" [ngClass]="{'selected': buttonSelected1 === 2}">Driver Behavior</button>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-2">
+                                                <button id="button1" (click)="selectButton1(3); vehicleHealthbasic() " [ngClass]="{'selected': buttonSelected1 === 3}">Vehicle Health</button>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-1">&nbsp;</div>
+                                            <div class="col-xs-12 col-lg-2">&nbsp;</div>
+                                        </div>
+                                        <!--Telemetrey-->
+                                        <div class="row" style="margin-top: 60px; margin-bottom: 40px;" *ngIf="telemetreyData">
+                                            <div class="col-xs-12 col-lg-6" style="margin-left:60px ;">
+                                                <div class="content-figure">
+                                                    <figure class="figure">
+                                                        <img class="rounded  img-fluid" src="assets/images/vehicle _telemetry.png" alt="">
+                                                    </figure>
+                                                </div>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-5">
+                                                <div class="content">
+                                                    <div class="row">
+                                                        <div class="col-xs-12 col-lg-12">
+                                                            <h5 class="leading-sec-heaidng"> Track vehicles in real-time</h5>
+                                                        </div>
+                                                    </div>
+                                                    <div class="desc">
+                                                        <p class="fleet-telemetryp">Fleet navigation becomes easier with real-time fleet tracking for the shortest routes and faster, targeted repairs.</p>
+                                                        <div class="fleet-telemetry">
+                                                            <ul>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Convey real-time ETAs</li>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Allocate jobs based on vehicle location</li>
+                                                            </ul>
+                                                        </div>
+                                                        <div class="cta-link ctalink" style="margin-top: 20px;">
+                                                            <a class="data-demo btn-primary text-white view-more"
+                                                                routerLink="/adlp/admin/fleetTelemetrey">View More</a>
+                                                                <a class="signal-demo btn-primary text-white "
+                                                                routerLink="/adlp/admin/signalMapped/telemetrySignal">View Signals</a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                         <!-- elemetrey End-->
+                                          <!--Driver Behaviour-->
+                                        <div class="row" style="margin-top: 60px; margin-bottom: 40px;" *ngIf="driverBehaviourData">
+                                            <div class="col-xs-12 col-lg-6" style="margin-left: 60px;">
+                                                <div class="content-figure">
+                                                    <figure class="figure">
+                                                        <img class="rounded  img-fluid" src="assets/images/driver_behaviour.png" alt="">
+                                                    </figure>
+                                                </div>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-5">
+                                                <div class="content">
+                                                    <div class="row">
+                                                        <div class="col-xs-12 col-lg-12">
+                                                            <h5 class="leading-sec-heaidng"> Monitor driver performance</h5>
+                                                        </div>
+                                                    </div>
+                                                    <div class="desc">
+                                                        <p class="fleet-telemetryp">This category promotes safe driving behavior with access to signals and expert insights that predict the risk profile and facilitate specialized coaching.</p>
+                                                        <div class="fleet-telemetry">
+                                                            <ul>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Driver safety</li>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Coaching programs</li>
+                                                            </ul>
+                                                        </div>
+                                                       <div class="cta-link ctalink" style="margin-top: 20px;">
+                                                            <a class="data-demo btn-primary text-white view-more"
+                                                                routerLink="/adlp/admin/driver-behaviour">View More</a>
+                                                                <a class="signal-demo btn-primary text-white "
+                                                                routerLink="//adlp/admin/signalMapped/driverBehaviourSingal">View Signals</a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row" style="margin-top: 60px; margin-bottom: 40px;" *ngIf="vehicleHealthbasics">
+                                            <div class="col-xs-12 col-lg-6" style="margin-left: 60px;">
+                                                <div class="content-figure">
+                                                    <figure class="figure">
+                                                        <img class="rounded  img-fluid" src="assets/images/vehicle-health.png" alt="">
+                                                    </figure>
+                                                </div>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-5">
+                                                <div class="content">
+                                                    <div class="row">
+                                                        <div class="col-xs-12 col-lg-12">
+                                                            <h5 class="leading-sec-heaidng">Monitor vehicle’s mileage and identify
+                                                                potential  risks</h5>
+                                                        </div>
+                                                    </div>
+                                                    <div class="desc">
+                                                        <p class="fleet-telemetryp">Closely monitor vehicle health and performance, conduct proactive repairs, and schedule vehicle maintenance.  </p>
+                                                        <div class="fleet-telemetry">
+                                                            <ul>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Optimized equipment usage</li>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Predictive maintenance</li>
+                                                            </ul>
+                                                        </div>
+                                                       <div class="cta-link ctalink" style="margin-top: 20px;">
+                                                            <a class="data-demo btn-primary text-white view-more"
+                                                                routerLink="/adlp/admin/vehicle-health">View More</a>
+
+                                                                <a class="signal-demo btn-primary text-white "
+                                                                routerLink="/adlp/admin/signalMapped/vehicleHealthSingal">View Signals</a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </ng-container>
+                                         <!--Driver Behaviour-->
+                                          <!-- Basic Package-->
+
+                                         <!-- Advanced Package-->
+                                        <ng-container *ngIf="advance">
+                                        <div class="col-xs-12 col-lg-12">
+                                            <h5 class="plan-data"><a style="color: #EE8F31;">Advanced package </a>
+                                                covers detailed vehicle health and diagnostics to generate predictive maintenance insights. It also gives access to track real-time fuel consumption, enabling a fleet manager to stop fuel pilferage and theft and increase fuel efficiency.
+                                            </h5>
+                                        </div>
+                                        <div class="row" style="margin-top: 40px; margin-bottom: 40px;">
+                                            <div class="col-xs-12 col-lg-2">&nbsp;</div>
+                                            <div class="col-xs-12 col-lg-1">&nbsp;</div>
+                                            <div class="col-xs-12 col-lg-2">
+                                                <button id="button1" (click)="selectButton2(1); advancedTelemetrey()" [ngClass]="{'selected': buttonSelected2 === 1}">Telemetry <sup class="sup-cl">+</sup></button>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-2">
+                                                <button id="button1" (click)="selectButton2(2);fuel()" [ngClass]="{'selected': buttonSelected2 === 2}">Fuel</button>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-2">
+                                                <button id="button1" (click)="selectButton2(3);VehicleHealth()" [ngClass]="{'selected': buttonSelected2 === 3}">Vehicle Health <sup class="sup-cl">+</sup></button>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-1">&nbsp;</div>
+                                            <div class="col-xs-12 col-lg-2">&nbsp;</div>
+                                        </div>
+                                        <!--Telemetrey Advanced-->
+                                        <div class="row" style="margin-top: 60px; margin-bottom: 40px;" *ngIf="advancedTelemetreyData">
+                                            <div class="col-xs-12 col-lg-6" style="margin-left:60px ;">
+                                                <div class="content-figure">
+                                                    <figure class="figure">
+                                                        <img class="rounded  img-fluid" src="assets/images/vehicle _telemetry.png" alt="">
+                                                    </figure>
+                                                </div>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-5">
+                                                <div class="content">
+                                                    <div class="row">
+                                                        <div class="col-xs-12 col-lg-12">
+                                                            <h5 class="leading-sec-heaidng"> Advanced Vehicle Tracking</h5>
+                                                        </div>
+                                                    </div>
+                                                    <div class="desc">
+                                                        <p class="fleet-telemetryp">Telemetry<sup class="font-super">+</sup> offers excellent fleet navigation that covers insights from CAN odometer readings and gear position to aid vehicle monitoring for fleets.</p>
+                                                        <div class="fleet-telemetry">
+                                                            <ul>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Convey real-time ETAs</li>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;CAN odomoter readings</li>
+                                                            </ul>
+                                                        </div>
+                                                       <div class="cta-link ctalink" style="margin-top: 20px;">
+                                                            <a class="data-demo btn-primary text-white view-more"
+                                                                routerLink="/adlp/admin/advancedTelemetrey">View More</a>
+                                                                <a class="signal-demo btn-primary text-white "
+                                                                routerLink="#">View Signals</a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                         <!-- Telemetrey Advanced End-->
+                                          <!--Fuel-->
+                                        <div class="row" style="margin-top: 60px; margin-bottom: 40px;" *ngIf="fuelData">
+                                            <div class="col-xs-12 col-lg-6" style="margin-left: 60px;">
+                                                <div class="content-figure">
+                                                    <figure class="figure">
+                                                        <img class="rounded  img-fluid" src="assets/images/fuel-img.png" alt="">
+                                                    </figure>
+                                                </div>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-5">
+                                                <div class="content">
+                                                    <div class="row">
+                                                        <div class="col-xs-12 col-lg-12">
+                                                            <h5 class="leading-sec-heaidng">Track fuel consumed and identify fuel pilferage </h5>
+                                                        </div>
+                                                    </div>
+                                                    <div class="desc">
+                                                        <p class="fleet-telemetryp">Maximize fuel efficiency and detect fuel pilferage with real-time, accurate data on fuel consumption.</p>
+                                                        <div class="fleet-telemetry">
+                                                            <ul>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Get fuel usage insights</li>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Reduce fuel pilferage</li>
+                                                            </ul>
+                                                        </div>
+                                                       <div class="cta-link ctalink" style="margin-top: 20px;">
+                                                            <a class="data-demo btn-primary text-white view-more"
+                                                                routerLink="/adlp/admin/fuel">View More</a>
+                                                                <a class="signal-demo btn-primary text-white "
+                                                                routerLink="/adlp/admin/signalMapped/fuelSingal">View Signals</a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row" style="margin-top: 60px; margin-bottom: 40px;" *ngIf="vehicleHealth">
+                                            <div class="col-xs-12 col-lg-6" style="margin-left: 60px;">
+                                                <div class="content-figure">
+                                                    <figure class="figure">
+                                                        <img class="rounded  img-fluid" src="assets/images/vehicle-health.png" alt="">
+                                                    </figure>
+                                                </div>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-5">
+                                                <div class="content">
+                                                    <div class="row">
+                                                        <div class="col-xs-12 col-lg-12">
+                                                            <h5 class="leading-sec-heaidng">Get Real-Time Vehicle Maintenance Alerts</h5>
+                                                        </div>
+                                                    </div>
+                                                    <div class="desc">
+                                                        <p class="fleet-telemetryp">Conduct advanced vehicle maintenance and proactive repairs with accurate live alerts and malfunction service warnings.</p>
+                                                        <div class="fleet-telemetry">
+                                                            <ul>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Advanced predictive maintenance</li>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Precise service warnings</li>
+                                                            </ul>
+                                                        </div>
+                                                       <div class="cta-link ctalink" style="margin-top: 20px;">
+                                                            <a class="data-demo btn-primary text-white view-more"
+                                                                routerLink="/adlp/admin/vehicle-healthplus">View More</a>
+
+                                                                <a class="signal-demo btn-primary text-white "
+                                                                routerLink="/adlp/admin/signalMapped/vehicleHealthSingal">View Signals</a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        </ng-container>
+                                         <!--Fuel-->
+                                          <!-- Advanced Package-->
+
+                                           <!-- Advanced Package-->
+                                        <ng-container *ngIf="premium">
+                                        <div class="col-xs-12 col-lg-12">
+                                            <h5 class="plan-data"><a style="color: #EE8F31;">Premium package </a>
+                                                gives access to all the real-time connected vehicle data signals that cover ADAS, detailed collision summaries, and driver safety. It covers the EV signals necessary to identify the best place, time, and rate for EV charging that saves energy. Its special edition provides insights to optimize TCO for fleets.</h5>
+                                        </div>
+                                        <div class="row" style="margin-top: 40px; margin-bottom: 40px;">
+                                            <div class="col-xs-12 col-lg-2">&nbsp;</div>
+                                            <div class="col-xs-12 col-lg-1">&nbsp;</div>
+                                            <div class="col-xs-12 col-lg-2">
+                                                <button id="button1" (click)="selectButton1(1);safety()" [ngClass]="{'selected': buttonSelected1 === 1}">Safety</button>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-2">
+                                                <button id="button1" (click)="selectButton1(2);adas()" [ngClass]="{'selected': buttonSelected1 === 2}">ADAS</button>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-2">
+                                                <button id="button1" (click)="selectButton1(3);ev()" [ngClass]="{'selected': buttonSelected1 === 3}">EV</button>
+                                            </div>
+                                          <div class="col-xs-12 col-lg-1">&nbsp;</div>
+                                            <div class="col-xs-12 col-lg-2">&nbsp;</div>
+                                        </div>
+                                        <!--ADAS-->
+                                        <div class="row" style="margin-top: 60px; margin-bottom: 40px;" *ngIf="adasData">
+                                            <div class="col-xs-12 col-lg-6" style="margin-left:60px ;">
+                                                <div class="content-figure">
+                                                    <figure class="figure">
+                                                        <img class="rounded  img-fluid" src="assets/images/adas.png" alt="">
+                                                    </figure>
+                                                </div>
+                                            </div>
+                                            <!--asd-->
+                                            <div class="col-xs-12 col-lg-5">
+                                                <div class="content">
+                                                    <div class="row">
+                                                        <div class="col-xs-12 col-lg-12">
+                                                            <h5 class="leading-sec-heaidng">Significantly improves driver safety</h5>
+                                                        </div>
+                                                    </div>
+                                                    <div class="desc">
+                                                        <p class="fleet-telemetryp">Get access to real-time ADAS data to provide features like lane-keeping assistance, adaptive cruise control, and collision avoidance. </p>
+                                                        <div class="fleet-telemetry">
+                                                            <ul>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Blind-spot monitoring</li>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Automatic lane change</li>
+                                                            </ul>
+                                                        </div>
+                                                       <div class="cta-link ctalink" style="margin-top: 20px;">
+                                                            <!-- <a class="data-demo btn-primary text-white view-more"
+                                                                routerLink="/adlp/admin/adasfetaures">View More</a> -->
+                                                                <a class="signal-demo btn-primary text-white "
+                                                                routerLink="/adlp/admin/signalMapped/adasSignal">View Signals</a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                         <!-- ADAS End-->
+                                          <!--Collision Data-->
+                                        <div class="row" style="margin-top: 60px; margin-bottom: 40px;" *ngIf="CollisionData">
+                                            <div class="col-xs-12 col-lg-6" style="margin-left: 60px;">
+                                                <div class="content-figure">
+                                                    <figure class="figure">
+                                                        <img class="rounded  img-fluid" src="assets/images/fleet_collision_data.png" alt="">
+                                                    </figure>
+                                                </div>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-5">
+                                                <div class="content">
+                                                    <div class="row">
+                                                        <div class="col-xs-12 col-lg-12">
+                                                            <h5 class="leading-sec-heaidng">Get detailed collision summary in real-time</h5>
+                                                        </div>
+                                                    </div>
+                                                    <div class="desc">
+                                                        <p class="fleet-telemetryp">Detect the occurrence of a collision in near real-time and manage claims.</p>
+                                                        <div class="fleet-telemetry">
+                                                            <ul>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Access crash summary data</li>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;FNOL Analysis</li>
+                                                            </ul>
+                                                        </div>
+                                                       <div class="cta-link ctalink" style="margin-top: 20px;">
+                                                            <a class="data-demo btn-primary text-white view-more"
+                                                                routerLink="/adlp/admin/collision">View More</a>
+                                                                <a class="signal-demo btn-primary text-white "
+                                                                routerLink="/adlp/admin/signalMapped/collisionSingal">View Signal</a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!--CollisionData End-->
+                                        <!--EV Data-->
+                                        <div class="row" style="margin-top: 60px; margin-bottom: 40px;" *ngIf="evData">
+                                            <div class="col-xs-12 col-lg-6" style="margin-left: 60px;">
+                                                <div class="content-figure">
+                                                    <figure class="figure">
+                                                        <img class="rounded  img-fluid" src="assets/images/ev_fleet_data.png" alt="">
+                                                    </figure>
+                                                </div>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-5">
+                                                <div class="content">
+                                                    <div class="row">
+                                                        <div class="col-xs-12 col-lg-12">
+                                                            <h5 class="leading-sec-heaidng">Enhance the overall EV experience</h5>
+                                                        </div>
+                                                    </div>
+                                                    <div class="desc">
+                                                        <p class="fleet-telemetryp">Get access to electric vehicle (EV) battery charging status and identify the right place and time for charging to optimize energy consumption.</p>
+                                                        <div class="fleet-telemetry">
+                                                            <ul>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Find nearest charging station</li>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Rate plan selection</li>
+                                                            </ul>
+                                                        </div>
+                                                       <div class="cta-link ctalink" style="margin-top: 20px;">
+                                                            <a class="data-demo btn-primary text-white view-more"
+                                                                routerLink="/adlp/admin/evdata">View More</a>
+                                                                <a class="signal-demo btn-primary text-white "
+                                                                routerLink="/adlp/admin/signalMapped/evSingal">View Signals</a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!--EV Data End-->
+                                        <!--Safety Data-->
+                                        <div class="row" style="margin-top: 60px; margin-bottom: 40px;" *ngIf="safetyData">
+                                            <div class="col-xs-12 col-lg-6" style="margin-left:60px ;">
+                                                <div class="content-figure">
+                                                    <figure class="figure">
+                                                        <img class="rounded  img-fluid" src="assets/images/safety-img.png" alt="">
+                                                    </figure>
+                                                </div>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-5">
+                                                <div class="content">
+                                                    <div class="row">
+                                                        <div class="col-xs-12 col-lg-12">
+                                                            <h5 class="leading-sec-heaidng">Promote safe driving with advanced driver signals</h5>
+                                                        </div>
+                                                    </div>
+                                                    <div class="desc">
+                                                        <p class="fleet-telemetryp">Detect the occurrence of a collision in near real-time and promote driver safety.</p>
+                                                        <div class="fleet-telemetry">
+                                                            <ul>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Safe driving</li>
+                                                                    <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                        &nbsp;&nbsp;FNOL analysis</li>
+                                                            </ul>
+                                                        </div>
+                                                       <div class="cta-link ctalink" style="margin-top: 20px;">
+                                                            <a class="data-demo btn-primary text-white view-more"
+                                                                routerLink="/adlp/admin/safetyfetaures">View More</a>
+                                                                <a class="signal-demo btn-primary text-white "
+                                                                routerLink="/adlp/admin/signalMapped/safety">View Signals</a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                         <!-- Safety Data End-->
+                                          <!--Vehicle ProfileData Data-->
+                                        <div class="row" style="margin-top: 60px; margin-bottom: 40px;" *ngIf="vehicleProfileData">
+                                            <div class="col-xs-12 col-lg-6" style="margin-left: 60px;">
+                                                <div class="content-figure">
+                                                    <figure class="figure">
+                                                        <img class="rounded  img-fluid" src="assets/images/driver_behaviour.png" alt="">
+                                                    </figure>
+                                                </div>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-5">
+                                                <div class="content">
+                                                    <div class="row">
+                                                        <div class="col-xs-12 col-lg-12">
+                                                            <h5 class="leading-sec-heaidng"> Know where your vehicles are, in real-time</h5>
+                                                        </div>
+                                                    </div>
+                                                    <div class="desc">
+                                                        <p class="fleet-telemetryp">Get real-time and historical insights into
+                                                            driver behaviour and fuel consumption, to identify unfit drivers and promote
+                                                            safe driving habits through training and coaching programs. </p>
+                                                        <div class="fleet-telemetry">
+                                                            <ul>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Driver safety</li>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Track fuel consumption</li>
+                                                            </ul>
+                                                        </div>
+                                                       <div class="cta-link ctalink" style="margin-top: 20px;">
+                                                            <a class="data-demo btn-primary text-white view-more"
+                                                                routerLink="/adlp/admin/fleetTelemetrey">View More</a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!--Vehicle ProfileData End-->
+                                        <!--Tco Data Data-->
+                                        <div class="row" style="margin-top: 60px; margin-bottom: 40px;" *ngIf="tcoData">
+                                            <div class="col-xs-12 col-lg-6" style="margin-left: 60px;">
+                                                <div class="content-figure">
+                                                    <figure class="figure">
+                                                        <img class="rounded  img-fluid" src="assets/images/total _cost_of_ownership.png" alt="">
+                                                    </figure>
+                                                </div>
+                                            </div>
+                                            <div class="col-xs-12 col-lg-5">
+                                                <div class="content">
+                                                    <div class="row">
+                                                        <div class="col-xs-12 col-lg-12">
+                                                            <h5 class="leading-sec-heaidng">Optimize fleet’s total cost of ownership</h5>
+                                                        </div>
+                                                    </div>
+                                                    <div class="desc">
+                                                        <p class="fleet-telemetryp">Get an overview of assorted costs connected with your fleet, such as fuel, insurance, taxes, maintenance and repairs, to manage and save on fleet costs and time.</p>
+                                                        <div class="fleet-telemetry">
+                                                            <ul>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Save Time & Money</li>
+                                                                <li class="fleet-telemetryli"><img src="assets/images/tic.png">
+                                                                    &nbsp;&nbsp;Save on Insurance costs and taxes</li>
+                                                            </ul>
+                                                        </div>
+                                                       <div class="cta-link ctalink" style="margin-top: 20px;">
+                                                            <a class="data-demo btn-primary text-white view-more"
+                                                                routerLink="/adlp/admin/tco">View More</a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!--tco Data End-->
+                                        </ng-container>
+                                         <!--Fuel-->
+                                          <!-- Advanced Package-->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+</div>

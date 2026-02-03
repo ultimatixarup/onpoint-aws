@@ -1,0 +1,576 @@
+.ml-10 {
+  margin-left: 10% !important;
+}
+
+.mr6 {
+  margin-top: 6px !important;
+}
+
+.back-btn {
+  float: left !important;
+  cursor: pointer !important;
+}
+
+.add-span {
+  float: left !important;
+  margin-left: 190px !important;
+}
+
+.add-head {
+  font-weight: 600 !important;
+  color: #000000 !important;
+  line-height: 20px !important;
+  font-size: 18px !important;
+}
+
+.input-group-span {
+  width: 90% !important;
+  padding-top: 8px !important;
+}
+
+.pad-top-8 {
+  padding-top: 8px !important;
+}
+
+.notification-data {
+  font-weight: 600 !important;
+  margin-top: 6px !important
+}
+
+.mar-btm-100 {
+  margin-bottom: 100px !important
+}
+
+.he-10 {
+  height: 10px !important;
+}
+
+::ng-deep.ng-select.ng-select-single .ng-select-container {
+  height: 37px !important;
+  border-radius: 10px !important;
+}
+
+
+.newSelect1 {
+  color: #9fa19f;
+  width: 100%;
+  height: 37px !important;
+  background-size: 10px 12px !important;
+  font-family: 'Poppins' !important;
+  border-radius: 10px !important
+}
+
+::ng-deep.newSelect1 .ng-select-container {
+  background-color: #FA751A !important;
+}
+
+::ng-deep.newSelect1.ng-select .ng-select-container .ng-value-container .ng-placeholder {
+  color: #ffffff !important;
+}
+
+::ng-deep.newSelect1.ng-select.ng-select-opened>.ng-select-container .ng-arrow {
+  top: -2px;
+  border-color: transparent transparent #ffffff !important;
+  border-width: 0 5px 5px;
+}
+
+::ng-deep.newSelect1.ng-select.ng-select-single .ng-select-container .ng-value-container .ng-value {
+  color: #ffffff !important
+}
+
+::ng-deep.newSelect1.ng-select .ng-clear-wrapper {
+  color: #ffffff !important;
+}
+
+::ng-deep.newSelect1.ng-select .ng-arrow-wrapper .ng-arrow {
+  border-color: #fff transparent transparent !important;
+  border-style: solid;
+  border-width: 5px 5px 2.5px;
+}
+
+/* Toggle Switch */
+.notification-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* spacing between text and switch */
+}
+
+.switch {
+  border: none !important;
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 34px;
+}
+
+.content-right{
+  width: 100%!important;
+}
+
+.slider::before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked+.slider {
+  background-color: #4caf50;
+}
+
+input:checked+.slider::before {
+  transform: translateX(16px);
+}
+
+::ng-deep .custom-ng-select .ng-select-container {
+  border: 1px solid #666565 !important;
+  border-radius: 4px!important;
+
+}
+
+::ng-deep .customs-ng-select .ng-select-container {
+  border: 1px solid #666565 !important;
+  border-radius: 3px !important;
+
+}
+
+::ng-deep.newSelect2.ng-select.ng-select-single .ng-select-container .ng-value-container .ng-value {
+  color:#757575!important;
+
+
+}
+
+.time-interval-label {
+  font-size: 12px;
+  font-weight: 400;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  color: #333;
+  font-family: 'Poppins',
+}
+
+.time-interval-label i {
+  font-size: 14px;
+  margin-left: 6px;
+  color: #999;
+  cursor: pointer;
+}
+
+.time-interval-input-group {
+  display: flex;
+  border: 1px solid #666565;
+  border-radius: 5px;
+  overflow: hidden;
+  height: 37px;
+  // max-width: 355px;
+}
+
+.time-interval-input-group input {
+  border: none;
+  padding: 0 12px;
+  flex: 1;
+  outline: none;
+  font-size: 10px;
+  font-family: 'Poppins';
+}
+
+.time-interval-input-group select {
+  border: none;
+  border-left: 1px solid #757272;
+  font-family: 'Poppins';
+  padding: 0 10px;
+  font-size: 9px;
+  background-color: white;
+  outline: none;
+  cursor: pointer;
+}
+
+::ng-deep.ng-select.ng-select-multiple .ng-select-container .ng-value-container .ng-placeholder {
+  margin-top: 4px;
+  font-size: 9px;
+  font-weight: 400;
+  font-family: 'Poppins';
+  color:#757575!important
+}
+/* Prevent the tag area from wrapping and allow scroll */
+.custom-scroll-select .ng-value-container {
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  max-height: 38px!important; /* Adjust to match your input height */
+  padding-right: 10px;
+}
+
+/* Prevent tags from wrapping text */
+.custom-scroll-select .ng-value {
+  white-space: nowrap!important;
+}
+
+/* Optional: Style the scroll bar */
+.custom-scroll-select .ng-value-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.custom-scroll-select .ng-value-container::-webkit-scrollbar-thumb {
+  background-color: rgba(0,0,0,0.2);
+  border-radius: 3px;
+}
+
+
+
+.onoff-toggle {
+  display: flex;
+  align-items: center;
+}
+
+/* Switch container */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 45px;
+  height: 18px;
+}
+
+/* Hide default checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* Slider background */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 18px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* Slider circle */
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 2px;
+  top: 2px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+/* ON state */
+input:checked+.slider {
+  background-color: #4CAF50;
+}
+
+input:checked+.slider:before {
+  transform: translateX(25px);
+  /* Shift the circle to the right */
+}
+
+.notification {
+  display: flex;
+  overflow: hidden;
+  color: #8C8C8C;
+  font-family: 'Poppins';
+  font-size: 14px;
+}
+
+.email-input-container input {
+  width: 100%;
+  padding: 6px;
+  margin-bottom: 4px;
+}
+
+.email-list {
+  list-style: none;
+  padding: 0;
+}
+
+.email-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f0f0f0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.button-group {
+  display: flex !important;
+  gap: 12px !important;
+}
+
+.btn.btn-primary {
+  background-color: #ff7a00 !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 10px 24px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: background-color 0.3s ease !important;
+}
+
+.btn.btn-primary:hover {
+  background-color: #e06600 !important;
+}
+
+.custom-tooltip-icon {
+  cursor: pointer;
+  position: relative;
+}
+
+.custom-tooltip {
+  visibility: hidden;
+  width: 250px;
+  /* Adjust the width of the tooltip */
+  background-color: #72706F;
+  color: #fff;
+  font-size: 12px;
+  text-align: left;
+  border-radius: 4px;
+  padding: 5px 10px 5px 10px;
+  position: absolute;
+  z-index: 1;
+  // left: 50%;
+  margin-left: 260px;
+  /* Center it */
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.custom-tooltip-icon:hover+.custom-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.custom-tooltip-icon1 {
+  cursor: pointer;
+  position: relative;
+}
+
+.custom-tooltip1 {
+  visibility: hidden;
+  width: 250px;
+  /* Adjust the width of the tooltip */
+  background-color: #72706F;
+  color: #fff;
+  font-size: 12px;
+  text-align: left;
+  border-radius: 4px;
+  padding: 5px 10px 5px 10px;
+  position: absolute;
+  z-index: 1;
+  // left: 50%;
+  margin-left: 180px;
+  /* Center it */
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.custom-tooltip-icon1:hover+.custom-tooltip1 {
+  visibility: visible;
+  opacity: 1;
+}
+
+
+.custom-tooltip-icon2 {
+  cursor: pointer;
+  position: relative;
+}
+
+.custom-tooltip2 {
+  visibility: hidden;
+  width: 250px;
+  /* Adjust the width of the tooltip */
+  background-color: #72706F;
+  color: #fff;
+  font-size: 12px;
+  text-align: left;
+  border-radius: 4px;
+  padding: 5px 10px 5px 10px;
+  position: absolute;
+  z-index: 1;
+  // left: 50%;
+  margin-left: 110px;
+  /* Center it */
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.custom-tooltip-icon2:hover+.custom-tooltip2 {
+  visibility: visible;
+  opacity: 1;
+}
+
+.custom-tooltip2-goback {
+  margin-top: 0px;
+  visibility: hidden;
+  width: 61px;
+  background-color: #72706F;
+  color: #fff;
+  font-size: 12px;
+  text-align: left;
+  border-radius: 4px;
+  padding: 1px 0px 1px 7px;
+  position: absolute;
+  z-index: 1;
+  margin-left: 11px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.custom-tooltip-icon2:hover+.custom-tooltip2-goback {
+  visibility: visible;
+  opacity: 1;
+}
+
+
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  border: none !important;
+  border-radius: 4px;
+  background-color: #f8f8fb !important;
+  cursor: pointer;
+}
+
+.dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-top: none;
+  z-index: 10;
+}
+
+.dropdown-list div {
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.dropdown-list div:hover {
+  background-color: #f0f0f0;
+}
+
+.dropdown-selected {
+  padding: 9px;
+  font-size: 12px;
+  color: #9fa19f !important;
+  font-family: 'Poppins' !important;
+}
+
+.dropdown-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: #fff;
+  width: 165px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  max-height: 300px;
+  overflow-y: auto;
+  margin-left: 12px;
+}
+
+.dropdown-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-right: 10px;
+  padding-left: 10px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: 'Poppins';
+}
+
+.dropdown-arrow {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 12px;
+  vertical-align: middle;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #9fa19f;
+  transition: transform 0.2s ease;
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+.dropdown-option:hover {
+  background-color: #f0f0f0;
+}
+
+.dropdown-option.active .consumer-name {
+  font-weight: 500;
+}
+
+::ng-deep .custom-tag-style .ng-value {
+  background-color: #f57c00; /* Orange */
+  color: white;
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin: 2px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+}
+
+::ng-deep .custom-tag-style .ng-value-icon {
+  color: white;
+  margin-right: 4px;
+}
+
+::ng-deep .custom-tag-style .ng-value-label {
+  color: white;
+}
+::ng-deep .custom-tag-style .ng-value-container {
+  max-height: 80px;
+  overflow-y: auto;
+}

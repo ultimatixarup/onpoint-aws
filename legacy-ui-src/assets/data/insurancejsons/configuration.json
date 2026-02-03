@@ -1,0 +1,53 @@
+[
+    {
+     "Insurer": {
+         "configuration":[
+             {
+                 "configName":"harshBraking",
+                 "floor": 0.25,
+                 "ceil": 0.50,
+                 "step": 1,
+                 "content":" When set to truck/cube Van , the rule will be triggered when a harsh braking causes a force of about 1/2 G is exerted on the vehicle . The driver would be thrown forwared toward the steering wheel and any vehicle load would shift to the front. Lose objects on the seat would likely be thrown to the floor"
+              },
+              {
+                 "configName":"hardAccelaration",
+                 "floor": 0.25,
+                 "ceil": 0.50,
+                "step": 1,
+                "content":" When set to truck/cube Van , the rule will be triggered when a harsh braking causes a force of about 1/2 G is exerted on the vehicle . The driver would be thrown forwared toward the steering wheel and any vehicle load would shift to the front. Lose objects on the seat would likely be thrown to the floor"
+             },
+             {
+                 "configName":"hardAccelaration",
+                 "floor": 0.25,
+                 "ceil": 0.50,
+                "step": 1,
+                "content":" When set to truck/cube Van , the rule will be triggered when a harsh braking causes a force of about 1/2 G is exerted on the vehicle . The driver would be thrown forwared toward the steering wheel and any vehicle load would shift to the front. Lose objects on the seat would likely be thrown to the floor"
+             },
+             {
+                 "configName":"harshCornering",
+                 "floor": 0.25,
+                 "ceil": 0.50,
+                "step": 1,
+                "content":" When set to truck/cube Van , the rule will be triggered when a harsh braking causes a force of about 1/2 G is exerted on the vehicle . The driver would be thrown forwared toward the steering wheel and any vehicle load would shift to the front. Lose objects on the seat would likely be thrown to the floor"
+             },
+             {
+                 "configName":"overSpeeding",
+                 "floor": 60,
+                 "ceil": 160,
+                 "step": 5,
+                "content":" When set to truck/cube Van , the rule will be triggered when a harsh braking causes a force of about 1/2 G is exerted on the vehicle . The driver would be thrown forwared toward the steering wheel and any vehicle load would shift to the front. Lose objects on the seat would likely be thrown to the floor"
+             },
+             {
+                 "configName":"nightDriving",
+                 "floor": 0,
+                 "ceil": 23.59,
+                 "step": 1,
+                "content":" When set to truck/cube Van , the rule will be triggered when a harsh braking causes a force of about 1/2 G is exerted on the vehicle . The driver would be thrown forwared toward the steering wheel and any vehicle load would shift to the front. Lose objects on the seat would likely be thrown to the floor"
+             }
+
+         ]
+
+
+     }
+    }
+ ]

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Overspeeding Events</name>
+    <Style id="overspeedStyle">
+      <IconStyle>
+        <color>ff0000ff</color>
+        <scale>1.2</scale>
+        <Icon>
+          <href>http://maps.google.com/mapfiles/kml/shapes/cabs.png</href>
+        </Icon>
+      </IconStyle>
+    </Style>
+
+    <Placemark>
+      <name>Overspeeding Point</name>
+      <styleUrl>#overspeedStyle</styleUrl>
+      <Point>
+        <coordinates>-122.083,37.422,0</coordinates>
+      </Point>
+    </Placemark>
+
+    <Placemark>
+      <name>Route</name>
+      <LineString>
+        <coordinates>
+          -122.084,37.421998,0
+          -122.083,37.422,0
+          -122.082,37.423,0
+        </coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>

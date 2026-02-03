@@ -1,0 +1,71 @@
+[
+  {
+    "crashStoryline":{
+      "vin":"2B8GP54R71R127654",
+      "dateAndTime":"08/16/2202, Tuesday, 11:27:34 AM",
+      "policyNumber":"123-654-8760",
+      "coverage":"Comprehensive",
+      "totalPassenger":"8 People",
+      "severityIndicator":85,
+      "severityText":"HIGH SEVERITY",
+      "impactLocation":{
+        "frontLeft":true,
+        "frontRight":false,
+        "rearLeft":false,
+        "rearRight":false
+    },
+    "gForceChart":{
+      "series":[
+          {
+              "name": "Latitude Acceleration",
+              "type": "area",
+              "data": [0, 3, 1, 4, 3, 5, 2, 2, 2]
+            },
+            {
+              "name": "Longitudinal Acceleration",
+              "type": "area",
+              "data": [4, 0, 3, 5, 4, 5, 2, 2, 2]
+            },
+            {
+              "name": "Speed",
+              "type": "area",
+              "data": [3, 4, 3, 4,3, 5, 2, 2, 2]
+            },
+            {
+              "name": "crash",
+              "type": "column",
+              "data": [ 0, 0, 0, 0 , 0 , 5, 0 ,0 ,0 ]
+            }
+      ],
+     "xAxis":{
+      "categories":[  "1 AM", "2 AM", "3 AM", "4 AM", "5 AM", "6 AM", "7 AM", "8 AM", "9 AM" ]
+     },
+     "yAxis":{
+      "categories":["0", "1", "2", "3", "4", "5"]
+     }
+  },
+  "crashDetails":{
+    "crashDuration":6,
+    "timeOfCrash":"4:00",
+    "acceleration":1,
+    "numberofImpact":10,
+    "evasiveManeuvers":"Change in Yaw angle was observed to be 72 degrees, suggesting that the driver made an evasive maneuver to avoid crash.",
+    "seatbeltStatus":"Engaged",
+    "airbagStatus":"Not activated",
+    "absSignalforCrash":"Yes",
+    "adasSignalbeforeCrash":"Alert for Forward Collision Warning triggered",
+    "speed":110
+  },
+  "weather":{
+      "temprature":"22°C/28°C",
+      "Humidity":82,
+      "Pressure":1011,
+      "DayOrNight":"Day",
+      "SolarPosition":"167°SSE 54° Alt",
+      "visibility":13.2,
+      "wind":9.6
+  },
+  "crashDescription":"The driver was travelling at 49 km/h at 15:35:26 on 2017/09/02 at 15:35:28 a collision occurred on the left side of the vehicle while the vehicle was traveling at 47.0 km/h. The collision event ended at 15-35-30 when the vehicle reached a speed of 28 km/h.The vehicle was yawning during the crash. The driver did not continue their trip after the crash event"
+       }
+  }
+ ]

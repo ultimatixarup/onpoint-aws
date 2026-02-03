@@ -1,0 +1,131 @@
+<!--Page main content-->
+<div class="page-content page-content-main">
+    <div class="row sideMenuItem">
+      <div class="container">
+      <!-- Main Content Right-->
+      <div class="col-xs-12 content-right">
+        <!-- Heading and Breadcrumb -->
+        <div class="row">
+          <div class="col-xs-12 col-lg-12">
+            <span class="breadcrumb-left">
+              <h1 class="login-headline heading-title">Bulk Assign Driver </h1>
+            </span>
+            <span class="breadcrumb-right mr-8">
+              <ol class="breadcrumb">
+                <ng-container *ngIf="user =='admin'">
+                  <li class="breadcrumb-item">
+                    <a routerLink="/adlp/admin" class="breadcrumb-h6"><i class="bx bx-home-circle"></i></a>
+                  </li>
+                  <li class="breadcrumb-item inactive-bread"><a routerLink="/adlp/admin/dashboardAdmin">Dashboard</a></li>
+                  <li class="breadcrumb-item inactive-bread"><a
+                      routerLink="/adlp/admin/admindashboard/manageDriver/dashboardDriver">Manage Driver</a></li>
+                  <li class="breadcrumb-item text-selected active-bread">Bulk Assign Driver</li>
+                </ng-container>
+                <ng-container *ngIf="user !='admin'">
+                  <li class="breadcrumb-item">
+                    <a routerLink="/adlp/admin/admindashboard/dashboardfleet" class="breadcrumb-h6"><i
+                        class="bx bx-home-circle"></i></a>
+                  </li>
+                  <li class="breadcrumb-item inactive-bread"><a
+                      routerLink="/adlp/admin/admindashboard/dashboardfleet">Dashboard</a></li>
+                  <li class="breadcrumb-item text-selected active-bread">Bulk Assign Driver</li>
+                </ng-container>
+              </ol>
+            </span>
+          </div>
+        </div>
+        <!-- Heading and Breadcrumb End-->
+        <div class="row consumer-pad">
+          <div class="col-xs-12 col-lg-2 mr6">
+            <ng-container *ngIf="this.user === 'admin'">
+              <select class="form-select consumer-select no-border" [(ngModel)]="consumer" (change)="selectConsumer()">
+                <option value="" disabled hidden>Select Consumer</option>
+                <option value="All">Consumer</option>
+                <option *ngFor="let consumer of consumerList" [ngValue]="consumer">
+                  {{ consumer.name }}
+                </option>
+              </select>
+            </ng-container>
+          </div>
+          <div class="col-xs-12 col-lg-8">&nbsp;</div>
+          <!-- <div class="col-xs-12 col-lg-2 mr6">
+            <ng-select [searchable]="true" class="newSelect1" [clearable]="true" placeholder="Organization Id/Name" [(ngModel)]="fleetIdData">
+              <ng-option *ngFor="let fleet of fleetList" value="{{ fleet.id }}">{{ fleet.id }} - [{{ fleet.name
+                }}]</ng-option>
+            </ng-select>
+          </div> -->
+        </div>
+        <!--Add single and bulk driver-->
+        <div class="row">
+          <div class="col-xs-12 col-lg-3">&nbsp;</div>
+          <div class="col-xs-12 col-lg-6">
+            <div class="row">
+              <div class="col-xs-12 col-lg-12">
+                <div class="card">
+                  <div class="card-body">
+
+
+
+                      <div class="mr40">
+                        <div class="row downloadData">
+                          <!-- File Upload Section -->
+                          <div class="col-xs-12 col-lg-12">
+                            <div class="row row-data">
+                              <div class="col-xs-12">
+                                <div class="image-container">
+                                  <img src="../../../../../../../assets/images/upload-img.svg" class="he100" alt="Upload Image">
+                                </div>
+                              </div>
+                            </div>
+                            <div class="row">
+                              <div class="col-xs-12 col-lg-12 mr12">
+                                <span><a href="javascript:(void)" (click)="triggerFileUpload()" class="fon-all">Click to upload</a>
+                                  Uploaded data in .csv format</span>
+                              </div>
+                            </div>
+                            <input type="file" #fileInput class="data-display" accept=".csv" (change)="onFileSelected($event)" />
+                            <div class="row">
+                              <div class="col-xs-12 col-lg-12 mr12">
+                                <span *ngIf="uploadedFileName" class="uploaded-file">{{ uploadedFileName }}</span>
+                                <span *ngIf="errorMessage" class="uploaded-file-error">{{ errorMessage }}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- Sample File Download Section -->
+                        <div class="row">
+                          <div class="col-xs-12 col-lg-12 text-center">
+                            <a type="button" href="javascript:(void)" class="download-link" (click)=" downloadSamples()">Download Sample File</a>
+                          </div>
+                        </div>
+                        <!-- Max File Size -->
+                        <div class="row">
+                          <div class="col-xs-12 col-lg-12">
+                            <h5 class="max-file">Max file size 50 mb</h5>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Action Buttons (Cancel, Submit) -->
+                      <div class="row">
+                        <div class="col-xs-12 col-lg-6">
+                          <div class="cancel-btn" tooltip="Cancel" (click)="cancel()">Cancel</div>
+                        </div>
+                        <div class="col-xs-12 col-lg-6">
+                          <div class="submit-btn" tooltip="Submit" (click)="onSubmit()"  [class.disabled]="!isFileSelected"
+                          [attr.disabled]="!isFileSelected ? true : null">Submit</div>
+                        </div>
+                      </div>
+
+
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xs-12 col-lg-3">&nbsp;</div>
+        </div>
+      </div>
+       </div>
+    </div>
+  </div>

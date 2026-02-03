@@ -1,0 +1,500 @@
+<div class="sidebar navbar-side-menu-panel">
+
+  <div class="menu-item">
+    <a class="menu-item navbar-side-menu-heading scrollto"  routerLink="/adlp/admin/admindashboard/dashboardfleet" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}">
+      <img src="../../../../../assets/images/adminDashbaord.svg" class="menu-image vin-dash-img"> Dashboard
+    </a>
+  </div>
+  <!-- Fleet Summary Menu -->
+  <div class="menu-item">
+    <a class="menu-item navbar-side-menu-heading scrollto" (click)="viewMore()" href="javascript:void(0)">
+      <img src="../../../../../assets/images/vin-icon.svg" class="menu-image vin-img"> Fleet Summary
+    </a>
+  </div>
+ <!-- Smart Mobility Menu -->
+<div class="menu-item">
+  <a
+    class="menu-item navbar-side-menu-heading scrollto menu-with-arrow"
+    (click)="toggleSmartMobilityMenu()"
+    style="color: #000 !important; font-weight: 500 !important;">
+    <img src="../../../../../assets/images/logistics-icon.svg" class="menu-image" />
+    Smart Mobility
+    <span class="dropdown-arrow" style="margin-left: 6px;">
+    <img
+      src="{{ showSmartMobilityMenu ? 'assets/images/arrow-down.svg' : 'assets/images/arrow-left.svg' }}"
+      class="dropdown-icon" />
+    </span>
+  </a>
+</div>
+
+<!-- Smart Mobility Submenu -->
+<div class="submenu" *ngIf="showSmartMobilityMenu">
+  <ul>
+    <li>
+      <a
+        routerLink="/adlp/admin/admindashboard/trip-planning/planning"
+        [class.active]="activeSubmenu === 'trip-planning'">
+        <i class="fas fa-map-signs submenu-icon"></i> Trip Planning
+      </a>
+    </li>
+    <li>
+      <a
+        routerLink="/adlp/admin/admindashboard/trip-planning/pre-optimization-trips"
+        [class.active]="activeSubmenu === 'route-optimization'">
+        <i class="fas fa-route submenu-icon"></i> Route Optimization
+      </a>
+    </li>
+    <li>
+      <a
+        routerLink="/adlp/admin/admindashboard/trip-planning/tracking-live-trip"
+        [class.active]="activeSubmenu === 'tracking-live-trip'">
+        <i class="fas fa-map-marker-alt submenu-icon"></i>In Progress Trips
+      </a>
+    </li>
+    <li>
+      <a
+        routerLink="/adlp/admin/admindashboard/geoFenceSetup/geofence2"
+        [class.active]="activeSubmenu === 'geofence'">
+        <img src="../../../../../assets/images/geofence.svg" class="menu-sub-image">
+        Geofence
+      </a>
+    </li>
+    <li>
+      <a
+        routerLink="/adlp/admin/admindashboard/trip-planning/dvir"
+        [class.active]="activeSubmenu === 'dvir'">
+        <i class="fas fa-clipboard-check submenu-icon"></i>
+        DVIR
+      </a>
+    </li>
+  </ul>
+</div>
+
+
+
+
+  <!-- Live Tracking Menu -->
+  <div class="menu-item">
+    <a class="menu-item navbar-side-menu-heading scrollto" routerLink="/adlp/admin/admindashboard/tracking">
+      <img src="../../../../../assets/images/tracking.svg" class="menu-image"> Live Tracking
+    </a>
+  </div>
+
+  <!-- Vehicle Health Menu -->
+  <div class="menu-item">
+    <a class="menu-item navbar-side-menu-heading scrollto" routerLink="/adlp/admin/admindashboard/dashboardfleet/vehicle-health">
+      <img src="../../../../../assets/images/maintenances.svg" class="menu-image"> Vehicle Health
+    </a>
+  </div>
+
+  <!-- Dascame Menu -->
+<div class="menu-item">
+  <a
+    class="menu-item navbar-side-menu-heading scrollto menu-with-arrow"
+    (click)="toggleDashcamMenu()"
+    style="color: #000 !important; font-weight: 500 !important;">
+    <img src="../../../../../assets/images/dashcam.svg" class="menu-image" />
+    Dashcam
+    <span class="dropdown-arrow" style="margin-left: 62px;">
+    <img
+      [src]="showdashcamMenu ? 'assets/images/arrow-down.svg' : 'assets/images/arrow-left.svg'"
+      class="dropdown-icon" />
+      </span>
+  </a>
+</div>
+
+<!-- Alerts Submenu -->
+<div class="submenu" *ngIf="showdashcamMenu">
+  <ul>
+    <li>
+      <a
+        routerLink="/adlp/admin/admindashboard/safety-events"
+        [class.active]="activeSubmenu === 'safety-events'">
+        <img src="../../../../../assets/images/safety-events.svg" class="menu-sub-image">
+        Safety Events
+      </a>
+    </li>
+    <li>
+      <a
+        routerLink="/adlp/admin/admindashboard/live-view"
+        [class.active]="activeSubmenu === 'live-view'">
+        <img src="../../../../../assets/images/live-view.svg" class="menu-sub-image">
+        Live View
+      </a>
+    </li>
+    <li>
+      <a
+        routerLink="/adlp/admin/admindashboard/video"
+        [class.active]="activeSubmenu === 'video'">
+        <img src="../../../../../assets/images/video.svg" class="menu-sub-image">
+        Video
+      </a>
+    </li>
+  </ul>
+</div>
+
+<!-- Alerts Menu -->
+<div class="menu-item">
+  <a
+    class="menu-item navbar-side-menu-heading scrollto menu-with-arrow"
+    (click)="toggleAlertMenu()"
+    style="color: #000 !important; font-weight: 500 !important;">
+    <img src="../../../../../assets/images/alerts.svg" class="menu-image" />
+    Alerts
+    <span class="dropdown-arrow" style="margin-left: 62px;">
+    <img
+      [src]="alertMenu ? 'assets/images/arrow-down.svg' : 'assets/images/arrow-left.svg'"
+      class="dropdown-icon" />
+      </span>
+  </a>
+</div>
+
+<!-- Alerts Submenu -->
+<div class="submenu" *ngIf="alertMenu">
+  <ul>
+    <li>
+      <a
+        routerLink="/adlp/admin/admindashboard/dashboardfleet/driver-alerts"
+        [class.active]="activeSubmenu === 'driver-alerts'">
+        <img src="../../../../../assets/images/driver-alert.svg" class="menu-sub-image">
+        Driver Alerts
+      </a>
+    </li>
+    <li>
+      <a
+        routerLink="/adlp/admin/admindashboard/dashboardfleet/vehicle-alerts"
+        [class.active]="activeSubmenu === 'vehicle-alerts'">
+        <img src="../../../../../assets/images/vehical-alert-left.svg" class="menu-sub-image">
+        Vehicle Alerts
+      </a>
+    </li>
+  </ul>
+</div>
+
+<!-- Fleet Safety Menu -->
+<div class="menu-item">
+  <a
+    class="menu-item navbar-side-menu-heading scrollto menu-with-arrow"
+    (click)="toggleSafetyMenu()"
+    style="color: #000 !important; font-weight: 500 !important;">
+    <img src="../../../../../assets/images/health_and_safety.svg" class="menu-image" alt="Safety Icon" />
+    Fleet Safety
+    <span class="dropdown-arrow" style="margin-left: 20px;">
+    <img
+      [src]="showSafetyMenu ? 'assets/images/arrow-down.svg' : 'assets/images/arrow-left.svg'"
+      class="dropdown-icon" alt="Dropdown Arrow" />
+      </span>
+  </a>
+</div>
+
+<!-- Fleet Safety Submenu -->
+<div class="submenu" *ngIf="showSafetyMenu">
+  <ul>
+    <li>
+      <a
+        routerLink="/adlp/admin/admindashboard/safety-dashboard"
+        [class.active]="activeSubmenu === 'safety-summary'">
+        <img src="../../../../../assets/images/health_and_safety.svg" class="menu-sub-image" alt="Safety Summary Icon" />
+        Safety Summary
+      </a>
+    </li>
+    <li>
+      <a
+        routerLink="/adlp/admin/admindashboard/dashboardfleet/fleet-safety-card"
+        [class.active]="activeSubmenu === 'fleet-safety'">
+        <img src="../../../../../assets/images/safety-certificate-svgrepo-com.svg" class="menu-sub-image" alt="Fleet Safety Icon" />
+        Safety Dashboard
+      </a>
+    </li>
+    <li>
+      <a
+        routerLink="/adlp/admin/admindashboard/dashboardfleet/driver-vehicle-safety"
+        [class.active]="activeSubmenu === 'driver-behaviour'">
+        <img src="../../../../../assets/images/car-driver.svg" class="menu-sub-image" alt="Car & Driver Safety Icon" />
+        Driver Behaviour
+      </a>
+    </li>
+    <li>
+      <a
+        routerLink="/adlp/admin/admindashboard/dashboardfleet/safetyCollision/safetyCollsion"
+        [class.active]="activeSubmenu === 'safety-collsion'">
+        <img src="../../../../../assets/images/safety_collision.svg" class="menu-sub-image" alt="Safety Collision" />
+        Collision
+      </a>
+    </li>
+    <li>
+      <a
+        routerLink="/adlp/admin/admindashboard/adasDashboard"
+        [class.active]="activeSubmenu === 'adas'">
+        <img src="../../../../../assets/images/adas-icon.svg" class="menu-sub-image" alt="Safety adas" />
+        ADAS
+      </a>
+    </li>
+  </ul>
+</div>
+
+
+<!-- Trips History Menu -->
+<div class="menu-item" (click)="toggleSubMenu()">
+  <a class="menu-with-arrow" style="color: #000 !important; font-weight: 500 !important;">
+    <img src="../../../../../assets/images/trip-history.svg" class="menu-image">
+    Trips History
+    <span class="dropdown-arrow" style="margin-left: 2px;">
+    <img
+      src="{{ showTripHistoryMenu ? 'assets/images/arrow-down.svg' : 'assets/images/arrow-left.svg' }}"
+      class="dropdown-icon" />
+    </span>
+  </a>
+</div>
+
+<!-- Trips History Submenu -->
+<div class="submenu" *ngIf="showTripHistoryMenu">
+  <ul>
+    <li>
+    <a  routerLink="/adlp/admin/admindashboard/dashboardfleet/trips/system-trips"
+    [class.active]="activeSubmenu === 'system-trips'">
+
+      <img src="../../../../../assets/images/fuel-menu-icon.svg" class="menu-sub-image"> System Trips
+    </a>
+   </li>
+     <li>
+    <a  routerLink="/adlp/admin/admindashboard/dashboardfleet/trips/schedule-trips"
+    [class.active]="activeSubmenu === 'schedule-trips'">
+      <img src="../../../../../assets/images/ev-icon-menu.svg" class="menu-sub-image"> Schedule Trips
+    </a>
+    </li>
+  </ul>
+</div>
+
+  <!-- Fuel Management Menu -->
+  <div class="menu-item" >
+    <a class="menu-item navbar-side-menu-heading scrollto menu-with-arrow" (click)="toggleFuelManagementMenu()" style="color: #000!important; font-weight: 500!important;" >
+    <img src="../../../../../assets/images/sustanibility.svg" class="menu-image" />
+    Fuel Management
+    <span class="dropdown-arrow" style="margin-left: 2px;">
+    <img
+      src="{{ showFuelManagementMenu ? 'assets/images/arrow-down.svg' : 'assets/images/arrow-left.svg' }}"
+      class="dropdown-icon" />
+    </span>
+    </a>
+  </div>
+
+  <!-- Fuel Management Submenu -->
+  <div class="submenu" *ngIf="showFuelManagementMenu">
+    <ul>
+      <li>
+        <a routerLink="/adlp/admin/admindashboard/fuel-dashboard"
+        [class.active]="activeSubmenu === 'ice-fuel'">
+          <img src="../../../../../assets/images/fuel-menu-icon.svg" class="menu-sub-image" /> ICE Fuel
+
+        </a>
+      </li>
+      <li>
+        <a routerLink="/adlp/admin/admindashboard/dashboardfleet/ev-charge"
+        [class.active]="activeSubmenu === 'ev-charge'">
+          <img src="../../../../../assets/images/ev-icon-menu.svg" class="menu-sub-image" /> EV Charge
+        </a>
+      </li>
+      <!-- <li>
+        <a routerLink="/adlp/admin/admindashboard/dashboardfleet/hybird-fuel">
+          <img src="../../../../../assets/images/hybrid-icon1.svg" class="menu-sub-image" /> Hybrid Fuel
+        </a>
+      </li> -->
+    </ul>
+  </div>
+
+  <!-- Driver Management Menu -->
+<div class="menu-item">
+  <a
+    class="menu-item navbar-side-menu-heading scrollto menu-with-arrow"
+    (click)="toggleShowDriverManagementMenu()"
+    style="color: #000 !important; font-weight: 500 !important;">
+    <img src="../../../../../assets/images/driver-icon.svg" class="menu-image" />
+    Driver Management
+    <span class="dropdown-arrow" style="margin-left: 10px;">
+    <img
+      src="{{ showDriverManagementMenu ? 'assets/images/arrow-down.svg' : 'assets/images/arrow-left.svg' }}"
+      class="dropdown-icon" />
+    </span>
+  </a>
+</div>
+
+<!-- Driver Management Submenu -->
+<div class="submenu" *ngIf="showDriverManagementMenu">
+  <ul>
+    <li>
+      <a routerLink="/adlp/admin/admindashboard/manageDriver/viewDriver"
+      [class.active]="activeSubmenu === 'manage-driver'">
+        <img src="../../../../../assets/images/driver-icon.svg" class="menu-sub-image" /> Manage Driver
+      </a>
+    </li>
+    <!-- <li>
+      <a routerLink="/adlp/admin/admindashboard/manageDriver/dashboardDriver">
+        <img src="../../../../../assets/images/icon/driver-vin.svg" class="menu-sub-image" /> Vehicle-Driver Association
+      </a>
+    </li> -->
+    <li>
+      <a routerLink="/adlp/admin/admindashboard/dashboardfleet/trips/elt-trips"
+      [class.active]="activeSubmenu === 'driver-trip-summary'">
+        <img src="../../../../../assets/images/hybrid-icon1.svg" class="menu-sub-image" /> Driver Dashboard
+      </a>
+    </li>
+  </ul>
+</div>
+<!-- <div class="menu-item">
+  <a class="menu-item-link navbar-side-menu-heading scrollto" routerLink="/adlp/admin/admindashboard/dashboardfleet/safetyCollision/safetyCollsion"
+  routerLinkActive="active-menu">
+  <img src="../../../../../assets/images/safety_collision.svg" class="menu-sub-image"> Collision
+</a>
+</div> -->
+   <!-- TCO Menu -->
+   <!-- <div class="menu-item">
+    <a
+      class="menu-item-link navbar-side-menu-heading scrollto"
+      routerLink="/adlp/dashboards/tcosearchfleet"
+      routerLinkActive="active">
+      <img src="../../../../../assets/images/tco-icon.svg" class="menu-image" />TCO
+    </a>
+  </div> -->
+  <!-- Maintenance Menu -->
+  <!-- <div class="menu-item">
+    <a class="menu-item navbar-side-menu-heading scrollto" routerLink="/adlp/admin/admindashboard/dashboardfleet/fleet-maintenance">
+      <img src="../../../../../assets/images/maintenances.svg" class="menu-image" />Fleet Health
+    </a>
+
+  </div> -->
+  <div class="menu-item" >
+    <a class="menu-item navbar-side-menu-heading scrollto menu-with-arrow" (click)="toggleMaintenanceMenu()" style="color: #000!important; font-weight: 500!important;" >
+    <img src="../../../../../assets/images/maintenances.svg" class="menu-image" />
+    Maintenance
+    <span class="dropdown-arrow" style="margin-left: 2px;">
+    <img
+      src="{{ showMaintenanceMenu ? 'assets/images/arrow-down.svg' : 'assets/images/arrow-left.svg' }}"
+      class="dropdown-icon" />
+    </span>
+    </a>
+  </div>
+
+  <!-- Fuel Management Submenu -->
+  <div class="submenu" *ngIf="showMaintenanceMenu">
+    <ul>
+      <li>
+        <a routerLink="/adlp/admin/admindashboard/dashboardfleet/fleet-maintenance"
+        [class.active]="activeSubmenu === 'service-warnings'">
+          <img src="../../../../../assets/images/service-warning.svg" class="menu-sub-image" />Service Warnings
+
+        </a>
+      </li>
+      <li>
+        <a routerLink="/adlp/admin/admindashboard/maintenance/serviceReminder/serviceReminders"
+        [class.active]="activeSubmenu === 'service-reminders'">
+          <img src="../../../../../assets/images/service-reminders.svg" class="menu-sub-image" />Service Reminders
+
+        </a>
+      </li>
+      <li>
+        <a routerLink="/adlp/admin/admindashboard/maintenance/service-history-dashboard"
+        [class.active]="activeSubmenu === 'service-history'">
+          <img src="../../../../../assets/images/service-history.svg" class="menu-sub-image" />Service History
+        </a>
+      </li>
+      <!-- <li>
+        <a routerLink="/adlp/admin/admindashboard/maintenance/serviceHistory"
+        [class.active]="activeSubmenu === 'service-history'">
+          <img src="../../../../../assets/images/service-history.svg" class="menu-sub-image" />Service History
+        </a>
+      </li> -->
+      <!-- <li>
+        <a routerLink="/adlp/admin/admindashboard/dashboardfleet/hybird-fuel">
+          <img src="../../../../../assets/images/hybrid-icon1.svg" class="menu-sub-image" /> Hybrid Fuel
+        </a>
+      </li> -->
+    </ul>
+  </div>
+
+
+  <div class="menu-item">
+    <a class="menu-item-link navbar-side-menu-heading scrollto" routerLink="/adlp/admin/admindashboard/report" routerLinkActive="active"><img
+        src="../../../../../assets/images/report-icon.svg" class="menu-image" alt="Reports">Reports
+
+</a>
+  </div>
+
+  <!-- Settings Menu -->
+  <div class="menu-item">
+    <a
+      class="menu-item navbar-side-menu-heading scrollto menu-with-arrow"
+      (click)="toggleSettingsMenu()"
+      style="color: #000 !important; font-weight: 500 !important;">
+      <img src="../../../../../assets/images/menu-setting.svg" class="menu-image" />
+      Settings
+      <span class="dropdown-arrow" style="margin-left: 32px;">
+        <img
+          src="{{ showSettingsMenu ? 'assets/images/arrow-down.svg' : 'assets/images/arrow-left.svg' }}"
+          class="dropdown-icon" />
+      </span>
+    </a>
+  </div>
+
+  <!-- Settings Submenu -->
+  <div class="submenu" *ngIf="showSettingsMenu">
+    <ul>
+      <li>
+        <a
+          routerLink="/adlp/eligibility/eligibilityCheck"
+          [class.active]="activeSubmenu === 'vehicles'">
+          <img src="../../../../../assets/images/vin-icon.svg" class="menu-sub-image">
+          Vehicles
+        </a>
+      </li>
+      <!-- <li>
+        <a
+          routerLink="/adlp/admin/admindashboard/maintenance/serviceReminder/serviceReminders"
+          [class.active]="activeSubmenu === 'service-reminders-settings'">
+          <img src="../../../../../assets/images/service-reminders.svg" class="menu-sub-image">
+          Service Reminders
+        </a>
+      </li> -->
+      <li>
+        <a
+          routerLink="/adlp/admin/admindashboard/manage-user"
+          [class.active]="activeSubmenu === 'people'">
+          <img src="../../../../../assets/images/driver-icon.svg" class="menu-sub-image">
+          People
+        </a>
+      </li>
+      <li>
+        <a
+          routerLink="/adlp/admin/admindashboard/notification"
+          [class.active]="activeSubmenu === 'notifications'">
+          <i class="fas fa-bell submenu-icon"></i>
+          Notifications
+        </a>
+      </li>
+      <li>
+        <a
+          routerLink="/adlp/admin/admindashboard/dashboardfleet/driver-safety-score"
+          [class.active]="activeSubmenu === 'driver-safety-settings'">
+          <img src="../../../../../assets/images/health_and_safety.svg" class="menu-sub-image">
+          Driver Safety
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <!-- <div class="menu-item">
+    <a
+      class="menu-item-link navbar-side-menu-heading scrollto"
+      routerLink="/adlp/dashboards/tcosearchfleet"
+      routerLinkActive="active">
+      <img src="../../../../../assets/images/menu-setting.svg" class="menu-image" /> Settings
+    </a>
+  </div> -->
+
+  <!-- <div class="menu-item menu-chatbot">
+    <a class="menu-item-link navbar-side-menu-heading scrollto" routerLink="/adlp/admin/admindashboard/dashboardfleet/chatbot" ><img
+        src="../../../../../assets/images/aichatbot.svg" class="menu-image" alt="Reports">AI Chatbot
+
+   </a>
+  </div> -->
+</div>

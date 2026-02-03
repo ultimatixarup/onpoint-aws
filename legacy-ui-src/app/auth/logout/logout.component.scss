@@ -1,0 +1,181 @@
+.page-container-height{
+    margin-top: -69px!important;
+   }
+
+   .page-container-box{
+   margin-top: 5%!important; width: 400px!important; height: 400px!important; border-radius: 30px!important;
+   }
+
+   .watch{
+    height: 120px!important;
+    padding-top: 35px!important;
+   }
+
+   .logo-box{
+    margin-top: -30px!important; margin-bottom: 4px!important;
+   }
+
+   .logo-image{
+     height: 45px!important;
+   }
+   .mb-h {
+     height: 70px;
+   }
+
+   .mr-top30{
+     margin-top:30px!important
+   }
+
+   .required {
+     color: red
+   }
+
+   .po-re {
+     position: relative
+   }
+
+   .mt-btn {
+     margin-top: 0.6rem !important;
+   }
+
+   .shadow {
+     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .15) !important;
+   }
+
+   .new {
+     background: url('../../../assets/images/back.png');
+     background-repeat: no-repeat;
+     background-size: 100% 100%;
+   }
+
+   .login-headlines {
+     font-size: 20px;
+     line-height: 30px;
+     padding-top:24px;
+     font-weight: 500;
+     font-family: 'Poppins';
+     color: #000000;
+   }
+
+
+.login-button{
+    color: white;
+    background-color: #45B01F;
+    font-size: 16px;
+    padding: 4% 4%;
+    height: 50px;
+    width: 60%;
+    border-radius: 6px;
+    margin-top:-20px;
+}
+
+.login-container{
+    display: flex;
+    justify-content: center;
+}
+
+   .login-here{
+    font-size: 16px;
+    font-family: 'Poppins';
+    color: #6C757E;
+    text-align: center;
+    padding-top: 12px;
+    padding-bottom: 20px;
+   }
+
+   .heading-main-row{
+
+    text-align: center!important;
+   }
+
+   .headingLog{
+     margin-bottom: 6px!important
+   }
+
+   .data-demo {
+     background: #45b01f !important;
+     border: 2px solid #45b01f !important;
+     text-decoration: none !important;
+     border-radius: 10px !important;
+     padding: 12px 35px !important;
+     font-style: normal !important;
+     font-weight: 500 !important;
+     font-size: 14px !important;
+     line-height: 20px !important;
+     text-align: center !important;
+     letter-spacing: -0.374px !important;
+     color: #fff !important;
+     font-family: 'Neo Sans Pro 500', Helvetica, Arial, Lucida, sans-serif;
+     margin: 10px 0 0 !important;
+     display: inline-block !important;
+     width:100%
+   }
+
+
+   .data-demo:hover {
+     background: #FFFFFF !important;
+     border: 2px solid #45b01f !important;
+     border-radius: 10px !important;
+     padding: 12px 35px !important;
+     font-style: normal !important;
+     font-weight: 500 !important;
+     font-size: 14px !important;
+     line-height: 20px !important;
+     text-align: center !important;
+     letter-spacing: -0.374px !important;
+     color: #45b01f !important;
+     font-family: 'Neo Sans Pro 500', Helvetica, Arial, Lucida, sans-serif;
+     margin: 10px 0 0 !important;
+     display: inline-block !important;
+     text-decoration: none !important;
+     width:100%
+   }
+
+   p {
+     margin-top: 0;
+     margin-bottom: 0.2rem !important;
+   }
+
+   .form-control {
+     border: none !important;
+     background-color: #e8f0fe !important;
+   }
+
+   .p-5 {
+     padding: 3rem !important;
+     padding-bottom: 0.6rem !important;
+   }
+
+   .bottom-img{
+    margin-right: 20px!important; height: 70px!important
+   }
+   .bottom-ig{
+      height: 70px!important
+    }
+
+    .footerl{
+     width: 100.9%!important
+    }
+
+    .row-backdrop{
+     background-color:#000000!important; height: 50px!important;
+    }
+
+    .termsandconditions{
+     font-size: 12px!important; float: right!important; margin-right: 30px!important; font-weight: 400!important; color:#fff!important; font-family: 'Poppins'!important; padding-top:20px!important; padding-left: 40px!important;
+    }
+
+    .copyright{
+     font-size: 12px!important; font-weight: 400!important; color:#fff!important; font-family: 'Poppins'!important; padding-top:20px!important; padding-left: 40px!important;
+    }
+
+   @media screen and (max-device-width: 480px)and (orientation: portrait) {
+     .shadow {
+       box-shadow: none !important;
+     }
+
+     .theme-bg-light {
+       background: #ffffff;
+
+     }
+   }

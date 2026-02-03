@@ -1,0 +1,77 @@
+{
+    "timePeriods": [
+      { "label": "Till Date", "value": "tilldate" },
+      { "label": "Today", "value": "today" },
+      { "label": "Current Week", "value": "weekly" },
+      { "label": "Current Month", "value": "monthly" },
+      { "label": "Previous Month", "value": "lastmonth" },
+      { "label": "Custom Range", "value": "customRange" }
+    ],
+    "cards": [
+      {
+        "title": "Total Duration",
+        "values": {
+          "tilldate": "120:45",
+          "today": "3:15",
+          "weekly": "18:30",
+          "monthly": "75:20",
+          "lastmonth": "68:10",
+          "customRange": "0:00"
+        },
+        "unit": "hh:mm",
+        "borderClass": "brdr-red"
+      },
+      {
+        "title": "Fuel Consumed",
+        "values": {
+          "tilldate": 950,
+          "today": 25,
+          "weekly": 175,
+          "monthly": 700,
+          "lastmonth": 650,
+          "customRange": 0
+        },
+        "unit": "gal",
+        "borderClass": "brdr-fuel-consumed"
+      },
+      {
+        "title": "Mileage",
+        "values": {
+          "tilldate": 18.5,
+          "today": 20,
+          "weekly": 19,
+          "monthly": 18,
+          "lastmonth": 17.5,
+          "customRange": 0
+        },
+        "unit": "mpg",
+        "borderClass": "brdr-yellow"
+      },
+      {
+        "title": "Fuel Cost",
+        "values": {
+          "tilldate": 3800,
+          "today": 100,
+          "weekly": 700,
+          "monthly": 2800,
+          "lastmonth": 2600,
+          "customRange": 0
+        },
+        "unit": "$",
+        "borderClass": "brdr-blue"
+      },
+      {
+        "title": "Avg. Fuel Cost Per Mile",
+        "values": {
+          "tilldate": 0.25,
+          "today": 0.3,
+          "weekly": 0.28,
+          "monthly": 0.26,
+          "lastmonth": 0.27,
+          "customRange": 0
+        },
+        "unit": "$",
+        "borderClass": "brdr-green"
+      }
+    ]
+  }

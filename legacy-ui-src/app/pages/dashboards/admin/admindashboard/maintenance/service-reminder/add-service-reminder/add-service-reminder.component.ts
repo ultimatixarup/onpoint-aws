@@ -1,0 +1,436 @@
+import { Component, OnInit } from '@angular/core';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { Router } from '@angular/router';
+import { Subscription, of } from 'rxjs';
+import { TaxonomyService } from 'src/app/pages/dashboards/taxonomy.service';
+import { AppService } from "src/app/app.service";
+import { catchError, pluck, shareReplay } from "rxjs/operators";
+interface Consumer {
+  name: string;
+  contract?: {
+    startDate?: string;
+  };
+  id: number
+}
+@Component({
+  selector: 'app-add-service-reminder',
+  templateUrl: './add-service-reminder.component.html',
+  styleUrls: ['./add-service-reminder.component.scss']
+})
+export class AddServiceReminderComponent implements OnInit {
+  subscription$: Subscription = new Subscription();
+  searchbyStatus: string[] = [];
+  searchbyTask: string[] = [];
+  vehicleName: string[] = []
+  isToggled: boolean = false;
+  showEmailInput: boolean = false;
+  newEmail: string = '';
+  emails: string[] = [];
+  vinList: any;
+  taskItems: any;
+  newTaskName: string = '';
+  addedTasks: string[] = [];
+  currentMonth: number;
+  currentYear: number;
+  durationOptions = [
+    { label: 'Day(s)', value: 'days' },
+    { label: 'Week(s)', value: 'weeks' },
+    { label: 'Month(s)', value: 'months' },
+    { label: 'Year(s)', value: 'years' },
+  ];
+  selectedDuration = 'months';
+  fleetIdValueNew: any;
+  fleetIds: any;
+  vinListData: any;
+  fleetIdData: any;
+  loginUser: any;
+  user: any;
+  multiRoles: any;
+  customConsumer: any;
+  consumer: any = 'All'
+  dates: any[] = [];
+  serviceCategory: { id: number, name: string }[] = [];
+  searchbyCategory: number   // selected category IDs
+  selectedCategoryNames: string[] = [];  // selected category names
+  serviceTaskList: any[] = [];
+  consumerId: number | null = null;
+  timeInterval: string = '';
+  showInvalidInput: boolean = false;
+  timeIntervalUnit: string = 'Day(s)';
+  timeIntervalThreshold?: string = '';
+  timeIntervalThresholdUnit: string = 'Day(s)';
+  odometerInterval?: number;
+  odometerThreshold?: number;
+  selectedConsumer: string | null = null;
+  selectedConumerId: string | null = null
+  isDropdownOpen: boolean = false;
+  isDropdownOpens: boolean = false;
+  consumerList: any[] = []; // Make sure this is initialized properly
+  fleetList: any[] = [];
+  selectedCategoryId: number
+  categoryErrorMessage: string;
+  invalidField: string | null = null;
+  constructor(
+    private router: Router,
+    private dashboardservice: TaxonomyService,
+    private appService: AppService,
+  ) { }
+
+  ngOnInit(): void {
+    this.showRole()
+    this.getCategory()
+    if (this.user != 'admin') {
+      this.selectConsumers()
+    }
+  }
+  // Go back button
+  goBacktoMaintenance() {
+    this.router.navigate(['/adlp/admin/admindashboard/maintenance/serviceReminder/serviceReminders'])
+  }
+  // Show Role
+  showRole() {
+    let userRolLogin = JSON.stringify(sessionStorage.getItem('userRole'));
+    this.user = JSON.parse(userRolLogin);
+    this.multiRoles = JSON.parse(sessionStorage.getItem('multiRole'));
+    let customConsumers = JSON.stringify(sessionStorage.getItem('custom-consumer'));
+    this.customConsumer = JSON.parse(customConsumers);
+  }
+  // Consumer Dropdown
+  toggleDropdown() {
+    this.isDropdownOpen = !this.isDropdownOpen;
+  }
+  // Select Consumer
+  async selectConsumer(consumer: { id: string; name: string }) {
+    this.consumer = consumer.name;
+    this.selectedConumerId = consumer.id;
+    if (this.customConsumer) {
+      this.selectedConumerId = consumer.id;
+    }
+    this.isDropdownOpen = false;
+    await this.selectConsumers();
+  }
+  // Based on consumer fleet Id
+  selectConsumers() {
+    if (this.user === 'admin') {
+      this.subscription$.add(
+        this.dashboardservice.getFleetList(this.consumer).subscribe((res: any) => {
+          this.fleetList = res
+          this.fleetList = this.fleetList.sort((a, b) => { return a.id - b.id })
+          this.fleetIdData = null
+          this.selectVinList()
+        }, err => { })
+      )
+    }
+    if (this.user != 'admin') {
+      this.subscription$.add(
+        this.dashboardservice.getFleetList(this.customConsumer).subscribe((res: any) => {
+          this.fleetList = res
+          this.fleetList = this.fleetList.sort((a, b) => { return a.id - b.id })
+          this.fleetIdData = null
+          this.selectVinList()
+        }, err => { })
+      )
+    }
+  }
+  // Select fleet Id
+  selectFleetId() {
+    this.selectVinList()
+  }
+  // Email validation add or remove multiple box
+  addEmail(): void {
+    const trimmedEmail = this.newEmail.trim();
+    if (trimmedEmail && this.validateEmail(trimmedEmail)) {
+      this.emails.push(trimmedEmail);
+      this.newEmail = '';
+      this.showEmailInput = false;
+    } else {
+      alert('Please enter a valid email address.');
+    }
+  }
+  removeEmail(index: number): void {
+    this.emails.splice(index, 1);
+  }
+  validateEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+  // Vehicle List based on consumer and fleet Id
+  selectVinList() {
+    if (this.user === 'admin') {
+      this.subscription$.add(
+        this.dashboardservice.vinBasedOnConsumer(this.consumer, this.fleetIdData).subscribe((res: any) => {
+          this.vinList = res.vinAliasList
+        }, err => { })
+      )
+    }
+    else if (this.user != 'admin') {
+      this.subscription$.add(
+        this.dashboardservice.vinBasedOnConsumer(this.customConsumer, this.fleetIdData).subscribe((res: any) => {
+          this.vinList = res.vinAliasList
+        }, err => { })
+      )
+    }
+  }
+  // Get Service category basded on consumer and fleet Id
+  getCategory() {
+    const consumer = this.user === 'admin' ? this.consumer : this.customConsumer;
+    this.subscription$.add(
+      this.dashboardservice.getserviceReminderCategory(consumer, this.fleetIdData).subscribe(
+        (res: any) => {
+          this.serviceCategory = res?.serviceCategories || [];
+        },
+        (err) => {
+          if (err.status === 404) {
+            this.appService.openSnackBar('Technical issue, please try after some time', 'Error')
+            this.serviceCategory = []; // Optional: Clear the list
+            this.categoryErrorMessage = 'No service categories found.'; // Show this in UI
+          } else {
+            this.appService.openSnackBar('Failed to fetch category data', 'Error')
+            this.categoryErrorMessage = 'Something went wrong while fetching categories.';
+          }
+        }
+      )
+    );
+  }
+  // On category selected Filer serive task
+  onCategoryChange(selectedCategoryId: number | { id: number, name: string }) {
+    let categoryId: number;
+
+    if (typeof selectedCategoryId === 'object' && selectedCategoryId !== null) {
+      categoryId = selectedCategoryId.id;
+    } else {
+      categoryId = selectedCategoryId as number;
+    }
+    if (!categoryId) {
+      this.serviceTaskList = [];
+      this.searchbyCategory = null; // Clear it if invalid
+      return;
+    }
+
+    this.selectedCategoryId = categoryId;
+    this.searchbyCategory = categoryId; // ✅ Store it for saveReminder
+    this.getServiceTasks(categoryId);
+  }
+  getServiceTasks(categoryId: number) {
+    if (!categoryId) return;
+
+    this.subscription$.add(
+      this.dashboardservice.getServiceTasksByCategory(categoryId).subscribe(
+        (res: any) => {
+          this.serviceTaskList = res?.serviceTasks || [];
+        },
+        (err) => {
+          this.appService.openSnackBar('Failed to fetch data', err)
+        }
+      )
+    );
+  }
+  // Add new reminder
+  isDropdownOpenVehicle: boolean = false
+  isDropdownOpenCategory: boolean = false;
+  isDropdownOpensTask: boolean = false;
+  saveReminder() {
+    // Validation for veihcle, service task, category not selected
+    if (!this.vehicleName || this.vehicleName.length === 0) {
+      this.isDropdownOpenVehicle = true;
+      return;
+    }
+
+    if (!this.searchbyCategory) {
+      this.isDropdownOpenCategory = true;
+      return;
+    }
+
+    if (!this.searchbyTask || this.searchbyTask.length === 0) {
+      this.isDropdownOpensTask = true;
+      return;
+    }
+
+    if (!this.searchbyTask || this.searchbyTask.length === 0) {
+      this.isDropdownOpensTask = true;
+      return;
+    }
+
+    const timeInterval = this.timeInterval ?? null;
+    const timeIntervalUnit = this.timeIntervalUnit ?? null;
+    const timeIntervalThreshold = this.timeIntervalThreshold ?? (timeInterval ? 30 : null);
+    const timeIntervalThresholdUnit = this.timeIntervalThresholdUnit ?? (timeInterval ? 'Day(s)' : null);
+    const odometerInterval = this.odometerInterval ?? null;
+    const odometerThreshold = this.odometerThreshold ?? (odometerInterval ? 200 : null);
+
+    let consumerId: string;
+    // Consumer Id filter
+    if (this.user === 'admin') {
+      consumerId = this.selectedConumerId;
+    } else {
+      const selected = this.consumerList.find(c =>
+        c.name.trim().toLowerCase() === this.customConsumer?.trim().toLowerCase()
+      );
+      consumerId = selected?.id ?? ''; // Fallback if not found
+    }
+
+      // Validate consumerId
+  if (!consumerId) {
+    this.appService.openSnackBar('Please select consumer', 'Error');
+    return;
+  }
+
+  // Validate fleetId
+  if (!this.fleetIdData) {
+    this.appService.openSnackBar('Please select fleet Id', 'Error');
+    return;
+  }
+
+  if (!this.vehicleName) {
+    this.appService.openSnackBar('Please select vehicle name', 'Error');
+    return;
+  }
+
+  if (!this.searchbyCategory) {
+    this.appService.openSnackBar('Please select category', 'Error');
+    return;
+  }
+
+  if (!this.searchbyTask) {
+    this.appService.openSnackBar('Please select task name', 'Error');
+    return;
+  }
+
+    // Payload
+    const payload = {
+      consumerId: consumerId,
+      fleetId: this.fleetIdData,
+      vins: this.vehicleName,
+      serviceCategoryId: this.searchbyCategory,
+      serviceTasks: this.searchbyTask,
+      timeInterval,
+      timeIntervalUnit,
+      timeIntervalThreshold,
+      timeIntervalThresholdUnit,
+      odometerInterval,
+      odometerThreshold,
+      enableNotification: this.isToggled,
+      emails: this.emails,
+    };
+
+    this.dashboardservice.addServiceReminder(payload).subscribe({
+      next: (res) => {
+        this.appService.openSnackBar('Service reminder generated successfully!', 'Success');
+        this.router.navigate(['/adlp/admin/admindashboard/maintenance/serviceReminder/serviceReminders']);
+      },
+      error: (error) => {
+        if (error.status === 404) {
+          this.appService.openSnackBar('Technical issue, please try after some time', 'Error');
+        } else if (error.status === 'BAD_REQUEST') {
+          this.appService.openSnackBar(error.error.apierror.message, 'Error');
+        } else if (error.status === 422 && error.error.apierror?.message) {
+          const message = error.error.apierror.message.toLowerCase();
+          switch (message) {
+            case 'consumer id is null':
+              this.appService.openSnackBar('Please select consumer', 'Error');
+              break;
+            case 'the given id must not be null!':
+              this.appService.openSnackBar('Please select fleet Id', 'Error');
+              break;
+            case 'please provide email ids in case you are enabling email notification setting':
+              this.appService.openSnackBar('Please provide email IDs for email notifications.', 'Error');
+              break;
+            default:
+              this.appService.openSnackBar(error.error.apierror.message, 'Error');
+          }
+        } else if (error.message) {
+          this.appService.openSnackBar(error.message, 'Error');
+        } else {
+          this.appService.openSnackBar('An unknown error occurred.', 'Error');
+        }
+      }
+    });
+
+    this.clearFields();
+  }
+  // Clear complete form
+  clearFields() {
+    this.timeInterval = null;
+    this.timeIntervalThreshold = null;
+    this.odometerInterval = null;
+    this.odometerThreshold = null;
+    this.selectedConumerId = null;
+    this.customConsumer = '';
+    this.fleetIdData = null;
+    this.vehicleName = null;
+    this.searchbyCategory = null;
+    this.searchbyTask = null;
+    this.isToggled = false;
+    this.emails = null;
+  }
+  // validate day/month value
+  isThresholdExceeding: boolean = false;
+
+  validateNumber(event: any, field: string): void {
+    let value = event.target.value;
+    const isValid = /^[0-9]*$/.test(value);
+    let cleaned = value.replace(/[^0-9]/g, '');
+
+    if (cleaned.length > 4) {
+      cleaned = cleaned.substring(0, 4);
+    }
+
+    if (!isValid) {
+      this.invalidField = field;
+    } else {
+      if (this.invalidField === field) {
+        this.invalidField = null;
+      }
+    }
+
+    if (field === 'timeInterval') {
+      this.timeInterval = cleaned;
+      // Recheck threshold validity
+      if (Number(this.timeIntervalThreshold) > Number(cleaned)) {
+        this.isThresholdExceeding = true;
+      } else {
+        this.isThresholdExceeding = false;
+      }
+    } else if (field === 'timeIntervalThreshold') {
+      this.timeIntervalThreshold = cleaned;
+
+      // Compare threshold to interval
+      if (Number(cleaned) > Number(this.timeInterval)) {
+        this.isThresholdExceeding = true;
+      } else {
+        this.isThresholdExceeding = false;
+      }
+    }
+
+    event.target.value = cleaned;
+  }
+
+
+  // validate odometer value
+  validateNumberOdometer(event: any, field: 'odometerInterval' | 'odometerThreshold'): void {
+    const input = event.target.value;
+
+    // Allow only numbers
+    const isValid = /^\d*$/.test(input);
+    if (!isValid) {
+      this.invalidField = field;
+      return;
+    }
+
+    this.invalidField = ''; // Reset error if valid
+
+    const value = Number(input);
+
+    // Extra check for threshold not exceeding interval
+    if (field === 'odometerThreshold' && this.odometerInterval) {
+      const intervalValue = Number(this.odometerInterval);
+      if (!isNaN(intervalValue) && value > intervalValue) {
+        this.invalidField = field;
+        this.appService.openSnackBar('Threshold should not be greater than interval.', 'Error');
+      }
+    }
+  }
+
+
+
+}

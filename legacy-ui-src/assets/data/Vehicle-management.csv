@@ -1,0 +1,9 @@
+﻿Data Origin,Data Classification,Data Type,,Sub-category,Parameter ID,Parameter Description,Format,Direct/Derived,UOM,Range,Meaning
+OEM ,PII,Vehicle Identification,Vehicle Management,Vehicle Identification,cx_vin,Unique Vehicle Identification Number,String,Direct,,,
+OEM,NPII,Vehicle Identification,Vehicle Management,Vehicle Identification,cx_manufacturer,Vehicle Manufacturer,String,Direct,,,
+OEM,NPII,Vehicle Identification,Vehicle Management,Vehicle Identification,cx_make,Brand of the vehicle,String,Direct,,,
+OEM,NPII,Vehicle Identification,Vehicle Management,Vehicle Identification,cx_model,Name of the Vehicle Product,String,Direct,,,
+OEM,NPII,Vehicle Identification,Vehicle Management,Vehicle Identification,cx_year,Year of Vehicle Manufacturer,String,Direct,,,
+OEM,NPII,Vehicle Identification,Vehicle Management,Vehicle Identification,cx_trim,Version of the model,String,Direct,,,
+OEM,NPII,Vehicle Identification,Vehicle Management,Vehicle Identification,cx_country,Country of Manufacturing,String,Direct,,,
+OEM,PII,Vehicle Identification,Vehicle Management,Vehicle Identification,cx_engine_number,Vehicle's engine number,String,Direct,,,

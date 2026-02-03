@@ -1,0 +1,253 @@
+<div class="geofence-vin-timeline-container">
+  <!-- Page Header with Breadcrumb -->
+  <div class="page-header">
+    <div class="row">
+      <div class="col-12">
+        <span class="breadcrumb-left">
+          <h1 class="heading-title">Geofence VIN Detailed Report</h1>
+        </span>
+        <span class="breadcrumb-right">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+              <a routerLink="/adlp/admin/admindashboard/dashboardfleet" class="breadcrumb-h6">
+                <i class="bx bx-home-circle"></i>
+              </a>
+            </li>
+            <li class="breadcrumb-item">
+              <a routerLink="/adlp/admin/admindashboard/geoFenceSetup/geofence2">Geofence</a>
+            </li>
+            <li class="breadcrumb-item">
+              <a (click)="navigateBack()" style="cursor: pointer;">VIN Report</a>
+            </li>
+            <li class="breadcrumb-item active">Timeline Details</li>
+          </ol>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vehicle Info Bar -->
+  <div class="vehicle-info-bar">
+    <div class="vehicle-info">
+      <i class="fa fa-car"></i>
+      <div class="vehicle-details">
+        <span class="vehicle-name">{{ vehicleName }}</span>
+        <span class="vehicle-vin">VIN: {{ vin }}</span>
+      </div>
+    </div>
+    <button class="btn btn-sm btn-outline-secondary" (click)="navigateBack()">
+      <i class="fa fa-arrow-left"></i> Back to Geofence Summary
+    </button>
+  </div>
+
+  <!-- Geofence Info with Time Period Filter -->
+  <div class="geofence-info-section">
+    <div class="d-flex justify-content-between align-items-center">
+      <h4 class="geofence-name mb-0">
+        <i class="fa fa-map-marker-alt"></i> {{ geofenceName || 'Geofence ' + geofenceId }}
+      </h4>
+      <div class="fleet-dropdown" style="width: 180px;">
+        <ng-select
+          bindLabel="label"
+          bindValue="value"
+          placeholder="Select Time Period"
+          [(ngModel)]="selectedPeriod"
+          (change)="onTimePeriodChange($event)"
+          class="newSelect timePeriod current-month-dropdown">
+          <ng-option *ngFor="let period of timePeriods" [value]="period.value">
+            {{ period.label }}
+          </ng-option>
+        </ng-select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timeline Table -->
+  <div class="timeline-section">
+    <div class="timeline-card">
+      <div class="timeline-table-wrapper">
+        <table class="table">
+          <thead class="table-head">
+            <tr>
+              <th>Event Type</th>
+              <th>Trip ID</th>
+              <th>Timestamp</th>
+              <th>Duration</th>
+              <th>Miles Driven</th>
+              <th>Odometer(Mile)</th>
+              <th>Fuel Level (%)</th>
+              <th>Vehicle Health</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Loading State -->
+            <tr *ngIf="isLoading">
+              <td colspan="6" class="text-center loading-cell">
+                <i class="fa fa-spinner fa-spin icon-loading"></i>
+                <p class="loading-text">Loading timeline data...</p>
+              </td>
+            </tr>
+
+            <!-- Timeline Events -->
+            <ng-container *ngIf="!isLoading && timelineEvents.length > 0">
+              <tr *ngFor="let event of timelineEvents"
+                  [class.event-inside]="isInsideStatus(event.eventType)"
+                  [class.event-outside]="!isInsideStatus(event.eventType)"
+                  [class.event-ongoing]="event.isOngoing">
+                <td>
+                  <span class="event-type-badge"
+                        [ngClass]="{
+                          'event-type-in': isInsideStatus(event.eventType),
+                          'event-type-out': !isInsideStatus(event.eventType)
+                        }">
+                    <i [class]="isInsideStatus(event.eventType) ? 'fa fa-sign-in-alt' : 'fa fa-sign-out-alt'"></i>
+                    {{ event.eventType }}
+                  </span>
+                </td>
+                <td>
+                  <span>{{ event.tripId || '--' }}</span>
+                </td>
+                <td>
+                  <div class="timestamp-info">
+                    <strong>{{ event.timestamp }}</strong>
+                    <!-- <span class="paired-time" *ngIf="event.pairedTimestamp">
+                      {{ isInsideStatus(event.eventType) ? 'Exited' : 'Entered' }}: {{ event.pairedTimestamp }}
+                    </span> -->
+                  </div>
+                </td>
+                <td>
+                  <span class="duration-text" [class.ongoing-duration]="event.isOngoing">
+                    {{ event.duration }}
+                  </span>
+                </td>
+                <td>{{ event.milesDriven || '--' }}</td>
+                <td>
+                  <span>
+                    {{ event.odometerReading || '--' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="fuel-level" [class.low-fuel]="event.fuelLevelPercent && event.fuelLevelPercent < 20">
+                    {{ event.fuelLevelPercent ? event.fuelLevelPercent + '%' : '--' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="health-badge clickable"
+                        [ngClass]="getHealthStatusClass(event.overallHealth)"
+                        (click)="openVehicleHealthPopup(event)"
+                        [title]="event.healthReason || 'Click to view vehicle health details'">
+                    <i [class]="event.overallHealth === 'GREEN' ? 'fa fa-check-circle' : event.overallHealth === 'ORANGE' ? 'fa fa-exclamation-triangle' : 'fa fa-exclamation-circle'"></i>
+                    {{ getHealthStatusLabel(event.overallHealth) }}
+                  </span>
+                </td>
+              </tr>
+            </ng-container>
+
+            <!-- No Data State -->
+            <tr *ngIf="!isLoading && timelineEvents.length === 0">
+              <td colspan="6" class="text-center no-data-cell">
+                <i class="fa fa-inbox" style="font-size: 48px; color: #9ca3af;"></i>
+                <p class="no-data-text">No timeline data available for this vehicle.</p>
+              </td>
+            </tr>
+
+            <!-- Error State -->
+            <tr *ngIf="!isLoading && errorMessage">
+              <td colspan="7" class="text-center error-cell">
+                <i class="fa fa-exclamation-triangle" style="font-size: 48px; color: #ef4444;"></i>
+                <p class="error-text">{{ errorMessage }}</p>
+                <button class="btn btn-primary mt-3" (click)="loadTimelineData()">
+                  <i class="fa fa-redo"></i> Retry
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Range Modal -->
+<div class="modal-overlay" *ngIf="isCardOpen">
+  <div class="modal-card">
+    <button (click)="closeCard()" class="close-button">X</button>
+    <div class="row">
+      <div class="col-3 option-column">
+        <div style="margin-top: 20px;">
+          <div class="option" [class.selected]="selectedOption === 'today'" (click)="handleOption('today')">
+            Today
+          </div>
+          <div class="option" [class.selected]="selectedOption === 'weekly'" (click)="handleOption('weekly')">
+            Current Week
+          </div>
+          <div class="option" [class.selected]="selectedOption === 'monthly'" (click)="handleOption('monthly')">
+            Current Month
+          </div>
+          <div class="option" [class.selected]="selectedOption === 'lastmonth'" (click)="handleOption('lastmonth')">
+            Previous Month
+          </div>
+          <div class="option" [class.selected]="selectedOption === 'customRange'" selected (click)="handleOption('customRange')">
+            Custom Range
+          </div>
+        </div>
+      </div>
+
+      <div class="col-9" style="margin-top: 20px;">
+        <!-- Display calendar only if 'custom-range' is selected -->
+        <app-calendar (dateRangeSelected)="onDateRangeSelected($event)"></app-calendar>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Vehicle Health Details Modal -->
+<div class="modal-overlay" *ngIf="showHealthModal" (click)="closeHealthModal()">
+  <div class="modal-card health-modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h4 class="modal-title">Vehicle Health Details</h4>
+      <button type="button" class="close" (click)="closeHealthModal()" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <table class="table table-bordered health-details-table">
+        <thead>
+          <tr>
+            <th>Odometer(Mile)</th>
+            <th>Battery Level (V)</th>
+            <th>Tire Pressure (PSI)</th>
+            <th>Fuel Level (%)</th>
+            <th>Overall Health</th>
+            <th>Health Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{{ healthDetails.odometerReading }}</td>
+            <td>{{ healthDetails.batteryLevel }}</td>
+            <td>
+              <div class="tire-pressure">
+                <div><strong>FR:</strong> {{ healthDetails.tirePressure.FR }}</div>
+                <div><strong>FL:</strong> {{ healthDetails.tirePressure.FL }}</div>
+                <div><strong>RL:</strong> {{ healthDetails.tirePressure.RL }}</div>
+                <div><strong>RR:</strong> {{ healthDetails.tirePressure.RR }}</div>
+              </div>
+            </td>
+            <td>{{ healthDetails.fuelLevel }}%</td>
+            <td>
+              <span class="health-badge"
+                    [ngClass]="getHealthStatusClass(healthDetails.overallHealth)">
+                <i [class]="healthDetails.overallHealth === 'GREEN' ? 'fa fa-check-circle' : healthDetails.overallHealth === 'ORANGE' ? 'fa fa-exclamation-triangle' : 'fa fa-exclamation-circle'"></i>
+                {{ getHealthStatusLabel(healthDetails.overallHealth) }}
+              </span>
+            </td>
+            <td class="health-reason-cell">
+              {{ healthDetails.healthReason || 'No issues detected' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

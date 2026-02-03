@@ -1,0 +1,131 @@
+<ng-container *ngIf="user !='role_Driver'">
+<div class="sidebar navbar-side-menu-panel" style="margin-top: 0px!important;">
+    <div class="menu-item">
+        <a class="menu-item scrollto" (click)="viewMore()" href="javascript:(void)"
+            style="color: #000!important; font-weight: 500!important;"><img
+                src="../../../../../assets/images/vin-icon.svg" class="menu-image"
+                style="height: 10px !important;">Fleet Summary</a>
+    </div>
+    <ng-container *ngIf="user =='role_consumer_fleet' && (customConsumer === 'Onwardfleet')">
+    <div class="menu-item">
+      <a class="menu-item scrollto menu-Heading" routerLink="/adlp/admin/admindashboard/dashCam">
+        <img src="../../../../../assets/images/dashcam.svg" class="vin-img menu-image" alt="Fleet Summary">Dashcam
+      </a>
+    </div>
+  </ng-container>
+
+    <div class="menu-item">
+        <a class="menu-item scrollto" routerLink="/adlp/admin/admindashboard/dashboardfleet/fleet-tracking"
+            style="color: #000!important; font-weight: 500!important;"> <img
+                src="../../../../../assets/images/tracking.svg" class="menu-image">Tracking</a>
+    </div>
+    <!-- SAFETY MENU -->
+<div class="menu-item" (click)="toggleSection('safety')">
+  <a class="menu-item">
+    <img src="../../../../../assets/images/health_and_safety.svg" class="menu-image"> Safety &nbsp;<img src="assets/images/new.svg" style="height: 15px;">
+    <span class="arrow-icon">
+      <i class="fa" style="margin-left: 44px;" [ngClass]="{'fa-chevron-down': !isExpanded('safety'), 'fa-chevron-up': isExpanded('safety')}"></i>
+    </span>
+  </a>
+</div>
+<div *ngIf="isExpanded('safety')">
+<div class="menu-sub-item sub-menu-items" >
+  <a class="menu-item" routerLink="/adlp/admin/admindashboard/dashboardfleet/safetyCollision/safetyCollsion"
+    routerLinkActive="active-menu">
+    <img src="../../../../../assets/images/safety_collision.svg" class="menu-sub-image"> Collision
+  </a>
+</div>
+<div class="menu-sub-item sub-menu-items">
+  <a class="menu-item" routerLink="/adlp/admin/admindashboard/adasDashboard"
+  routerLinkActive="active-menu">
+  <img src="../../../../../assets/images/adas-icon.svg" style="height: 10px!important;" class="menu-sub-image" > ADAS &nbsp;<img src="assets/images/new.svg" style="height: 15px;">
+</a>
+</div>
+<div class="menu-sub-item sub-menu-items">  <a class="menu-item" routerLink="/adlp/admin/admindashboard/dashboardfleet/fleet-safety-card"
+    routerLinkActive="active-menu">
+    <img src="../../../../../assets/images/driver-icon.svg" class="menu-sub-image"> Driver Behavior
+  </a>
+</div>
+</div>
+
+<!-- SUSTAINABILITY MENU -->
+<div class="menu-item" (click)="toggleSection('sustainability')">
+  <a class="menu-item">
+    <img src="../../../../../assets/images/sustanibility.svg" class="menu-image"> Sustainability
+    <span class="arrow-icon" style="float: right;">
+      <i class="fa" style="margin-left: 32px;"  [ngClass]="{'fa-chevron-down': !isExpanded('sustainability'), 'fa-chevron-up': isExpanded('sustainability')}"></i>
+    </span>
+  </a>
+</div>
+<ng-container *ngIf="isExpanded('sustainability')">
+<div class="menu-sub-item sub-menu-items">
+  <a class="menu-item" routerLink="/adlp/admin/admindashboard/dashboardfleet/fuel"
+    routerLinkActive="active-menu">
+    <img src="../../../../../assets/images/fuel-menu-icon.svg" class="menu-sub-image"> Fuel
+  </a>
+</div>
+<div class="menu-sub-item sub-menu-items">
+  <a class="menu-item" routerLink="/adlp/admin/admindashboard/dashboardfleet/ev"
+    routerLinkActive="active-menu">
+    <img src="../../../../../assets/images/ev.svg" class="menu-sub-image"> EV
+  </a>
+</div>
+</ng-container>
+      <ng-container *ngIf="this.user == 'role_consumer_fleet'">
+      <div class="menu-item">
+        <a class="menu-item-link navbar-side-menu-heading scrollto" routerLink="/adlp/admin/admindashboard/manageDriver/dashboardDriver"
+          routerLinkActive="active"><img src="../../../../../assets/images/driver-icon.svg" class="menu-image">Driver </a>
+      </div>
+    </ng-container>
+    <div class="menu-item">
+        <a class="menu-item-link navbar-side-menu-heading scrollto" routerLink="/adlp/dashboards/tcosearchfleet"
+          routerLinkActive="active"><img src="../../../../../assets/images/tco-icon.svg" class="menu-image">TCO  </a>
+      </div>
+    <div class="menu-item">
+        <a class="menu-item scrollto" routerLink="/adlp/admin/admindashboard/dashboardfleet/fleet-maintenance"
+            style="color: #000!important; font-weight: 500!important;"><img
+                src="../../../../../assets/images/maintenances.svg" class="menu-image">Maintenance</a>
+    </div>
+    <ng-container *ngIf="user === 'role_consumer_fleet'">
+    <div class="menu-item">
+      <a class="menu-item-link navbar-side-menu-heading scrollto" routerLink="/adlp/admin/admindashboard/geofence/manage-geofence" routerLinkActive="active"><img
+          src="../../../../../assets/images/geofence.svg" class="menu-image" alt="Reports">Geofence</a>
+    </div>
+  </ng-container>
+    <div class="menu-item">
+        <a class="menu-item-link navbar-side-menu-heading scrollto" routerLink="/adlp/admin/admindashboard/report" routerLinkActive="active"><img
+            src="../../../../../assets/images/report-icon.svg" class="menu-image" alt="Reports">Reports
+
+    </a>
+      </div>
+      <div class="menu-item menu-chatbot">
+        <a class="menu-item-link navbar-side-menu-heading scrollto" routerLink="/adlp/admin/admindashboard/chatBot"
+          routerLinkActive="active"><img src="../../../../../assets/images/chatbot-icon.svg" class="menu-image"
+            alt="Reports">AI Chatbot  </a>
+      </div>
+
+</div>
+</ng-container>
+<ng-container *ngIf="user ==='role_Driver'">
+  <div class="sidebar navbar-side-menu-panel" style="margin-top: 0px!important;">
+      <div class="menu-item">
+          <a class="menu-item scrollto" (click)="viewMore()" href="javascript:(void)"
+              style="color: #000!important; font-weight: 500!important;"><img
+                  src="../../../../../assets/images/vin-icon.svg" class="menu-image"
+                  style="height: 10px !important;">Fleet Summary</a>
+      </div>
+      <div class="menu-item">
+          <a class="menu-item scrollto" routerLink="/adlp/admin/admindashboard/dashboardfleet/fleet-tracking"
+              style="color: #000!important; font-weight: 500!important;"> <img
+                  src="../../../../../assets/images/tracking.svg" class="menu-image">Tracking</a>
+      </div>
+      <ng-container *ngIf="user != 'role_Driver'">
+        <div class="menu-item menu-chatbot">
+          <a class="menu-item-link navbar-side-menu-heading scrollto" routerLink="/adlp/admin/admindashboard/chatBot"
+            routerLinkActive="active"><img src="../../../../../assets/images/chatbot-icon.svg" class="menu-image"
+              alt="Reports">AI Chatbot  </a>
+        </div>
+      </ng-container>
+
+  </div>
+  </ng-container>

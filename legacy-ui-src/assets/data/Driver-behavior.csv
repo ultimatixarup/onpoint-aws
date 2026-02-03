@@ -1,0 +1,6 @@
+﻿Data Classification,Data Type,,Sub-category,Parameter ID,Parameter Description,Format,Direct/Derived,UOM,Range,Meaning
+Trip Details,Driver Behaviour,Driver Behaviour,cx_rapid_acceleration_count,Count of instances of rapid acceleration during the trip,int,Direct,,,,
+Trip Details,Driver Behaviour,Driver Behaviour,cx_harsh_braking_count,Count of instances of harsh braking during the trip,int,Direct,,,,
+Trip Details,Driver Behaviour,Driver Behaviour,cx_cornering_count,Count of instances of cornering during the trip,int,Direct,,,,
+Trip Details,Driver Behaviour,Driver Behaviour,cx_overspeeding_count,Count of instances of overspeeding during the trip,int,Direct,,,,
+Trip Details,Driver Behaviour,Driver Behaviour,cx_rapid_acceleration_count,Count of instances of rapid acceleration during the trip,int,Direct,,,,

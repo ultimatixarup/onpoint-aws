@@ -1,0 +1,319 @@
+<!--Page main content-->
+<div class="page-content page-content-main">
+    <div class="row sideMenuItem">
+      <div class="container">
+      <div class="col-xs-12 content-right">
+        <div class="row">
+          <div class="col-xs-12 col-lg-12">
+            <span class="breadcrumb-left">
+              <h1 class="login-headline heading-title">Manage Geofence </h1>
+              <!-- <ng-container *ngIf="user ==='role_user_fleet'">
+                <div class="content-text">
+                  <span class="vin_container">
+                    <span class="content-sub-text">Fleet Id</span>
+                  </span>
+                  <span class="content-sub-text2">{{ selectedFleetDisplay || fleetIdValueNew }}</span>
+                </div>
+              </ng-container> -->
+            </span>
+            <span class="breadcrumb-right mr-8">
+              <ol class="breadcrumb">
+                <ng-container *ngIf="user =='admin'">
+                  <li class="breadcrumb-item">
+                    <a routerLink="/adlp/admin" class="breadcrumb-h6"><i class="bx bx-home-circle"></i></a>
+                  </li>
+                  <li class="breadcrumb-item inactive-bread"><a routerLink="/adlp/admin/dashboardAdmin">Dashboard</a></li>
+                  <li class="breadcrumb-item text-selected active-bread">Manage Geofence</li>
+                </ng-container>
+                <ng-container *ngIf="user !='admin'">
+                  <li class="breadcrumb-item">
+                    <a routerLink="/adlp/admin/admindashboard/dashboardfleet" class="breadcrumb-h6"><i
+                        class="bx bx-home-circle"></i></a>
+                  </li>
+                  <li class="breadcrumb-item inactive-bread"><a
+                      routerLink="/adlp/admin/admindashboard/dashboardfleet">Dashboard</a></li>
+                  <li class="breadcrumb-item text-selected active-bread">Manage Geofence</li>
+                </ng-container>
+              </ol>
+            </span>
+          </div>
+        </div>
+        <!-- Heading and Breadcrumb End-->
+        <!-- Consumer and Fleet Id Filter -->
+        <div class="row consumer-pad">
+          <div class="col-xs-12 col-lg-2">
+            <ng-container *ngIf="this.user === 'admin'">
+              <app-common-consumer (consumerChange)="selectConsumer($event)"></app-common-consumer>
+            </ng-container>
+          </div>
+          <div class="col-xs-12 col-lg-2 mr-6">&nbsp;</div>
+          <div class="col-xs-12 col-lg-2 mr-6">
+            <input type="text" class="search-input" placeholder="Search Geofence..." [(ngModel)]="searchTerm" />
+          </div>
+          <div class="col-xs-12 col-lg-2">
+            <div class="add-button" tooltip="Add Geofence" (click)="navigateToGeofence()"><b>+</b> Add Geofence</div>
+          </div>
+          <div class="col-xs-12 col-lg-2">
+            <div class="add-button" tooltip="View Geofence Report" (click)="viewGeofenceReport()">View Geofence Report</div>
+          </div>
+          <div class="col-xs-12 col-lg-2 mr-6">
+            <ng-select [searchable]="true" class="newSelect1" [clearable]="true" placeholder="Organization Id/Name"
+              [(ngModel)]="fleetIdData" (ngModelChange)="onFleetIdChange()">
+              <ng-option *ngFor="let fleet of fleetList" value="{{ fleet.id }}">{{ fleet.id }} - [{{ fleet.name
+                }}]</ng-option>
+            </ng-select>
+          </div>
+          <!-- <div class="col-xs-12 col-lg-2" style="margin-top: 6px;">
+            <ng-select
+            [searchable]="true"
+            class="newSelect1"
+            [clearable]="true"
+            placeholder="Group Name"
+            [items]="groupList"
+            bindLabel="name"
+            bindValue="id"
+            [(ngModel)]="groupIdData"
+            (change)="onGroupIdChange($event)">
+
+            <ng-template ng-option-tmp let-item="item">
+              <span [ngStyle]="{ 'padding-left.px': item.level * 18 }">
+                {{ item.name }}
+              </span>
+            </ng-template>
+          </ng-select>
+          </div> -->
+        </div>
+        <!-- Consumer and Fleet Id Filter -->
+        <!-- main container start -->
+        <!-- Search, location type and time period filter-->
+        <div class="row mr-12">
+          <div class="col-xs-12 col-lg-9">
+            <div class="row">
+
+              <!-- <div class="col-xs-12 col-lg-3">
+                <ng-select
+                [searchable]="true"
+                class="newSelect"
+                [multiple]="true"
+                placeholder="Geofence Name"
+                [(ngModel)]="selectedTypes"
+                (change)="onTypeChange()"
+                [disabled]="!fleetIdData"
+                [autoClose]="false">
+
+                <ng-option
+                  *ngFor="let type of filteredGeofenceData"
+                  [value]="type.locationType">
+                  {{ type.name }}
+                </ng-option>
+              </ng-select>
+
+              </div>
+              <div class="col-xs-12 col-lg-3">
+                <ng-select bindLabel="label" [clearable]="true"
+                  bindValue="value" placeholder="Time Period" (change)="onTimePeriodChangeData($event)"
+                  [(ngModel)]="selectedPeriod" class="newSelect font-common">
+                  <ng-option *ngFor="let period of timePeriods" [value]="period.value"> {{ period.label }} </ng-option>
+                </ng-select>
+              </div>
+              <div class="col-xs-12 col-lg-2">
+                <div class="blue-button" (click)="callApiWithSelectedData(); navigateToGeofenceReport('')"
+                 [ngClass]="{'disabled-button': !isButtonEnabled()}"
+                  [attr.disabled]="!isButtonEnabled() ? true : null">
+                  Apply
+                </div>
+              </div>  -->
+           <!-- <div class="col-xs-12 col-lg-1">
+                <img src="../../../../../../../assets/images/download-report-icon.svg"  (click)="downloadFilteredGeofenceData()" alt="" ngbTooltip="Geofence Report" class="download-report-icon" />
+              </div> -->
+            </div>
+          </div>
+        </div>
+        <!-- Search, location type and time period filter-->
+        <!-- Table Detail -->
+        <div class="table-container mr-24">
+          <div class="row mr-table mr-12">
+            <div class="col-lg-12 col-xs-12">
+              <div class="table-wrapper docs-wrapper">
+                <div class="table-responsive table-b">
+                  <table class="table">
+                    <thead class="table-head">
+                      <tr>
+                        <th class="table-column-width7">Geofence Name</th>
+                        <th class="table-column-width7">Location Type</th>
+                        <th class="table-column-width7">Geofence Type</th>
+                        <th class="table-column-width">Address</th>
+                        <th class="table-column-width">Radius (meters)</th>
+                        <th class="table-column-width">Map Vehicle(s)</th>
+
+                        <th>&nbsp;</th>
+                        <th class="table-column-width">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <ng-container *ngIf="isLoading">
+                        <tr>
+                          <td colspan="8" class="text-center">
+                            <i class="fa fa-spinner fa-spin icon-loading" style="font-size: 20px;"></i>
+                          </td>
+                        </tr>
+                      </ng-container>
+                      <ng-container *ngIf="!isLoading && filteredGeofenceData?.length > 0">
+                      <tr *ngFor="let geofence of filteredGeofenceData">
+                        <td class="table-column-width7">
+                          <input *ngIf="geofence.isEditing" [(ngModel)]="geofence.name" type="text" class="form-control" placeholder="Enter name" />
+                          <span *ngIf="!geofence.isEditing">{{ geofence.name }}</span>
+                        </td>
+                        <td class="table-column-width7">
+                          <input *ngIf="geofence.isEditing" [(ngModel)]="geofence.locationType" type="text" class="form-control" placeholder="Enter name" />
+                          <span *ngIf="!geofence.isEditing">{{ geofence.locationType }}</span>
+                        </td>
+                        <td class="table-column-width7">
+                          <input *ngIf="geofence.isEditing" [(ngModel)]="geofence.geofenceType" type="text" class="form-control" placeholder="Enter type" />
+                          <span *ngIf="!geofence.isEditing">{{ geofence.geofenceType }}</span>
+                        </td>
+                        <td class="table-column-width">
+                          <a class="split-address">
+                            <span class="address " container="body" [title]="geofence.address">
+                              {{ geofence.address?.split(',')[0] || '--' }}
+                            </span>
+                          </a>
+                        </td>
+                        <td class="table-column-width">
+                            <span class="address">
+                              {{ geofence.radius | number:'1.0-0' ?? '--' }}
+                            </span>
+                        </td>
+                        <td class="table-column-width">
+                                <a  style="cursor: pointer;font-size: 12px; font-weight: 500; color: blue; text-decoration: underline; text-underline-offset: 3px " (click)="viewMappedVehicle(mappedVinListData,geofence.id )">View mapped vehicle(s)</a>
+                            </td>
+                        <td><button class="nbtn unresolve" (click)="MappedVehicles(vinListData, geofence.id)"> Map Vehicle(s) </button></td>
+                        <td class="table-column-width">
+                          <span class="action-buttons">
+                            <a href="javascript:(void)" *ngIf="!geofence.isEditing">
+                              <img src="../../../../../../../assets/images/pencil.svg" (click)="editGeofence(geofence)"  alt="" class="action-img" ngbTooltip="Edit" />
+                            </a>
+                            <a href="javascript:(void)" style="margin-left: -6px;">
+                              <img src="../../../../../../../assets/images/del.svg" alt="" class="action-img" ngbTooltip="Delete" (click)="openDeleteModal(geofence, modalConfirm)" />
+                            </a>
+                          </span>
+                        </td>
+                      </tr>
+                      </ng-container>
+                      <ng-container *ngIf="!isLoading && (!filteredGeofenceData || filteredGeofenceData.length === 0)">
+                        <tr>
+                          <td colspan="8">
+                            <h5 class="failedData">No data found ...</h5>
+                          </td>
+                        </tr>
+                      </ng-container>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Table Detail -->
+        <!-- main container end -->
+      </div>
+    </div>
+  </div>
+  </div>
+<!-- Modal Popup for VIN List , Mapped VIN List, Delete Geofence-->
+<!-- Map Vehicle List-->
+<ng-template #vinListData let-modal class="modal-width">
+  <div class="modal-header">
+    <div class="row" style="width: 110%;">
+      <div class="col-xs-12 col-lg-10">
+        <h5 class="modal-title mt-0" style="font-family: 'Poppins'">Map Vehicle(s): {{checkedCount }}</h5>
+      </div>
+      <div class="col-xs-12 col-lg-1">
+        <button type="button" class="btn-close" (click)="modal.dismiss('Cross click')" style="margin-top: 5px;"
+          aria-hidden="true" style="background-color: transparent!important;"></button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-body modal-height">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12">
+        <input class="form-control input-vin font-common vin-align" maxlength="17" type="text" [(ngModel)]="searchQuery"
+          placeholder="Search Vehicle">
+      </div>
+    </div>
+    <div class="container">
+      <div class="row" style="width: 106%;">
+        <div class="over">
+          <div class="checkbox-scroll-container">
+            <label class="custom-checkbox">
+              <input type="checkbox" [(ngModel)]="selectAllChecked" (change)="toggleSelectAll()" />
+              <span class="checkmark"></span>
+              Select All
+            </label>
+            <label class="custom-checkbox label-value" *ngFor="let item of data">
+              <input type="checkbox" [(ngModel)]="item.checked" (change)="updateSelectAllStatus()" />
+              <span class="checkmark"></span>
+              {{ item.alias }}
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="update-btn" (click)="saveSelectedVehicles()">Update</button>
+  </div>
+</ng-template>
+<!-- Map Vehicle List End-->
+<!-- Mapped Vehicle List-->
+<ng-template #mappedVinListData let-modal class="modal-width">
+  <div class="modal-header">
+    <div class="row" style="width: 110%;">
+      <div class="col-xs-12 col-lg-10">
+        <h5 class="modal-title mt-0" style="font-family: 'Poppins'">Mapped Vehicle(s): {{associatedData?.length}}</h5>
+      </div>
+      <div class="col-xs-12 col-lg-1">
+        <button type="button" class="btn-close" (click)="modal.dismiss('Cross click')" style="margin-top: 5px;"
+          aria-hidden="true" style="background-color: transparent!important;"></button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-body modal-height">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12">
+        <input class="form-control input-vin font-common vin-align" maxlength="17" type="text" [(ngModel)]="searchQuery"
+          placeholder="Search Vehicle">
+      </div>
+    </div>
+    <div class="container">
+      <div class="row" style="width: 106%;">
+        <div class="over">
+          <div class="checkbox-scroll-container">
+            <div class="checkbox-scroll-container" *ngIf="associatedData?.length">
+              <label class="custom-checkbox label-value" *ngFor="let item of associatedData">
+                <input type="checkbox" [checked]="true" disabled />
+                <span class="checkmark"></span>
+                {{ item.alias }}
+              </label>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-template>
+<!-- Mapped Vehicle List End-->
+<!-- Delete Created Geofence -->
+<ng-template #modalConfirm let-modal class="modal-width">
+  <div class="modal-body modal-height">
+    <h5 class="heading-show">Do you want to delete the geofence <span class="delete-geofence">{{selectedGeofence.name}}
+      </span>?</h5>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-add-vin deletebtn" (click)="deleteGeofenceById(selectedGeofence.id);modal.dismiss()">Yes</button>
+    <button class="btn-cancel cancelbtn" (click)="modal.dismiss()">No</button>
+  </div>
+</ng-template>
+<!-- Delete Created Geofence End-->
+ <!-- Modal Popup for VIN List , Mapped VIN List, Delete Geofence End-->

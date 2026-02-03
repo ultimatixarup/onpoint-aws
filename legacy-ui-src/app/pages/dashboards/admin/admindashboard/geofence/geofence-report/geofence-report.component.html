@@ -1,0 +1,290 @@
+<!--Page main content-->
+<div class="page-content page-content-main">
+  <div class="row sideMenuItem">
+    <div class="container">
+       <div class="col-xs-12 content-right">
+      <div class="row" >
+        <div class="col-xs-12 col-lg-12">
+          <span class="breadcrumb-left">
+            <h1 class="login-headline heading-title">Geofence Report</h1>
+          </span>
+          <span class="breadcrumb-right mr-8">
+            <ol class="breadcrumb">
+              <ng-container *ngIf="user =='admin'">
+                <li class="breadcrumb-item">
+                  <a routerLink="/adlp/admin" class="breadcrumb-h6"><i class="bx bx-home-circle"></i></a>
+                </li>
+                <li class="breadcrumb-item inactive-bread"><a routerLink="/adlp/admin/dashboardAdmin">Dashboard</a></li>
+                <li class="breadcrumb-item inactive-bread"><a
+                    routerLink="/adlp/admin/admindashboard/geoFenceSetup/geofence">Manage Geofence</a></li>
+                <li class="breadcrumb-item text-selected active-bread">Geofence Report</li>
+              </ng-container>
+              <ng-container *ngIf="user !='admin'">
+                <li class="breadcrumb-item">
+                  <a routerLink="/adlp/admin/admindashboard/dashboardfleet" class="breadcrumb-h6"><i
+                      class="bx bx-home-circle"></i></a>
+                </li>
+                <li class="breadcrumb-item inactive-bread"><a
+                    routerLink="/adlp/admin/admindashboard/dashboardfleet">Dashboard</a></li>
+                <li class="breadcrumb-item inactive-bread"><a
+                    routerLink="/adlp/admin/admindashboard/geoFenceSetup/geofence">Manage Geofence</a></li>
+                <li class="breadcrumb-item text-selected active-bread">Geofence Report</li>
+              </ng-container>
+            </ol>
+          </span>
+        </div>
+      </div>
+      <!-- Heading and Breadcrumb End-->
+      <!-- Consumer and Fleet Id Filter -->
+      <div class="filter-row pt-4">
+        <div class="flex-space-between">
+          <div class="flex-gap">
+            <!-- <div><input type="text" class="search-input" placeholder="Search here..." [(ngModel)]="searchText" /></div> -->
+            <div class="add-button-timePeriod" style="width: 270px; overflow-y: scroll; overflow-x: hidden;"
+            [ngClass]="{'disabled-div': locationTypeService.selectedTypeIds.length > 0}">
+         <span *ngFor="let typeName of selectedLocationTypeNames"
+               style="background-color: rgb(215, 217, 215); color: #000000; padding: 3px 6px; margin-right: 5px; border-radius: 3px; margin-bottom: 3px;">
+           {{ typeName }}
+         </span>
+       </div>
+
+            <div class="add-button-timePeriod">
+              <span style="background-color: rgb(215, 217, 215); color: #000000; padding: 3px 6px; margin-right: 5px; border-radius: 3px;">
+              <ng-container *ngIf="selectedPeriod === 'till_date'">Till Date</ng-container>
+              <ng-container *ngIf="selectedPeriod === 'monthly'">Current Month</ng-container>
+              <ng-container *ngIf="selectedPeriod === 'daily'">Today</ng-container>
+              <ng-container *ngIf="selectedPeriod === 'weekly'">Last 7 Days</ng-container>
+              <ng-container *ngIf="selectedPeriod === 'lastmonth'">Previous Month</ng-container>
+              <ng-container *ngIf="selectedPeriod === 'yesterday'">Yesterday</ng-container>
+              <!-- <ng-container *ngIf="selectedPeriod === 'CUSTOM_RANGE'">Custom Range</ng-container> -->
+            </span>
+            </div>
+          </div>
+          <div class="flex-gap">
+            <!-- <div> <img src="../../../../../../../assets/images/download button.svg" alt="" height="37px"
+                class="download-class" /></div> -->
+            <div>
+              <button class="btn-download-report" (click)="downloadIdlingReportSection()"
+                title="Download Geofence Report">
+                <img src="../../../../../../assets/images/orange-download.svg" style="height: 15px;">
+              </button>
+            </div>
+            <!-- <div class="add-button" tooltip="Add Geofence" (click)="navigateToGeofence()"> <b>+</b> Add Geofence </div> -->
+            <div class="add-button-fleet"> Fleet Id: {{selectedFleetId}} </div>
+          </div>
+        </div>
+      </div>
+      <!-- Consumer and Fleet Id Filter -->
+      <!-- main container start -->
+      <!-- Table -->
+      <div class="table-container">
+        <div class="row mr-table mr-12">
+          <div class="col-lg-12 col-xs-12">
+            <div class="table-wrapper docs-wrapper">
+              <div class="table-responsive table-b">
+                <table class="table">
+                  <thead class="table-head fixedheader">
+                    <tr>
+                      <th>
+                        <img
+                          src="../../../../../../../assets/images/{{ selectAllChecked  ? 'checkbox-selected.svg'  : 'checkbox-unselected.svg' }}"
+                          alt="Select All" (click)="toggleSelectAll()" style="cursor: pointer" height="18px" />
+                      </th>
+                      <th class="table-column-width7">Geofence</th>
+                      <th class="table-column-width5"></th>
+                      <th class="table-column-width7">Location Type</th>
+                      <th class="table-column-width">Created On</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- Check if taskStatusDataNew is 'FAILED' -->
+                    <ng-container *ngIf="taskStatusDataNew === 'FAILED'; else showInProgressOrData">
+                      <tr>
+                        <td colspan="5">
+                          <div class="no-data" style="height: 120px; overflow: hidden; margin-top: 30px;">
+                            <div class="row">
+                              <div class="col-xs-12 col-lg-12">
+                                <img src="../../../../../assets/images/info-icon.svg"
+                                  style="margin-left: 47%; margin-right: 47%; height: 45px;">
+                              </div>
+                              <div class="col-xs-12 col-lg-12">
+                                <h5 class="login-headlines">No data found</h5>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    </ng-container>
+                    <!-- Show In Progress or Data -->
+                    <ng-template #showInProgressOrData>
+                      <ng-container *ngIf="taskStatusDataNew === 'PENDING' || taskStatusDataNew === 'PROCESSING'; else showCompletedData">
+                        <tr>
+                          <td colspan="5">
+                            <div class="no-data" style="height: 120px; overflow: hidden; margin-top: 30px;">
+                              <div class="row">
+                                <div class="col-xs-12 col-lg-12">
+                                  <!-- Spinner replaces image -->
+                                  <div class="d-flex justify-content-center align-items-center" style="height: 45px;">
+                                    <div class="spinner-border text-primary" role="status">
+                                      <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div class="col-xs-12 col-lg-12">
+                                  <h5 class="login-headlines text-center">In Progress</h5>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      </ng-container>
+
+
+                      <!-- Show Completed Data -->
+                      <ng-template #showCompletedData>
+                        <ng-container *ngIf="taskStatusDataNew === 'COMPLETED'">
+                          <ng-container *ngFor="let geofence of taskStatusData  | filter: searchText">
+                            <tr>
+                              <!-- Row Checkbox -->
+                              <td>
+                                <img
+                                  src="../../../../../../../assets/images/{{  geofence.selected ? 'checkbox-selected.svg'  : 'checkbox-unselected.svg' }}"
+                                  alt="Select Row" (click)="  geofence.selected = !geofence.selected; onCheckboxChange(geofence)"
+                                  style="cursor: pointer" height="18px" />
+                              </td>
+                              <td><span class="flex-center">{{ geofence.geofence_name }}</span></td>
+                              <td>
+                                <ng-container *ngIf="!geofence.report || geofence.report.length === 0">
+                                  <img src="../../../../../../../assets/images/grey-image.svg" alt="No data" (click)="toggleExpand(geofence)" />
+                                </ng-container>
+
+                                <!-- Show breached-vehicle.svg if report is available -->
+                                <ng-container *ngIf="geofence.report && geofence.report.length > 0">
+                                  <img
+                                    src="../../../../../../../assets/images/breached-vehicle.svg"
+                                    alt="Breached vehicle"
+                                    (click)="toggleExpand(geofence)"
+                                  />
+                                </ng-container>
+                               </td>
+                              <td>{{ geofence.geofence_type }}</td>
+
+                                <td>
+                                  <ng-container *ngIf="geofence.creationFormattedDate && geofence.creationFormattedTime; else fallbackDate">
+                                    {{ geofence.creationFormattedDate }}<br>
+                                    {{ geofence.creationFormattedTime }}
+                                  </ng-container>
+
+                                  <ng-template #fallbackDate>
+                                    <ng-container *ngIf="geofence.created_on">
+                                      {{ geofence.created_on | date: 'mediumDate' }}<br>
+                                      {{ geofence.created_on | date: 'HH:mm' }}
+                                    </ng-container>
+                                  </ng-template>
+
+                                </td>
+
+                            </tr>
+                            <!-- Expanded Row -->
+                            <tr *ngIf="geofence.expanded">
+                              <td colspan="5" class="expanded-row">
+                                <div class="flex-space-around header-row">
+                                  <div class="expand-header">Vehicle Name</div>
+                                  <div class="expand-header">Entry Date</div>
+                                  <div class="expand-header">Exit Date</div>
+                                  <div class="expand-header">Duration</div>
+                                </div>
+                                <div *ngFor="let data of geofence.report   | orderBy: 'entry_time': sortAscending;"  class="flex-space-around data-row" >
+                                  <!-- Vehicle Name -->
+                                  <div class="expand-data">{{ data.vin_alias }}</div>
+                                  <!-- Entry Time -->
+                                  <div class="expand-data">
+                                    <ng-container *ngIf="data.entry_time && !isExcludedDate(data.entry_time)  else noEntryTime" >
+                                      <ng-container *ngIf="(user == 'role_consumer_fleet' || user == 'role_user_fleet') && customConsumer == 'Onwardfleet'">
+                                        {{ convertEpochToSelectedTimezone(data.entry_time) | date: 'mediumDate' }} {{ convertEpochToSelectedTimezone(data.entry_time) | date: 'HH:mm' }} CDT
+                                      </ng-container>
+                                      <ng-container *ngIf="(user == 'role_consumer_fleet' || user == 'role_user_fleet') && customConsumer == 'EcoTrack'">
+                                        {{ convertEpochToMountain(data.entry_time) | date: 'mediumDate' }} {{ convertEpochToMountain(data.entry_time) | date: 'HH:mm' }} MST
+                                      </ng-container>
+                                      <ng-container
+                                        *ngIf="user == 'admin' ||
+                                               (user == 'role_consumer_fleet' &&
+                                                (customConsumer == 'Btracking' ||
+                                                 customConsumer == 'Smallboard' ||
+                                                 customConsumer == 'DPL Telematics'))"
+                                      >
+                                      {{ (this.convertIstToUtc(data.entry_time) | date:'mediumDate') }} {{ (this.convertIstToUtc(data.entry_time) | date:'HH:mm') }} UTC
+                                      </ng-container>
+                                    </ng-container>
+                                    <ng-template #noEntryTime>
+                                      --
+                                    </ng-template>
+                                  </div>
+                                  <!-- Exit Time -->
+                                  <div class="expand-data">
+                                    <ng-container *ngIf="data.exit_time; else noExitTime">
+                                      <ng-container *ngIf="(user == 'role_consumer_fleet' || user == 'role_user_fleet') && customConsumer == 'Onwardfleet'">
+                                        {{ (convertEpochToCst(data.exit_time) | date:'mediumDate') }} {{ (convertEpochToCst(data.exit_time) | date:'HH:mm') }} CDT
+                                     </ng-container>
+                                     <ng-container *ngIf="(user == 'role_consumer_fleet') && customConsumer == 'EcoTrack'">
+                                      {{ (convertEpochToMountain(data.exit_time) | date:'mediumDate') }} {{ (convertEpochToMountain(data.exit_time) | date:'HH:mm') }} MST
+                                   </ng-container>
+                                      <ng-container
+                                        *ngIf="user == 'admin' ||
+                                        (user == 'role_consumer_fleet' &&
+                                        (customConsumer == 'Btracking' ||
+                                         customConsumer == 'Smallboard' ||
+                                         customConsumer == 'DPL Telematics'))">
+                                         {{ (this.convertIstToUtc(data.exit_time) | date:'mediumDate') }} {{ (this.convertIstToUtc(data.exit_time) | date:'HH:mm') }} UTC
+                                      </ng-container>
+                                    </ng-container>
+                                    <ng-template #noExitTime>
+                                      --
+                                    </ng-template>
+                                  </div>
+                                  <!-- Duration-->
+                                  <!-- Duration -->
+                                  <div class="expand-data">
+                                    <ng-container *ngIf="data.entry_time && data.exit_time; else noDuration">
+                                      {{ getDuration(data.entry_time, data.exit_time) }}
+                                    </ng-container>
+                                    <ng-template #noDuration>
+                                      --
+                                    </ng-template>
+                                  </div>
+                                  </div>
+
+
+
+                              <div *ngIf="geofence.report.length === 0" class="no-data" style="height: 120px; overflow: hidden; margin-top: 30px;">
+                                <div class="row">
+                                  <div class="col-xs-12 col-lg-12">
+                                    <img src="../../../../../assets/images/info-icon.svg"
+                                      style="margin-left: 47%; margin-right: 47%; height: 45px;">
+                                  </div>
+                                  <div class="col-xs-12 col-lg-12">
+                                    <h5 class="login-headlines">No data found</h5>
+                                  </div>
+                                </div>
+                              </div>
+                              </td>
+                            </tr>
+                            <tr *ngIf="taskStatusData.length === 0">
+                              <td colspan="5" class="text-center">No Data Found</td>
+                            </tr>
+                        </ng-container>
+                        </ng-container>
+                      </ng-template>
+                    </ng-template>
+            </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- main container end -->
+</div>
+</div>
+</div>
+</div>

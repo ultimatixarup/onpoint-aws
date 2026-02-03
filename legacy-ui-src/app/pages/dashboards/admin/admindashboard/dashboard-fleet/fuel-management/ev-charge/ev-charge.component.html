@@ -1,0 +1,510 @@
+<ngx-spinner bdColor="rgba(0,0,0,0.8)" size="large" color="#fff" type="ball-elastic-dots" [fullScreen]="true">
+  <div class="custom-spinner">
+    <img src="../../../../../assets/images/spinner3.svg" alt="Your Logo">
+  </div>
+  <div class="loading-text">Please wait, we are getting information...</div>
+</ngx-spinner>
+ <!--Main content-->
+<div class="page-content page-content-main">
+  <div class="row" style="margin-left: 0px; margin-right: 0px;">
+    <!-- Left side menu-->
+    <div class="col-xs-12 col-lg-2 navbar-side-menu">
+      <app-sidebar></app-sidebar>
+    </div>
+    <!-- Left side menu end -->
+    <!-- Right side menu -->
+    <div class="col-xs-12 col-lg-10 content-right">
+      <!-- Left side heading and right side Breadcrumb-->
+      <div class="row">
+        <div class="col-xs-12 col-lg-12">
+          <span class="breadcrumb-left">
+            <h1 class="login-headline heading-title">EV Summary
+            </h1>
+          </span>
+          <span class="breadcrumb-right mr-8">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item">
+                <a routerLink="/adlp/admin/admindashboard/dashboardfleet" class="breadcrumb-h6"><i
+                    class="bx bx-home-circle"></i></a>
+              </li>
+              <li class="breadcrumb-item inactive-bread"> <a
+                  routerLink="/adlp/admin/admindashboard/dashboardfleet/ev">EV Dashboard</a></li>
+              <li class="breadcrumb-item text-selected active-bread">EV Summary</li>
+            </ol>
+          </span>
+        </div>
+      </div>
+      <!-- Left side heading and right side Breadcrumb end-->
+
+      <!-- Consumer and Fleet Id Filter-->
+<div class="row consumer-pad justify-content-end my-2">
+  <div class="col-xs-12 col-lg-2 mr-3" *ngIf="user !='role_user_fleet' && user !='role_Driver' && user != 'role_org_group'">
+    <ng-select
+      [items]="fleetList"
+      bindLabel="name"
+      bindValue="id"
+      [searchable]="true"
+      class="newSelect1"
+      [clearable]="true"
+      placeholder="Organization Id/Name"
+      [(ngModel)]="fleetIdData"
+      (change)="onFleetChange($event)">
+      <ng-template ng-label-tmp let-item="item">
+        {{ item.id }} - [{{ item.name }}]
+      </ng-template>
+      <ng-template ng-option-tmp let-item="item">
+        {{ item.id }} - [{{ item.name }}]
+      </ng-template>
+    </ng-select>
+  </div>
+
+  <!-- <div class="col-xs-12 col-lg-2 mr-3">
+    <ng-select
+      [searchable]="true"
+      class="newSelect1"
+      [clearable]="true"
+      placeholder="Group Name">
+      <ng-option value="101">Group 1</ng-option>
+      <ng-option value="102">Group 2</ng-option>
+    </ng-select>
+  </div> -->
+</div>
+<!-- Consumer and Fleet Id Filter end-->
+
+
+      <!-- Consumer and Fleet Id Filter-->
+      <div class="row consumer-pad">
+          <div class="card-container">
+              <div class="card-item card-item-height">
+                <div class="card-heading">
+                  <div class="row" style="height: 56px;">
+                    <div class="col-xs-12 col-lg-6">
+                      <img src="../../assets/images/summary.svg" alt="" class="card-heading-img" />Summary
+                    </div>
+                    <div class="col-xs-12 col-lg-6 d-flex justify-content-end">
+                    <div class="fleet-dropdowm" style="width: 160px;">
+                      <ng-select bindLabel="label" style="font-family: 'Poppins'!important;"
+                          bindValue="value" placeholder="Select Time Period" [(ngModel)]="selectedPeriod"
+                          (change)="onTimePeriodChangeData($event)"
+                          class="newSelect  timePeriod current-month-dropdown ">
+                          <ng-option *ngFor="let period of timePeriods" [value]="period.value">
+                              {{ period.label }}
+                          </ng-option>
+                      </ng-select>
+                  </div>
+                </div>
+                    <!-- <div class="col-xs-12 col-lg-6">
+                      <h5 class="active-vehicle">Active Vehicles :
+                        <span [ngClass]="{ 'loading-background': isLoading }" style="color:#000000!important">
+                          {{
+                          isDataNotFound
+                          ? "No Data"
+                          : (fleetSumamryTotalData?.totalActiveVehicles
+                          | number : "1.0-0")
+                          }}
+                        </span>
+                      </h5>
+                    </div>  -->
+
+                  </div>
+
+                </div>
+                <div class="cards-subsection">
+                  <!-- <div class="header-card brdr-red">
+                    <div class="header-card-text">
+                      <span [ngClass]="{ 'loading-background': isloading2 }" style="line-height: 25px; width: 40%">
+                        {{ fuelTripSummery.bestPerformingVehicle.lifetimeMileage | number:'1.2-2' }}
+                        <ng-container *ngIf="fuelTripSummery.bestPerformingVehicle.vehicleName">
+                          <span style="font-size: 12px; font-weight: 500; font-family: 'Poppins', sans-serif;">
+                            mpg
+                          </span>
+                        </ng-container>
+                      </span>
+                    </div>
+                    <div class="content-section-text">Best Performing Vehicle(<span>{{ fuelTripSummery.bestPerformingVehicle.vehicleName }}</span>)</div>
+                  </div> -->
+
+
+                  <div class="header-card brdr-fuel-consumed">
+                    <div class="header-card-text">
+                      <span [ngClass]="{ 'loading-background': isloading2 }" style="line-height: 25px; width: 40%">
+                        {{ (evTripSummery?.totalEnergyConsumed ?? 0) | number:'1.2-2' }}
+                        <ng-container *ngIf="evTripSummery?.totalEnergyConsumed">
+                          <span style="font-size: 12px; font-weight: 500; font-family: 'Poppins', sans-serif;">
+                            kW
+                          </span>
+                        </ng-container>
+                      </span>
+                    </div>
+                    <div class="content-section-text">Total Battery Consumed</div>
+                  </div>
+
+                  <div class="header-card brdr-yellow">
+                    <div class="header-card-text">
+                      <span [ngClass]="{ 'loading-background': isloading2 }" style="line-height: 25px; width: 40%">
+                        {{ (evTripSummery?.avgEfficiency ?? 0) | number:'1.2-2' }}
+                        <ng-container *ngIf="evTripSummery?.avgEfficiency">
+                          <span style="font-size: 12px; font-weight: 500; font-family: 'Poppins', sans-serif;">
+                            m/kWh
+                          </span>
+                        </ng-container>
+                      </span>
+                    </div>
+                    <div class="content-section-text">Average Energy Efficiency</div>
+                  </div>
+
+                  <div class="header-card brdr-blue">
+                    <div class="header-card-text">
+                      <span [ngClass]="{ 'loading-background': isloading2 }" style="line-height: 25px; width: 40%">
+                        {{ (evTripSummery?.totalEnergyRecharged ?? 0) | number:'1.2-2' }}
+                        <ng-container *ngIf="evTripSummery?.totalEnergyRecharged">
+                          <span style="font-size: 12px; font-weight: 500; font-family: 'Poppins', sans-serif;">
+                            kWh
+                          </span>
+                        </ng-container>
+                      </span>
+                    </div>
+                    <div class="content-section-text">Total Battery Recharged</div>
+                  </div>
+                  <div class="header-card brdr-green">
+                    <div class="header-card-text">
+                      <span [ngClass]="{ 'loading-background': isloading2 }" style="line-height: 25px; width: 40%">
+                        {{ (formatDurationSeconds(evTripSummery?.totalIdlingDuration) ?? 0)}}
+                        <ng-container *ngIf="(evTripSummery?.totalIdlingDuration ?? 0) > 0">
+                          <span style="font-size: 12px; font-weight: 500; font-family: 'Poppins', sans-serif;">
+
+                          </span>
+                        </ng-container>
+                      </span>
+                    </div>
+                    <div class="content-section-text">Total Idling Duration</div>
+                  </div>
+
+
+                </div>
+                <div class="cards-subsection pt-4">
+                  <div class="card-item card-sub-item">
+                    <div class="sub-text subtext-1">
+                      Best Performing Vehicle ({{ evTripSummery?.bestPerformingVehicle?.vehicleName ?? 'NA' }} )
+                    </div>
+                    <div class="main-s-heading blues" [ngClass]="{ 'loading-background': isLoading }">
+                      {{ (evTripSummery?.bestPerformingVehicle?.efficiency ?? 0) | number:'1.2-2' }} m/kWh
+                    </div>
+                  </div>
+
+                  <div class="card-item card-sub-item">
+                    <div class="sub-text">
+                      Worst Performing Vehicle ({{ evTripSummery?.worstPerformingVehicle?.vehicleName ?? 'NA' }} )
+                    </div>
+                    <div class="main-s-heading oranges" [ngClass]="{ 'loading-background': isLoading }">
+                      {{ (evTripSummery?.worstPerformingVehicle?.efficiency ?? 0) | number:'1.2-2' }} m/kWh
+                    </div>
+                  </div>
+
+                  <div class="card-item card-sub-item">
+                    <div class="sub-text">
+                      Most Driven Vehicle ({{ evTripSummery?.mostDrivenVehicle?.vehicleName ?? 'NA' }} )
+                    </div>
+                    <div class="main-s-heading lightblues" [ngClass]="{ 'loading-background': isLoading }">
+                      {{ (evTripSummery?.mostDrivenVehicle?.distance ?? 0) | number:'1.2-2' }} miles
+                    </div>
+                  </div>
+                </div>
+
+                </div>
+
+              </div>
+
+            </div>
+      <!-- Boxed for Total Data End-->
+      <!-- VIN, OEM and satus filter -->
+      <div class="row">
+        <div class="col-lg-9"></div>
+        <div class="col-lg-3 d-flex justify-content-end mt-4 mb-2">
+          <ng-select
+            [items]="vinList"
+            bindLabel="alias"
+            bindValue="vin"
+            placeholder="Select Vehicle VIN"
+            [(ngModel)]="selectedVin"
+            (ngModelChange)="filterByVin()"
+            class="input-vins font-common"
+            [ngStyle]="{ 'width': '100%', 'height': '45px' }"
+          >
+            <ng-template ng-label-tmp let-item="item">
+              {{ item.alias }}
+            </ng-template>
+            <ng-template ng-option-tmp let-item="item">
+              {{ item.alias }}
+            </ng-template>
+          </ng-select>
+        </div>
+      </div>
+
+      <!-- VIN, OEM and satus filter end -->
+      <!-- Main data table-->
+      <div class="row mr-table mr-6">
+        <div class="col-lg-12 col-xs-12">
+          <div class="table-wrapper">
+            <div class="table-responsive table-b">
+              <table class="table">
+                <thead class="table-head">
+                  <tr>
+                    <!-- <th class="table-column-width5">Fleet Id</th> -->
+                    <th class="table-column-width">Vehicle name</th>
+                    <th class="table-column-width">VIN</th>
+                    <!-- <th class=" table-column-width7">Data Source</th> -->
+
+                    <th class=" table-column-width7">Model</th>
+                    <th class="table-column-width7">Odometer (Mile)</th>
+                    <th class="table-column-width7">Current Battery Level(%)</th>
+
+                    <!-- <th class="table-column-width7">Charging Location</th> -->
+                    <th class="table-column-width7">Last Charged</th>
+                    <th  class="table-column-width7">Recharged(kWh)</th>
+
+                    <th class="table-column-width7">Mileage(m/kWh)</th>
+                    <th class="table-column-width7">Total CO2 Emissions Avoided(Ton)</th>
+                    <th class="table-column-width7">Idling Duration</th>
+
+
+
+
+                  </tr>
+                </thead>
+                <tbody>
+                  <ng-container *ngIf="tripSummaryData?.length > 0; else noDataTemplate"></ng-container>
+                  <ng-container  *ngFor="let trips of tripSummaryData; let i = index" >
+                  <tr class="bor-none">
+                    <!-- <td>{{  trips?.fleetId}}</td> -->
+                    <td><a href="javascript:void()"
+                      class="tripIdnewplus"
+                      (click)="toggleExpand(i);getReFuelSummeryDetails(trips?.vin); ">
+                      <i class="fas fa-plus tripIdnew"></i> </a>{{  (trips?.vehicleName)}}</td>
+                      <td>{{trips?.vin}}</td>
+
+                      <!-- <td>{{ trips.connectionTypes == 'CBX' ? 'Dongles': 'OEM Cloud'}}</td> -->
+
+                      <td >{{ trips.model}}</td>
+                       <td  >{{ trips?.odometer | number: '1.2-2'}}</td>
+                      <td >{{ trips?.currentBatteryLevel | number: '1.2-2' }}</td>
+
+                      <!-- <td >
+                        <a *ngIf="trips?.lastRechargeLocation; else noData"
+                           style="color: #000!important; text-decoration: underline; cursor: pointer;">
+                          <span class="address" [ngbTooltip]="trips?.lastRechargeLocation" style="padding-left: 16px;">
+                            {{ trips?.lastRechargeLocationZipcode }}
+                          </span>
+                        </a>
+                        <ng-template #noData>NA</ng-template>
+                      </td>  -->
+                      <td>{{ trips?.lastTimeOfRecharge}}</td>
+                      <td>{{ trips.totalAmountRecharged | number: '1.2-2'}}</td>
+                      <!-- <td  >{{ trips?.lastRefuelLocation}}</td> -->
+
+                      <td >
+                        {{ (trips?.vehicleEfficiency < 0) ? 'Vehicle not driven enough' : trips?.vehicleEfficiency }}
+                      </td>
+                      <td>NA</td>
+
+                      <td  >{{trips?.totalIdlingDuration ?
+                        (formatDurationSeconds(trips?.totalIdlingDuration)) : 'NA' }}</td>
+
+
+
+
+
+                      <!-- <td >{{ trips.maxOdometer |number }}</td> -->
+
+
+                      <!-- <td ><button class="btn btn-primary">View</button></td> -->
+                    </tr>
+                    <tr *ngIf="expandedRowIndex === i">
+                      <td colspan="12">
+                        <div class="expanded-content" style="background-color: #f8f9fa; padding: 10px; border-radius: 5px;">
+                          <h5 style="margin-bottom: 10px;">Detailed EV Charging Records</h5>
+                          <div class="table-responsive">
+                            <table class="table">
+                              <thead>
+                                <tr style="background-color: lightgray;">
+                                  <th>Time</th>
+                                  <th>Location</th>
+                                  <!-- <th>Odometer (Mile)</th>
+                                  <th>Current Battery Level(%)</th> -->
+                                  <th>Recharge</th>
+
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr *ngFor="let detail of tripDataNew">
+                                  <td>{{ detail.chargeTime }}</td>
+                                  <td>{{ detail.lastChargeLocation }}</td>
+                                  <!-- <td>{{ detail.odometerMiles | number: '1.2-2' }}</td>
+                                  <td>{{ detail.batteryLevel | number: '1.2-2' }}</td> -->
+                                  <td>{{ detail.powerConsumed | number: '1.2-2' }} kWh</td>
+
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+
+                  </ng-container>
+
+                    <!-- No Data Found Template -->
+                  <ng-template #noDataTemplate>
+                    <tr>
+                      <td colspan="12">
+                        <h5 class="heading-c" style="text-align: center;">No Data Found ...</h5>
+                      </td>
+                    </tr>
+                  </ng-template>
+
+
+
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Main data table end-->
+      <!-- Pagination -->
+      <div class="mt-2 text-end pagination-h">
+        <!-- Number Pagination-->
+        <span *ngIf="pages?.length <=9" class="f-le">
+          <div>
+            <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm pag-color" aria-label="Pagination">
+              <a (click)="selectPages(pageNumber - 1)" href="javascript:(Void)" [class.disabled]="pageNumber == 1"
+                class="page pointer relative inline-flex items-center rounded-l-md px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus:z-20">
+                <span class="sr-only">Previous</span>
+                <img src="../../../../../assets/images/left-img.svg">
+              </a>
+
+
+              <ng-container *ngFor="let page of pages">
+                <a [class.isActive]="page == pageNumber" href="javascript:(void)" [ngClass]="{'pointer' : page != '...'}"
+                  aria-current="page" (click)="selectPages(page)" class=" px-4 py-2 pageination-number">{{page}}
+                </a>
+              </ng-container>
+
+
+              <a (click)="selectPages(pageNumber + 1)" [class.disabled]="pageNumber == totalPages"
+                class=" page pointer relative inline-flex items-center rounded-r-md px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus:z-20">
+                <span class="sr-only">Next</span>
+                <img src="../../../../../assets/images/right.svg">
+              </a>
+            </nav>
+          </div>
+        </span>
+        <span *ngIf="pages?.length >9" class="f-le">
+          <div>
+            <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+              <a (click)="selectPages(pageNumber - 1)" [class.disabled]="pageNumber == 1"
+                class="page pointer relative inline-flex items-center rounded-l-md px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus:z-20">
+                <span class="sr-only">Previous</span>
+                <img src="../../../../../assets/images/left-img.svg">
+              </a>
+
+              <ng-container *ngFor="let page of pages">
+                <a [class.isActive]="page == pageNumber" *ngIf="( (page < pages.length && page  > 1))" aria-current="page"
+                  (click)="selectPages(page)"
+                  [ngStyle]="{'display': ((page > pageNumber+1 ||  page < pageNumber-1) && page < (pages.length)) ? 'none':''}"
+                  class=" px-4 py-2 pageination-number">{{page}}
+                </a>
+              </ng-container>
+
+              <ng-container *ngIf="pageNumber < (pages.length-2)">
+                <a aria-current="page" (click)="selectPages(pageNumber+1)"
+                  class="page relative z-10 inline-flex items-center  px-4 py-2 text-sm font-medium text-indigo-600 focus:z-20 active:bg-blue-700 focus:bg-blue-500 hover:bg-blue-700 hover:text-white ">{{"."}}
+                </a>
+              </ng-container>
+
+              <ng-container>
+                <a aria-current="page" [class.isActive]="(pageNumber == pages.length )" (click)="selectPages(pages.length)"
+                  class=" px-4 py-2 pageination-number">{{pages.length}}
+                </a>
+              </ng-container>
+
+              <ng-container *ngFor="let page of pages">
+                <a [class.isActive]="page == pageNumber" class="page-display" aria-current="page"
+                  (click)="selectPages(page)" class=" px-4 py-2 pageination-number">{{page}}
+                </a>
+              </ng-container>
+
+
+              <a (click)="selectPages(pageNumber + 1)" [class.disabled]="pageNumber == totalPages"
+                class=" page relative inline-flex items-center rounded-r-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus:z-20">
+                <span class="sr-only">Next</span>
+                <img src="../../../../../assets/images/right.svg">
+              </a>
+            </nav>
+          </div>
+        </span>
+        <!-- Number Pagination End-->
+         <!-- Page Size Pagination-->
+        <span class="f-ri">
+          <select class="form-select" (change)="selectPage($event.target.value)" [(ngModel)]="pageSize">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="40">40</option>
+            <option value="80">80</option>
+            <option value="100">100</option>
+          </select>
+        </span>
+        <span class="pageination">Per Page</span>
+         <!-- Page Size Pagination End-->
+      </div>
+      <!-- Pagination End -->
+    </div>
+    <!-- Right side menu end-->
+  </div>
+</div>
+<!--Main content-->
+<!--Failure reason when click on info-->
+<ng-template #remarks let-modal class="modal-width">
+  <div class="modal-header">
+    <h5 class="modal-title mt-0 font-weight-bold">Failed Reason</h5>
+    <button type="button" class="btn-close" (click)="modal.dismiss('Cross click')" aria-hidden="true"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12 failure-box">
+        {{selectedFailureReason}}
+      </div>
+    </div>
+  </div>
+</ng-template>
+<!--Failure reason when click on info end-->
+
+<div class="modal-overlay" *ngIf="isCardOpen">
+  <div class="modal-card">
+      <button (click)="closeCard()" class="close-button">X</button>
+      <div class=" row">
+          <div class="col-3 option-column" style="    margin-left: -20px;
+  margin-right: 12px;">
+              <div style="margin-top: 20px;">
+                  <div class="option" [class.selected]="selectedOption === 'yesterday'"
+                      (click)="handleOption('yesterday')">Yesterday</div>
+                  <div class="option" [class.selected]="selectedOption === 'weekly'" (click)="handleOption('weekly')">
+                      Current Week</div>
+                  <div class="option" [class.selected]="selectedOption === 'monthly'"
+                      (click)="handleOption('monthly')">Current Month</div>
+                  <div class="option" [class.selected]="selectedOption === 'lastmonth'"
+                      (click)="handleOption('lastmonth')">Previous Month</div>
+                  <div class="option" [class.selected]="selectedOption === 'customRange'" selected
+                      (click)="handleOption('customRange')">Custom Range</div>
+              </div>
+          </div>
+
+          <div class="col-9" style="margin-top:20px;">
+
+              <!-- Display calendar only if 'custom-range' is selected -->
+              <app-calendar (dateRangeSelected)="onDateRangeSelected($event);closeCard()"></app-calendar>
+          </div>
+      </div>
+  </div>
+</div>

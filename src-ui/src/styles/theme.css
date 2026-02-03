@@ -1,0 +1,11 @@
+@font-face {
+  font-family: "Neo Sans Pro";
+  src: url("/assets/fonts/NeoSansProMedium.otf") format("opentype");
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  background: var(--color-bg);
+}

@@ -1,0 +1,1884 @@
+.actives {
+  color:#fff;
+  font-family: 'Neo Sans Pro', 'Helvetica', 'Arial', 'Lucida', sans-serif!important;
+ }
+
+ .navbar-side-menu {
+  margin-left: -36px !important;
+  margin-top: -19px !important;
+}
+
+.content-right {
+  // padding-left: 19% !important;
+  width: 100% !important;
+}
+
+ .top-sidebar{
+  padding-left: 14px;
+  padding-top: 7px;
+  margin-top: 22px;
+  width: 170px;
+  margin-left: 22px;
+  height: 35px;
+  font-size: 14px!important;
+  font-weight: 700;
+  color: #000;
+  background-color: rgba(238, 143, 49, 0.15)!important;
+  border-radius: 8px;
+  letter-spacing: 0.2px;
+}
+
+
+.sidebar {
+  width: 220px;
+  background-color: #fff;
+  color: #3B464F;
+  // padding: 20px;
+  border-right: 2.5px solid #E4E7EB;
+  position: fixed;
+  font-weight: 600!important;
+  height: 100%;
+  overflow: auto; /* Enable scrolling for the sidebar */
+}
+
+.sidebar a {
+  display: block;
+  padding-top: 3.6px !important;
+  padding-left: 0px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  padding-bottom: 6px;
+  text-decoration: none !important;
+  color: #000000 !important;
+  transition: background-color 0.2s !important;
+  font-family: 'Poppins'!important;
+}
+
+.menu-image{
+  height: 18px!important;
+  margin-right: 6px!important;
+}
+
+
+.sidebar a:hover {
+  background-color: #FCEEE1!important;
+  border-radius: 5px;
+  color:#000
+}
+/* app.component.css */
+
+
+ .actives:after {
+  margin-top: 0px;
+  content: "";
+  color: #fff;
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: #ef8321;
+  transition: width 0.3s;
+  margin-left: 36%;
+}
+
+.user-icon{
+float: left;
+margin-top: -10px;
+margin-right: 10px;
+}
+
+.user-icon-font{
+font-size: 26px;
+  font-weight: 400;
+}
+
+.icon{
+height: 20px;
+margin-top: 10px;
+}
+
+.line{
+margin-left: -20px;
+margin-right: -20px;
+margin-top: -6px;
+}
+
+::ng-deep.apexcharts-xaxis-label {
+color: #000000 !important;
+font-size: 10px !important;
+font-family: 'Poppins' !important;
+font-weight: 400 !important;
+}
+
+.f-le{
+float: left;
+}
+
+.f-ri{
+  float: right;
+}
+
+.view-more{
+font-size: 12px;
+}
+
+.top-heading{
+  font-family: 'Neo Sans Pro', 'Helvetica', 'Arial', 'Lucida', sans-serif!important;
+  font-size: 24px!important;
+  font-weight: 600!important;
+  color:#000
+}
+
+
+.newFleet{
+  background-color: #FA751A!important;
+  border: 1px solid #FA751A;
+  font-family: 'Poppins';
+  color:#ffffff;
+  width: 100%;
+}
+
+::ng-deep .ng-select-container{
+  background-color: #fb8a3c!important;
+  border:1px solid #fb8a3c!important
+}
+.card-heading {
+  font-family: "Poppins" !important;
+  font-size: 12px!important;
+  font-weight: 500 !important;
+}
+
+.card-top-vehicle{
+  height: 145px;
+  border-radius: 12px;
+  border:1px solid #E7EAEE;
+}
+
+.me-lg-4 {
+  margin-right: 2.5rem !important;
+}
+
+.card-mid-trip{
+  height: 470px;
+  border-radius: 12px;
+  border:1px solid #E7EAEE;
+}
+
+.remove-legends{
+  height: 27px;
+  margin-top: -47px;
+  background-color: #fff;
+  margin-left: 0px;
+  z-index: 10;
+  margin-right: 0px;
+}
+
+
+.card-mid-trips{
+  height:450px;
+  border-radius: 12px;
+  border:1px solid #E7EAEE;
+}
+
+.heading-card{
+  font-size: 16px!important;
+  font-weight: 400!important;
+  font-family: 'Poppins'!important;
+  color: #6C757E;
+}
+
+
+.data-value{
+  font-size: 40px;
+  font-weight: 500;
+  color: #000;
+  font-family: 'Poppins';
+  padding-top: 52px;
+}
+
+.card-mid-trip-details{
+  height:188px;
+  border-radius: 12px;
+  border:1px solid #E7EAEE;
+}
+
+.card-mid2-health{
+  height: 60px;
+  border-radius: 12px;
+  border:1px solid #E7EAEE;
+}
+
+.card-mid3-health{
+  height: 420px;
+  border-radius: 12px;
+  border:1px solid #E7EAEE;
+}
+
+.card-vehicle1{
+  background-color: #2CA87F;
+  font-size: 16px;
+  font-weight: 600!important;
+  color: #fff;
+  text-align: center;
+  text-decoration: none;
+}
+.card-vehicle1:hover{
+  background-color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  color: #000;
+  text-align: center;
+  text-decoration: none!important;
+}
+.card-vehicle2{
+  background-color: #FA751A;
+  font-size: 16px;
+  font-weight: 600!important;
+  color: #fff;
+  text-align: center;
+  text-decoration: none;
+}
+.card-vehicle2:hover{
+  background-color: #fff;
+  font-size: 16px;
+  font-weight: 600!important;
+  color: #000;
+  text-align: center;
+  text-decoration: none;
+}
+.card-vehicle3{
+  background-color: #4680FF;
+  font-size: 16px;
+  font-weight: 600!important;
+  color: #fff;
+  text-align: center;
+  text-decoration: none;
+
+}
+.card-vehicle3:hover{
+  background-color: #fff;
+  font-size: 16px;
+  font-weight: 600!important;
+  color: #000;
+  text-align: center;
+  text-decoration: none;
+}
+
+.text{
+  text-decoration: none!important;
+}
+
+
+.months-text {
+  font-size: 10px !important;
+  color: #6C757E !important;
+}
+
+.icon-circle{
+  font-size: 22px;
+  color: #2CA87F;
+}
+
+.number-text{
+  font-size: 28px;
+  font-weight: 600;
+  color: #000;
+  font-family: 'Poppins'
+}
+
+.right-last-month{
+  float: right;
+  font-size: 12px;
+  color: #6C757E;
+  font-family: 'Poppins'
+}
+
+.arrow-up{
+  float: right;
+  margin-right: 12px;
+}
+
+.mr-top-30{
+  margin-top: 38px!important;
+}
+
+#legends {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-right: 20px;
+  margin-bottom: 20px;
+}
+
+.legend-color {
+  width: 10px;
+  height: 10px;
+  border-radius:50px;
+  margin-right: 5px;
+  display: inline-block;
+}
+
+.mr-top-24{
+ margin-top: 24px;
+}
+
+.grow-percent{
+  font-size: 16px;
+  font-weight: 600;
+  color: #2CA87F;
+  float: right;
+  font-family:'Poppins'
+}
+
+.less-percent{
+  font-size: 16px;
+  font-weight: 600;
+  color: #ff0000;
+  float: right;
+  font-family:'Poppins'
+}
+
+.chart-label {
+  font-size: 11px;
+  color: #000;
+  font-family: 'Poppins';
+}
+
+.chart-label-grye {
+  font-size: 11px;
+  color: #D9D9D9;
+  font-family: 'Poppins';
+}
+
+.chart-value{
+  font-size: 15px;
+  color: #000;
+  font-family: 'Poppins';
+  font-weight: 600;
+  padding-left: 14px;
+}
+
+.packges-box{
+  border-right: 1px solid #dbdcdd;
+  height: 250px;
+  margin-top: -16px;
+}
+
+.packges-box-1{
+  height: 250px;
+  margin-top: -16px;
+}
+
+.packge-box-headig{
+  float: left;
+  padding: 3px 12px;
+  font-weight: 600;
+  font-size: 20px;
+  font-family: 'Poppins', 'Medium';
+  color: #000;
+}
+
+.packages{
+  font-size: 18px;
+  line-height: 40px;
+  font-family: 'Poppins'!important;
+  font-weight: 400;
+  color: #6C757E;
+}
+
+.heading-row{
+ padding: 50px 0px 0px 50px;
+}
+
+.value-row{
+ padding:0px 0px 0px 96px;
+}
+
+.value-border{
+  border-left:2px solid #dbdcdd
+}
+
+.mr-12-left{
+  margin-left:-30px
+}
+
+::ng-deep .chart-label-x {
+  fill: #000000 !important;
+  font-size: 11px!important;
+  font-family: 'Poppins'!important;
+}
+
+::ng-deep .apex-charts text {
+  color: #000000;
+  text-shadow: none!important;
+  font-family: 'Poppins' !important;
+}
+.newSelect {
+  color: #9fa19f;
+  width: 100%;
+  height: 37px !important;
+  background-size: 10px 12px !important;
+  font-family: "Poppins" !important;
+  border-radius: 10px !important
+}
+
+.page-aling-l {
+  float: left !important;
+}
+
+
+.loading-text {
+  color: #000;
+  font-size: 12px;
+  font-family: 'Poppins';
+}
+
+.page-content-main {
+  padding-top: 0px !important;
+  margin-left: 12px !important;
+  margin-right: 12px !important;
+}
+
+.heading-title {
+  line-height: 33px !important;
+  text-align: left !important;
+  font-weight: 600 !important;
+}
+
+.heading-title-small {
+  font-size: 1.5rem !important;
+  font-weight: 400 !important;
+}
+
+.small-heading-fuel {
+  font-size: 14px !important;
+  font-weight: 400 !important;
+}
+
+.bd-w {
+  width: 40% !important;
+}
+
+.page-align-r {
+  float: right !important;
+}
+
+.per-icon {
+  height: 24px !important
+}
+
+.no-img-m {
+  margin-top: -16px !important
+}
+
+.miles-chart {
+  margin-left: -20px;
+  margin-right: -15px;
+}
+
+.h-box {
+  height: 300px !important;
+}
+
+.mr-t09 {
+  margin-top: 9px !important;
+}
+
+.mr-15 {
+  margin-top: 15px !important;
+}
+
+.mr-7 {
+  margin-top: -7px !important
+}
+
+.mr-6 {
+  margin-top: 6px;
+}
+
+.mr-co {
+  color: grey !important
+}
+
+.actives {
+  color: #fff;
+  font-family: 'Neo Sans Pro', 'Helvetica', 'Arial', 'Lucida', sans-serif !important;
+}
+
+.chart-container {
+  position: relative; // This ensures the inner circle can be positioned relative to the chart
+}
+.center-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 175px;
+  height: 175px;
+  background-color: #f6f6f6; /* Set color */
+  border-radius: 50%; // Make it round
+  transform: translate(-50%, -50%); // Center the circle
+  z-index: 10; // Ensure it's above the chart
+}
+.center-circle-1 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 140px;
+  height: 140px;
+  background-color: #ffffff; /* Set color */
+  border-radius: 50%; // Make it round
+  transform: translate(-50%, -50%); // Center the circle
+  z-index: 10; // Ensure it's above the chart
+}
+
+
+.top-sidebar{
+  padding-left: 14px;
+  padding-top: 7px;
+  margin-top: 22px;
+  width: 170px;
+  margin-left: 22px;
+  height: 35px;
+  font-size: 14px!important;
+  font-weight: 700;
+  color: #000;
+  background-color: rgba(238, 143, 49, 0.15)!important;
+  border-radius: 8px;
+  letter-spacing: 0.2px;
+}
+
+
+.sidebar {
+  width: 220px;
+  background-color: #fff;
+  color: #3B464F;
+  // padding: 20px;
+  border-right: 2.5px solid #E4E7EB;
+  position: fixed;
+  font-weight: 600!important;
+  height: 100%;
+  overflow: auto; /* Enable scrolling for the sidebar */
+}
+
+.sidebar a {
+  display: block;
+  padding-top: 3.6px !important;
+  padding-left: 0px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  padding-bottom: 6px;
+  text-decoration: none !important;
+  color: #000000 !important;
+  transition: background-color 0.2s !important;
+  font-family: 'Poppins'!important;
+}
+
+.menu-image{
+  height: 18px!important;
+  margin-right: 6px!important;
+}
+
+
+.sidebar a:hover {
+  background-color: #FCEEE1!important;
+  border-radius: 5px;
+  color:#000
+}
+/* app.component.css */
+
+
+.actives:after {
+  margin-top: 0px;
+  content: "";
+  color: #fff;
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: #ef8321;
+  transition: width 0.3s;
+  margin-left: 50%;
+}
+
+.user-icon {
+  float: left;
+  margin-top: -10px;
+  margin-right: 10px;
+}
+
+.user-icon-font {
+  font-size: 26px;
+  font-weight: 400;
+}
+
+.icon {
+  height: 20px;
+  margin-top: 10px;
+}
+
+.line {
+  margin-left: -20px;
+  margin-right: -20px;
+  margin-top: -6px;
+}
+
+::ng-deep.apexcharts-xaxis-label {
+  color: #000000 !important;
+  font-size: 10px !important;
+  font-family: 'Poppins' !important;
+  font-weight: 400 !important;
+}
+
+.f-le {
+  float: left;
+}
+
+.f-ri {
+  float: right;
+}
+
+.view-more {
+  font-size: 12px;
+}
+
+.top-heading {
+  font-family: "Poppins" !important;
+  font-size: 1.2rem !important;
+  font-weight: 600 !important;
+  color: #000
+}
+
+.consumer-select{
+  color: #9fa19f;
+  width: 100%;
+  height: 37px !important;
+  background-color: transparent;
+  background-size: 10px 12px !important;
+  font-family: "Poppins" !important;
+  height: 37px !important;
+  border-radius: 10px !important;
+  border: none !important;
+}
+
+.consumer-select option {
+  border: none !important;
+}
+
+.consumer-select option:hover {
+  border: none !important;
+}
+
+.form-select:hover{
+  border: none !important;
+}
+
+::ng-deep.ng-select.ng-select-single .ng-select-container {
+  height: 37px !important;
+  border-radius: 6px !important;
+}
+
+::ng-deep.ng-select.no-border-background .ng-select-container {
+  border: none !important;
+  background: none !important;
+}
+.newSelect {
+  color: #9fa19f;
+  width: 100%;
+  height: 37px !important;
+  background-size: 10px 12px !important;
+  font-family: "Poppins" !important;
+  height: 37px !important;
+  border-radius: 10px !important
+}
+
+.newSelect1 {
+  color: #9fa19f;
+  width: 100%;
+  height: 37px !important;
+  background-size: 10px 12px !important;
+  font-family: 'Poppins' !important;
+  height: 37px !important;
+  border-radius: 10px !important
+}
+
+
+.page-aling-l {
+  float: left !important;
+}
+
+.page-align-r {
+  float: right !important;
+}
+
+.page-mr-top {
+  margin-top: 5px !important
+}
+
+
+
+/* Add this CSS to your styles.css (or your component's styles) */
+
+
+
+
+.newFleet {
+  background-color: #FA751A !important;
+  border: 1px solid #FA751A;
+  font-family: 'Poppins';
+  color: #ffffff;
+  width: 100%;
+}
+
+
+.card-heading {
+  font-family: "Poppins" !important;
+  font-size: 12px!important;
+  font-weight: 500 !important;
+}
+
+.card-top-vehicle {
+  height: 145px;
+  border-radius: 12px;
+  border: 1px solid #E7EAEE;
+}
+
+.me-lg-4 {
+  margin-right: 2.5rem !important;
+}
+
+.card-mid-trip {
+  height: 470px;
+  border-radius: 12px;
+  border: 1px solid #E7EAEE;
+}
+
+.remove-legends {
+  height: 27px;
+  margin-top: -47px;
+  background-color: #fff;
+  margin-left: 0px;
+  z-index: 10;
+  margin-right: 0px;
+}
+
+.card-mid-trips {
+  height: 450px;
+  border-radius: 12px;
+  border: 1px solid #E7EAEE;
+}
+
+.heading-card {
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  font-family: 'Poppins' !important;
+  color: #6C757E;
+}
+
+
+.data-value {
+  font-size: 40px;
+  font-weight: 500;
+  color: #000;
+  font-family: 'Poppins';
+  padding-top: 52px;
+}
+
+.card-mid-trip-details {
+  height: 188px;
+  border-radius: 12px;
+  border: 1px solid #E7EAEE;
+}
+
+.card-mid2-health {
+  height: 60px;
+  border-radius: 12px;
+  border: 1px solid #E7EAEE;
+}
+
+.card-mid3-health {
+  height: 400px;
+  border-radius: 12px;
+  border: 1px solid #E7EAEE;
+}
+
+.card-vehicle1 {
+  background-color: #2CA87F;
+  font-size: 16px;
+  font-weight: 600 !important;
+  color: #fff;
+  text-align: center;
+  text-decoration: none;
+}
+
+.card-vehicle1:hover {
+  background-color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  color: #000;
+  text-align: center;
+  text-decoration: none !important;
+}
+
+.card-vehicle2 {
+  background-color: #FA751A;
+  font-size: 16px;
+  font-weight: 600 !important;
+  color: #fff;
+  text-align: center;
+  text-decoration: none;
+}
+
+.card-vehicle2:hover {
+  background-color: #fff;
+  font-size: 16px;
+  font-weight: 600 !important;
+  color: #000;
+  text-align: center;
+  text-decoration: none;
+}
+
+.card-vehicle3 {
+  background-color: #4680FF;
+  font-size: 16px;
+  font-weight: 600 !important;
+  color: #fff;
+  text-align: center;
+  text-decoration: none;
+
+}
+
+.card-vehicle3:hover {
+  background-color: #fff;
+  font-size: 16px;
+  font-weight: 600 !important;
+  color: #000;
+  text-align: center;
+  text-decoration: none;
+}
+
+.text {
+  text-decoration: none !important;
+}
+
+.months-text {
+  font-size: 10px !important;
+  color: #6C757E !important;
+}
+
+.icon-circle {
+  font-size: 22px;
+  color: #2CA87F;
+}
+
+.number-text {
+  font-size: 24px;
+  font-weight: 600;
+  color: #000;
+  font-family: 'Poppins'
+}
+
+.right-last-month {
+  float: right;
+  font-size: 12px;
+  color: #6C757E;
+  font-family: 'Poppins'
+}
+
+.arrow-up {
+  float: right;
+  margin-right: 12px;
+}
+
+.mr-top-30 {
+  margin-top: 38px !important;
+}
+
+#legends {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-right: 20px;
+  margin-bottom: 20px;
+}
+
+.legend-color {
+  width: 15px;
+  height: 4px;
+  border-radius: 50px;
+  margin-right: 5px;
+  display: inline-block;
+  margin-top: 7px;
+  width: 20px;
+
+}
+
+.ng-select ::ng-deep .ng-option.disabled {
+  cursor: default;
+}
+
+.mr-top-24 {
+  margin-top: 24px;
+}
+
+.grow-percent {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2CA87F;
+  float: right;
+  font-family: 'Poppins'
+}
+
+.less-percent {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ff0000;
+  float: right;
+  font-family: 'Poppins'
+}
+
+::ng-deep .chart-label-x {
+  fill: #7C7C7C !important;
+  font-size: 11px !important;
+  font-family: "Poppins" !important;
+}
+
+::ng-deep .chart-label-y {
+  fill: #161616 !important;
+  font-size: 11px !important;
+  font-family: "Poppins" !important;
+}
+
+::ng-deep .chart-label-x-big {
+  fill: #727272 !important;
+  font-size: 11px !important;
+  font-family: "Poppins" !important;
+  font-weight: 500 !important;
+}
+
+::ng-deep .chart-label-y-big {
+  fill: #4F535A !important;
+  font-size: 12px !important;
+  font-family: "Poppins" !important;
+  font-weight: 600 !important;
+}
+
+
+.chart-value {
+  font-size: 15px;
+  color: #000;
+  font-family: 'Poppins';
+  font-weight: 600;
+  padding-left: 14px;
+}
+
+.packges-box {
+  border-right: 1px solid #dbdcdd;
+  height: 250px;
+  margin-top: -16px;
+}
+
+.packges-box-1 {
+  height: 250px;
+  margin-top: -16px;
+}
+
+.packge-box-headig {
+  float: left;
+  padding: 3px 12px;
+  font-weight: 600;
+  font-size: 20px;
+  font-family: 'Poppins', 'Medium';
+  color: #000;
+}
+
+.packages {
+  font-size: 18px;
+  line-height: 40px;
+  font-family: 'Poppins' !important;
+  font-weight: 400;
+  color: #6C757E;
+}
+
+.heading-row {
+  padding: 50px 0px 0px 50px;
+}
+
+.value-row {
+  padding: 0px 0px 0px 96px;
+}
+
+.value-border {
+  border-left: 2px solid #dbdcdd
+}
+
+.mr-12-left {
+  margin-left: -30px
+}
+
+::ng-deep .apex-charts text {
+  color: #000000;
+  text-shadow: none !important;
+  font-family: 'Poppins' !important;
+}
+
+/* Custom CSS for the spinner and background overlay */
+.custom-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.no-img {
+  height: 275px;
+  margin-top: 0px!important;
+}
+
+.no-img-idling {
+  margin-top: 5px;
+  height: 256px;
+  margin-left: 20px;
+}
+
+.img-botrip {
+  height: 300px;
+  margin-top: 15px;
+}
+
+.ing-round {
+  margin-left: 0px;
+  height: 225px;
+}
+
+.img-aggresive {
+  margin-top: 37px;
+  height: 220px;
+}
+
+.left0-panel{
+  padding-left: 17%!important; width: 100%!important;
+ }
+
+ .bd-w {
+  width: 52% !important;
+}
+
+
+.fule-mileage {
+  height: 183px;
+  margin-top: 27px;
+}
+
+.ing-round-make {
+  margin-top: -283px;
+  margin-left: 0px;
+  height: 293px;
+}
+
+.apexcharts-bar-series rect {
+  stroke-width: 0 !important;
+}
+
+.top-sidebar{
+  padding-left: 14px;
+  padding-top: 7px;
+  margin-top: 22px;
+  width: 175px;
+  margin-left: 22px;
+  height: 35px;
+  font-size: 14px !important;
+  font-weight: 700;
+  color: #000;
+  background-color: rgba(238, 143, 49, 0.15) !important;
+  border-radius: 8px;
+  letter-spacing: 0.2px;
+}
+
+.loading-text {
+  color: #000;
+  font-size: 12px;
+  font-family: 'Poppins';
+}
+
+/* Dark background overlay */
+.ngx-spinner-backdrop {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.login-headline {
+  font-size: 1.5rem;
+  font-family: 'Poppins'!important;
+  color: #102C52;
+}
+
+.page-content-main {
+  padding-top: 0px !important;
+  margin-left: -12px !important;
+  margin-right: -12px !important;
+}
+
+.heading-title {
+  line-height: 33px !important;
+  text-align: left !important;
+  font-weight: 600 !important;
+}
+
+.heading-title-small {
+  font-size: 1.5rem !important;
+  font-weight: 400 !important;
+}
+
+.small-heading-fuel {
+  font-size: 14px !important;
+  font-weight: 400 !important;
+}
+
+.per-icon {
+  height: 24px !important
+}
+
+.no-img-m {
+  margin-top: 0px !important
+}
+
+.miles-chart {
+  margin-left: -20px;
+  margin-right: -15px;
+}
+
+.h-box {
+  height: 300px !important;
+}
+
+.mr-t09 {
+  margin-top: 9px !important;
+}
+
+.mr-15 {
+  margin-top: -22px !important;
+}
+
+.mr-7 {
+  margin-top: -7px !important
+}
+
+.mr-6 {
+  margin-top: 6px;
+}
+
+.mr-co {
+  color: grey !important
+}
+.menu-box {
+  position: absolute;
+  width: 43.2%;
+  margin-top: -336px;
+  height: 250px;
+  background-color: white;
+  border: 1px solid #ccc;
+  z-index: 1000;
+  display: flex;
+  border-radius: 10px;
+}
+
+.labelValue{
+  font-size: 12px !important;
+  font-family: "Poppins" !important;
+  color: #000000 !important;
+  height: 35px !important;
+  padding-left: 20px !important;
+  margin-left: -16px !important;
+}
+
+.chart_image_extract{
+  padding-top: 40px;
+  padding-bottom: 20px;
+}
+
+.labelValue:hover{
+  font-size: 14px!important;
+  font-family: 'Poppins'!important;
+  color: #fff!important;
+  background-color: #fa751a;
+  height: 35px!important;
+  padding-left:20px!important;
+  margin-left: -16px;
+  margin-right: -10px;
+}
+
+.left-panel {
+  border-right: 1px solid #ccc;
+}
+
+.left-panel {
+  width: 30%;
+  border-right: 1px solid #ddd;
+  padding: 10px;
+}
+
+.right-panel {
+  width: 100%;
+  padding: 10px;
+}
+
+.divider {
+  width: 1px;
+  height: 100%;
+  background-color: #ccc; /* Adjust color as needed */
+}
+
+.right-panel input {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 5px;
+}
+
+
+
+@media screen and (max-width: 768px) {
+  .content-right {
+    padding-left: 0% !important;
+    width: 100% !important;
+}
+}
+
+// NEW
+.main-heading {
+  font-family: "Neo Sans Pro", "Helvetica", "Arial", "Lucida", sans-serif !important;
+  font-size: 24px !important;
+  font-weight: 600 !important;
+  color: #000;
+}
+.main-text2 {
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  color: #000;
+  font-family: "Poppins" !important;
+}
+
+.no-border:focus {
+  outline: none!important;
+  box-shadow: none!important;
+}
+
+.main-content-container {
+  background-color: #f6f8fa;
+  padding: 40px;
+  font-family: Poppins;
+}
+
+.content-sub-text {
+  background: #fa751a;
+  padding: 1px 6px;
+  color: white;
+  font-weight: 500;
+  font-family: 'Poppins'!important;
+}
+.content-sub-text2 {
+  color: #fa751a;
+  font-weight: 600;
+  font-size: 20px;
+  font-family: 'Poppins'!important;
+}
+
+.sub-text {
+  color: #878b92;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'Poppins'!important;
+}
+
+.main-text {
+  color: black;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Poppins'!important;
+}
+
+.flex-space-between {
+  display: flex;
+  justify-content: space-between;
+}
+.grid-center {
+  align-items: center;
+  display: inline-grid;
+}
+
+.content-section {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #dee4ed;
+  /* padding: 3% 2%; */
+  box-shadow: 0 10px 10px -5px rgb(0 0 0 / 8%);
+}
+.inner-section {
+  padding: 2% 2% 0% 2%;
+}
+
+.lighter-text {
+  font-weight: 500 !important;
+}
+.consumer-dropdown {
+  width: 100px;
+}
+
+::ng-deep .dropdown-select .ng-select-container {
+  background: none !important;
+  border: none !important;
+  margin-left: -8%;
+  margin-top: -10%;
+}
+
+::ng-deep .dropdown-select .ng-select-container .ng-placeholder {
+  color: #6c757e !important;
+  font-size: 12px !important;
+}
+::ng-deep .dropdown-select-orange .ng-select-container {
+  border: none;
+  background: #fa751a !important;
+}
+::ng-deep .dropdown-select-orange .ng-select-container .ng-placeholder {
+  color: #ffffff !important;
+  font-size: 12px;
+}
+
+::ng-deep .dropdown-select-orange .ng-arrow-wrapper .ng-arrow {
+  border-color: #ffffff transparent transparent !important;
+  border-style: solid;
+  border-width: 5px 5px 2.5px;
+}
+
+::ng-deep
+  .dropdown-select-orange.ng-select-opened
+  > .ng-select-container
+  .ng-arrow {
+  top: -2px;
+  border-color: transparent transparent #f8f9fa !important;
+  border-width: 0 5px 5px;
+}
+
+::ng-deep .dropdown-select-orange .ng-clear-wrapper .ng-clear {
+  color: white !important;
+}
+
+::ng-deep .dropdown-select-orange .ng-select-container .ng-value-container .ng-input>input {
+  color: white;}
+.fleet-dropdown {
+  width: 150px;
+}
+.history-image {
+  padding-right: 5px;
+  height: 12px;
+  cursor: pointer;
+}
+
+.download-dropdown {
+  display: flex;
+}
+
+.loading-background {
+  background: linear-gradient(90deg, #f0f0f0 40%, #e0e0e0 60%, #f0f0f0 80%);
+  background-size: 200% 150%; /* The background is wider than the element itself */
+  animation: loading 1.5s infinite;
+  width: 100px; /* The width of the element */
+  height: 25px; /* The height of the element */
+  display: inline-block; /* Ensure the background animation affects the element */
+  overflow: hidden; /* Hide any overflow to keep the background within the element */
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0; /* Start the gradient off-screen to the right */
+  }
+  100% {
+    background-position: -200% 0; /* Move the gradient to the left, off-screen */
+  }
+}
+
+.content-section-heading {
+  padding-top: 6%;
+  padding-left: 6%;
+  color: #3d3d3d;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'Poppins';
+  .text_number {
+    font-size: 18px;
+    font-weight: 600;
+    font-family: 'Poppins';
+
+  }
+  .text_number2 {
+    font-size: 18px;
+    font-weight: 600;
+    font-family: 'Poppins';
+  }
+}
+
+.download_button {
+  width: 30px;
+  margin-top: -5px;
+}
+.download_padding {
+  padding-right: 15px;
+  display: inline-grid;
+  align-items: center;
+}
+
+::ng-deep .current-month-dropdown .ng-select-container .ng-placeholder {
+  color: black !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  font-family: 'Poppins';
+}
+
+.inactive-section {
+  padding: 8% 20%;
+}
+.pt-10 {
+  padding: 8% 0%;
+}
+.active-section {
+  width: 100px;
+  padding: 8% 20%;
+  background-color: #fa751a;
+  color: white;
+  border: none;
+  border-radius: 4px;
+}
+
+.border-bottom {
+  border-bottom: 1px solid #e7eaee;
+}
+
+.border-right {
+  border-right: 1px solid #e7eaee;
+}
+.flex-between {
+  display: flex;
+  width: 100%;
+}
+.chart_container {
+  width: -webkit-fill-available;
+}
+
+.chart-container-left {
+  padding: 0 10%;
+}
+
+.padding-left-2{
+  padding-left: 2.5%;
+}
+.padding-right-2{
+  padding-right: 10%;
+}
+
+
+
+.custom-donut-legend {
+  display: flex!important;;
+  flex-wrap: wrap!important;;
+  justify-content: center!important;;
+  margin-top: 20px!important;;
+}
+
+.custom-donut-legend-item {
+  display: flex!important;;
+  flex-direction: column!important;;
+  align-items: flex-start!important;;
+  margin-right: 20px!important;;
+  margin-bottom: 10px!important;;
+}
+
+.btn-oem-new {
+  width: 65px !important;
+  height: 32px !important;
+  border-radius: 4px !important;
+  background-color: white!important;
+  border: 1px solid white!important;
+  color: #424344 !important;
+  cursor: pointer;
+  font-family: 'Poppins' !important;
+}
+
+.btn-oem-disabled {
+  width: 65px !important;
+  height: 32px !important;
+  border-radius: 4px !important;
+  background-color: white;
+  border: 1px solid white;
+  color: #BDC2C8 !important;
+  cursor: not-allowed;
+  font-family: 'Poppins'!important;
+}
+
+.btn-oem-new.active {
+  width: 65px !important;
+  height: 32px !important;
+  border-radius: 4px !important;
+  background-color: #FA751A !important;
+  border: 1px solid #FA751A !important;
+  color: #ffffff !important;
+  font-family: 'Poppins'!important;
+  cursor: pointer;
+}
+
+.btn-oem-new:hover {
+  background-color: #FA751A !important;
+  border: 1px solid #FA751A !important;
+  color: #ffffff !important;
+  font-family: 'Poppins' !important;
+}
+
+.inactive-button {
+  width: 65px !important;
+  height: 32px !important;
+  border-radius: 4px !important;
+  background-color: white !important;
+  border: 1px solid white !important;
+  color: grey !important;
+  cursor: not-allowed;
+}
+
+
+
+.gap-mar{
+  margin-left: 0px!important;
+  margin-right: 0px!important;
+  margin-bottom: 40px!important;
+  margin-top: 40px!important;
+}
+
+.custom-donut-legend-text {
+  display: flex !important;
+  align-items: center !important;
+  font-size: 12px !important;
+  margin-bottom: 2px !important;
+  color: #000;
+  font-family: "Poppins" !important;
+}
+
+.custom-donut-legend-marker {
+  width: 8px!important;;
+  height: 8px!important;;
+  border-radius: 50%!important;;
+  margin-right: 8px!important;;
+}
+
+.custom-donut-legend-value {
+  font-size: 14px!important;;
+  font-weight: 600!important;;
+  margin-left: 18px!important;;
+  margin-top: -2px!important;;
+  font-family: 'Poppins'!important;;
+}
+
+:root {
+  --chart-height: 150px!important;; /* Default value */
+}
+
+.chart-container {
+  position: relative!important;;
+  width: 100%!important;;
+}
+
+.custom-donut-circle {
+  position: absolute!important;
+  top: 49%!important;
+  left: 50.2%!important;;
+  transform: translate(-50%, -50%)!important;
+  width: 133px!important;
+  height: 133px!important;
+  background: radial-gradient(circle, transparent 60%, #F6F6F6 31%)!important;
+  border-radius: 50%!important;
+  display: flex!important;
+  justify-content: center!important;
+  align-items: center!important;
+  text-align: center!important;
+  border: 0px solid #F6F6F6!important;
+}
+
+.center-text {
+  display: flex!important;;
+  flex-direction: column!important;
+  font-size: 16px!important;
+}
+
+.center-value {
+  font-size: 14px!important;;
+  font-weight: 600!important;;
+  color: #000!important;;
+}
+
+.center-label {
+  font-size: 12px!important;;
+  font-weight: 500!important;;
+  color: #000!important;;
+}
+
+
+.progress-bar-container {
+  height: 10px!important;;
+  width: 100%!important;;
+  background-color: #f3f3f3!important;;
+  border-radius: 5px!important;;
+  overflow: hidden!important;;
+  position: relative!important;;
+}
+
+.progress-bar {
+  height: 20px;
+  /* background-color: #2196F3; */
+  border-radius: 5px 0 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  color: white;
+  padding-right: 10px;
+  box-sizing: border-box;
+}
+
+
+.progress-label {
+  position: absolute;
+  right: 10px;
+  color: #999;
+}
+
+
+.main-container-bar{
+  margin-top: -10%;
+}
+
+.date-range-picker {
+  display: flex;
+  justify-content: space-around;
+}
+
+.calendar-container {
+  display: flex;
+}
+
+.calendar {
+  margin: 10px;
+  border: 1px solid #ddd;
+  background: #fff;
+  width: 250px;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.calendar-days, .calendar-dates {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.calendar-days div, .calendar-dates div {
+  width: 14%;
+  text-align: center;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.calendar-dates div.selected {
+  background-color: #007bff;
+  color: white;
+}
+
+.newDataCl{
+  border: 1px solid #DADADA;
+  background: #ffffff !important;
+  height: 30px;
+  width: 30px;
+  border-radius: 6px;
+}
+
+
+// .fleet-dropdowm {
+//   position: relative;
+// }
+
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 638px;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-card {
+  background: white;
+  padding: 0 20px;
+  margin-top: 80px;
+  border-radius: 8px;
+  position: relative;
+  width: 1000px; /* Adjust as needed */
+  height: auto;
+  text-align: center;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 2px;
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+
+.option-column {
+  padding-right: 0px;
+  border-right: 1px solid #DADADA;
+}
+
+.option {
+  color: black;
+  padding: 10px 10px 10px 25%;
+  text-align: left;
+  font-size: 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  border-radius: 0px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.option:hover,
+.option.selected {
+  background-color: #FA751A;
+  color: #FFFFFF;
+}
+
+::ng-deep .timePeriod.ng-select .ng-dropdown-panel .ng-option.ng-option-marked {
+  background-color: #fa751a !important;
+  color: #ffffff !important;
+  font-family: 'Poppins'!important;
+  font-size: 12px!important;
+}
+::ng-deep .timePeriod.ng-select .ng-dropdown-panel .ng-option {
+  background-color: #fff !important;
+  color: #000000 !important;
+  font-family: 'Poppins'!important;
+  font-size: 12px!important;
+}
+.consumer{
+  color: #9fa19f!important;
+  font-family: "Poppins" !important;
+  font-size: 1rem!important;
+  font-weight: 400!important;
+  line-height: 1.5!important;
+  margin-top: -6px!important;
+}
+
+.chart-container {
+  overflow: visible; /* Ensure the chart is not clipped */
+}
+
+::ng-deep.newSelect1 .ng-select-container{
+  background-color: #FA751A!important;
+}
+
+::ng-deep.newSelect1.ng-select .ng-select-container .ng-value-container .ng-placeholder {
+  color: #ffffff!important;
+}
+
+::ng-deep.newSelect1.ng-select.ng-select-opened>.ng-select-container .ng-arrow {
+  top: -2px;
+  border-color: transparent transparent #ffffff!important;
+  border-width: 0 5px 5px;
+}
+
+::ng-deep.newSelect1.ng-select.ng-select-single .ng-select-container .ng-value-container .ng-value {
+  color:#ffffff!important
+}
+
+::ng-deep.newSelect1.ng-select .ng-clear-wrapper {
+  color: #ffffff!important;
+}
+
+::ng-deep.newSelect1.ng-select .ng-arrow-wrapper .ng-arrow {
+  border-color: #fff transparent transparent!important;
+  border-style: solid;
+  border-width: 5px 5px 2.5px;
+}
+
+.content-sub-text {
+  background: #fa751a;
+  padding: 1px 6px;
+  font-size: 14px;
+  color: white;
+  font-weight: 500;
+  font-family: 'Poppins';
+}
+.content-sub-text2 {
+  color: #fa751a;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 5px;
+  font-family: 'Poppins';
+}
+//fedd
+
+.event-card {
+  border-radius: 12px;
+  transition: transform 0.2s ease-in-out;
+}
+.event-card:hover {
+  transform: translateY(-4px);
+}
+.event-icon {
+  font-size: 1.8rem;
+}
+.col-md-2_4 {
+  flex: 0 0 20% !important;
+  max-width: 20% !important;
+}
+
+.fleet-idle {
+  width: auto;
+  height: auto;
+  min-height: 362px;
+  border-radius: 12px;
+  border: 1px;
+  background-color: #f8faff;
+  border: 1px solid #dee4ed;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  .description {
+    font-size: 15px;
+    font-weight: 500px;
+    margin-top: 1rem;
+  }
+  .hours {
+    margin-top: 1rem;
+    font-size: 26px !important;
+    font-weight: 600;
+  }
+  .hour-text {
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .red {
+    color: #ff0000;
+  }
+}

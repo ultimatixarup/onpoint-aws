@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Vehicle Events</name>
+
+    <!-- Overspeeding Events -->
+    <Placemark>
+      <name>Overspeeding: Highway 101</name>
+      <description>Speed: 120 km/h, Limit: 80 km/h</description>
+      <Style>
+        <IconStyle>
+          <color>ff0000ff</color>
+          <scale>1.2</scale>
+          <Icon>
+            <href>http://maps.google.com/mapfiles/kml/paddle/red-circle.png</href>
+          </Icon>
+        </IconStyle>
+      </Style>
+      <Point>
+        <coordinates>-122.4194,37.7749,0</coordinates>
+      </Point>
+    </Placemark>
+
+    <!-- Harsh Braking Events -->
+    <Placemark>
+      <name>Harsh Braking: Downtown Junction</name>
+      <description>Deceleration: -9.8 m/s²</description>
+      <Style>
+        <IconStyle>
+          <color>ff00a5ff</color>
+          <scale>1.2</scale>
+          <Icon>
+            <href>http://maps.google.com/mapfiles/kml/paddle/ylw-circle.png</href>
+          </Icon>
+        </IconStyle>
+      </Style>
+      <Point>
+        <coordinates>-122.4244,37.7699,0</coordinates>
+      </Point>
+    </Placemark>
+
+    <!-- Harsh Cornering Events -->
+    <Placemark>
+      <name>Harsh Cornering: Curve Highway</name>
+      <description>Lateral Force: 0.9</description>
+      <Style>
+        <IconStyle>
+          <color>ffff00ff</color>
+          <scale>1.2</scale>
+          <Icon>
+            <href>http://maps.google.com/mapfiles/kml/paddle/blu-circle.png</href>
+          </Icon>
+        </IconStyle>
+      </Style>
+      <Point>
+        <coordinates>-122.4294,37.7899,0</coordinates>
+      </Point>
+    </Placemark>
+
+    <!-- Refueling Events -->
+    <Placemark>
+      <name>Refueling: City Gas Station</name>
+      <description>Amount: 45L, Cost: 2250 INR</description>
+      <Style>
+        <IconStyle>
+          <color>ff00ff00</color>
+          <scale>1.2</scale>
+          <Icon>
+            <href>http://maps.google.com/mapfiles/kml/paddle/grn-circle.png</href>
+          </Icon>
+        </IconStyle>
+      </Style>
+      <Point>
+        <coordinates>-122.4199,37.7849,0</coordinates>
+      </Point>
+    </Placemark>
+
+    <!-- Vehicle Route -->
+    <Placemark>
+      <name>Vehicle Route</name>
+      <Style>
+        <LineStyle>
+          <color>ff0000ff</color>
+          <width>3</width>
+        </LineStyle>
+      </Style>
+      <LineString>
+        <coordinates>
+          -122.4300,37.7700,0
+          -122.4250,37.7720,0
+          -122.4200,37.7740,0
+          -122.4194,37.7749,0
+          -122.4150,37.7760,0
+          -122.4100,37.7780,0
+        </coordinates>
+      </LineString>
+    </Placemark>
+
+    <!-- Overspeeding Route Segment -->
+    <Placemark>
+      <name>Overspeeding Route</name>
+      <Style>
+        <LineStyle>
+          <color>ff0000ff</color>
+          <width>4</width>
+        </LineStyle>
+      </Style>
+      <LineString>
+        <coordinates>
+          -122.4200,37.7740,0
+          -122.4194,37.7749,0
+          -122.4150,37.7760,0
+        </coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>

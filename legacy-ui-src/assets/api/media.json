@@ -1,0 +1,1545 @@
+{
+  "openapi": "3.0.0",
+
+
+  "tags": [
+    {
+      "name": "",
+      "x-displayName": "",
+      "description": ""
+    }
+  ],
+  "x-tagGroups": [
+    {
+      "name": "Data Consumer",
+      "tags": [
+        "queries",
+        "data-reports",
+        "responses",
+        "Media",
+        "oem",
+        "fleet"
+      ]
+    }
+  ],
+  "paths": {
+    "/consumer/media/stats": {
+      "post": {
+        "summary": "Audience Measurement Statistics",
+        "x-code-samples": [{
+          "lang": "Java",
+          "source": "OkHttpClient client = new OkHttpClient().newBuilder()\r\n  .build();\r\nMediaType mediaType = MediaType.parse(\"application\/json\");\r\nRequestBody body = RequestBody.create(mediaType, \"{\n    \"location\": {\n        \"country\": \"<string>\",\n        \"state\": \"<string>\",\n        \"zipcode\": \"<string>\",\n        \"type\": \"<string>\"\n    },\n    \"dateRange\": {\n        \"startDate\": \"<date>\",\n        \"endDate\": \"<date>\"\n    },\n    \"dayPart\": \"<string>\",\n    \"sortBy\": \"<string>\",\n    \"filter\": {\n        \"vehicleProfile\": {\n            \"brand\": \"<string>\"\n        },\n        \"driverProfile\": {\n            \"ageGroup\": \"<string>\",\n            \"gender\": \"<string>\",\n            \"raceInfo\": \"<string>\"\n        }\n    },\n    \"category\": \"<string>\",\n    \"nTopResults\": 10,\n    \"language\": \"<string>\"\n}\");\r\nRequest request = new Request.Builder()\r\n  .url(\"https:\/\/api.cerebrumx.ai\/v1\/consumer\/media\/stats\")\r\n  .method(\"POST\", body)\r\n  .addHeader(\"Content-Type\", \"application\/json\")\r\n  .build();\r\nResponse response = client.newCall(request).execute();"
+       },
+       {
+          "lang": "Python",
+          "source": "import requests\r\n\r\nurl = \"https:\/\/api.cerebrumx.ai\/v1\/consumer\/media\/stats\"\r\n\r\npayload=\"{\n    \"location\": {\n        \"country\": \"<string>\",\n        \"state\": \"<string>\",\n        \"zipcode\": \"<string>\",\n        \"type\": \"<string>\"\n    },\n    \"dateRange\": {\n        \"startDate\": \"<date>\",\n        \"endDate\": \"<date>\"\n    },\n    \"dayPart\": \"<string>\",\n    \"sortBy\": \"<string>\",\n    \"filter\": {\n        \"vehicleProfile\": {\n            \"brand\": \"<string>\"\n        },\n        \"driverProfile\": {\n            \"ageGroup\": \"<string>\",\n            \"gender\": \"<string>\",\n            \"raceInfo\": \"<string>\"\n        }\n    },\n    \"category\": \"<string>\",\n    \"nTopResults\": 10,\n    \"language\": \"<string>\"\n}\"\r\nheaders = {\r\n  'Content-Type': 'application\/json'\r\n}\r\n\r\nresponse = requests.request(\"POST\", url, headers=headers, data=payload)\r\n\r\nprint(response.text)\r\n"
+       }],
+        "tags": [
+          ""
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MediaAudeinceMeasurementStats"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "operationId": "get-consumer-media-stats",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "location": {
+                    "$ref": "#/components/schemas/LocationCountry"
+                  },
+                  "dateRange": {
+                    "$ref": "#/components/schemas/MediaDateRange"
+                  },
+                  "dayPart": {
+                    "$ref": "#/components/schemas/MediaDayPart"
+                  },
+                  "filter": {
+                    "type": "object",
+                    "properties": {
+                      "vehicleProfile": {
+                        "$ref": "#/components/schemas/MediaVehiceProfile"
+                      },
+                      "driverProfile": {
+                        "$ref": "#/components/schemas/MediaDriverProfile"
+                      }
+                    }
+                  },
+                  "sortBy": {
+                    "type": "string",
+                    "description": "Attribute for which top results required e.g. cume or AQH"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "SPORTS",
+                      "NEWS",
+                      "WEATHER",
+                      "SONGS"
+                    ]
+                  },
+                  "nTopResults": {
+                    "type": "number",
+                    "description": "number of top results required. default value is 10. For example, if sortBy=AQH and nTopResults=10, then query will return 'Top 10 stations by AQH'",
+                    "default": 10
+                  },
+                  "language": {
+                    "type": "string",
+                    "description": "Major broadcast language of station"
+                  }
+                },
+                "required": [
+                  "location",
+                  "dateRange",
+                  "dayPart",
+                  "sortBy"
+                ]
+              }
+            }
+          }
+        },
+        "description": "Audience Measurement Report for all stations"
+      }
+    },
+    "/consumer/media/stats/{stationId}": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "stationId",
+          "in": "path",
+          "required": true
+        }
+      ],
+      "post": {
+        "summary": "Specific Audience Measurement",
+        "x-code-samples": [{
+          "lang": "Java",
+          "source": "OkHttpClient client = new OkHttpClient().newBuilder()\r\n  .build();\r\nMediaType mediaType = MediaType.parse(\"application\/json\");\r\nRequestBody body = RequestBody.create(mediaType, \"{\n    \"location\": {\n        \"country\": \"<string>\",\n        \"state\": \"<string>\",\n        \"zipcode\": \"<string>\",\n        \"type\": \"<string>\"\n    },\n    \"dateRange\": {\n        \"startDate\": \"<date>\",\n        \"endDate\": \"<date>\"\n    },\n    \"dayPart\": \"<string>\",\n    \"filter\": {\n        \"vehicleProfile\": {\n            \"brand\": \"<string>\"\n        },\n        \"driverProfile\": {\n            \"ageGroup\": \"<string>\",\n            \"gender\": \"<string>\",\n            \"raceInfo\": \"<string>\"\n        }\n    }\n}\");\r\nRequest request = new Request.Builder()\r\n  .url(\"https:\/\/api.cerebrumx.ai\/v1\/consumer\/media\/stats\/<string>\")\r\n  .method(\"POST\", body)\r\n  .addHeader(\"Content-Type\", \"application\/json\")\r\n  .build();\r\nResponse response = client.newCall(request).execute();"
+       },
+       {
+          "lang": "Python",
+          "source": "import requests\r\n\r\nurl = \"https:\/\/api.cerebrumx.ai\/v1\/consumer\/media\/stats\/<string>\"\r\n\r\npayload=\"{\n    \"location\": {\n        \"country\": \"<string>\",\n        \"state\": \"<string>\",\n        \"zipcode\": \"<string>\",\n        \"type\": \"<string>\"\n    },\n    \"dateRange\": {\n        \"startDate\": \"<date>\",\n        \"endDate\": \"<date>\"\n    },\n    \"dayPart\": \"<string>\",\n    \"filter\": {\n        \"vehicleProfile\": {\n            \"brand\": \"<string>\"\n        },\n        \"driverProfile\": {\n            \"ageGroup\": \"<string>\",\n            \"gender\": \"<string>\",\n            \"raceInfo\": \"<string>\"\n        }\n    }\n}\"\r\nheaders = {\r\n  'Content-Type': 'application\/json'\r\n}\r\n\r\nresponse = requests.request(\"POST\", url, headers=headers, data=payload)\r\n\r\nprint(response.text)\r\n"
+       }],
+        "tags": [
+          ""
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaAudeinceMeasurementStats"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "operationId": "get-consumer-media-stats-stationId",
+        "description": "Audience Measurement Report for a particular radio station",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "location": {
+                    "$ref": "#/components/schemas/LocationCountry"
+                  },
+                  "dateRange": {
+                    "$ref": "#/components/schemas/MediaDateRange"
+                  },
+                  "dayPart": {
+                    "$ref": "#/components/schemas/MediaDayPart"
+                  },
+                  "filter": {
+                    "type": "object",
+                    "properties": {
+                      "vehicleProfile": {
+                        "$ref": "#/components/schemas/MediaVehiceProfile"
+                      },
+                      "driverProfile": {
+                        "$ref": "#/components/schemas/MediaDriverProfile"
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "location",
+                  "dateRange",
+                  "dayPart"
+                ]
+              }
+            }
+          },
+          "description": ""
+        }
+      }
+    },
+    "/consumer/media/stations": {
+      "post": {
+        "summary": "All Radio Station Details",
+        "x-code-samples": [{
+          "lang": "Java",
+          "source": "OkHttpClient client = new OkHttpClient().newBuilder()\r\n  .build();\r\nMediaType mediaType = MediaType.parse(\"application\/json\");\r\nRequestBody body = RequestBody.create(mediaType, \"{\n    \"filter\": {\n        \"location\": {\n            \"country\": \"<string>\",\n            \"state\": \"<string>\",\n            \"zipcode\": \"<string>\",\n            \"type\": \"<string>\"\n        },\n        \"category\": \"<string>\",\n        \"language\": \"<string>\",\n        \"wavebandType\": \"<string>\"\n    }\n}\");\r\nRequest request = new Request.Builder()\r\n  .url(\"https:\/\/api.cerebrumx.ai\/v1\/consumer\/media\/stations\")\r\n  .method(\"POST\", body)\r\n  .addHeader(\"Content-Type\", \"application\/json\")\r\n  .build();\r\nResponse response = client.newCall(request).execute();"
+       },
+       {
+          "lang": "Python",
+          "source": "import requests\r\n\r\nurl = \"https:\/\/api.cerebrumx.ai\/v1\/consumer\/media\/stations\"\r\n\r\npayload=\"{\n    \"filter\": {\n        \"location\": {\n            \"country\": \"<string>\",\n            \"state\": \"<string>\",\n            \"zipcode\": \"<string>\",\n            \"type\": \"<string>\"\n        },\n        \"category\": \"<string>\",\n        \"language\": \"<string>\",\n        \"wavebandType\": \"<string>\"\n    }\n}\"\r\nheaders = {\r\n  'Content-Type': 'application\/json'\r\n}\r\n\r\nresponse = requests.request(\"POST\", url, headers=headers, data=payload)\r\n\r\nprint(response.text)\r\n"
+       }],
+        "tags": [
+          ""
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MediaRadioStation"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get-consumer-media-stations",
+        "description": "Get All Stations Detail",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "filter": {
+                    "type": "object",
+                    "properties": {
+                      "location": {
+                        "$ref": "#/components/schemas/LocationCountry"
+                      },
+                      "category": {
+                        "type": "string",
+                        "enum": [
+                          "SPORTS",
+                          "NEWS",
+                          "WEATHER",
+                          "SONGS"
+                        ]
+                      },
+                      "language": {
+                        "type": "string"
+                      },
+                      "wavebandType": {
+                        "type": "string",
+                        "enum": [
+                          "AM",
+                          "FM",
+                          "XM"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/consumer/media/stats/audience-behaviour": {
+      "post": {
+        "summary": "Audience behaviour",
+        "x-code-samples": [{
+          "lang": "Java",
+          "source": "OkHttpClient client = new OkHttpClient().newBuilder()\r\n  .build();\r\nMediaType mediaType = MediaType.parse(\"application\/json\");\r\nRequestBody body = RequestBody.create(mediaType, \"{\n    \"location\": {\n        \"country\": \"<string>\",\n        \"state\": \"<string>\",\n        \"zipcode\": \"<string>\",\n        \"type\": \"<string>\"\n    },\n    \"dateRange\": {\n        \"startDate\": \"<date>\",\n        \"endDate\": \"<date>\"\n    },\n    \"behaviourType\": \"<string>\",\n    \"sortBy\": \"<string>\",\n    \"filter\": {\n        \"driverProfile\": {\n            \"ageGroup\": \"<string>\",\n            \"gender\": \"<string>\",\n            \"raceInfo\": \"<string>\"\n        },\n        \"vehicleProfile\": {\n            \"brand\": \"<string>\"\n        }\n    },\n    \"category\": \"<string>\",\n    \"nTopResults\": \"10\",\n    \"language\": \"<string>\"\n}\");\r\nRequest request = new Request.Builder()\r\n  .url(\"https:\/\/api.cerebrumx.ai\/v1\/consumer\/media\/stats\/audience-behaviour\")\r\n  .method(\"POST\", body)\r\n  .addHeader(\"Content-Type\", \"application\/json\")\r\n  .build();\r\nResponse response = client.newCall(request).execute();"
+       },
+       {
+          "lang": "Python",
+          "source": "import requests\r\n\r\nurl = \"https:\/\/api.cerebrumx.ai\/v1\/consumer\/media\/stats\/audience-behaviour\"\r\n\r\npayload=\"{\n    \"location\": {\n        \"country\": \"<string>\",\n        \"state\": \"<string>\",\n        \"zipcode\": \"<string>\",\n        \"type\": \"<string>\"\n    },\n    \"dateRange\": {\n        \"startDate\": \"<date>\",\n        \"endDate\": \"<date>\"\n    },\n    \"behaviourType\": \"<string>\",\n    \"sortBy\": \"<string>\",\n    \"filter\": {\n        \"driverProfile\": {\n            \"ageGroup\": \"<string>\",\n            \"gender\": \"<string>\",\n            \"raceInfo\": \"<string>\"\n        },\n        \"vehicleProfile\": {\n            \"brand\": \"<string>\"\n        }\n    },\n    \"category\": \"<string>\",\n    \"nTopResults\": \"10\",\n    \"language\": \"<string>\"\n}\"\r\nheaders = {\r\n  'Content-Type': 'application\/json'\r\n}\r\n\r\nresponse = requests.request(\"POST\", url, headers=headers, data=payload)\r\n\r\nprint(response.text)\r\n"
+       }],
+        "tags": [
+          ""
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MediaAudeinceMeasurementStats"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "operationId": "get-consumer-media-audience-behaviour",
+        "description": "Report on Radio Audience behaviour",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "location": {
+                    "$ref": "#/components/schemas/LocationCountry"
+                  },
+                  "dateRange": {
+                    "$ref": "#/components/schemas/MediaDateRange"
+                  },
+                  "behaviourType": {
+                    "type": "string",
+                    "enum": [
+                      "LONG DRIVE",
+                      "SNOWFALL",
+                      "RAINING",
+                      "OFFICE GOING",
+                      "OFFICE RETURNING",
+                      "FRIDAY NIGHTS",
+                      "MONDAY MORNINGS"
+                    ]
+                  },
+                  "filter": {
+                    "type": "object",
+                    "properties": {
+                      "driverProfile": {
+                        "$ref": "#/components/schemas/MediaDriverProfile"
+                      },
+                      "vehicleProfile": {
+                        "$ref": "#/components/schemas/MediaVehiceProfile"
+                      }
+                    }
+                  },
+                  "sortBy": {
+                    "type": "string",
+                    "description": "Attribute for which top results required \ne.g. cume or AQH"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "SPORTS",
+                      "NEWS",
+                      "WEATHER",
+                      "SONGS"
+                    ]
+                  },
+                  "nTopResults": {
+                    "type": "number",
+                    "default": "10",
+                    "description": "'number of top results required. default value is 10. \nFor example, if sortBy=AQH and nTopResults=10, \nthen query will return ''Top 10 stations by AQH'''"
+                  },
+                  "language": {
+                    "type": "string",
+                    "description": "Major broadcast language of station"
+                  }
+                },
+                "required": [
+                  "location",
+                  "dateRange",
+                  "behaviourType",
+                  "sortBy"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/consumer/media/data": {
+      "post": {
+        "summary": "Media Data",
+        "x-code-samples": [{
+          "lang": "Java",
+          "source": "OkHttpClient client = new OkHttpClient().newBuilder()\r\n  .build();\r\nMediaType mediaType = MediaType.parse(\"application\/json\");\r\nRequestBody body = RequestBody.create(mediaType, \"{\n    \"dateRange\": {\n        \"date\": \"<string>\",\n        \"type\": \"<string>\"\n    },\n    \"location\": {\n        \"country\": \"<string>\",\n        \"state\": \"<string>\",\n        \"zipcode\": \"<string>\",\n        \"type\": \"<string>\"\n    },\n    \"driverProfile\": {\n        \"ageGroup\": {\n            \"start_age\": \"<number>\",\n            \"end_age\": \"<number>\"\n        },\n        \"Gender\": \"<string>\"\n    },\n    \"mediaProfile\": {\n        \"radioStation\": \"<string>\",\n        \"artistName\": \"<string>\"\n    },\n    \"vehicleProfile\": {\n        \"brand\": \"<string>\"\n    }\n}\");\r\nRequest request = new Request.Builder()\r\n  .url(\"https:\/\/api.cerebrumx.ai\/v1\/consumer\/media\/data\")\r\n  .method(\"POST\", body)\r\n  .addHeader(\"Content-Type\", \"application\/json\")\r\n  .build();\r\nResponse response = client.newCall(request).execute();"
+       },
+       {
+          "lang": "Python",
+          "source": "import requests\r\n\r\nurl = \"https:\/\/api.cerebrumx.ai\/v1\/consumer\/media\/data\"\r\n\r\npayload=\"{\n    \"dateRange\": {\n        \"date\": \"<string>\",\n        \"type\": \"<string>\"\n    },\n    \"location\": {\n        \"country\": \"<string>\",\n        \"state\": \"<string>\",\n        \"zipcode\": \"<string>\",\n        \"type\": \"<string>\"\n    },\n    \"driverProfile\": {\n        \"ageGroup\": {\n            \"start_age\": \"<number>\",\n            \"end_age\": \"<number>\"\n        },\n        \"Gender\": \"<string>\"\n    },\n    \"mediaProfile\": {\n        \"radioStation\": \"<string>\",\n        \"artistName\": \"<string>\"\n    },\n    \"vehicleProfile\": {\n        \"brand\": \"<string>\"\n    }\n}\"\r\nheaders = {\r\n  'Content-Type': 'application\/json'\r\n}\r\n\r\nresponse = requests.request(\"POST\", url, headers=headers, data=payload)\r\n\r\nprint(response.text)\r\n"
+       }],
+        "tags": [
+          ""
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique Id given to each\nrequests."
+                    },
+                    "responseStatus": {
+                      "type": "string",
+                      "description": "Status of Report Generation: \nOngoing, Generated, Failed, Data Not Found."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "operationId": "get-consumer-media-data",
+        "description": "All Media Related Data",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dateRange": {
+                    "$ref": "#/components/schemas/DateTime"
+                  },
+                  "location": {
+                    "$ref": "#/components/schemas/Location"
+                  },
+                  "driverProfile": {
+                    "$ref": "#/components/schemas/DriverProfile"
+                  },
+                  "mediaProfile": {
+                    "$ref": "#/components/schemas/MediaProfile"
+                  },
+                  "vehicleProfile": {
+                    "$ref": "#/components/schemas/MediaVehiceProfile"
+                  }
+                },
+                "required": [
+                  "dateRange",
+                  "location"
+                ]
+              }
+            }
+          },
+          "description": ""
+        }
+      }
+    },
+    "/consumer/retail/number-of-vehicles-by-location": {
+      "post": {
+        "x-code-samples": [
+          {
+            "lang": "java",
+            "source": "OkHttpClient client = new OkHttpClient();\r\n\r\nMediaType mediaType = MediaType.parse(\"application/json\");\r\nRequestBody body = RequestBody.create(mediaType, \"{\\\"location\\\":{\\\"coordinates\\\":[{\\\"latitude\\\":\\\"string\\\",\\\"longitude\\\":\\\"string\\\"}],\\\"type\\\":\\\"polygon\\\"},\\\"dateTime\\\":{\\\"start_time\\\":\\\"string\\\",\\\"end_time\\\":\\\"string\\\"}}\");\r\nRequest request = new Request.Builder()\r\n  .url(\"https://api.cerebrumx.ai/v1/consumer/retail/number-of-vehicles-by-location\")\r\n  .post(body)\r\n  .build();\r\n\r\nResponse response = client.newCall(request).execute();"
+          },
+          {
+            "lang": "python",
+            "source": "import http.client\r\n\r\nconn = http.client.HTTPSConnection(\"api.cerebrumx.ai\")\r\n\r\npayload = \"{\\\"location\\\":{\\\"coordinates\\\":[{\\\"latitude\\\":\\\"string\\\",\\\"longitude\\\":\\\"string\\\"}],\\\"type\\\":\\\"polygon\\\"},\\\"dateTime\\\":{\\\"start_time\\\":\\\"string\\\",\\\"end_time\\\":\\\"string\\\"}}\"\r\n\r\nconn.request(\"POST\", \"/v1/consumer/retail/number-of-vehicles-by-location\", payload)\r\n\r\nres = conn.getresponse()\r\ndata = res.read()\r\n\r\nprint(data.decode(\"utf-8\"))"
+          }
+        ],
+        "summary": "Get Number of vehicle by location and time",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "numberOfVehicles": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "examples": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "operationId": "post-consumer-retail-number-of-vehicles-by-location",
+        "tags": [
+          ""
+        ],
+        "x-internal": false,
+        "description": "Get Number of vehicle by location and time",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "location": {
+                    "$ref": "#/components/schemas/Location"
+                  },
+                  "dateTime": {
+                    "$ref": "#/components/schemas/TimePeriod"
+                  }
+                }
+              },
+              "examples": {}
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        }
+      },
+      "parameters": []
+    },
+    "/consumer/retail/get-vehicle-travel-history-by-location/{vin}": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "vin",
+          "in": "path",
+          "required": true,
+          "description": "Vehicle's VIN"
+        }
+      ],
+      "get": {
+        "summary": "Get vehicle travel history by location",
+        "operationId": "get-consumer-retail-get-vehicle-travel-history-by-location",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "description": "Get vehicle travel history by location-VIN",
+        "parameters": [],
+        "x-code-samples": [
+          {
+            "lang": "java",
+            "source": "OkHttpClient client = new OkHttpClient();\r\n\r\nRequest request = new Request.Builder()\r\n  .url(\"https://api.cerebrumx.ai/v1/consumer/retail/get-vehicle-travel-history-by-location/vin\")\r\n  .get()\r\n  .build();\r\n\r\nResponse response = client.newCall(request).execute();"
+          },
+          {
+            "lang": "python",
+            "source": "import http.client\r\n\r\nconn = http.client.HTTPSConnection(\"api.cerebrumx.ai\")\r\n\r\nconn.request(\"GET\", \"/v1/consumer/retail/get-vehicle-travel-history-by-location/vin\")\r\n\r\nres = conn.getresponse()\r\ndata = res.read()\r\n\r\nprint(data.decode(\"utf-8\"))"
+          }
+        ],
+        "tags": [
+          ""
+        ]
+      }
+    },
+    "/consumer/retail/get-vehicle-travel-history-by-location": {
+      "post": {
+        "x-code-samples": [
+          {
+            "lang": "java",
+            "source": "OkHttpClient client = new OkHttpClient();\r\n\r\nMediaType mediaType = MediaType.parse(\"application/json\");\r\nRequestBody body = RequestBody.create(mediaType, \"{\\\"daily\\\":0,\\\"weekly\\\":0,\\\"monthly\\\":0}\");\r\nRequest request = new Request.Builder()\r\n  .url(\"https://api.cerebrumx.ai/v1/consumer/retail/get-vehicle-travel-history-by-location\")\r\n  .post(body)\r\n  .build();\r\n\r\nResponse response = client.newCall(request).execute();"
+          },
+          {
+            "lang": "python",
+            "source": "import http.client\r\n\r\nconn = http.client.HTTPSConnection(\"api.cerebrumx.ai\")\r\n\r\npayload = \"{\\\"daily\\\":0,\\\"weekly\\\":0,\\\"monthly\\\":0}\"\r\n\r\nconn.request(\"POST\", \"/v1/consumer/retail/get-vehicle-travel-history-by-location\", payload)\r\n\r\nres = conn.getresponse()\r\ndata = res.read()\r\n\r\nprint(data.decode(\"utf-8\"))"
+          }
+        ],
+        "summary": "Get vehicle travel history by location",
+        "tags": [
+          ""
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "numberOftrip": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "operationId": "post-consumer-retail-get-vehicle-travel-history-by-location",
+        "description": "Get vehicle travel history by location",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "daily": {
+                    "type": "number"
+                  },
+                  "weekly": {
+                    "type": "number"
+                  },
+                  "monthly": {
+                    "type": "number"
+                  }
+                }
+              },
+              "examples": {}
+            }
+          },
+          "description": ""
+        }
+      }
+    },
+    "/consumer/retail/get-vehicle-status-gender-wise": {
+      "post": {
+        "x-code-samples": [
+          {
+            "lang": "java",
+            "source": "OkHttpClient client = new OkHttpClient();\r\n\r\nMediaType mediaType = MediaType.parse(\"application/json\");\r\nRequestBody body = RequestBody.create(mediaType, \"{\\\"coordinates\\\":[{\\\"latitude\\\":\\\"string\\\",\\\"longitude\\\":\\\"string\\\"}],\\\"type\\\":\\\"polygon\\\"}\");\r\nRequest request = new Request.Builder()\r\n  .url(\"https://api.cerebrumx.ai/v1/consumer/retail/get-vehicle-status-gender-wise\")\r\n  .post(body)\r\n  .build();\r\n\r\nResponse response = client.newCall(request).execute();"
+          },
+          {
+            "lang": "python",
+            "source": "import http.client\r\n\r\nconn = http.client.HTTPSConnection(\"api.cerebrumx.ai\")\r\n\r\npayload = \"{\\\"coordinates\\\":[{\\\"latitude\\\":\\\"string\\\",\\\"longitude\\\":\\\"string\\\"}],\\\"type\\\":\\\"polygon\\\"}\"\r\n\r\nconn.request(\"POST\", \"/v1/consumer/retail/get-vehicle-status-gender-wise\", payload)\r\n\r\nres = conn.getresponse()\r\ndata = res.read()\r\n\r\nprint(data.decode(\"utf-8\"))"
+          }
+        ],
+        "summary": "Get Vehicle status gender-wise",
+        "tags": [
+          ""
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "gender": {
+                      "type": "string"
+                    },
+                    "numberOfVehicles": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        },
+        "operationId": "post-consumer-retail-get-vehicle-status-gender-wise",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Location"
+              },
+              "examples": {
+                "example-1": {
+                  "value": {
+                    "coordinates": [
+                      {
+                        "latitude": "string",
+                        "longitude": "string"
+                      }
+                    ],
+                    "type": "polygon"
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "location": {
+                    "$ref": "#/components/schemas/Location"
+                  }
+                }
+              },
+              "examples": {}
+            }
+          }
+        },
+        "description": "Get Vehicle status gender-wise\n"
+      }
+    },
+    "/consumer/retail/get-vehicle-status-by-age-group": {
+      "post": {
+        "x-code-samples": [
+          {
+            "lang": "java",
+            "source": "OkHttpClient client = new OkHttpClient();\r\n\r\nMediaType mediaType = MediaType.parse(\"application/json\");\r\nRequestBody body = RequestBody.create(mediaType, \"{\\\"location\\\":{\\\"coordinates\\\":[{\\\"latitude\\\":\\\"string\\\",\\\"longitude\\\":\\\"string\\\"}],\\\"type\\\":\\\"polygon\\\"}}\");\r\nRequest request = new Request.Builder()\r\n  .url(\"https://api.cerebrumx.ai/v1/consumer/retail/get-vehicle-status-by-age-group\")\r\n  .post(body)\r\n  .build();\r\n\r\nResponse response = client.newCall(request).execute();"
+          },
+          {
+            "lang": "python",
+            "source": "import http.client\r\n\r\nconn = http.client.HTTPSConnection(\"api.cerebrumx.ai\")\r\n\r\npayload = \"{\\\"location\\\":{\\\"coordinates\\\":[{\\\"latitude\\\":\\\"string\\\",\\\"longitude\\\":\\\"string\\\"}],\\\"type\\\":\\\"polygon\\\"}}\"\r\n\r\nconn.request(\"POST\", \"/v1/consumer/retail/get-vehicle-status-by-age-group\", payload)\r\n\r\nres = conn.getresponse()\r\ndata = res.read()\r\n\r\nprint(data.decode(\"utf-8\"))"
+          }
+        ],
+        "summary": "Get Vehicle status age-group wise",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "AgeGroup": {
+                      "type": "string"
+                    },
+                    "numberOfVehicles": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "operationId": "post-consumer-consent-get-vehicle-status-by-age-group",
+        "description": "Get Vehicle status age-group wise per location\n",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "location": {
+                    "$ref": "#/components/schemas/Location"
+                  }
+                }
+              },
+              "examples": {}
+            }
+          }
+        },
+        "tags": [
+          ""
+        ]
+      },
+      "parameters": []
+    },
+    "/consumer/retail/get-average-time-spent-in-a-location": {
+      "post": {
+        "x-code-samples": [
+          {
+            "lang": "java",
+            "source": "OkHttpClient client = new OkHttpClient();\r\n\r\nMediaType mediaType = MediaType.parse(\"application/json\");\r\nRequestBody body = RequestBody.create(mediaType, \"{\\\"location\\\":{\\\"coordinates\\\":[{\\\"latitude\\\":\\\"string\\\",\\\"longitude\\\":\\\"string\\\"}],\\\"type\\\":\\\"polygon\\\"}}\");\r\nRequest request = new Request.Builder()\r\n  .url(\"https://api.cerebrumx.ai/v1/consumer/retail/get-average-time-spent-in-a-location\")\r\n  .post(body)\r\n  .build();\r\n\r\nResponse response = client.newCall(request).execute();"
+          },
+          {
+            "lang": "python",
+            "source": "import http.client\r\n\r\nconn = http.client.HTTPSConnection(\"api.cerebrumx.ai\")\r\n\r\npayload = \"{\\\"location\\\":{\\\"coordinates\\\":[{\\\"latitude\\\":\\\"string\\\",\\\"longitude\\\":\\\"string\\\"}],\\\"type\\\":\\\"polygon\\\"}}\"\r\n\r\nconn.request(\"POST\", \"/v1/consumer/retail/get-average-time-spent-in-a-location\", payload)\r\n\r\nres = conn.getresponse()\r\ndata = res.read()\r\n\r\nprint(data.decode(\"utf-8\"))"
+          }
+        ],
+        "summary": "Get average time spent in a location",
+        "tags": [
+          ""
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "spentTime": {
+                      "type": "number"
+                    },
+                    "numberOfVehicles": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "operationId": "post-consumer-retail-get-average-time-spent-in-a-location",
+        "description": "\n",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "location": {
+                    "$ref": "#/components/schemas/Location"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Attribute": {
+        "title": "Query Attribute",
+        "type": "object",
+        "description": "Query Attributes",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type"
+          },
+          "unit": {
+            "type": "string",
+            "description": "Unit Name"
+          },
+          "category": {
+            "$ref": "#/components/schemas/Category"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "type",
+          "unit"
+        ]
+      },
+      "Country": {
+        "title": "Country",
+        "type": "object",
+        "description": "Represents a Country Object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique Country ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Country Name"
+          },
+          "twoLetterAbbr": {
+            "type": "string",
+            "description": "Country 2-letter abbreviation"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "twoLetterAbbr"
+        ]
+      },
+      "Query": {
+        "title": "Query",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique Query Id"
+          },
+          "name": {
+            "type": "string",
+            "description": "Query Name"
+          },
+          "logo": {
+            "type": "string",
+            "description": "Query Image"
+          },
+          "usecase": {
+            "$ref": "#/components/schemas/UseCase"
+          },
+          "description": {
+            "type": "string",
+            "description": "Query Description"
+          },
+          "callbackUrl": {
+            "type": "string",
+            "description": "Query Callback URL"
+          },
+          "attributeList": {
+            "type": "array",
+            "description": "Query Attribute List",
+            "items": {
+              "$ref": "#/components/schemas/Attribute"
+            }
+          },
+          "countryList": {
+            "type": "array",
+            "description": "Query Countries List",
+            "items": {
+              "$ref": "#/components/schemas/Country"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "Category": {
+        "title": "Categories",
+        "type": "object",
+        "description": "Categories",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique Category ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Category Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Category Description"
+          }
+        }
+      },
+      "UseCase": {
+        "title": "UseCase",
+        "type": "object",
+        "description": "Use Case",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique Usecase ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Usecase Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "UseCase Description"
+          }
+        }
+      },
+      "Filter": {
+        "title": "Filter",
+        "type": "object",
+        "description": "Filter data needs to be filtered on",
+        "x-examples": {
+          "example-1": {}
+        },
+        "properties": {
+          "dateTime": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "vehicleProfile": {
+            "$ref": "#/components/schemas/VehicleProfile"
+          },
+          "driverProfile": {
+            "$ref": "#/components/schemas/DriverProfile"
+          },
+          "mediaProfile": {
+            "$ref": "#/components/schemas/MediaProfile"
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "vehicleOccupancy": {
+            "type": "number"
+          }
+        }
+      },
+      "NewCarFeatures": {
+        "title": "NewCarFeatures",
+        "type": "object",
+        "description": "Features for New Car Price Prediction",
+        "properties": {
+          "country": {
+            "type": "string",
+            "description": "2 digit country code",
+            "minLength": 2,
+            "maxLength": 2
+          },
+          "typeOfCar": {
+            "type": "string",
+            "enum": [
+              "SUV",
+              "MUV",
+              "SEDAN",
+              "HATCHBACK",
+              "COUPE"
+            ]
+          },
+          "seatingCapacity": {
+            "type": "number"
+          },
+          "fuelType": {
+            "type": "string"
+          },
+          "transmission": {
+            "type": "string"
+          },
+          "mileage": {
+            "type": "number"
+          },
+          "engineType": {
+            "type": "string"
+          },
+          "bootSpace": {
+            "type": "number"
+          },
+          "fuelTankCapacity": {
+            "type": "number"
+          },
+          "steeringType": {
+            "type": "string"
+          }
+        }
+      },
+      "UsedCarFeatures": {
+        "title": "UsedCarFeatures",
+        "type": "object",
+        "description": "Features for New Car Price Prediction",
+        "properties": {
+          "country": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2,
+            "description": "2 digit country code"
+          },
+          "typeOfCar": {
+            "type": "string",
+            "enum": [
+              "SUV",
+              "MUV",
+              "SEDAN",
+              "HATCHBACK",
+              "COUPE"
+            ]
+          },
+          "yearOfManufacture": {
+            "type": "string",
+            "description": "YYYY Format"
+          },
+          "condition": {
+            "type": "string"
+          },
+          "noOfOwners": {
+            "type": "number"
+          },
+          "fuelType": {
+            "type": "string"
+          },
+          "mileage": {
+            "type": "number"
+          },
+          "transmission": {
+            "type": "string"
+          },
+          "engineType": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "driveTrain": {
+            "type": "string"
+          },
+          "distanceTravelled": {
+            "type": "string"
+          },
+          "placeRegion": {
+            "type": "string"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          }
+        }
+      },
+      "LocationPolygon": {
+        "title": "LocationPolygon",
+        "type": "object",
+        "description": "Location Polygon is set of (lat,long).",
+        "properties": {
+          "coordinates": {
+            "type": "array",
+            "description": "Point is described as (lat,long).",
+            "items": {
+              "$ref": "#/components/schemas/Point"
+            }
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "polygon"
+            ]
+          }
+        },
+        "required": [
+          "coordinates"
+        ]
+      },
+      "LocationCircle": {
+        "title": "LocationCircle",
+        "type": "object",
+        "description": "Location Circle is represented by location centre(lat,long) \nand it's radius.",
+        "properties": {
+          "center": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "radius": {
+            "type": "number"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "circle"
+            ]
+          }
+        },
+        "required": [
+          "center",
+          "radius"
+        ]
+      },
+      "Location": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/LocationCountry"
+          },
+          {
+            "$ref": "#/components/schemas/LocationPolygon"
+          },
+          {
+            "$ref": "#/components/schemas/LocationCircle"
+          }
+        ],
+        "title": "Location",
+        "description": "Location can be given as \n1. Country \n2. Location Polygon i.e. Set of (lat, long) \n3. Location Circle i.e. centre of circle in (lat, long) form with radius."
+      },
+      "VehicleProfile": {
+        "title": "VehicleProfile",
+        "type": "object",
+        "properties": {
+          "brand": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "trim": {
+            "type": "string"
+          },
+          "engineType": {
+            "type": "string"
+          },
+          "fuelType": {
+            "type": "string"
+          },
+          "vehicleType": {
+            "type": "string"
+          }
+        }
+      },
+      "DriverProfile": {
+        "title": "DriverProfile",
+        "type": "object",
+        "properties": {
+          "ageGroup": {
+            "$ref": "#/components/schemas/AgeGroup"
+          },
+          "Gender": {
+            "type": "string",
+            "enum": [
+              "MALE",
+              "FEMALE"
+            ]
+          }
+        }
+      },
+      "MediaProfile": {
+        "title": "MediaProfile",
+        "type": "object",
+        "properties": {
+          "radioStation": {
+            "type": "string"
+          },
+          "artistName": {
+            "type": "string"
+          }
+        }
+      },
+      "AgeGroup": {
+        "title": "AgeGroup",
+        "type": "object",
+        "description": "Age Group defined as range (start_age, end_age)",
+        "properties": {
+          "start_age": {
+            "type": "number",
+            "description": "Start age of the range"
+          },
+          "end_age": {
+            "type": "number",
+            "description": "End age of the range"
+          }
+        }
+      },
+      "TimePeriod": {
+        "title": "TimePeriod",
+        "type": "object",
+        "description": "Time period is defined as (start_time, end_time)",
+        "properties": {
+          "start_time": {
+            "type": "string",
+            "description": "Start time in YYYY-MM-DD HH:MM:SS format"
+          },
+          "end_time": {
+            "type": "string",
+            "description": "end time in YYYY-MM-DD HH:MM:SS format"
+          }
+        }
+      },
+      "DateTime": {
+        "title": "DateTime",
+        "anyOf": [
+          {
+            "properties": {
+              "date": {
+                "type": "string",
+                "description": "In YYYY-MM-DD format.(e.g. 2020-06-16 )"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "date"
+                ]
+              }
+            }
+          },
+          {
+            "properties": {
+              "month": {
+                "type": "string",
+                "description": "In YYYY-MM format.(e.g. 2020-06 )"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "month"
+                ]
+              }
+            }
+          },
+          {
+            "properties": {
+              "year": {
+                "type": "string",
+                "description": "In YYYY format.( e.g. 2020 )"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "year"
+                ]
+              }
+            }
+          },
+          {
+            "properties": {
+              "timePeriod": {
+                "$ref": "#/components/schemas/TimePeriod"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "timeperiod"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "'Time and date can be given as \n1. Specific date \n2. Specific month+year \n3. Specific year \n4. Custom date range'",
+        "type": "object"
+      },
+      "ResponseStates": {
+        "type": "string",
+        "title": "ResponseStates",
+        "enum": [
+          "ONGOING",
+          "GENERATED",
+          "FAILED"
+        ]
+      },
+      "Point": {
+        "title": "Point",
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "string"
+          },
+          "longitude": {
+            "type": "string"
+          }
+        }
+      },
+      "LocationCountry": {
+        "title": "LocationCountry",
+        "type": "object",
+        "description": "",
+        "properties": {
+          "country": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2,
+            "description": "2 digit country code"
+          },
+          "state": {
+            "type": "string",
+            "description": "State/Region in country"
+          },
+          "zipcode": {
+            "type": "string",
+            "description": "Zipcode of the location"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "country"
+            ]
+          }
+        },
+        "required": [
+          "country"
+        ]
+      },
+      "MediaDateRange": {
+        "title": "MediaDateRange",
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "MediaDayPart": {
+        "title": "MediaDayPart",
+        "type": "string",
+        "enum": [
+          "M-F 6AM - 10AM Morning Drive",
+          "M-F 10AM - 3PM Midday",
+          "M-F 3PM - 7PM Afternoon Drive",
+          "M-F 7PM - 12M Evening",
+          "M-F 12M - 6AM"
+        ]
+      },
+      "MediaDriverProfile": {
+        "title": "MediaDriverProfile",
+        "type": "object",
+        "properties": {
+          "ageGroup": {
+            "type": "string",
+            "enum": [
+              "18-24",
+              "25-34",
+              "35-44",
+              "45-49",
+              "50-54",
+              "65+"
+            ]
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "MALE",
+              "FEMALE"
+            ]
+          },
+          "raceInfo": {
+            "type": "string"
+          }
+        }
+      },
+      "MediaRadioStation": {
+        "title": "MediaRadioStation",
+        "type": "object",
+        "properties": {
+          "waveBand": {
+            "type": "string",
+            "enum": [
+              "AM",
+              "FM",
+              "XM"
+            ]
+          },
+          "frequency": {
+            "type": "string",
+            "description": "frequency in Hz"
+          },
+          "stationId": {
+            "type": "string",
+            "description": "' as displayed to end user by HMI. \nDefined by RDS if available or station frequency \nin Khz for FM or in Hz for AM (string)'"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "SPORTS",
+              "NEWS",
+              "WEATHER",
+              "SONGS"
+            ]
+          },
+          "stationName": {
+            "type": "string"
+          }
+        }
+      },
+      "MediaAudeinceMeasurementStats": {
+        "title": "MediaAudeinceMeasurementStats",
+        "type": "object",
+        "properties": {
+          "cume": {
+            "type": "string"
+          },
+          "tsl": {
+            "type": "string"
+          },
+          "aqh": {
+            "type": "string"
+          },
+          "aqhRating": {
+            "type": "string"
+          },
+          "cumeRating": {
+            "type": "string"
+          },
+          "aqhShare": {
+            "type": "string"
+          },
+          "loyalty": {
+            "type": "string"
+          },
+          "listenerChoiceCategory": {
+            "type": "string"
+          },
+          "stationId": {
+            "type": "string"
+          }
+        }
+      },
+      "MediaVehiceProfile": {
+        "title": "MediaVehiceProfile",
+        "type": "object",
+        "properties": {
+          "brand": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

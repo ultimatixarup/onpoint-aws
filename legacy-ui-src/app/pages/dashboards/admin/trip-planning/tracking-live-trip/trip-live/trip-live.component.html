@@ -1,0 +1,181 @@
+<ngx-spinner bdColor="rgba(0,0,0,0.8)" size="large" color="#fff" type="ball-elastic-dots" [fullScreen]="true">
+    <div class="custom-spinner">
+      <img src="../../../../../assets/images/spinner3.svg" alt="Your Logo">
+    </div>
+    <div class="loading-text">Please wait, we are getting information...</div>
+  </ngx-spinner>
+
+  <div class="page-content page-content-main">
+    <div class="row">
+      <div class="col-xs-12 col-lg-12">
+        <span class="breadcrumb-left"></span>
+        <span class="breadcrumb-right mr-8">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+              <a routerLink="/adlp/admin" class="breadcrumb-h6">
+                <i class="bx bx-home-circle"></i>
+              </a>
+            </li>
+            <li class="breadcrumb-item inactive-bread">
+              <a routerLink="/adlp/admin/admindashboard/dashboardfleet">Dashboard</a>
+            </li>
+            <li class="breadcrumb-item text-selected inactive-bread">
+              <a routerLink="/adlp/admin/admindashboard/dashboardfleet/trip-planing">Trip Planning</a>
+            </li>
+            <li class="breadcrumb-item text-selected active-bread">Trip Live</li>
+          </ol>
+        </span>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="card" style="width: 100%;">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">Trip Live tracking</h4>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <form (ngSubmit)="onSubmit()">
+                <div class="scrollable-list" cdkDropList (cdkDropListDropped)="drop($event)">
+                  <table class="table table-bordered table-hover align-middle">
+                    <thead class="table-dark text-light">
+                      <tr>
+                        <th scope="col" style="width: 10%;">Route Sequence</th>
+                        <th scope="col">Address</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" style="width: 15%;">Proof of Delivery</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let location of tripData?.deliveryLocations" >
+                        <td class="text-center">
+                          <ng-container *ngIf="location.sequence === 0; else stopSequence">
+                            <strong class="text-success">Start</strong>
+                          </ng-container>
+                          <ng-template #stopSequence>
+                            <strong class="text-primary">Stop {{ location.sequence }}</strong>
+                          </ng-template>
+                        </td>
+                        <td *ngIf="location.streetAddress" (click)="focusOnLocation(location)">
+                          <div class="d-flex flex-column">
+                            <div class="fw-bold fs-5">
+                              <i class="fas fa-map-marker-alt text-danger me-2"></i>
+                              {{ location.streetAddress }}
+                            </div>
+                            <div class="text-muted">{{ location.city }}, {{ location.state }} {{ location.zipcode }}</div>
+
+                            <!-- Sequence of fa-check-circle icons -->
+
+
+                          </div>
+                        </td>
+                            <!-- Delivery Status -->
+                    <td class="text-center">
+                      <ng-container *ngIf="location.delivered; else notDelivered">
+                        <span class="badge bg-success">Delivered</span>
+                      </ng-container>
+                      <ng-template #notDelivered>
+                        <span class="badge bg-warning">Pending</span>
+                      </ng-template>
+                    </td>
+
+                        <td>
+                          <div *ngFor="let proof of proofs">
+                            <button type="button" class="btn btn-outline-secondary" (click)="showProof(proof)">
+                              <i [ngClass]="proof.type === 'image' ? 'fa-solid fa-file-image' : 'fa-solid fa-film'"></i>
+                            </button>
+                          </div>
+                        </td>
+
+                      </tr>
+                      <tr *ngIf="!tripData?.deliveryLocations.length">
+                        <td colspan="3" class="text-center text-muted">No locations found.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </form>
+            </div>
+
+            <div class="col-md-6 sticky">
+              <agm-map [latitude]="latitudeMap" [longitude]="longitudeMap" [zoom]="zoom" class="map-height">
+                <agm-marker *ngFor="let deliveryLocation of deliveryLocationPoint"
+                  [latitude]="deliveryLocation.lat"
+                  [longitude]="deliveryLocation.lng"
+                  [iconUrl]="getMarkerUrl(deliveryLocation.label+1)">
+                </agm-marker>
+                <!-- <agm-circle
+                [latitude]="latitudeMap"
+                [longitude]="longitudeMap"
+                [radius]="radius"
+                [fillColor]="'#45b01f'"
+                [circleDraggable]="false"
+                [editable]="false">
+              </agm-circle> -->
+                <agm-polyline [visible]="true" [strokeWeight]="3" [strokeColor]="'#0000FF'">
+                  <agm-polyline-point *ngFor="let coordinate of waypoints"
+                                      [latitude]="coordinate.lat"
+                                      [longitude]="coordinate.lng">
+                  </agm-polyline-point>
+                </agm-polyline>
+                <agm-marker *ngFor="let liveLocation of locations"
+                [latitude]="liveLocation.latitude"
+                [longitude]="liveLocation.longitude"
+                [iconUrl]="'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'">
+
+                <!-- Info Window for showing Speed, VIN, and Driver Name -->
+                <agm-info-window>
+                  <div>
+                    <p><strong>Driver Name:</strong> {{liveLocation.driverName}}</p>
+
+                    <p><strong>Speed:</strong> {{liveLocation.speed}} km/h</p>
+                    <p><strong>Vehicle Name:</strong> {{liveLocation.vehicleName}}</p>
+                    <p><strong>VIN:</strong> {{liveLocation.vin}}</p>
+                  </div>
+                </agm-info-window>
+              </agm-marker>
+                 <!-- Live Location Blue Circle -->
+                <agm-circle
+                *ngFor="let liveLocation of locations"
+                [latitude]="liveLocation.latitude"
+                [longitude]="liveLocation.longitude"
+                [radius]="radius"
+                [fillColor]="'#4285F4'"
+                [fillOpacity]="0.35"
+                [strokeColor]="'#4285F4'"
+                [strokeOpacity]="0.8"
+                [strokeWeight]="2">
+
+            </agm-circle>
+              </agm-map>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for displaying map -->
+  <div class="modal fade" id="proofModal" tabindex="-1" aria-labelledby="proofModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="proofModalLabel">Proof Modal</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <ng-container *ngIf="selectedProof">
+            <img *ngIf="selectedProof.type === 'image'" [src]="selectedProof.url" alt="Proof Image" class="img-fluid" />
+            <video *ngIf="selectedProof.type === 'video'" controls class="w-100">
+              <source [src]="selectedProof.url" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          </ng-container>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
