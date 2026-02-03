@@ -652,7 +652,7 @@ export class Geofence2Component implements OnInit, OnDestroy {
 
   private getTimezoneFromCoordinates(lat: number, lng: number, callback: (timezone: any) => void): void {
     const timestamp = Math.floor(Date.now() / 1000);
-    const url = `https://maps.googleapis.com/maps/api/timezone/json?location=${lat},${lng}&timestamp=${timestamp}&key=AIzaSyBNwm8gkVLJMsKn6crHaFZ4tCKvihwy6Bg`;
+    const url = `https://maps.googleapis.com/maps/api/timezone/json?location=${lat},${lng}&timestamp=${timestamp}&key=Apikey`;
 
     this.http.get(url).subscribe(
       (response: any) => {
