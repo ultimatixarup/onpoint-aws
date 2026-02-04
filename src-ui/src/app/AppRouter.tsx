@@ -5,7 +5,7 @@ import { PrivacyPolicyPage } from "../auth/PrivacyPolicyPage";
 import { ResetPasswordEmailPage } from "../auth/ResetPasswordEmailPage";
 import { ResetPasswordPage } from "../auth/ResetPasswordPage";
 import { TermsPage } from "../auth/TermsPage";
-import { RequireAuth } from "../context/AuthContext";
+import { RequireAuth, RequirePlatformAdmin } from "../context/AuthContext";
 import { RequireTenant } from "../context/TenantContext";
 import { ConfigurationPage } from "../features/config/ConfigurationPage";
 import { FaqPage } from "../features/config/FaqPage";
@@ -39,6 +39,14 @@ import { ManageUsersPage } from "../features/users/ManageUsersPage";
 import { VehicleConsentPage } from "../features/vehicles/VehicleConsentPage";
 import { VinHistoryPage } from "../features/vehicles/VinHistoryPage";
 import { VinSummaryPage } from "../features/vehicles/VinSummaryPage";
+import { PlatformCustomersPage } from "../features/platform/PlatformCustomersPage";
+import { PlatformDriverAssignmentsPage } from "../features/platform/PlatformDriverAssignmentsPage";
+import { PlatformDriversPage } from "../features/platform/PlatformDriversPage";
+import { PlatformFleetsPage } from "../features/platform/PlatformFleetsPage";
+import { PlatformTenantsPage } from "../features/platform/PlatformTenantsPage";
+import { PlatformUsersPage } from "../features/platform/PlatformUsersPage";
+import { PlatformVehicleAssignmentsPage } from "../features/platform/PlatformVehicleAssignmentsPage";
+import { PlatformVehiclesPage } from "../features/platform/PlatformVehiclesPage";
 import { AppShell } from "../layout/AppShell";
 
 export function AppRouter() {
@@ -49,7 +57,10 @@ export function AppRouter() {
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/logout" element={<LogoutPage />} />
         <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/auth/reset-password-email" element={<ResetPasswordEmailPage />} />
+        <Route
+          path="/auth/reset-password-email"
+          element={<ResetPasswordEmailPage />}
+        />
         <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/legal/terms" element={<TermsPage />} />
 
@@ -62,28 +73,132 @@ export function AppRouter() {
             </RequireAuth>
           }
         >
-          <Route path="/adlp" element={<Navigate to="/adlp/dashboard" replace />} />
+          <Route
+            path="/adlp"
+            element={<Navigate to="/adlp/dashboard" replace />}
+          />
           <Route path="/adlp/dashboard" element={<TenantDashboard />} />
-          <Route path="/adlp/platform/dashboard" element={<PlatformDashboard />} />
-          <Route path="/adlp/fleet/:fleetId/dashboard" element={<FleetDashboard />} />
+          <Route
+            path="/adlp/platform/dashboard"
+            element={
+              <RequirePlatformAdmin>
+                <PlatformDashboard />
+              </RequirePlatformAdmin>
+            }
+          />
+          <Route
+            path="/adlp/platform/tenants"
+            element={
+              <RequirePlatformAdmin>
+                <PlatformTenantsPage />
+              </RequirePlatformAdmin>
+            }
+          />
+          <Route
+            path="/adlp/platform/customers"
+            element={
+              <RequirePlatformAdmin>
+                <PlatformCustomersPage />
+              </RequirePlatformAdmin>
+            }
+          />
+          <Route
+            path="/adlp/platform/fleets"
+            element={
+              <RequirePlatformAdmin>
+                <PlatformFleetsPage />
+              </RequirePlatformAdmin>
+            }
+          />
+          <Route
+            path="/adlp/platform/users"
+            element={
+              <RequirePlatformAdmin>
+                <PlatformUsersPage />
+              </RequirePlatformAdmin>
+            }
+          />
+          <Route
+            path="/adlp/platform/drivers"
+            element={
+              <RequirePlatformAdmin>
+                <PlatformDriversPage />
+              </RequirePlatformAdmin>
+            }
+          />
+          <Route
+            path="/adlp/platform/vehicles"
+            element={
+              <RequirePlatformAdmin>
+                <PlatformVehiclesPage />
+              </RequirePlatformAdmin>
+            }
+          />
+          <Route
+            path="/adlp/platform/vehicle-assignments"
+            element={
+              <RequirePlatformAdmin>
+                <PlatformVehicleAssignmentsPage />
+              </RequirePlatformAdmin>
+            }
+          />
+          <Route
+            path="/adlp/platform/driver-assignments"
+            element={
+              <RequirePlatformAdmin>
+                <PlatformDriverAssignmentsPage />
+              </RequirePlatformAdmin>
+            }
+          />
+          <Route
+            path="/adlp/fleet/:fleetId/dashboard"
+            element={<FleetDashboard />}
+          />
           <Route path="/adlp/tracking/live" element={<LiveTrackingPage />} />
           <Route path="/adlp/tracking/trips" element={<TripHistoryPage />} />
           <Route path="/adlp/telemetry/raw" element={<TelemetryRawPage />} />
-          <Route path="/adlp/telemetry/normalized" element={<TelemetryNormalizedPage />} />
-          <Route path="/adlp/geofence/manage" element={<ManageGeofencePage />} />
-          <Route path="/adlp/geofence/report" element={<GeofenceReportPage />} />
-          <Route path="/adlp/geofence/alerts" element={<GeofenceAlertsPage />} />
+          <Route
+            path="/adlp/telemetry/normalized"
+            element={<TelemetryNormalizedPage />}
+          />
+          <Route
+            path="/adlp/geofence/manage"
+            element={<ManageGeofencePage />}
+          />
+          <Route
+            path="/adlp/geofence/report"
+            element={<GeofenceReportPage />}
+          />
+          <Route
+            path="/adlp/geofence/alerts"
+            element={<GeofenceAlertsPage />}
+          />
           <Route path="/adlp/geofence/setup" element={<GeofenceSetupPage />} />
-          <Route path="/adlp/vehicles/vin-summary" element={<VinSummaryPage />} />
-          <Route path="/adlp/vehicles/vin-history" element={<VinHistoryPage />} />
-          <Route path="/adlp/vehicles/consent" element={<VehicleConsentPage />} />
-          <Route path="/adlp/drivers/dashboard" element={<DriverDashboardPage />} />
+          <Route
+            path="/adlp/vehicles/vin-summary"
+            element={<VinSummaryPage />}
+          />
+          <Route
+            path="/adlp/vehicles/vin-history"
+            element={<VinHistoryPage />}
+          />
+          <Route
+            path="/adlp/vehicles/consent"
+            element={<VehicleConsentPage />}
+          />
+          <Route
+            path="/adlp/drivers/dashboard"
+            element={<DriverDashboardPage />}
+          />
           <Route path="/adlp/drivers/add" element={<AddDriverPage />} />
           <Route path="/adlp/drivers/assign" element={<AssignDriverPage />} />
           <Route path="/adlp/drivers/summary" element={<DriverSummaryPage />} />
           <Route path="/adlp/trips/planning" element={<TripPlanningPage />} />
           <Route path="/adlp/trips/add" element={<AddTripPage />} />
-          <Route path="/adlp/trips/optimize" element={<RouteOptimizationPage />} />
+          <Route
+            path="/adlp/trips/optimize"
+            element={<RouteOptimizationPage />}
+          />
           <Route path="/adlp/trips/live" element={<LiveTripPage />} />
           <Route path="/adlp/trips/dvir" element={<DvirPage />} />
           <Route path="/adlp/reports" element={<ReportsPage />} />

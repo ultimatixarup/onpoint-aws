@@ -1070,7 +1070,16 @@ def _list_tenants(role: str) -> dict:
     err = _require_role(role, [ROLE_ADMIN])
     if err:
         return _resp(403, {"error": err})
-    items = _ddb_scan({"TableName": TENANTS_TABLE})
+    items = _ddb_scan(
+        {
+            "TableName": TENANTS_TABLE,
+            "FilterExpression": "SK = :meta AND (attribute_not_exists(#status) OR #status <> :deleted)",
+            "ExpressionAttributeNames": {"#status": "status"},
+            "ExpressionAttributeValues": _ddb_serialize(
+                {":meta": "META", ":deleted": "DELETED"}
+            ),
+        }
+    )
     return _resp(200, {"items": items})
 
 
