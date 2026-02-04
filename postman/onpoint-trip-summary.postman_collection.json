@@ -18,7 +18,7 @@
           "}",
           "const url = pm.request.url.toString();",
           "const tenantId = pm.environment.get('tenantId');",
-          "const role = pm.environment.get('roleAdmin');",
+          "const role = pm.environment.get('role');",
           "if (tenantId) {",
           "  pm.request.headers.upsert({ key: 'x-tenant-id', value: tenantId });",
           "}",
