@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "../../ui/Card";
 import { PageHeader } from "../../ui/PageHeader";
 import {
   createVehicle,
+  fetchFleets,
   fetchTenants,
   fetchVehicles,
   updateVehicle,
@@ -28,6 +29,22 @@ export function PlatformVehiclesPage() {
   const [tenantId, setTenantId] = useState("");
   const [fleetId, setFleetId] = useState("");
 
+  const [search, setSearch] = useState("");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"overview" | "settings" | "audit">(
+    "overview",
+  );
+
+  const {
+    data: fleets = [],
+    isLoading: isLoadingFleets,
+    error: fleetsError,
+  } = useQuery({
+    queryKey: tenantId ? queryKeys.fleets(tenantId) : ["fleets", "none"],
+    queryFn: () => fetchFleets(tenantId),
+    enabled: Boolean(tenantId),
+  });
+
   const {
     data: vehicles = [],
     isLoading,
@@ -46,10 +63,36 @@ export function PlatformVehiclesPage() {
   const [year, setYear] = useState("");
   const [status, setStatus] = useState("ACTIVE");
 
+  const [selectedVin, setSelectedVin] = useState("");
+  const selectedVehicle = useMemo(
+    () => vehicles.find((vehicle) => vehicle.vin === selectedVin),
+    [vehicles, selectedVin],
+  );
   const [editVin, setEditVin] = useState("");
   const [editStatus, setEditStatus] = useState("ACTIVE");
   const [assetTags, setAssetTags] = useState("");
   const [metadata, setMetadata] = useState("");
+
+  useEffect(() => {
+    if (!selectedVehicle) return;
+    setEditVin(selectedVehicle.vin);
+    setEditStatus(selectedVehicle.status ?? "ACTIVE");
+    setAssetTags("");
+    setMetadata("");
+  }, [selectedVehicle]);
+
+  const filteredVehicles = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return vehicles;
+    return vehicles.filter((vehicle) =>
+      [vehicle.vin, vehicle.make, vehicle.model, vehicle.fleetId].some(
+        (value) =>
+          String(value ?? "")
+            .toLowerCase()
+            .includes(term),
+      ),
+    );
+  }, [vehicles, search]);
 
   const handleCreate = async () => {
     if (!vin) return;
@@ -94,14 +137,18 @@ export function PlatformVehiclesPage() {
         subtitle="Register vehicles, manage status, and capture metadata."
       />
       <div className="split-layout">
-        <Card title="Vehicle Actions">
+        <Card title="Vehicles">
           <div className="stack">
             <label className="form__field">
               <span>Tenant</span>
               <select
                 className="select"
                 value={tenantId}
-                onChange={(event) => setTenantId(event.target.value)}
+                onChange={(event) => {
+                  setTenantId(event.target.value);
+                  setFleetId("");
+                  setSelectedVin("");
+                }}
               >
                 <option value="">Choose tenant</option>
                 {tenants.map((tenant) => (
@@ -113,141 +160,287 @@ export function PlatformVehiclesPage() {
             </label>
             <label className="form__field">
               <span>Fleet</span>
+              <select
+                className="select"
+                value={fleetId}
+                onChange={(event) => {
+                  setFleetId(event.target.value);
+                  setSelectedVin("");
+                }}
+                disabled={!tenantId || isLoadingFleets || Boolean(fleetsError)}
+              >
+                <option value="">Choose fleet</option>
+                {fleets.map((fleet) => (
+                  <option key={fleet.fleetId} value={fleet.fleetId}>
+                    {fleet.name ?? fleet.fleetId}
+                  </option>
+                ))}
+              </select>
+              {fleetsError ? (
+                <span className="text-muted">Unable to load fleets.</span>
+              ) : null}
+            </label>
+            <div className="inline">
               <input
                 className="input"
-                placeholder="Fleet ID"
-                value={fleetId}
-                onChange={(event) => setFleetId(event.target.value)}
+                placeholder="Search by VIN, make, model, or fleet"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
               />
-            </label>
-            <div className="section">
-              <div className="section__title">Create Vehicle</div>
-              <div className="stack">
-                <input
-                  className="input"
-                  placeholder="VIN"
-                  value={vin}
-                  onChange={(event) => setVin(event.target.value)}
-                />
-                <input
-                  className="input"
-                  placeholder="Make"
-                  value={make}
-                  onChange={(event) => setMake(event.target.value)}
-                />
-                <input
-                  className="input"
-                  placeholder="Model"
-                  value={model}
-                  onChange={(event) => setModel(event.target.value)}
-                />
-                <input
-                  className="input"
-                  placeholder="Year"
-                  value={year}
-                  onChange={(event) => setYear(event.target.value)}
-                />
-                <select
-                  className="select"
-                  value={status}
-                  onChange={(event) => setStatus(event.target.value)}
-                >
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="INACTIVE">INACTIVE</option>
-                </select>
-                <button className="btn" onClick={handleCreate} disabled={!vin}>
-                  Create Vehicle
-                </button>
-              </div>
+              <button
+                className="btn"
+                onClick={() => setIsCreateOpen(true)}
+                disabled={!tenantId || !fleetId}
+              >
+                Create Vehicle
+              </button>
             </div>
-            <div className="section">
-              <div className="section__title">Update Vehicle</div>
-              <div className="stack">
-                <select
-                  className="select"
-                  value={editVin}
-                  onChange={(event) => setEditVin(event.target.value)}
-                >
-                  <option value="">Choose vehicle</option>
-                  {vehicles.map((vehicle) => (
-                    <option key={vehicle.vin} value={vehicle.vin}>
-                      {vehicle.vin}
-                    </option>
+            {!tenantId || !fleetId ? (
+              <p>Select a tenant and fleet to view vehicles.</p>
+            ) : isLoading ? (
+              <p>Loading vehicles...</p>
+            ) : error ? (
+              <p>Unable to load vehicles.</p>
+            ) : (
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>VIN</th>
+                    <th>Make</th>
+                    <th>Model</th>
+                    <th>Year</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredVehicles.map((vehicle) => (
+                    <tr
+                      key={vehicle.vin}
+                      className={
+                        vehicle.vin === selectedVin ? "is-selected" : undefined
+                      }
+                      onClick={() => setSelectedVin(vehicle.vin)}
+                    >
+                      <td className="mono">{vehicle.vin}</td>
+                      <td>{vehicle.make ?? "—"}</td>
+                      <td>{vehicle.model ?? "—"}</td>
+                      <td>{vehicle.year ?? "—"}</td>
+                      <td>
+                        <span
+                          className={`badge badge--${
+                            vehicle.status?.toLowerCase() ?? "active"
+                          }`}
+                        >
+                          {vehicle.status ?? "ACTIVE"}
+                        </span>
+                      </td>
+                    </tr>
                   ))}
-                </select>
-                <select
-                  className="select"
-                  value={editStatus}
-                  onChange={(event) => setEditStatus(event.target.value)}
-                >
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="INACTIVE">INACTIVE</option>
-                </select>
-                <input
-                  className="input"
-                  placeholder="Asset Tags (comma-separated)"
-                  value={assetTags}
-                  onChange={(event) => setAssetTags(event.target.value)}
-                />
-                <textarea
-                  className="textarea"
-                  placeholder='Metadata JSON (optional) e.g. {"color": "black"}'
-                  value={metadata}
-                  onChange={(event) => setMetadata(event.target.value)}
-                  rows={5}
-                />
-                <button
-                  className="btn"
-                  onClick={handleUpdate}
-                  disabled={!editVin}
-                >
-                  Update Vehicle
-                </button>
-              </div>
-            </div>
+                </tbody>
+              </table>
+            )}
           </div>
         </Card>
-        <Card title="Vehicle Directory">
-          {!tenantId || !fleetId ? (
-            <p>Select a tenant and fleet to view vehicles.</p>
-          ) : isLoading ? (
-            <p>Loading vehicles...</p>
-          ) : error ? (
-            <p>Unable to load vehicles.</p>
+        <Card title="Vehicle Details">
+          {!selectedVehicle ? (
+            <p>Select a vehicle to view details.</p>
           ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>VIN</th>
-                  <th>Make</th>
-                  <th>Model</th>
-                  <th>Year</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {vehicles.map((vehicle) => (
-                  <tr key={vehicle.vin}>
-                    <td className="mono">{vehicle.vin}</td>
-                    <td>{vehicle.make ?? "—"}</td>
-                    <td>{vehicle.model ?? "—"}</td>
-                    <td>{vehicle.year ?? "—"}</td>
-                    <td>
-                      <span
-                        className={`badge badge--${
-                          vehicle.status?.toLowerCase() ?? "active"
-                        }`}
-                      >
-                        {vehicle.status ?? "ACTIVE"}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="stack">
+              <div className="tabs">
+                <button
+                  className={
+                    activeTab === "overview" ? "tab tab--active" : "tab"
+                  }
+                  onClick={() => setActiveTab("overview")}
+                >
+                  Overview
+                </button>
+                <button
+                  className={
+                    activeTab === "settings" ? "tab tab--active" : "tab"
+                  }
+                  onClick={() => setActiveTab("settings")}
+                >
+                  Settings
+                </button>
+                <button
+                  className={activeTab === "audit" ? "tab tab--active" : "tab"}
+                  onClick={() => setActiveTab("audit")}
+                >
+                  Audit
+                </button>
+              </div>
+
+              {activeTab === "overview" ? (
+                <div className="stack">
+                  <div className="detail-grid">
+                    <div>
+                      <div className="text-muted">VIN</div>
+                      <div className="mono">{selectedVehicle.vin}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted">Make</div>
+                      <div>{selectedVehicle.make ?? "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted">Model</div>
+                      <div>{selectedVehicle.model ?? "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted">Year</div>
+                      <div>{selectedVehicle.year ?? "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted">Status</div>
+                      <div>{selectedVehicle.status ?? "ACTIVE"}</div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {activeTab === "settings" ? (
+                <div className="stack">
+                  <label className="form__field">
+                    <span>Status</span>
+                    <select
+                      className="select"
+                      value={editStatus}
+                      onChange={(event) => setEditStatus(event.target.value)}
+                    >
+                      <option value="ACTIVE">ACTIVE</option>
+                      <option value="INACTIVE">INACTIVE</option>
+                    </select>
+                  </label>
+                  <label className="form__field">
+                    <span>Asset Tags (comma-separated)</span>
+                    <input
+                      className="input"
+                      placeholder="Optional"
+                      value={assetTags}
+                      onChange={(event) => setAssetTags(event.target.value)}
+                    />
+                  </label>
+                  <label className="form__field">
+                    <span>Metadata JSON</span>
+                    <textarea
+                      className="textarea"
+                      placeholder='Optional e.g. {"color": "black"}'
+                      value={metadata}
+                      onChange={(event) => setMetadata(event.target.value)}
+                      rows={5}
+                    />
+                  </label>
+                </div>
+              ) : null}
+
+              {activeTab === "audit" ? (
+                <div className="stack">
+                  <p className="text-muted">
+                    Audit events are not yet connected. This tab will surface
+                    vehicle changes and admin actions.
+                  </p>
+                </div>
+              ) : null}
+
+              <div className="form__actions">
+                <button
+                  className="btn btn--secondary"
+                  onClick={() => {
+                    if (!selectedVehicle) return;
+                    setEditStatus(selectedVehicle.status ?? "ACTIVE");
+                    setAssetTags("");
+                    setMetadata("");
+                  }}
+                >
+                  Cancel
+                </button>
+                <button className="btn" onClick={handleUpdate}>
+                  Save Changes
+                </button>
+              </div>
+            </div>
           )}
         </Card>
       </div>
+
+      {isCreateOpen ? (
+        <div className="modal__backdrop">
+          <div className="modal">
+            <div className="modal__header">
+              <h2>Create Vehicle</h2>
+              <button
+                type="button"
+                className="icon-button"
+                onClick={() => setIsCreateOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="modal__body">
+              <div className="stack">
+                <label className="form__field">
+                  <span>VIN</span>
+                  <input
+                    className="input"
+                    placeholder="VIN"
+                    value={vin}
+                    onChange={(event) => setVin(event.target.value)}
+                  />
+                </label>
+                <label className="form__field">
+                  <span>Make</span>
+                  <input
+                    className="input"
+                    placeholder="Optional"
+                    value={make}
+                    onChange={(event) => setMake(event.target.value)}
+                  />
+                </label>
+                <label className="form__field">
+                  <span>Model</span>
+                  <input
+                    className="input"
+                    placeholder="Optional"
+                    value={model}
+                    onChange={(event) => setModel(event.target.value)}
+                  />
+                </label>
+                <label className="form__field">
+                  <span>Year</span>
+                  <input
+                    className="input"
+                    placeholder="Optional"
+                    value={year}
+                    onChange={(event) => setYear(event.target.value)}
+                  />
+                </label>
+                <label className="form__field">
+                  <span>Status</span>
+                  <select
+                    className="select"
+                    value={status}
+                    onChange={(event) => setStatus(event.target.value)}
+                  >
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <div className="modal__footer">
+              <button
+                className="btn btn--secondary"
+                onClick={() => setIsCreateOpen(false)}
+              >
+                Cancel
+              </button>
+              <button className="btn" onClick={handleCreate} disabled={!vin}>
+                Create Vehicle
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

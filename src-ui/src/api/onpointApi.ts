@@ -583,10 +583,17 @@ export async function createDriverAssignment(
   });
 }
 
-export async function fetchDriverAssignments(driverId: string) {
-  return httpRequest<unknown>(`/drivers/${driverId}/assignments`);
+export async function fetchDriverAssignments(
+  driverId: string,
+  tenantId?: string,
+) {
+  return httpRequest<unknown>(`/drivers/${driverId}/assignments`, {
+    headers: tenantId ? { "x-tenant-id": tenantId } : undefined,
+  });
 }
 
-export async function fetchVehicleAssignments(vin: string) {
-  return httpRequest<unknown>(`/vehicles/${vin}/driver-assignments`);
+export async function fetchVehicleAssignments(vin: string, tenantId?: string) {
+  return httpRequest<unknown>(`/vehicles/${vin}/driver-assignments`, {
+    headers: tenantId ? { "x-tenant-id": tenantId } : undefined,
+  });
 }

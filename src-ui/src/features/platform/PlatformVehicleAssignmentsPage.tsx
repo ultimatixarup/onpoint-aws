@@ -2,7 +2,13 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "../../ui/Card";
 import { PageHeader } from "../../ui/PageHeader";
-import { assignVin, fetchVehicleAssignments } from "../../api/onpointApi";
+import {
+  assignVin,
+  fetchFleets,
+  fetchTenants,
+  fetchVehicles,
+  fetchVehicleAssignments,
+} from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 
 export function PlatformVehicleAssignmentsPage() {
@@ -14,11 +20,42 @@ export function PlatformVehicleAssignmentsPage() {
   const [effectiveTo, setEffectiveTo] = useState("");
   const [reason, setReason] = useState("");
 
+  const {
+    data: tenants = [],
+    isLoading: isLoadingTenants,
+    error: tenantsError,
+  } = useQuery({
+    queryKey: queryKeys.tenants(undefined, true),
+    queryFn: () => fetchTenants({ isAdmin: true }),
+  });
+
+  const {
+    data: fleets = [],
+    isLoading: isLoadingFleets,
+    error: fleetsError,
+  } = useQuery({
+    queryKey: tenantId ? queryKeys.fleets(tenantId) : ["fleets", "none"],
+    queryFn: () => fetchFleets(tenantId),
+    enabled: Boolean(tenantId),
+  });
+
+  const {
+    data: vehicles = [],
+    isLoading: isLoadingVehicles,
+    error: vehiclesError,
+  } = useQuery({
+    queryKey: tenantId
+      ? queryKeys.vehicles(tenantId, fleetId || undefined)
+      : ["vehicles", "none"],
+    queryFn: () => fetchVehicles(tenantId, fleetId || undefined),
+    enabled: Boolean(tenantId),
+  });
+
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: vin
-      ? queryKeys.vehicleAssignments(vin)
+      ? ["vehicle-assignments", vin, tenantId]
       : ["vehicle-assignments", "none"],
-    queryFn: () => fetchVehicleAssignments(vin),
+    queryFn: () => fetchVehicleAssignments(vin, tenantId || undefined),
     enabled: Boolean(vin),
   });
 
@@ -57,29 +94,70 @@ export function PlatformVehicleAssignmentsPage() {
         <Card title="Assignment Actions">
           <div className="stack">
             <label className="form__field">
+              <span>Tenant</span>
+              <select
+                className="select"
+                value={tenantId}
+                onChange={(event) => {
+                  setTenantId(event.target.value);
+                  setFleetId("");
+                  setVin("");
+                }}
+                disabled={isLoadingTenants || Boolean(tenantsError)}
+              >
+                <option value="">Choose tenant</option>
+                {tenants.map((tenant) => (
+                  <option key={tenant.id} value={tenant.id}>
+                    {tenant.name}
+                  </option>
+                ))}
+              </select>
+              {tenantsError ? (
+                <span className="text-muted">Unable to load tenants.</span>
+              ) : null}
+            </label>
+            <label className="form__field">
+              <span>Fleet</span>
+              <select
+                className="select"
+                value={fleetId}
+                onChange={(event) => {
+                  setFleetId(event.target.value);
+                  setVin("");
+                }}
+                disabled={!tenantId || isLoadingFleets || Boolean(fleetsError)}
+              >
+                <option value="">Choose fleet (optional)</option>
+                {fleets.map((fleet) => (
+                  <option key={fleet.fleetId} value={fleet.fleetId}>
+                    {fleet.name ?? fleet.fleetId}
+                  </option>
+                ))}
+              </select>
+              {fleetsError ? (
+                <span className="text-muted">Unable to load fleets.</span>
+              ) : null}
+            </label>
+            <label className="form__field">
               <span>VIN</span>
-              <input
-                className="input"
+              <select
+                className="select"
                 value={vin}
                 onChange={(event) => setVin(event.target.value)}
-              />
-            </label>
-            <label className="form__field">
-              <span>Tenant ID</span>
-              <input
-                className="input"
-                value={tenantId}
-                onChange={(event) => setTenantId(event.target.value)}
-              />
-            </label>
-            <label className="form__field">
-              <span>Fleet ID</span>
-              <input
-                className="input"
-                placeholder="Optional"
-                value={fleetId}
-                onChange={(event) => setFleetId(event.target.value)}
-              />
+                disabled={
+                  !tenantId || isLoadingVehicles || Boolean(vehiclesError)
+                }
+              >
+                <option value="">Choose vehicle</option>
+                {vehicles.map((vehicle) => (
+                  <option key={vehicle.vin} value={vehicle.vin}>
+                    {vehicle.vin}
+                  </option>
+                ))}
+              </select>
+              {vehiclesError ? (
+                <span className="text-muted">Unable to load vehicles.</span>
+              ) : null}
             </label>
             <label className="form__field">
               <span>Customer ID</span>
@@ -127,7 +205,7 @@ export function PlatformVehicleAssignmentsPage() {
         </Card>
         <Card title="Assignment History">
           {!vin ? (
-            <p>Enter a VIN to view assignments.</p>
+            <p>Select a vehicle to view assignments.</p>
           ) : isLoading ? (
             <p>Loading assignments...</p>
           ) : error ? (

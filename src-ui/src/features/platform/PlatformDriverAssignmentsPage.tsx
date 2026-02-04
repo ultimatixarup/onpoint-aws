@@ -4,24 +4,72 @@ import { Card } from "../../ui/Card";
 import { PageHeader } from "../../ui/PageHeader";
 import {
   createDriverAssignment,
+  fetchDrivers,
+  fetchFleets,
   fetchDriverAssignments,
+  fetchTenants,
+  fetchVehicles,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 
 export function PlatformDriverAssignmentsPage() {
   const [driverId, setDriverId] = useState("");
   const [tenantId, setTenantId] = useState("");
+  const [fleetId, setFleetId] = useState("");
   const [vin, setVin] = useState("");
   const [effectiveFrom, setEffectiveFrom] = useState("");
   const [effectiveTo, setEffectiveTo] = useState("");
   const [assignmentType, setAssignmentType] = useState("");
   const [reason, setReason] = useState("");
 
+  const {
+    data: tenants = [],
+    isLoading: isLoadingTenants,
+    error: tenantsError,
+  } = useQuery({
+    queryKey: queryKeys.tenants(undefined, true),
+    queryFn: () => fetchTenants({ isAdmin: true }),
+  });
+
+  const {
+    data: fleets = [],
+    isLoading: isLoadingFleets,
+    error: fleetsError,
+  } = useQuery({
+    queryKey: tenantId ? queryKeys.fleets(tenantId) : ["fleets", "none"],
+    queryFn: () => fetchFleets(tenantId),
+    enabled: Boolean(tenantId),
+  });
+
+  const {
+    data: vehicles = [],
+    isLoading: isLoadingVehicles,
+    error: vehiclesError,
+  } = useQuery({
+    queryKey: tenantId
+      ? queryKeys.vehicles(tenantId, fleetId || undefined)
+      : ["vehicles", "none"],
+    queryFn: () => fetchVehicles(tenantId, fleetId || undefined),
+    enabled: Boolean(tenantId),
+  });
+
+  const {
+    data: drivers = [],
+    isLoading: isLoadingDrivers,
+    error: driversError,
+  } = useQuery({
+    queryKey: tenantId
+      ? queryKeys.drivers(tenantId, fleetId || undefined)
+      : ["drivers", "none"],
+    queryFn: () => fetchDrivers(tenantId, fleetId || undefined),
+    enabled: Boolean(tenantId),
+  });
+
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: driverId
-      ? queryKeys.driverAssignments(driverId)
+      ? ["driver-assignments", driverId, tenantId]
       : ["driver-assignments", "none"],
-    queryFn: () => fetchDriverAssignments(driverId),
+    queryFn: () => fetchDriverAssignments(driverId, tenantId || undefined),
     enabled: Boolean(driverId),
   });
 
@@ -60,28 +108,95 @@ export function PlatformDriverAssignmentsPage() {
         <Card title="Assignment Actions">
           <div className="stack">
             <label className="form__field">
-              <span>Driver ID</span>
-              <input
-                className="input"
-                value={driverId}
-                onChange={(event) => setDriverId(event.target.value)}
-              />
+              <span>Tenant</span>
+              <select
+                className="select"
+                value={tenantId}
+                onChange={(event) => {
+                  setTenantId(event.target.value);
+                  setFleetId("");
+                  setVin("");
+                  setDriverId("");
+                }}
+                disabled={isLoadingTenants || Boolean(tenantsError)}
+              >
+                <option value="">Choose tenant</option>
+                {tenants.map((tenant) => (
+                  <option key={tenant.id} value={tenant.id}>
+                    {tenant.name}
+                  </option>
+                ))}
+              </select>
+              {tenantsError ? (
+                <span className="text-muted">Unable to load tenants.</span>
+              ) : null}
             </label>
             <label className="form__field">
-              <span>Tenant ID</span>
-              <input
-                className="input"
-                value={tenantId}
-                onChange={(event) => setTenantId(event.target.value)}
-              />
+              <span>Fleet</span>
+              <select
+                className="select"
+                value={fleetId}
+                onChange={(event) => {
+                  setFleetId(event.target.value);
+                  setVin("");
+                  setDriverId("");
+                }}
+                disabled={!tenantId || isLoadingFleets || Boolean(fleetsError)}
+              >
+                <option value="">Choose fleet (optional)</option>
+                {fleets.map((fleet) => (
+                  <option key={fleet.fleetId} value={fleet.fleetId}>
+                    {fleet.name ?? fleet.fleetId}
+                  </option>
+                ))}
+              </select>
+              {fleetsError ? (
+                <span className="text-muted">Unable to load fleets.</span>
+              ) : null}
             </label>
             <label className="form__field">
               <span>VIN</span>
-              <input
-                className="input"
+              <select
+                className="select"
                 value={vin}
                 onChange={(event) => setVin(event.target.value)}
-              />
+                disabled={
+                  !tenantId || isLoadingVehicles || Boolean(vehiclesError)
+                }
+              >
+                <option value="">Choose vehicle</option>
+                {vehicles.map((vehicle) => (
+                  <option key={vehicle.vin} value={vehicle.vin}>
+                    {vehicle.vin}
+                  </option>
+                ))}
+              </select>
+              {vehiclesError ? (
+                <span className="text-muted">Unable to load vehicles.</span>
+              ) : null}
+            </label>
+            <label className="form__field">
+              <span>Driver</span>
+              <select
+                className="select"
+                value={driverId}
+                onChange={(event) => setDriverId(event.target.value)}
+                disabled={
+                  !tenantId || isLoadingDrivers || Boolean(driversError)
+                }
+              >
+                <option value="">Choose driver</option>
+                {drivers.map((driver) => (
+                  <option key={driver.driverId} value={driver.driverId}>
+                    {driver.name
+                      ? `${driver.name} (${driver.driverId})`
+                      : driver.driverId}
+                  </option>
+                ))}
+              </select>
+              {driversError ? (
+                <span className="text-muted">Unable to load drivers.</span>
+              ) : null}
             </label>
             <label className="form__field">
               <span>Effective From (ISO)</span>
@@ -130,7 +245,7 @@ export function PlatformDriverAssignmentsPage() {
         </Card>
         <Card title="Assignment History">
           {!driverId ? (
-            <p>Enter a driver ID to view assignments.</p>
+            <p>Select a driver to view assignments.</p>
           ) : isLoading ? (
             <p>Loading assignments...</p>
           ) : error ? (
