@@ -4,6 +4,11 @@ export type FleetSummary = {
   fleetId: string;
   name: string;
   vehicleCount: number;
+  customerId?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  policies?: Record<string, unknown> | null;
 };
 
 export type CustomerSummary = {
@@ -33,6 +38,10 @@ export type DriverSummary = {
   name?: string;
   status?: string;
   fleetId?: string;
+  customerId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  metadata?: Record<string, unknown> | null;
   email?: string;
   phone?: string;
 };
@@ -41,7 +50,10 @@ export type UserSummary = {
   userId: string;
   email?: string;
   groups?: string[];
+  roles?: string[];
+  name?: string;
   status?: string;
+  enabled?: boolean;
 };
 
 function mapTenant(record: Record<string, unknown>): TenantSummary | undefined {
@@ -116,7 +128,19 @@ export async function fetchFleets(tenantId: string) {
       if (!fleetId) return undefined;
       const name = record.name ?? record.displayName ?? fleetId;
       const vehicleCount = Number(record.vehicleCount ?? 0);
-      return { fleetId: String(fleetId), name: String(name), vehicleCount };
+      return {
+        fleetId: String(fleetId),
+        name: String(name),
+        vehicleCount,
+        customerId: record.customerId ? String(record.customerId) : undefined,
+        status: record.status ? String(record.status) : undefined,
+        createdAt: record.createdAt ? String(record.createdAt) : undefined,
+        updatedAt: record.updatedAt ? String(record.updatedAt) : undefined,
+        policies:
+          typeof record.policies === "object" || record.policies === null
+            ? (record.policies as Record<string, unknown> | null)
+            : undefined,
+      };
     })
     .filter((item): item is FleetSummary => Boolean(item));
 }
@@ -327,13 +351,22 @@ export async function fetchDrivers(tenantId: string, fleetId?: string) {
       const record = item as Record<string, unknown>;
       const driverId = record.driverId ?? record.id ?? record.userId;
       if (!driverId) return undefined;
-      const name = record.name ?? record.displayName ?? record.fullName;
+      const metadata =
+        typeof record.metadata === "object" || record.metadata === null
+          ? (record.metadata as Record<string, unknown> | null)
+          : undefined;
+      const name =
+        record.name ?? record.displayName ?? record.fullName ?? metadata?.name;
       const status = record.status ?? record.state;
       return {
         driverId: String(driverId),
         name: name ? String(name) : undefined,
         status: status ? String(status) : undefined,
         fleetId: record.fleetId ? String(record.fleetId) : undefined,
+        customerId: record.customerId ? String(record.customerId) : undefined,
+        createdAt: record.createdAt ? String(record.createdAt) : undefined,
+        updatedAt: record.updatedAt ? String(record.updatedAt) : undefined,
+        metadata,
         email: record.email ? String(record.email) : undefined,
         phone: record.phone ? String(record.phone) : undefined,
       };
@@ -391,11 +424,61 @@ export async function fetchUsers(tenantId: string) {
       const groups = Array.isArray(record.groups)
         ? record.groups.map((g) => String(g))
         : undefined;
+      const roles = Array.isArray(record.roles)
+        ? record.roles.map((role) => String(role))
+        : groups;
+      const statusValue = record.status ? String(record.status) : undefined;
+      const enabledValue =
+        typeof record.enabled === "boolean"
+          ? record.enabled
+          : statusValue
+            ? ["ENABLED", "ACTIVE"].includes(statusValue.toUpperCase())
+            : undefined;
+
+      const attributes = Array.isArray(record.attributes)
+        ? (record.attributes as Array<{ Name?: string; Value?: string }>)
+        : undefined;
+      const attributeMap = attributes
+        ? Object.fromEntries(
+            attributes
+              .filter((attr) => attr.Name)
+              .map((attr) => [String(attr.Name), String(attr.Value ?? "")]),
+          )
+        : undefined;
+
+      const nameValue =
+        record.name ??
+        record.fullName ??
+        record.displayName ??
+        record.userName ??
+        record.username ??
+        attributeMap?.name ??
+        attributeMap?.given_name ??
+        attributeMap?.preferred_username;
+
+      const emailValue =
+        record.email ??
+        attributeMap?.email ??
+        (typeof userId === "string" && userId.includes("@")
+          ? userId
+          : undefined);
+
+      const fallbackName =
+        !nameValue && emailValue
+          ? emailValue
+              .split("@")[0]
+              .replace(/[._-]+/g, " ")
+              .replace(/\b\w/g, (char) => char.toUpperCase())
+          : undefined;
+
       return {
         userId: String(userId),
-        email: record.email ? String(record.email) : undefined,
+        email: emailValue ? String(emailValue) : undefined,
         groups,
-        status: record.status ? String(record.status) : undefined,
+        roles,
+        name: nameValue ? String(nameValue) : fallbackName,
+        status: statusValue,
+        enabled: enabledValue,
       };
     })
     .filter((item): item is UserSummary => Boolean(item));

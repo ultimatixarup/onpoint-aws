@@ -4,6 +4,7 @@ import { Card } from "../../ui/Card";
 import { PageHeader } from "../../ui/PageHeader";
 import {
   createFleet,
+  fetchCustomers,
   fetchFleets,
   fetchTenants,
   updateFleet,
@@ -17,6 +18,13 @@ function parseJson(value: string) {
   } catch {
     return undefined;
   }
+}
+
+function formatTimestamp(value?: string | null) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
 }
 
 export function PlatformFleetsPage() {
@@ -36,6 +44,22 @@ export function PlatformFleetsPage() {
     queryFn: () => fetchFleets(tenantId),
     enabled: Boolean(tenantId),
   });
+
+  const { data: customers = [] } = useQuery({
+    queryKey: tenantId ? queryKeys.customers(tenantId) : ["customers", "none"],
+    queryFn: () => fetchCustomers(tenantId),
+    enabled: Boolean(tenantId),
+  });
+
+  const customerNameById = customers.reduce<Record<string, string>>(
+    (acc, customer) => {
+      const id = customer.customerId;
+      if (!id) return acc;
+      acc[id] = customer.name ?? id;
+      return acc;
+    },
+    {},
+  );
 
   const [fleetId, setFleetId] = useState("");
   const [customerId, setCustomerId] = useState("");
@@ -106,7 +130,7 @@ export function PlatformFleetsPage() {
                 />
                 <input
                   className="input"
-                  placeholder="Name"
+                  placeholder="Name (optional)"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                 />
@@ -165,7 +189,11 @@ export function PlatformFleetsPage() {
                 <tr>
                   <th>Name</th>
                   <th>Fleet ID</th>
-                  <th>Customer ID</th>
+                  <th>Customer</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Updated</th>
+                  <th>Policies</th>
                 </tr>
               </thead>
               <tbody>
@@ -173,7 +201,26 @@ export function PlatformFleetsPage() {
                   <tr key={fleet.fleetId}>
                     <td>{fleet.name ?? fleet.fleetId}</td>
                     <td className="mono">{fleet.fleetId}</td>
-                    <td className="mono">{fleet.customerId ?? "—"}</td>
+                    <td>
+                      {fleet.customerId
+                        ? (customerNameById[fleet.customerId] ??
+                          fleet.customerId)
+                        : "—"}
+                    </td>
+                    <td>
+                      <span
+                        className={`badge badge--${
+                          fleet.status?.toLowerCase() ?? "active"
+                        }`}
+                      >
+                        {fleet.status ?? "ACTIVE"}
+                      </span>
+                    </td>
+                    <td>{formatTimestamp(fleet.createdAt)}</td>
+                    <td>{formatTimestamp(fleet.updatedAt)}</td>
+                    <td className="mono">
+                      {fleet.policies ? JSON.stringify(fleet.policies) : "—"}
+                    </td>
                   </tr>
                 ))}
               </tbody>

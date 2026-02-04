@@ -19,6 +19,13 @@ function parseJson(value: string) {
   }
 }
 
+function formatTimestamp(value?: string | null) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+
 export function PlatformDriversPage() {
   const queryClient = useQueryClient();
   const { data: tenants = [] } = useQuery({
@@ -208,17 +215,33 @@ export function PlatformDriversPage() {
             <table className="table">
               <thead>
                 <tr>
+                  <th>Name</th>
                   <th>Driver ID</th>
                   <th>Fleet ID</th>
                   <th>Customer ID</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Updated</th>
                 </tr>
               </thead>
               <tbody>
                 {drivers.map((driver) => (
                   <tr key={driver.driverId}>
+                    <td>{driver.name ?? "—"}</td>
                     <td className="mono">{driver.driverId}</td>
                     <td className="mono">{driver.fleetId ?? "—"}</td>
                     <td className="mono">{driver.customerId ?? "—"}</td>
+                    <td>
+                      <span
+                        className={`badge badge--${
+                          driver.status?.toLowerCase() ?? "active"
+                        }`}
+                      >
+                        {driver.status ?? "ACTIVE"}
+                      </span>
+                    </td>
+                    <td>{formatTimestamp(driver.createdAt)}</td>
+                    <td>{formatTimestamp(driver.updatedAt)}</td>
                   </tr>
                 ))}
               </tbody>
