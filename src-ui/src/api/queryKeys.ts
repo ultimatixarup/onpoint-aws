@@ -13,4 +13,6 @@ export const queryKeys = {
   vehicleAssignments: (vin: string) => ["vehicle-assignments", vin] as const,
   trips: (tenantId: string, fleetId?: string) =>
     ["trips", tenantId, fleetId] as const,
+  tripSummary: (tenantId: string, fleetId?: string, vin?: string) =>
+    ["trip-summary", tenantId, fleetId ?? "all", vin ?? "all"] as const,
 };
