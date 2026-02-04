@@ -18,3 +18,5 @@ node_modules/
 src-ui/node_modules/
 src-ui/dist/
 src-ui/.vite/
+src-ui/.env
+src-ui/.env.*
