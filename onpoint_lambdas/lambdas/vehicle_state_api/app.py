@@ -132,15 +132,63 @@ def _get_caller_tenant_id(event: dict) -> Optional[str]:
     return None
 
 
+def _normalize_as_of(as_of: Optional[str]) -> str:
+    if not as_of:
+        return datetime.now(timezone.utc).isoformat()
+    parsed = _parse_iso(as_of)
+    return parsed.isoformat() if parsed else as_of
+
+
+def _resolve_vin_tenancy_local(vin: str, as_of: Optional[str]) -> Optional[dict]:
+    if not VIN_REGISTRY_TABLE:
+        return None
+    as_of_iso = _normalize_as_of(as_of)
+    pk = f"VIN#{vin}"
+    sk = f"EFFECTIVE_FROM#{as_of_iso}"
+
+    last_key = None
+    while True:
+        params = {
+            "TableName": VIN_REGISTRY_TABLE,
+            "KeyConditionExpression": "PK = :pk AND SK <= :sk",
+            "ExpressionAttributeValues": {
+                ":pk": {"S": pk},
+                ":sk": {"S": sk},
+            },
+            "ScanIndexForward": False,
+            "Limit": 10,
+        }
+        if last_key:
+            params["ExclusiveStartKey"] = last_key
+
+        resp = ddb.query(**params)
+        items = resp.get("Items") or []
+        for item in items:
+            record = _ddb_unmarshal_item(item)
+            effective_to = record.get("effectiveTo")
+            if effective_to:
+                parsed_to = _parse_iso(effective_to)
+                parsed_as_of = _parse_iso(as_of_iso)
+                if parsed_to and parsed_as_of and parsed_to < parsed_as_of:
+                    continue
+            return record
+
+        last_key = resp.get("LastEvaluatedKey")
+        if not last_key:
+            return None
+
+
 def _resolve_vin_tenancy(vin: str, as_of: Optional[str]) -> Optional[dict]:
     if not VIN_REGISTRY_TABLE:
         logger.warning("VIN_REGISTRY_TABLE not configured; skipping tenancy enforcement.")
         return None
     try:
-        return resolve_vin_registry(vin, as_of=as_of, table_name=VIN_REGISTRY_TABLE, ddb_client=ddb)
+        record = resolve_vin_registry(vin, as_of=as_of, table_name=VIN_REGISTRY_TABLE, ddb_client=ddb)
+        if record:
+            return record
     except Exception as exc:
         logger.error(f"VIN registry lookup failed for vin={vin}: {exc}")
-        return None
+    return _resolve_vin_tenancy_local(vin, as_of)
 
 
 def _get_role_from_headers(headers: Dict[str, str]) -> Optional[str]:
@@ -221,6 +269,8 @@ def _list_vins_for_fleet(tenant_id: str, fleet_id: str) -> List[str]:
                 missing_index = True
             else:
                 raise
+    else:
+        missing_index = True
     if missing_index:
         pk = f"TENANT#{tenant_id}"
         params = {
