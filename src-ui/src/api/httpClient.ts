@@ -40,15 +40,23 @@ export async function httpRequest<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const session = await fetchAuthSession();
-  const token = session.tokens?.idToken?.toString();
-  const accessPayload = session.tokens?.accessToken?.payload ?? {};
-  const role = getRoleFromGroups(
-    accessPayload["cognito:groups"] ?? accessPayload.groups,
-  );
+  let token: string | undefined;
+  let role: string | undefined;
+  try {
+    const session = await fetchAuthSession();
+    token = session.tokens?.idToken?.toString();
+    const accessPayload = session.tokens?.accessToken?.payload ?? {};
+    role = getRoleFromGroups(
+      accessPayload["cognito:groups"] ?? accessPayload.groups,
+    );
+  } catch (error) {
+    console.warn("Auth session unavailable, continuing without token", error);
+  }
   const baseUrl =
     options.baseUrl ?? import.meta.env.VITE_ONPOINT_BASE_URL ?? "";
   const apiKey = import.meta.env.VITE_ONPOINT_API_KEY;
+  const roleOverride = import.meta.env.VITE_ONPOINT_ROLE_OVERRIDE;
+  const resolvedRole = role ?? roleOverride;
 
   const response = await fetch(`${baseUrl}${path}`, {
     method: options.method ?? "GET",
@@ -56,7 +64,7 @@ export async function httpRequest<T>(
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(apiKey ? { "x-api-key": apiKey } : {}),
-      ...(role ? { "x-role": role } : {}),
+      ...(resolvedRole ? { "x-role": resolvedRole } : {}),
       ...(options.headers ?? {}),
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
