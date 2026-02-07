@@ -4,7 +4,10 @@ import { defineConfig, loadEnv } from "vite";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const target = env.ONPOINT_PROXY_TARGET || "";
-  const tripSummaryTarget = env.ONPOINT_TRIP_SUMMARY_PROXY_TARGET || "";
+  const tripSummaryBaseUrl = env.VITE_TRIP_SUMMARY_BASE_URL || "";
+  const tripSummaryTarget =
+    env.ONPOINT_TRIP_SUMMARY_PROXY_TARGET ||
+    (tripSummaryBaseUrl.startsWith("http") ? tripSummaryBaseUrl : "");
 
   return {
     plugins: [react()],

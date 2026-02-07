@@ -28,7 +28,10 @@ type TripSummaryQuery = {
 
 const tripSummaryBaseUrl =
   import.meta.env.VITE_TRIP_SUMMARY_BASE_URL ?? "/trip-summary";
-const tripSummaryApiKey = import.meta.env.VITE_TRIP_SUMMARY_API_KEY ?? "";
+const tripSummaryApiKey =
+  import.meta.env.VITE_TRIP_SUMMARY_API_KEY ??
+  import.meta.env.VITE_ONPOINT_API_KEY ??
+  "";
 
 export async function fetchTripSummaryTrips({
   tenantId,
@@ -39,6 +42,7 @@ export async function fetchTripSummaryTrips({
   limit = 50,
 }: TripSummaryQuery): Promise<TripSummaryResponse> {
   const params = new URLSearchParams();
+  params.set("tenantId", tenantId);
   if (from) params.set("from", from);
   if (to) params.set("to", to);
   if (limit) params.set("limit", String(limit));

@@ -70,7 +70,7 @@ def _resp(status: int, body: dict):
             "content-type": "application/json",
             "access-control-allow-origin": "*",
             "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
-            "access-control-allow-headers": "content-type,authorization,idempotency-key,x-tenant-id,x-role,x-fleet-id,x-actor-id,x-correlation-id",
+            "access-control-allow-headers": "content-type,authorization,x-api-key,idempotency-key,x-tenant-id,x-role,x-fleet-id,x-actor-id,x-correlation-id",
         },
         "body": json.dumps(body, default=str),
     }
@@ -135,6 +135,30 @@ def _parse_body(event: dict) -> Tuple[Optional[dict], Optional[str]]:
 
 
 def _get_caller_tenant_id(event: dict) -> Optional[str]:
+    headers = event.get("headers") or {}
+    tenant_header = headers.get("x-tenant-id") or headers.get("X-Tenant-Id") or headers.get("x-tenantId")
+    if isinstance(tenant_header, str) and tenant_header.strip():
+        return tenant_header.strip()
+
+    mv_headers = event.get("multiValueHeaders") or {}
+    mv_vals = mv_headers.get("x-tenant-id") or mv_headers.get("X-Tenant-Id") or mv_headers.get("x-tenantId") or []
+    if mv_vals and isinstance(mv_vals, list):
+        for val in mv_vals:
+            if isinstance(val, str) and val.strip():
+                return val.strip()
+
+    query = event.get("queryStringParameters") or {}
+    tenant_query = query.get("tenantId") or query.get("tenant_id")
+    if isinstance(tenant_query, str) and tenant_query.strip():
+        return tenant_query.strip()
+
+    mv_query = event.get("multiValueQueryStringParameters") or {}
+    mv_vals = mv_query.get("tenantId") or mv_query.get("tenant_id") or []
+    if mv_vals and isinstance(mv_vals, list):
+        for val in mv_vals:
+            if isinstance(val, str) and val.strip():
+                return val.strip()
+
     claims = _get_claims(event)
     tenant_id = claims.get("custom:tenantId") or claims.get("tenantId")
     if isinstance(tenant_id, str) and tenant_id.strip():
@@ -800,7 +824,7 @@ def _normalize_groups(roles: Any) -> List[str]:
 
 
 def _create_cognito_user(tenant_id: str, body: dict, headers: Dict[str, str], role: str, caller_tenant: Optional[str], groups: List[str]) -> dict:
-    err = _require_role(role, [ROLE_ADMIN, ROLE_TENANT_ADMIN])
+    err = _require_role(role, [ROLE_ADMIN, ROLE_TENANT_ADMIN, ROLE_READ_ONLY])
     if err:
         return _resp(403, {"error": err})
     err = _require_tenant_access(role, caller_tenant, tenant_id)
@@ -861,9 +885,11 @@ def _list_cognito_users(tenant_id: str, role: str, caller_tenant: Optional[str])
     # Users are stored in DynamoDB as the system of record for tenant mapping.
     if not isinstance(tenant_id, str) or not tenant_id.strip():
         return _resp(400, {"error": "tenantId is required"})
-    err = _require_role(role, [ROLE_ADMIN, ROLE_TENANT_ADMIN])
+    err = _require_role(role, [ROLE_ADMIN, ROLE_TENANT_ADMIN, ROLE_READ_ONLY])
     if err:
         return _resp(403, {"error": err})
+    if role == ROLE_READ_ONLY and not caller_tenant:
+        caller_tenant = tenant_id
     err = _require_tenant_access(role, caller_tenant, tenant_id)
     if err:
         return _resp(403, {"error": err})

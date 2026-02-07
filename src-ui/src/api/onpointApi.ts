@@ -405,9 +405,12 @@ export async function updateDriver(
 }
 
 export async function fetchUsers(tenantId: string) {
-  const response = await httpRequest<unknown>(`/tenants/${tenantId}/users`, {
-    headers: { "x-tenant-id": tenantId },
-  });
+  const response = await httpRequest<unknown>(
+    `/tenants/${tenantId}/users?tenantId=${encodeURIComponent(tenantId)}`,
+    {
+      headers: { "x-tenant-id": tenantId },
+    },
+  );
   const items = Array.isArray(response)
     ? response
     : typeof response === "object" &&

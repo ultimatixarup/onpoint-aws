@@ -58,7 +58,8 @@ export async function httpRequest<T>(
   const roleOverride = import.meta.env.VITE_ONPOINT_ROLE_OVERRIDE;
   const resolvedRole = role ?? roleOverride;
 
-  const response = await fetch(`${baseUrl}${path}`, {
+  const url = `${baseUrl}${path}`;
+  const response = await fetch(url, {
     method: options.method ?? "GET",
     headers: {
       "Content-Type": "application/json",
@@ -72,8 +73,19 @@ export async function httpRequest<T>(
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(message || "Request failed");
+    throw new Error(message || `Request failed (${response.status})`);
   }
 
-  return (await response.json()) as T;
+  const raw = await response.text();
+  if (!raw) {
+    return null as T;
+  }
+  try {
+    return JSON.parse(raw) as T;
+  } catch (error) {
+    const snippet = raw.length > 200 ? `${raw.slice(0, 200)}...` : raw;
+    throw new Error(
+      `Invalid JSON response from ${url} (status ${response.status}). ${snippet}`,
+    );
+  }
 }
