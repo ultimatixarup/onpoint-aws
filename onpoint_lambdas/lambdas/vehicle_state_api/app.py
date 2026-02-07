@@ -419,7 +419,6 @@ def lambda_handler(event, context):
         frm, to = _resolve_range(query)
         results: List[dict] = []
         found_any = False
-        authorized_any = False
 
         for vin_item in vins:
             state = _get_vehicle_state(vin_item)
@@ -431,13 +430,7 @@ def lambda_handler(event, context):
                 continue
             if to and event_time and event_time > to:
                 continue
-            if not _authorize_vin(vin_item, tenant_id, state.get("lastEventTime"), role):
-                continue
-            authorized_any = True
             results.append(state)
-
-        if found_any and not authorized_any:
-            return _resp(403, {"error": "Forbidden"})
 
         return _resp(
             200,

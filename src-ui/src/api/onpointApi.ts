@@ -46,6 +46,18 @@ export type DriverSummary = {
   phone?: string;
 };
 
+export type VehicleState = {
+  vin: string;
+  lastEventTime?: string;
+  lat?: number;
+  lon?: number;
+  heading?: number;
+  speed_mph?: number;
+  odometer_miles?: number;
+  vehicleState?: string;
+  ignition_status?: string;
+};
+
 export type UserSummary = {
   userId: string;
   email?: string;
@@ -283,7 +295,12 @@ export async function fetchVehicles(tenantId: string, fleetId?: string) {
   return items
     .map((item) => {
       const record = item as Record<string, unknown>;
-      const vin = record.vin ?? record.VIN ?? record.id;
+      const pkValue = record.PK;
+      const vinFromPk =
+        typeof pkValue === "string" && pkValue.startsWith("VEHICLE#")
+          ? pkValue.split("VEHICLE#")[1]
+          : undefined;
+      const vin = record.vin ?? record.VIN ?? record.id ?? vinFromPk;
       if (!vin) return undefined;
       const yearValue = record.year ?? record.modelYear;
       const year = yearValue ? Number(yearValue) : undefined;
@@ -485,6 +502,77 @@ export async function fetchUsers(tenantId: string) {
       };
     })
     .filter((item): item is UserSummary => Boolean(item));
+}
+
+const vehicleStateBaseUrl =
+  import.meta.env.VITE_VEHICLE_STATE_BASE_URL ?? "/vehicle-state";
+const vehicleStateApiKey =
+  import.meta.env.VITE_VEHICLE_STATE_API_KEY ??
+  import.meta.env.VITE_ONPOINT_API_KEY ??
+  "";
+
+export async function fetchFleetVehicleStates(
+  tenantId: string,
+  fleetId: string,
+  range?: { from?: string; to?: string; range?: string },
+): Promise<VehicleState[]> {
+  const params = new URLSearchParams();
+  if (range?.range) params.set("range", range.range);
+  if (range?.from) params.set("from", range.from);
+  if (range?.to) params.set("to", range.to);
+  if (tenantId) params.set("tenantId", tenantId);
+
+  const path = `/fleets/${fleetId}/vehicles/state?${params.toString()}`;
+  const response = await httpRequest<unknown>(path, {
+    baseUrl: vehicleStateBaseUrl,
+    headers: {
+      ...(vehicleStateApiKey ? { "x-api-key": vehicleStateApiKey } : {}),
+      "x-tenant-id": tenantId,
+    },
+  });
+
+  const items =
+    typeof response === "object" && response !== null
+      ? (response as { items?: unknown[] }).items ?? []
+      : [];
+
+  return items
+    .map((item) => {
+      const record = item as Record<string, unknown>;
+      const pkValue = record.PK;
+      const vinFromPk =
+        typeof pkValue === "string" && pkValue.startsWith("VEHICLE#")
+          ? pkValue.slice("VEHICLE#".length)
+          : undefined;
+      const vin = record.vin ?? record.VIN ?? record.id ?? vinFromPk;
+      if (!vin) return undefined;
+      const latValue = record.lat ?? record.latitude;
+      const lonValue = record.lon ?? record.longitude;
+      const lat = typeof latValue === "number" ? latValue : Number(latValue);
+      const lon = typeof lonValue === "number" ? lonValue : Number(lonValue);
+      const headingValue = record.heading;
+      const speedValue = record.speed_mph ?? record.speedMph;
+      const odometerValue = record.odometer_miles ?? record.odometerMiles;
+      return {
+        vin: String(vin),
+        lastEventTime: record.lastEventTime ? String(record.lastEventTime) : undefined,
+        lat: Number.isNaN(lat) ? undefined : lat,
+        lon: Number.isNaN(lon) ? undefined : lon,
+        heading:
+          typeof headingValue === "number" ? headingValue : Number(headingValue),
+        speed_mph:
+          typeof speedValue === "number" ? speedValue : Number(speedValue),
+        odometer_miles:
+          typeof odometerValue === "number"
+            ? odometerValue
+            : Number(odometerValue),
+        vehicleState: record.vehicleState ? String(record.vehicleState) : undefined,
+        ignition_status: record.ignition_status
+          ? String(record.ignition_status)
+          : undefined,
+      } satisfies VehicleState;
+    })
+    .filter((item): item is VehicleState => Boolean(item));
 }
 
 export async function createTenantUser(
