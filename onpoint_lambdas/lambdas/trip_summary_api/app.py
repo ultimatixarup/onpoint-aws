@@ -325,11 +325,29 @@ def _resolve_vin_tenancy(vin: str, as_of: Optional[str]) -> Optional[dict]:
     return _resolve_vin_tenancy_local(vin, as_of)
 
 
-def _get_role_from_headers(headers: Dict[str, str]) -> Optional[str]:
-    role = headers.get("x-role") or headers.get("x-roles")
-    if isinstance(role, str) and role.strip():
-        return role.strip().lower()
+def _get_role_from_headers(headers: Dict[str, Any]) -> Optional[str]:
+    if not headers:
+        return None
+    for key, value in headers.items():
+        if not isinstance(key, str):
+            continue
+        if key.lower() not in ("x-role", "x-roles"):
+            continue
+        if isinstance(value, list):
+            for item in value:
+                if isinstance(item, str) and item.strip():
+                    return item.strip().lower()
+            continue
+        if isinstance(value, str) and value.strip():
+            return value.strip().lower()
     return None
+
+
+def _get_role_from_event(event: dict) -> Optional[str]:
+    role = _get_role_from_event(event)
+    if role:
+        return role
+    return _get_role_from_headers(event.get("multiValueHeaders") or {})
 
 
 def _authorize_vin(vin: str, tenant_id: Optional[str], as_of: Optional[str], role: Optional[str] = None) -> bool:
@@ -854,6 +872,7 @@ def lambda_handler(event, context):
         pages = 0
         collected: List[dict] = []
         found_any = False
+        in_range_any = False
         authorized_any = False
 
         while pages < max_pages_per_vin:
@@ -864,6 +883,7 @@ def lambda_handler(event, context):
                 found_any = True
                 s = _summarize_item(it)
                 if _in_range(s.get("startTime"), s.get("endTime"), frm, to):
+                    in_range_any = True
                     if not _authorize_vin(vin, tenant_id, s.get("startTime") or s.get("endTime"), role):
                         continue
                     authorized_any = True
@@ -884,7 +904,7 @@ def lambda_handler(event, context):
         if esk:
             next_state["vins"][vin] = esk
 
-        if found_any and not authorized_any:
+        if found_any and in_range_any and not authorized_any:
             return _resp(403, {"error": "Forbidden", "tenantId": tenant_id, "vin": vin})
 
         results.extend(collected)

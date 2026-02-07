@@ -191,11 +191,29 @@ def _resolve_vin_tenancy(vin: str, as_of: Optional[str]) -> Optional[dict]:
     return _resolve_vin_tenancy_local(vin, as_of)
 
 
-def _get_role_from_headers(headers: Dict[str, str]) -> Optional[str]:
-    role = headers.get("x-role") or headers.get("x-roles")
-    if isinstance(role, str) and role.strip():
-        return role.strip().lower()
+def _get_role_from_headers(headers: Dict[str, Any]) -> Optional[str]:
+    if not headers:
+        return None
+    for key, value in headers.items():
+        if not isinstance(key, str):
+            continue
+        if key.lower() not in ("x-role", "x-roles"):
+            continue
+        if isinstance(value, list):
+            for item in value:
+                if isinstance(item, str) and item.strip():
+                    return item.strip().lower()
+            continue
+        if isinstance(value, str) and value.strip():
+            return value.strip().lower()
     return None
+
+
+def _get_role_from_event(event: dict) -> Optional[str]:
+    role = _get_role_from_event(event)
+    if role:
+        return role
+    return _get_role_from_headers(event.get("multiValueHeaders") or {})
 
 
 def _authorize_vin(vin: str, tenant_id: Optional[str], as_of: Optional[str], role: Optional[str] = None) -> bool:

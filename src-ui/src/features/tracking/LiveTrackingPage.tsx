@@ -2,11 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useState } from "react";
-import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import {
-    fetchFleets,
-    fetchFleetVehicleStates,
-    fetchVehicles,
+  fetchFleets,
+  fetchFleetVehicleStates,
+  fetchVehicles,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useFleet } from "../../context/FleetContext";
@@ -45,16 +45,18 @@ export function LiveTrackingPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const selectedFleetId = fleet?.id ?? (fleets.length === 1 ? fleets[0].fleetId : "");
+  const selectedFleetId =
+    fleet?.id ?? (fleets.length === 1 ? fleets[0].fleetId : "");
 
   useEffect(() => {
     setSelectedVin("");
   }, [selectedFleetId]);
 
   const { data: vehicleStates = [], isLoading: isLoadingStates } = useQuery({
-    queryKey: tenantId && selectedFleetId
-      ? ["vehicle-state", tenantId, selectedFleetId]
-      : ["vehicle-state", "none"],
+    queryKey:
+      tenantId && selectedFleetId
+        ? ["vehicle-state", tenantId, selectedFleetId]
+        : ["vehicle-state", "none"],
     queryFn: () =>
       fetchFleetVehicleStates(tenantId, selectedFleetId, {
         from: "2000-01-01T00:00:00Z",
@@ -64,9 +66,10 @@ export function LiveTrackingPage() {
   });
 
   const { data: vehicles = [], isLoading: isLoadingVehicles } = useQuery({
-    queryKey: tenantId && selectedFleetId
-      ? ["fleet-vehicles", tenantId, selectedFleetId]
-      : ["fleet-vehicles", "none"],
+    queryKey:
+      tenantId && selectedFleetId
+        ? ["fleet-vehicles", tenantId, selectedFleetId]
+        : ["fleet-vehicles", "none"],
     queryFn: () => fetchVehicles(tenantId, selectedFleetId),
     enabled: Boolean(tenantId && selectedFleetId),
     staleTime: 5 * 60 * 1000,
@@ -75,10 +78,16 @@ export function LiveTrackingPage() {
   const markers = useMemo(
     () =>
       vehicleStates
-        .filter((state) => typeof state.lat === "number" && typeof state.lon === "number")
+        .filter(
+          (state) =>
+            typeof state.lat === "number" && typeof state.lon === "number",
+        )
         .map((state) => ({
           ...state,
-          position: [state.lat as number, state.lon as number] as [number, number],
+          position: [state.lat as number, state.lon as number] as [
+            number,
+            number,
+          ],
         })),
     [vehicleStates],
   );
@@ -89,7 +98,10 @@ export function LiveTrackingPage() {
   );
 
   const filteredMarkers = useMemo(
-    () => (selectedVin ? markers.filter((marker) => marker.vin === selectedVin) : markers),
+    () =>
+      selectedVin
+        ? markers.filter((marker) => marker.vin === selectedVin)
+        : markers,
     [markers, selectedVin],
   );
 
@@ -115,7 +127,9 @@ export function LiveTrackingPage() {
               className="select"
               value={selectedFleetId}
               onChange={(event) => {
-                const selected = fleets.find((item) => item.fleetId === event.target.value);
+                const selected = fleets.find(
+                  (item) => item.fleetId === event.target.value,
+                );
                 if (selected) {
                   setFleet({ id: selected.fleetId, name: selected.name });
                 } else {
@@ -159,13 +173,22 @@ export function LiveTrackingPage() {
           <p>No vehicle locations available.</p>
         ) : (
           <div className="map-container">
-            <MapContainer center={center} zoom={6} style={{ height: "100%", width: "100%" }}>
+            <MapContainer
+              center={center}
+              zoom={6}
+              style={{ height: "100%", width: "100%" }}
+            >
+              <MapViewUpdater markers={filteredMarkers} center={center} />
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               {filteredMarkers.map((marker) => (
-                <Marker key={marker.vin} position={marker.position} icon={carIcon}>
+                <Marker
+                  key={marker.vin}
+                  position={marker.position}
+                  icon={carIcon}
+                >
                   <Popup>
                     <div>
                       <strong>{marker.vin}</strong>
@@ -197,7 +220,26 @@ export function LiveTrackingPage() {
               </thead>
               <tbody>
                 {filteredMarkers.map((marker) => (
-                  <tr key={marker.vin}>
+                  <tr
+                    key={marker.vin}
+                    className={
+                      selectedVin === marker.vin ? "is-selected" : undefined
+                    }
+                    onClick={() =>
+                      setSelectedVin((current) =>
+                        current === marker.vin ? "" : marker.vin,
+                      )
+                    }
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelectedVin((current) =>
+                          current === marker.vin ? "" : marker.vin,
+                        );
+                      }
+                    }}
+                  >
                     <td>{marker.vin}</td>
                     <td>{marker.lastEventTime ?? "--"}</td>
                     <td>{marker.position[0].toFixed(5)}</td>
@@ -212,4 +254,29 @@ export function LiveTrackingPage() {
       </Card>
     </div>
   );
+}
+
+function MapViewUpdater({
+  markers,
+  center,
+}: {
+  markers: Array<{ position: [number, number] }>;
+  center: [number, number];
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!markers.length) {
+      map.setView(center, 4, { animate: true });
+      return;
+    }
+    if (markers.length === 1) {
+      map.setView(markers[0].position, 10, { animate: true });
+      return;
+    }
+    const bounds = L.latLngBounds(markers.map((marker) => marker.position));
+    map.fitBounds(bounds, { padding: [24, 24], animate: true });
+  }, [center, map, markers]);
+
+  return null;
 }
