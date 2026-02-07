@@ -1,15 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
+import { useEffect, useMemo, useState } from "react";
 import {
-  createFleet,
-  fetchCustomers,
-  fetchFleets,
-  fetchTenants,
-  updateFleet,
+    createFleet,
+    fetchCustomers,
+    fetchFleets,
+    fetchTenants,
+    updateFleet,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
+import { Card } from "../../ui/Card";
+import { PageHeader } from "../../ui/PageHeader";
+import { formatDate } from "../../utils/date";
 
 function parseJson(value: string) {
   if (!value.trim()) return undefined;
@@ -21,10 +22,7 @@ function parseJson(value: string) {
 }
 
 function formatTimestamp(value?: string | null) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
+  return formatDate(value, "—");
 }
 
 export function PlatformFleetsPage() {

@@ -1,13 +1,14 @@
-import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchTripSummaryTrips } from "../../api/tripSummaryApi";
+import { useMemo, useState } from "react";
 import { fetchFleets } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
+import { fetchTripSummaryTrips } from "../../api/tripSummaryApi";
 import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
+import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
 import { PageHeader } from "../../ui/PageHeader";
-import { Button } from "../../ui/Button";
+import { formatDate } from "../../utils/date";
 
 export function TripHistoryPage() {
   const [dateRange, setDateRange] = useState("last30");
@@ -53,8 +54,8 @@ export function TripHistoryPage() {
       return { from: start.toISOString(), to: now.toISOString() };
     }
     if (dateRange === "custom") {
-      const start = customFrom ? new Date(`${customFrom}T00:00:00`) : undefined;
-      const end = customTo ? new Date(`${customTo}T23:59:59`) : undefined;
+      const start = parseUsDate(customFrom, "start");
+      const end = parseUsDate(customTo, "end");
       return {
         from: start ? start.toISOString() : undefined,
         to: end ? end.toISOString() : undefined,
@@ -136,10 +137,8 @@ export function TripHistoryPage() {
   const trips = useMemo(() => {
     const items = tripResponse?.items ?? [];
     const normalized = items.map((item) => {
-      const start = item.startTime
-        ? new Date(item.startTime).toLocaleString()
-        : "--";
-      const end = item.endTime ? new Date(item.endTime).toLocaleString() : "--";
+      const start = formatDate(item.startTime, "--");
+      const end = formatDate(item.endTime, "--");
       const miles =
         typeof item.milesDriven === "number"
           ? item.milesDriven.toFixed(1)
@@ -214,7 +213,9 @@ export function TripHistoryPage() {
             <span className="text-muted">From</span>
             <input
               className="input"
-              type="date"
+              type="text"
+              inputMode="numeric"
+              placeholder="MM/DD/YYYY"
               value={customFrom}
               onChange={(event) => setCustomFrom(event.target.value)}
               disabled={dateRange !== "custom"}
@@ -224,7 +225,9 @@ export function TripHistoryPage() {
             <span className="text-muted">To</span>
             <input
               className="input"
-              type="date"
+              type="text"
+              inputMode="numeric"
+              placeholder="MM/DD/YYYY"
               value={customTo}
               onChange={(event) => setCustomTo(event.target.value)}
               disabled={dateRange !== "custom"}
@@ -392,4 +395,23 @@ function formatDuration(startTime: string, endTime: string) {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
+
+function parseUsDate(value: string, mode: "start" | "end") {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  const match = /^\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s*$/.exec(trimmed);
+  if (!match) return undefined;
+  const month = Number(match[1]);
+  const day = Number(match[2]);
+  const year = Number(match[3]);
+  if (!month || !day || !year || month > 12 || day > 31) return undefined;
+  const date = new Date(year, month - 1, day);
+  if (Number.isNaN(date.getTime())) return undefined;
+  if (mode === "end") {
+    date.setHours(23, 59, 59, 999);
+  } else {
+    date.setHours(0, 0, 0, 0);
+  }
+  return date;
 }

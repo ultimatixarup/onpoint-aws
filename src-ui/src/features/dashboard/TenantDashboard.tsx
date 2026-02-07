@@ -11,15 +11,13 @@ import { fetchTripSummaryTrips } from "../../api/tripSummaryApi";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
 import { PageHeader } from "../../ui/PageHeader";
+import { formatDate } from "../../utils/date";
 
 const TRIP_LOOKBACK_DAYS = 7;
 const TRIP_PREVIEW_LIMIT = 10;
 
 function formatTimestamp(value?: string | null) {
-  if (!value) return "--";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "--";
-  return date.toLocaleString();
+  return formatDate(value, "--");
 }
 
 function normalizeStatus(value?: string) {
