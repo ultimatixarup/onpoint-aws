@@ -17,10 +17,40 @@ export type TripSummaryResponse = {
   nextToken?: string | null;
 };
 
+export type TripEventItem = {
+  eventTime?: string;
+  lat?: number;
+  lon?: number;
+  latitude?: number;
+  longitude?: number;
+  location?: {
+    lat?: number;
+    lon?: number;
+    latitude?: number;
+    longitude?: number;
+  };
+  geo?: {
+    lat?: number;
+    lon?: number;
+    latitude?: number;
+    longitude?: number;
+  };
+  [key: string]: unknown;
+};
+
+export type TripEventsResponse = {
+  vin: string;
+  tripId: string;
+  count: number;
+  items: TripEventItem[];
+  nextToken?: string | null;
+};
+
 type TripSummaryQuery = {
   tenantId: string;
   fleetId?: string;
   vin?: string;
+  vehicleIds?: string[];
   from?: string;
   to?: string;
   limit?: number;
@@ -37,6 +67,7 @@ export async function fetchTripSummaryTrips({
   tenantId,
   fleetId,
   vin,
+  vehicleIds,
   from,
   to,
   limit = 50,
@@ -46,6 +77,9 @@ export async function fetchTripSummaryTrips({
   if (from) params.set("from", from);
   if (to) params.set("to", to);
   if (limit) params.set("limit", String(limit));
+  if (vehicleIds && vehicleIds.length > 0) {
+    params.set("vehicleIds", vehicleIds.join(","));
+  }
 
   const path = fleetId
     ? `/fleets/${fleetId}/trips?${params.toString()}`
@@ -59,6 +93,30 @@ export async function fetchTripSummaryTrips({
     headers: {
       ...(tripSummaryApiKey ? { "x-api-key": tripSummaryApiKey } : {}),
       "x-tenant-id": tenantId,
+    },
+  });
+}
+
+export async function fetchTripEvents(params: {
+  tenantId: string;
+  vin: string;
+  tripId: string;
+  limit?: number;
+  nextToken?: string;
+}): Promise<TripEventsResponse> {
+  const query = new URLSearchParams();
+  if (params.limit) query.set("limit", String(params.limit));
+  if (params.nextToken) query.set("nextToken", params.nextToken);
+  const suffix = query.toString();
+  const path = `/trips/${encodeURIComponent(params.vin)}/${encodeURIComponent(
+    params.tripId,
+  )}/events${suffix ? `?${suffix}` : ""}`;
+
+  return httpRequest<TripEventsResponse>(path, {
+    baseUrl: tripSummaryBaseUrl,
+    headers: {
+      ...(tripSummaryApiKey ? { "x-api-key": tripSummaryApiKey } : {}),
+      "x-tenant-id": params.tenantId,
     },
   });
 }

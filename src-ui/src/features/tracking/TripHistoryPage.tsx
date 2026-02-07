@@ -1,8 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { useEffect, useMemo, useState } from "react";
+import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
 import { fetchFleets } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
-import { fetchTripSummaryTrips } from "../../api/tripSummaryApi";
+import { fetchTripEvents, fetchTripSummaryTrips } from "../../api/tripSummaryApi";
 import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Button } from "../../ui/Button";
@@ -16,6 +19,8 @@ export function TripHistoryPage() {
   const [customTo, setCustomTo] = useState("");
   const [search, setSearch] = useState("");
   const [selectedVin, setSelectedVin] = useState("all");
+  const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
+  const [selectedTripVin, setSelectedTripVin] = useState<string | null>(null);
 
   const { tenant } = useTenant();
   const { fleet } = useFleet();
@@ -171,6 +176,50 @@ export function TripHistoryPage() {
     const term = search.trim().toLowerCase();
     return normalized.filter((trip) => trip.id.toLowerCase().includes(term));
   }, [search, tripResponse]);
+
+  useEffect(() => {
+    if (!selectedTripId || !selectedTripVin) return;
+    const stillExists = trips.some(
+      (trip) => trip.id === selectedTripId && trip.vin === selectedTripVin,
+    );
+    if (!stillExists) {
+      setSelectedTripId(null);
+      setSelectedTripVin(null);
+    }
+  }, [selectedTripId, selectedTripVin, trips]);
+
+  const {
+    data: tripEventsResponse,
+    isLoading: isLoadingTripEvents,
+    error: tripEventsError,
+  } = useQuery({
+    queryKey: [
+      "trip-events",
+      tenantId,
+      selectedTripVin ?? "",
+      selectedTripId ?? "",
+    ],
+    queryFn: () =>
+      fetchTripEvents({
+        tenantId,
+        vin: selectedTripVin ?? "",
+        tripId: selectedTripId ?? "",
+        limit: 500,
+      }),
+    enabled: Boolean(tenantId && selectedTripId && selectedTripVin),
+  });
+
+  const tripPath = useMemo(() => {
+    const items = tripEventsResponse?.items ?? [];
+    return items
+      .map((item) => extractEventPosition(item))
+      .filter((pos): pos is [number, number] => Boolean(pos));
+  }, [tripEventsResponse]);
+
+  const tripBounds = useMemo(() => {
+    if (tripPath.length === 0) return null;
+    return L.latLngBounds(tripPath);
+  }, [tripPath]);
 
   return (
     <div className="page">
@@ -354,7 +403,18 @@ export function TripHistoryPage() {
               </thead>
               <tbody>
                 {trips.map((trip) => (
-                  <tr key={trip.id}>
+                  <tr
+                    key={trip.id}
+                    className={
+                      trip.id === selectedTripId && trip.vin === selectedTripVin
+                        ? "is-selected"
+                        : undefined
+                    }
+                    onClick={() => {
+                      setSelectedTripId(trip.id);
+                      setSelectedTripVin(trip.vin);
+                    }}
+                  >
                     <td className="mono">{trip.id}</td>
                     <td className="mono">{trip.vin}</td>
                     <td>{trip.start}</td>
@@ -382,8 +442,108 @@ export function TripHistoryPage() {
           </div>
         )}
       </Card>
+
+      <Card title="Trip Map">
+        {!selectedTripId || !selectedTripVin ? (
+          <div className="empty-state">
+            <div className="empty-state__icon">🗺️</div>
+            <h3>Select a trip</h3>
+            <p className="text-muted">Click a trip to view its route on the map.</p>
+          </div>
+        ) : isLoadingTripEvents ? (
+          <div className="empty-state">
+            <div className="empty-state__icon">⏳</div>
+            <h3>Loading trip route</h3>
+            <p className="text-muted">Fetching telemetry events for this trip.</p>
+          </div>
+        ) : tripEventsError ? (
+          <div className="empty-state">
+            <div className="empty-state__icon">⚠️</div>
+            <h3>Unable to load route</h3>
+            <p className="text-muted">Verify your API access and try again.</p>
+          </div>
+        ) : tripPath.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state__icon">📍</div>
+            <h3>No GPS points available</h3>
+            <p className="text-muted">This trip has no location data to display.</p>
+          </div>
+        ) : (
+          <div className="map-container">
+            <MapContainer
+              center={tripPath[0]}
+              zoom={12}
+              style={{ height: "100%", width: "100%" }}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {tripBounds ? <FitBounds bounds={tripBounds} /> : null}
+              <Polyline positions={tripPath} color="#4550e6" weight={4} />
+              {tripPath.length > 0 ? (
+                <Marker position={tripPath[0]}>
+                  <Popup>
+                    Start<br />
+                    {selectedTripVin}
+                  </Popup>
+                </Marker>
+              ) : null}
+              {tripPath.length > 1 ? (
+                <Marker position={tripPath[tripPath.length - 1]}>
+                  <Popup>
+                    End<br />
+                    {selectedTripVin}
+                  </Popup>
+                </Marker>
+              ) : null}
+            </MapContainer>
+          </div>
+        )}
+      </Card>
     </div>
   );
+}
+
+function FitBounds({ bounds }: { bounds: L.LatLngBounds }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.fitBounds(bounds, { padding: [24, 24] });
+  }, [bounds, map]);
+
+  return null;
+}
+
+function extractEventPosition(event: Record<string, unknown>) {
+  const directLat = asNumber(event.lat ?? event.latitude);
+  const directLon = asNumber(event.lon ?? event.longitude);
+  if (directLat !== null && directLon !== null) return [directLat, directLon] as [number, number];
+
+  const location = event.location as Record<string, unknown> | undefined;
+  if (location) {
+    const locLat = asNumber(location.lat ?? location.latitude);
+    const locLon = asNumber(location.lon ?? location.longitude);
+    if (locLat !== null && locLon !== null) return [locLat, locLon] as [number, number];
+  }
+
+  const geo = event.geo as Record<string, unknown> | undefined;
+  if (geo) {
+    const geoLat = asNumber(geo.lat ?? geo.latitude);
+    const geoLon = asNumber(geo.lon ?? geo.longitude);
+    if (geoLat !== null && geoLon !== null) return [geoLat, geoLon] as [number, number];
+  }
+
+  return null;
+}
+
+function asNumber(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
 }
 
 function formatDuration(startTime: string, endTime: string) {

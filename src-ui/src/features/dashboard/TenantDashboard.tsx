@@ -45,6 +45,11 @@ export function TenantDashboard() {
     [fleets],
   );
 
+  const fleetIds = useMemo(
+    () => fleets.map((fleet) => fleet.fleetId).filter(Boolean),
+    [fleets],
+  );
+
   const {
     data: vehicles = [],
     isLoading: isLoadingVehicles,
@@ -87,9 +92,9 @@ export function TenantDashboard() {
     return { from: start.toISOString(), to: now.toISOString() };
   }, []);
 
-  const fleetIds = useMemo(
-    () => fleets.map((fleet) => fleet.fleetId).filter(Boolean),
-    [fleets],
+  const vehicleIds = useMemo(
+    () => vehicles.map((vehicle) => vehicle.vin).filter(Boolean),
+    [vehicles],
   );
 
   const {
@@ -97,21 +102,17 @@ export function TenantDashboard() {
     isLoading: isLoadingTrips,
     error: tripsError,
   } = useQuery({
-    queryKey: ["tenant-dashboard", "trips", tenantId, fleetIds.join("|")],
+    queryKey: ["tenant-dashboard", "trips", tenantId, vehicleIds.join("|")],
     queryFn: async () => {
-      if (!tenantId || fleetIds.length === 0) return [];
-      const responses = await Promise.all(
-        fleetIds.map((fleetId) =>
-          fetchTripSummaryTrips({
-            tenantId,
-            fleetId,
-            from,
-            to,
-            limit: TRIP_PREVIEW_LIMIT,
-          }),
-        ),
-      );
-      const merged = responses.flatMap((response) => response.items ?? []);
+      if (!tenantId || vehicleIds.length === 0) return [];
+      const response = await fetchTripSummaryTrips({
+        tenantId,
+        vehicleIds,
+        from,
+        to,
+        limit: TRIP_PREVIEW_LIMIT,
+      });
+      const merged = response.items ?? [];
       merged.sort((a, b) => {
         const aTime = a.endTime ? new Date(a.endTime).getTime() : 0;
         const bTime = b.endTime ? new Date(b.endTime).getTime() : 0;
