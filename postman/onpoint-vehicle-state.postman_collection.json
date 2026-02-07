@@ -46,6 +46,11 @@
             "key": "x-api-key",
             "value": "{{apiKey}}",
             "type": "text"
+          },
+          {
+            "key": "x-tenant-id",
+            "value": "{{tenantId}}",
+            "type": "text"
           }
         ],
         "url": {
@@ -79,6 +84,11 @@
           {
             "key": "x-api-key",
             "value": "{{apiKey}}",
+            "type": "text"
+          },
+          {
+            "key": "x-tenant-id",
+            "value": "{{tenantId}}",
             "type": "text"
           }
         ],
