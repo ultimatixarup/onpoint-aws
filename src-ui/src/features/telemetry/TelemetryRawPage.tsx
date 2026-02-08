@@ -108,6 +108,7 @@ function formatTimestamp(value: string) {
 export function TelemetryRawPage() {
   const [providerFilter, setProviderFilter] = useState("all");
   const [vinFilter, setVinFilter] = useState("all");
+  const [tripIdFilter, setTripIdFilter] = useState("all");
   const [levelFilter, setLevelFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -125,6 +126,11 @@ export function TelemetryRawPage() {
     [],
   );
 
+  const tripIds = useMemo(
+    () => Array.from(new Set(SAMPLE_EVENTS.map((event) => event.tripId))),
+    [],
+  );
+
   const filteredEvents = useMemo(() => {
     const searchTerm = search.trim().toLowerCase();
     return SAMPLE_EVENTS.filter((event) => {
@@ -137,12 +143,15 @@ export function TelemetryRawPage() {
       if (vinFilter !== "all" && event.vin !== vinFilter) {
         return false;
       }
+      if (tripIdFilter !== "all" && event.tripId !== tripIdFilter) {
+        return false;
+      }
       if (searchTerm && !event.summary.toLowerCase().includes(searchTerm)) {
         return false;
       }
       return true;
     }).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-  }, [levelFilter, providerFilter, search, vinFilter]);
+  }, [levelFilter, providerFilter, search, tripIdFilter, vinFilter]);
 
   const selectedEvent =
     filteredEvents.find((event) => event.id === selectedId) ??
@@ -248,6 +257,21 @@ export function TelemetryRawPage() {
               {vins.map((vin) => (
                 <option key={vin} value={vin}>
                   {vin}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="form__field">
+            <span className="text-muted">Trip ID</span>
+            <select
+              className="select"
+              value={tripIdFilter}
+              onChange={(event) => setTripIdFilter(event.target.value)}
+            >
+              <option value="all">All trips</option>
+              {tripIds.map((tripId) => (
+                <option key={tripId} value={tripId}>
+                  {tripId}
                 </option>
               ))}
             </select>
