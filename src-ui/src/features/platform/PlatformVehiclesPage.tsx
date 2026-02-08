@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "../../ui/Card";
 import { PageHeader } from "../../ui/PageHeader";
 import {
+  assignVin,
   createVehicle,
   fetchFleets,
   fetchTenants,
@@ -54,7 +56,7 @@ export function PlatformVehiclesPage() {
       ? queryKeys.vehicles(tenantId, fleetId || undefined)
       : ["vehicles", "none"],
     queryFn: () => fetchVehicles(tenantId, fleetId || undefined),
-    enabled: Boolean(tenantId && fleetId),
+    enabled: Boolean(tenantId),
   });
 
   const [vin, setVin] = useState("");
@@ -62,6 +64,10 @@ export function PlatformVehiclesPage() {
   const [model, setModel] = useState("");
   const [year, setYear] = useState("");
   const [status, setStatus] = useState("ACTIVE");
+  const [assignAfterCreate, setAssignAfterCreate] = useState(true);
+  const [assignmentReason, setAssignmentReason] = useState("");
+  const [createError, setCreateError] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
 
   const [selectedVin, setSelectedVin] = useState("");
   const selectedVehicle = useMemo(
@@ -72,6 +78,17 @@ export function PlatformVehiclesPage() {
   const [editStatus, setEditStatus] = useState("ACTIVE");
   const [assetTags, setAssetTags] = useState("");
   const [metadata, setMetadata] = useState("");
+  const [updateError, setUpdateError] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const [columnWidths, setColumnWidths] = useState(() => ({
+    vin: 220,
+    make: 90,
+    model: 90,
+    year: 70,
+    status: 110,
+  }));
+  const [hasUserResized, setHasUserResized] = useState(false);
 
   useEffect(() => {
     if (!selectedVehicle) return;
@@ -79,6 +96,7 @@ export function PlatformVehiclesPage() {
     setEditStatus(selectedVehicle.status ?? "ACTIVE");
     setAssetTags("");
     setMetadata("");
+    setUpdateError("");
   }, [selectedVehicle]);
 
   const filteredVehicles = useMemo(() => {
@@ -94,40 +112,156 @@ export function PlatformVehiclesPage() {
     );
   }, [vehicles, search]);
 
+  useEffect(() => {
+    setHasUserResized(false);
+  }, [tenantId, fleetId]);
+
+  useEffect(() => {
+    if (hasUserResized) return;
+    const sample = vehicles.slice(0, 50);
+    const maxText = (values: Array<string | number | undefined>) =>
+      values
+        .map((value) => String(value ?? ""))
+        .reduce((max, value) => (value.length > max.length ? value : max), "");
+
+    const vinText = maxText(sample.map((v) => v.vin));
+    const makeText = maxText(sample.map((v) => v.make));
+    const modelText = maxText(sample.map((v) => v.model));
+    const yearText = maxText(sample.map((v) => v.year));
+    const statusText = maxText(sample.map((v) => v.status ?? "ACTIVE"));
+
+    const estimate = (
+      text: string,
+      min: number,
+      max: number,
+      charWidth = 8,
+    ) => {
+      const width = text.length * charWidth + 32;
+      return Math.max(min, Math.min(max, width));
+    };
+
+    setColumnWidths({
+      vin: estimate(vinText, 150, 320, 9),
+      make: estimate(makeText, 70, 160),
+      model: estimate(modelText, 70, 180),
+      year: estimate(yearText, 60, 100),
+      status: estimate(statusText, 90, 150),
+    });
+  }, [hasUserResized, vehicles]);
+
+  const startResize =
+    (key: keyof typeof columnWidths) =>
+    (event: ReactMouseEvent<HTMLSpanElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const startX = event.clientX;
+      const startWidth = columnWidths[key];
+      const minWidth = 70;
+      const maxWidth = 420;
+
+      setHasUserResized(true);
+      const handleMove = (moveEvent: MouseEvent) => {
+        const delta = moveEvent.clientX - startX;
+        const next = Math.min(maxWidth, Math.max(minWidth, startWidth + delta));
+        setColumnWidths((prev) => ({ ...prev, [key]: next }));
+      };
+
+      const handleUp = () => {
+        window.removeEventListener("mousemove", handleMove);
+        window.removeEventListener("mouseup", handleUp);
+      };
+
+      window.addEventListener("mousemove", handleMove);
+      window.addEventListener("mouseup", handleUp);
+    };
+
+  useEffect(() => {
+    if (!selectedVin) return;
+    const stillExists = filteredVehicles.some(
+      (vehicle) => vehicle.vin === selectedVin,
+    );
+    if (!stillExists) {
+      setSelectedVin("");
+    }
+  }, [filteredVehicles, selectedVin]);
+
   const handleCreate = async () => {
     if (!vin) return;
-    await createVehicle({
-      vin,
-      make: make || undefined,
-      model: model || undefined,
-      year: year || undefined,
-      status,
-    });
-    setVin("");
-    setMake("");
-    setModel("");
-    setYear("");
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.vehicles(tenantId, fleetId || undefined),
-    });
+    if (!tenantId) {
+      setCreateError("Select a tenant before creating a vehicle.");
+      return;
+    }
+    if (assignAfterCreate && !assignmentReason.trim()) {
+      setCreateError("Provide a reason to assign the VIN.");
+      return;
+    }
+    setCreateError("");
+    setIsCreating(true);
+    try {
+      await createVehicle({
+        vin,
+        make: make || undefined,
+        model: model || undefined,
+        year: year || undefined,
+        status,
+      });
+
+      if (assignAfterCreate) {
+        const idempotencyKey =
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `assign-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        await assignVin(
+          {
+            vin,
+            tenantId,
+            fleetId: fleetId || undefined,
+            effectiveFrom: new Date().toISOString(),
+            reason: assignmentReason.trim(),
+          },
+          idempotencyKey,
+        );
+      }
+
+      setVin("");
+      setMake("");
+      setModel("");
+      setYear("");
+      setAssignmentReason("");
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.vehicles(tenantId, fleetId || undefined),
+      });
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : "Create failed.");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleUpdate = async () => {
     if (!editVin) return;
-    const tags = assetTags
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean);
-    await updateVehicle(editVin, {
-      status: editStatus || undefined,
-      assetTags: tags.length ? tags : undefined,
-      metadata: parseJson(metadata),
-    });
-    setAssetTags("");
-    setMetadata("");
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.vehicles(tenantId, fleetId || undefined),
-    });
+    setUpdateError("");
+    setIsUpdating(true);
+    try {
+      const tags = assetTags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+      await updateVehicle(editVin, {
+        status: editStatus || undefined,
+        assetTags: tags.length ? tags : undefined,
+        metadata: parseJson(metadata),
+      });
+      setAssetTags("");
+      setMetadata("");
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.vehicles(tenantId, fleetId || undefined),
+      });
+    } catch (err) {
+      setUpdateError(err instanceof Error ? err.message : "Update failed.");
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
@@ -136,7 +270,7 @@ export function PlatformVehiclesPage() {
         title="Platform Admin – Vehicles"
         subtitle="Register vehicles, manage status, and capture metadata."
       />
-      <div className="split-layout">
+      <div className="split-layout split-layout--vehicles">
         <Card title="Vehicles">
           <div className="stack">
             <label className="form__field">
@@ -189,55 +323,104 @@ export function PlatformVehiclesPage() {
               />
               <button
                 className="btn"
-                onClick={() => setIsCreateOpen(true)}
-                disabled={!tenantId || !fleetId}
+                onClick={() => {
+                  setCreateError("");
+                  setIsCreateOpen(true);
+                }}
+                disabled={!tenantId}
               >
                 Create Vehicle
               </button>
             </div>
-            {!tenantId || !fleetId ? (
-              <p>Select a tenant and fleet to view vehicles.</p>
+            {!tenantId ? (
+              <p>Select a tenant to view vehicles.</p>
             ) : isLoading ? (
               <p>Loading vehicles...</p>
             ) : error ? (
               <p>Unable to load vehicles.</p>
+            ) : filteredVehicles.length === 0 ? (
+              <p>
+                No vehicles match this selection. Assign VINs to the tenant to
+                populate the list.
+              </p>
             ) : (
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>VIN</th>
-                    <th>Make</th>
-                    <th>Model</th>
-                    <th>Year</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredVehicles.map((vehicle) => (
-                    <tr
-                      key={vehicle.vin}
-                      className={
-                        vehicle.vin === selectedVin ? "is-selected" : undefined
-                      }
-                      onClick={() => setSelectedVin(vehicle.vin)}
-                    >
-                      <td className="mono">{vehicle.vin}</td>
-                      <td>{vehicle.make ?? "—"}</td>
-                      <td>{vehicle.model ?? "—"}</td>
-                      <td>{vehicle.year ?? "—"}</td>
-                      <td>
+              <div className="table-responsive">
+                <table className="table table--vehicles">
+                  <colgroup>
+                    <col style={{ width: `${columnWidths.vin}px` }} />
+                    <col style={{ width: `${columnWidths.make}px` }} />
+                    <col style={{ width: `${columnWidths.model}px` }} />
+                    <col style={{ width: `${columnWidths.year}px` }} />
+                    <col style={{ width: `${columnWidths.status}px` }} />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th className="col-vin">
+                        VIN
                         <span
-                          className={`badge badge--${
-                            vehicle.status?.toLowerCase() ?? "active"
-                          }`}
-                        >
-                          {vehicle.status ?? "ACTIVE"}
-                        </span>
-                      </td>
+                          className="col-resize"
+                          onMouseDown={startResize("vin")}
+                        />
+                      </th>
+                      <th className="col-make">
+                        Make
+                        <span
+                          className="col-resize"
+                          onMouseDown={startResize("make")}
+                        />
+                      </th>
+                      <th className="col-model">
+                        Model
+                        <span
+                          className="col-resize"
+                          onMouseDown={startResize("model")}
+                        />
+                      </th>
+                      <th className="col-year">
+                        Year
+                        <span
+                          className="col-resize"
+                          onMouseDown={startResize("year")}
+                        />
+                      </th>
+                      <th className="col-status">
+                        Status
+                        <span
+                          className="col-resize"
+                          onMouseDown={startResize("status")}
+                        />
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {filteredVehicles.map((vehicle) => (
+                      <tr
+                        key={vehicle.vin}
+                        className={
+                          vehicle.vin === selectedVin
+                            ? "is-selected"
+                            : undefined
+                        }
+                        onClick={() => setSelectedVin(vehicle.vin)}
+                      >
+                        <td className="mono col-vin">{vehicle.vin}</td>
+                        <td className="col-make">{vehicle.make ?? "—"}</td>
+                        <td className="col-model">{vehicle.model ?? "—"}</td>
+                        <td className="col-year">{vehicle.year ?? "—"}</td>
+                        <td className="col-status">
+                          <span
+                            className={`badge badge--${
+                              vehicle.status?.toLowerCase() ?? "active"
+                            }`}
+                          >
+                            {vehicle.status ?? "ACTIVE"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </Card>
@@ -330,6 +513,9 @@ export function PlatformVehiclesPage() {
                       rows={5}
                     />
                   </label>
+                  {updateError ? (
+                    <span className="text-muted">{updateError}</span>
+                  ) : null}
                 </div>
               ) : null}
 
@@ -350,11 +536,16 @@ export function PlatformVehiclesPage() {
                     setEditStatus(selectedVehicle.status ?? "ACTIVE");
                     setAssetTags("");
                     setMetadata("");
+                    setUpdateError("");
                   }}
                 >
                   Cancel
                 </button>
-                <button className="btn" onClick={handleUpdate}>
+                <button
+                  className="btn"
+                  onClick={handleUpdate}
+                  disabled={!selectedVehicle || isUpdating}
+                >
                   Save Changes
                 </button>
               </div>
@@ -425,6 +616,39 @@ export function PlatformVehiclesPage() {
                     <option value="INACTIVE">INACTIVE</option>
                   </select>
                 </label>
+                <label className="form__field">
+                  <span>Assign VIN to tenant</span>
+                  <div className="inline">
+                    <input
+                      type="checkbox"
+                      checked={assignAfterCreate}
+                      onChange={(event) =>
+                        setAssignAfterCreate(event.target.checked)
+                      }
+                    />
+                    <span className="text-muted">
+                      {fleetId
+                        ? `Assign to ${tenantId} / ${fleetId}`
+                        : `Assign to ${tenantId}`}
+                    </span>
+                  </div>
+                </label>
+                {assignAfterCreate ? (
+                  <label className="form__field">
+                    <span>Assignment reason</span>
+                    <input
+                      className="input"
+                      placeholder="Required"
+                      value={assignmentReason}
+                      onChange={(event) =>
+                        setAssignmentReason(event.target.value)
+                      }
+                    />
+                  </label>
+                ) : null}
+                {createError ? (
+                  <span className="text-muted">{createError}</span>
+                ) : null}
               </div>
             </div>
             <div className="modal__footer">
@@ -434,7 +658,11 @@ export function PlatformVehiclesPage() {
               >
                 Cancel
               </button>
-              <button className="btn" onClick={handleCreate} disabled={!vin}>
+              <button
+                className="btn"
+                onClick={handleCreate}
+                disabled={!vin || isCreating}
+              >
                 Create Vehicle
               </button>
             </div>
