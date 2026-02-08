@@ -1,0 +1,117 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: onpoint ui static site (S3 + CloudFront)
+
+Parameters:
+  Env:
+    Type: String
+  ProjectName:
+    Type: String
+  UiBucketName:
+    Type: String
+    Default: ""
+  UiPriceClass:
+    Type: String
+    Default: PriceClass_100
+
+Conditions:
+  UseProvidedUiBucketName: !Not [!Equals [!Ref UiBucketName, ""]]
+
+Resources:
+  UiBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !If
+        - UseProvidedUiBucketName
+        - !Ref UiBucketName
+        - !Sub "${ProjectName}-${Env}-ui"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Env
+          Value: !Ref Env
+
+  UiOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${ProjectName}-${Env}-ui-oac"
+        Description: Access control for UI S3 origin
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  UiDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub "${ProjectName}-${Env}-ui"
+        DefaultRootObject: index.html
+        HttpVersion: http2
+        PriceClass: !Ref UiPriceClass
+        Origins:
+          - Id: UiS3Origin
+            DomainName: !GetAtt UiBucket.RegionalDomainName
+            OriginAccessControlId: !Ref UiOriginAccessControl
+            S3OriginConfig: {}
+        DefaultCacheBehavior:
+          TargetOriginId: UiS3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          CachedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          Compress: true
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+
+  UiBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref UiBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudFrontRead
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action:
+              - s3:GetObject
+            Resource: !Sub "${UiBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${UiDistribution}"
+
+Outputs:
+  UiBucketName:
+    Value: !Ref UiBucket
+  UiBucketArn:
+    Value: !GetAtt UiBucket.Arn
+  UiDistributionId:
+    Value: !Ref UiDistribution
+  UiCloudFrontDomainName:
+    Value: !GetAtt UiDistribution.DomainName

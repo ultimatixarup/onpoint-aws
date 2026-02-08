@@ -48,9 +48,16 @@ Parameters:
   CommonLayerS3Key:
     Type: String
     Default: lambda/onpoint_common_layer.zip
+  UiBucketName:
+    Type: String
+    Default: ""
+  UiPriceClass:
+    Type: String
+    Default: PriceClass_100
 
 Conditions:
   UseProvidedUserPoolId: !Not [!Equals [!Ref UserPoolId, ""]]
+  UseProvidedUiBucketName: !Not [!Equals [!Ref UiBucketName, ""]]
 
 Resources:
   StreamsStack:
@@ -174,6 +181,16 @@ Resources:
         IngressQueueUrl: !GetAtt QueuesStack.Outputs.IngressQueueUrl
       TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/ingest_api.yaml
 
+  UiStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        Env: !Ref Env
+        ProjectName: !Ref ProjectName
+        UiBucketName: !If [UseProvidedUiBucketName, !Ref UiBucketName, ""]
+        UiPriceClass: !Ref UiPriceClass
+      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/ui.yaml
+
 Outputs:
   Env:
     Value: !Ref Env
@@ -210,3 +227,9 @@ Outputs:
     Value: !If [UseProvidedUserPoolId, !Ref UserPoolId, !GetAtt CognitoStack.Outputs.UserPoolId]
   UserPoolClientId:
     Value: !GetAtt CognitoStack.Outputs.UserPoolClientId
+  UiBucketName:
+    Value: !GetAtt UiStack.Outputs.UiBucketName
+  UiDistributionId:
+    Value: !GetAtt UiStack.Outputs.UiDistributionId
+  UiCloudFrontDomainName:
+    Value: !GetAtt UiStack.Outputs.UiCloudFrontDomainName
