@@ -93,10 +93,82 @@ Resources:
       MethodResponses:
         - StatusCode: 200
 
-  IngestDeployment:
+  IngestOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IngestRestApi
+      ResourceId: !Ref IngestTelematicsResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      ApiKeyRequired: false
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key,ProviderId'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  RootOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IngestRestApi
+      ResourceId: !GetAtt IngestRestApi.RootResourceId
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      ApiKeyRequired: false
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key,ProviderId'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  IngestGatewayResponseDefault4XX:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      RestApiId: !Ref IngestRestApi
+      ResponseType: DEFAULT_4XX
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key,ProviderId'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+
+  IngestGatewayResponseDefault5XX:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      RestApiId: !Ref IngestRestApi
+      ResponseType: DEFAULT_5XX
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key,ProviderId'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+
+  IngestDeploymentV2:
     Type: AWS::ApiGateway::Deployment
     DependsOn:
       - IngestMethod
+      - IngestOptionsMethod
+      - RootOptionsMethod
     Properties:
       RestApiId: !Ref IngestRestApi
       Description: !Sub "deploy-${AWS::StackName}-${AWS::Region}-${DeploymentNonce}"
@@ -105,7 +177,7 @@ Resources:
     Type: AWS::ApiGateway::Stage
     Properties:
       RestApiId: !Ref IngestRestApi
-      DeploymentId: !Ref IngestDeployment
+      DeploymentId: !Ref IngestDeploymentV2
       StageName: v1
       Variables:
         PROVIDER_LOOKUP_MODE: dynamodb

@@ -133,8 +133,7 @@ export async function fetchFleets(tenantId: string) {
       ? (response as { items: unknown[] }).items
       : [];
 
-  return items
-    .map((item) => {
+    const fleets = items.map((item): FleetSummary | undefined => {
       const record = item as Record<string, unknown>;
       const fleetId = record.fleetId ?? record.id;
       if (!fleetId) return undefined;
@@ -153,8 +152,8 @@ export async function fetchFleets(tenantId: string) {
             ? (record.policies as Record<string, unknown> | null)
             : undefined,
       };
-    })
-    .filter((item): item is FleetSummary => Boolean(item));
+    });
+    return fleets.filter(Boolean) as FleetSummary[];
 }
 
 export async function createTenant(payload: {
@@ -199,8 +198,7 @@ export async function fetchCustomers(tenantId: string) {
       ? (response as { items: unknown[] }).items
       : [];
 
-  return items
-    .map((item) => {
+  const customers = items.map((item): CustomerSummary | undefined => {
       const record = item as Record<string, unknown>;
       const customerId = record.customerId ?? record.id;
       if (!customerId) return undefined;
@@ -210,8 +208,8 @@ export async function fetchCustomers(tenantId: string) {
         status: record.status ? String(record.status) : undefined,
         tenantId: record.tenantId ? String(record.tenantId) : undefined,
       };
-    })
-    .filter((item): item is CustomerSummary => Boolean(item));
+  });
+  return customers.filter(Boolean) as CustomerSummary[];
 }
 
 export async function createCustomer(payload: {
@@ -292,8 +290,7 @@ export async function fetchVehicles(tenantId: string, fleetId?: string) {
       ? (response as { items: unknown[] }).items
       : [];
 
-  return items
-    .map((item) => {
+  const vehicles = items.map((item): VehicleSummary | undefined => {
       const record = item as Record<string, unknown>;
       const pkValue = record.PK;
       const vinFromPk =
@@ -312,8 +309,8 @@ export async function fetchVehicles(tenantId: string, fleetId?: string) {
         model: record.model ? String(record.model) : undefined,
         year: Number.isNaN(year) ? undefined : year,
       };
-    })
-    .filter((item): item is VehicleSummary => Boolean(item));
+  });
+  return vehicles.filter(Boolean) as VehicleSummary[];
 }
 
 export async function createVehicle(payload: {
@@ -363,8 +360,7 @@ export async function fetchDrivers(tenantId: string, fleetId?: string) {
       ? (response as { items: unknown[] }).items
       : [];
 
-  return items
-    .map((item) => {
+  const drivers = items.map((item): DriverSummary | undefined => {
       const record = item as Record<string, unknown>;
       const driverId = record.driverId ?? record.id ?? record.userId;
       if (!driverId) return undefined;
@@ -387,8 +383,8 @@ export async function fetchDrivers(tenantId: string, fleetId?: string) {
         email: record.email ? String(record.email) : undefined,
         phone: record.phone ? String(record.phone) : undefined,
       };
-    })
-    .filter((item): item is DriverSummary => Boolean(item));
+  });
+  return drivers.filter(Boolean) as DriverSummary[];
 }
 
 export async function createDriver(payload: {
@@ -436,8 +432,7 @@ export async function fetchUsers(tenantId: string) {
       ? (response as { items: unknown[] }).items
       : [];
 
-  return items
-    .map((item) => {
+  const users = items.map((item): UserSummary | undefined => {
       const record = item as Record<string, unknown>;
       const userId = record.userId ?? record.id ?? record.email;
       if (!userId) return undefined;
@@ -476,12 +471,13 @@ export async function fetchUsers(tenantId: string) {
         attributeMap?.given_name ??
         attributeMap?.preferred_username;
 
-      const emailValue =
+      const rawEmail =
         record.email ??
         attributeMap?.email ??
         (typeof userId === "string" && userId.includes("@")
           ? userId
           : undefined);
+      const emailValue = typeof rawEmail === "string" ? rawEmail : undefined;
 
       const fallbackName =
         !nameValue && emailValue
@@ -500,8 +496,8 @@ export async function fetchUsers(tenantId: string) {
         status: statusValue,
         enabled: enabledValue,
       };
-    })
-    .filter((item): item is UserSummary => Boolean(item));
+  });
+  return users.filter(Boolean) as UserSummary[];
 }
 
 const vehicleStateBaseUrl =
@@ -536,8 +532,7 @@ export async function fetchFleetVehicleStates(
       ? (response as { items?: unknown[] }).items ?? []
       : [];
 
-  return items
-    .map((item) => {
+  const vehicleStates = items.map((item): VehicleState | undefined => {
       const record = item as Record<string, unknown>;
       const pkValue = record.PK;
       const vinFromPk =
@@ -555,7 +550,9 @@ export async function fetchFleetVehicleStates(
       const odometerValue = record.odometer_miles ?? record.odometerMiles;
       return {
         vin: String(vin),
-        lastEventTime: record.lastEventTime ? String(record.lastEventTime) : undefined,
+        lastEventTime: record.lastEventTime
+          ? String(record.lastEventTime)
+          : undefined,
         lat: Number.isNaN(lat) ? undefined : lat,
         lon: Number.isNaN(lon) ? undefined : lon,
         heading:
@@ -570,9 +567,9 @@ export async function fetchFleetVehicleStates(
         ignition_status: record.ignition_status
           ? String(record.ignition_status)
           : undefined,
-      } satisfies VehicleState;
-    })
-    .filter((item): item is VehicleState => Boolean(item));
+      };
+  });
+  return vehicleStates.filter(Boolean) as VehicleState[];
 }
 
 export async function createTenantUser(

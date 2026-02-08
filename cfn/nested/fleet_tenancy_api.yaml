@@ -62,7 +62,7 @@ Resources:
           - StatusCode: 200
             ResponseParameters:
               method.response.header.Access-Control-Allow-Origin: "'*'"
-              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
               method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
       MethodResponses:
         - StatusCode: 200
@@ -88,7 +88,7 @@ Resources:
           - StatusCode: 200
             ResponseParameters:
               method.response.header.Access-Control-Allow-Origin: "'*'"
-              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
               method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
       MethodResponses:
         - StatusCode: 200
@@ -105,7 +105,7 @@ Resources:
       ResponseType: DEFAULT_4XX
       ResponseParameters:
         gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
-        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
         gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
 
   FleetTenancyGatewayResponseDefault5XX:
@@ -116,7 +116,7 @@ Resources:
       ResponseType: DEFAULT_5XX
       ResponseParameters:
         gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
-        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
         gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
 
   FleetTenancyRestApiInvokePermission:
@@ -128,7 +128,7 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${FleetTenancyRestApi}/*/*/*"
 
-  FleetTenancyRestApiDeployment:
+  FleetTenancyRestApiDeploymentV2:
     Type: AWS::ApiGateway::Deployment
     Condition: HasFleetTenancyApiArn
     DependsOn:
@@ -144,7 +144,7 @@ Resources:
     Condition: HasFleetTenancyApiArn
     Properties:
       RestApiId: !Ref FleetTenancyRestApi
-      DeploymentId: !Ref FleetTenancyRestApiDeployment
+      DeploymentId: !Ref FleetTenancyRestApiDeploymentV2
       StageName: !Ref Env
       Description: !Sub "${Env} environment stage"
 

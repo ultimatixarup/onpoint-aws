@@ -1,16 +1,16 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
+import { useState } from "react";
 import {
-  createDriverAssignment,
-  fetchDrivers,
-  fetchFleets,
-  fetchDriverAssignments,
-  fetchTenants,
-  fetchVehicles,
+    createDriverAssignment,
+    fetchDriverAssignments,
+    fetchDrivers,
+    fetchFleets,
+    fetchTenants,
+    fetchVehicles,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
+import { Card } from "../../ui/Card";
+import { PageHeader } from "../../ui/PageHeader";
 
 export function PlatformDriverAssignmentsPage() {
   const [driverId, setDriverId] = useState("");
@@ -94,8 +94,8 @@ export function PlatformDriverAssignmentsPage() {
 
   const assignmentItems = Array.isArray(data)
     ? data
-    : Array.isArray(data?.items)
-      ? data.items
+    : Array.isArray((data as { items?: unknown[] } | undefined)?.items)
+      ? (data as { items: unknown[] }).items
       : [];
 
   return (

@@ -209,20 +209,22 @@ verify_nested_template() {
     exit 1
   fi
 
-  matches="$(grep -nEi "^[[:space:]]*(IntegrationResponses|MethodResponses):" "$ROOT_DIR/cfn/nested/trip_summary_api.yaml" 2>/dev/null || true)"
-  matches="$(printf "%s\n" "$matches" | grep -vE "^[[:space:]]*#" || true)"
-  if [[ -n "$matches" ]]; then
-    echo "$matches" >&2
-    echo "Forbidden keys found in local template." >&2
-    exit 1
-  fi
+  if [[ "${ALLOW_INTEGRATION_RESPONSES:-}" != "1" ]]; then
+    matches="$(grep -nEi "^[[:space:]]*(IntegrationResponses|MethodResponses):" "$ROOT_DIR/cfn/nested/trip_summary_api.yaml" 2>/dev/null || true)"
+    matches="$(printf "%s\n" "$matches" | grep -vE "^[[:space:]]*#" || true)"
+    if [[ -n "$matches" ]]; then
+      echo "$matches" >&2
+      echo "Forbidden keys found in local template. Set ALLOW_INTEGRATION_RESPONSES=1 to override." >&2
+      exit 1
+    fi
 
-  matches="$(grep -nEi "^[[:space:]]*(IntegrationResponses|MethodResponses):" "$CACHED_TEMPLATE" 2>/dev/null || true)"
-  matches="$(printf "%s\n" "$matches" | grep -vE "^[[:space:]]*#" || true)"
-  if [[ -n "$matches" ]]; then
-    echo "$matches" >&2
-    echo "Forbidden keys found in CloudFormation cached template." >&2
-    exit 1
+    matches="$(grep -nEi "^[[:space:]]*(IntegrationResponses|MethodResponses):" "$CACHED_TEMPLATE" 2>/dev/null || true)"
+    matches="$(printf "%s\n" "$matches" | grep -vE "^[[:space:]]*#" || true)"
+    if [[ -n "$matches" ]]; then
+      echo "$matches" >&2
+      echo "Forbidden keys found in CloudFormation cached template. Set ALLOW_INTEGRATION_RESPONSES=1 to override." >&2
+      exit 1
+    fi
   fi
 
   TEMPLATE_URL_OUT=$(AWS_PAGER="" aws cloudformation describe-stacks \

@@ -14,20 +14,23 @@ const queryClient = new QueryClient({
   },
 });
 
+const cognitoConfig = {
+  userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
+  userPoolClientId: import.meta.env.VITE_COGNITO_CLIENT_ID,
+  signUpVerificationMethod: "code",
+  loginWith: {
+    email: true,
+    username: true,
+  },
+} as Record<string, unknown>;
+
+if (import.meta.env.VITE_COGNITO_IDENTITY_POOL_ID) {
+  cognitoConfig.identityPoolId = import.meta.env.VITE_COGNITO_IDENTITY_POOL_ID;
+}
+
 Amplify.configure({
   Auth: {
-    Cognito: {
-      userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
-      userPoolClientId: import.meta.env.VITE_COGNITO_CLIENT_ID,
-      ...(import.meta.env.VITE_COGNITO_IDENTITY_POOL_ID
-        ? { identityPoolId: import.meta.env.VITE_COGNITO_IDENTITY_POOL_ID }
-        : {}),
-      signUpVerificationMethod: "code",
-      loginWith: {
-        email: true,
-        username: true,
-      },
-    },
+    Cognito: cognitoConfig as any,
   },
 });
 

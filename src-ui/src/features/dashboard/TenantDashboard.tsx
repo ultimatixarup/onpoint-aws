@@ -104,7 +104,9 @@ export function TenantDashboard() {
   } = useQuery({
     queryKey: ["tenant-dashboard", "trips", tenantId, vehicleIds.join("|")],
     queryFn: async () => {
-      if (!tenantId || vehicleIds.length === 0) return [];
+      if (!tenantId || vehicleIds.length === 0) {
+        return { items: [], isFallback: false };
+      }
       const response = await fetchTripSummaryTrips({
         tenantId,
         vehicleIds,

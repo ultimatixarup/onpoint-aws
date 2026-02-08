@@ -12,9 +12,24 @@ Parameters:
   UiPriceClass:
     Type: String
     Default: PriceClass_100
+  UiCustomDomainName:
+    Type: String
+    Default: ""
+  UiAcmCertificateArn:
+    Type: String
+    Default: ""
+  UiHostedZoneId:
+    Type: String
+    Default: ""
 
 Conditions:
   UseProvidedUiBucketName: !Not [!Equals [!Ref UiBucketName, ""]]
+  UseCustomDomain: !And
+    - !Not [!Equals [!Ref UiCustomDomainName, ""]]
+    - !Not [!Equals [!Ref UiAcmCertificateArn, ""]]
+  UseAliasRecord: !And
+    - !Condition UseCustomDomain
+    - !Not [!Equals [!Ref UiHostedZoneId, ""]]
 
 Resources:
   UiBucket:
@@ -44,11 +59,67 @@ Resources:
     Type: AWS::CloudFront::OriginAccessControl
     Properties:
       OriginAccessControlConfig:
-        Name: !Sub "${ProjectName}-${Env}-ui-oac"
+        Name: !Sub "${ProjectName}-${Env}-${AWS::StackName}-ui-oac"
         Description: Access control for UI S3 origin
         OriginAccessControlOriginType: s3
         SigningBehavior: always
         SigningProtocol: sigv4
+
+  UiCachePolicyNoCache:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub "${ProjectName}-${Env}-${AWS::StackName}-ui-no-cache"
+        DefaultTTL: 0
+        MaxTTL: 0
+        MinTTL: 0
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingBrotli: false
+          EnableAcceptEncodingGzip: false
+          CookiesConfig:
+            CookieBehavior: none
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: none
+
+  UiCachePolicyAssets:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub "${ProjectName}-${Env}-${AWS::StackName}-ui-assets"
+        DefaultTTL: 31536000
+        MaxTTL: 31536000
+        MinTTL: 0
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingBrotli: true
+          EnableAcceptEncodingGzip: true
+          CookiesConfig:
+            CookieBehavior: none
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: none
+
+  UiResponseHeadersPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub "${ProjectName}-${Env}-${AWS::StackName}-ui-security-headers"
+        SecurityHeadersConfig:
+          ContentSecurityPolicy:
+            ContentSecurityPolicy: "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https:; script-src 'self' 'unsafe-inline' https:; connect-src 'self' https:; font-src 'self' data: https:"
+            Override: true
+          ContentTypeOptions:
+            Override: true
+          ReferrerPolicy:
+            ReferrerPolicy: strict-origin-when-cross-origin
+            Override: true
+          StrictTransportSecurity:
+            AccessControlMaxAgeSec: 31536000
+            IncludeSubdomains: true
+            Preload: true
+            Override: true
 
   UiDistribution:
     Type: AWS::CloudFront::Distribution
@@ -59,6 +130,10 @@ Resources:
         DefaultRootObject: index.html
         HttpVersion: http2
         PriceClass: !Ref UiPriceClass
+        Aliases: !If
+          - UseCustomDomain
+          - - !Ref UiCustomDomainName
+          - !Ref "AWS::NoValue"
         Origins:
           - Id: UiS3Origin
             DomainName: !GetAtt UiBucket.RegionalDomainName
@@ -76,10 +151,43 @@ Resources:
             - HEAD
             - OPTIONS
           Compress: true
-          ForwardedValues:
-            QueryString: false
-            Cookies:
-              Forward: none
+          CachePolicyId: !Ref UiCachePolicyNoCache
+          ResponseHeadersPolicyId: !Ref UiResponseHeadersPolicy
+        CacheBehaviors:
+          - PathPattern: config.json
+            TargetOriginId: UiS3Origin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            Compress: true
+            CachePolicyId: !Ref UiCachePolicyNoCache
+            ResponseHeadersPolicyId: !Ref UiResponseHeadersPolicy
+          - PathPattern: assets/*
+            TargetOriginId: UiS3Origin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            Compress: true
+            CachePolicyId: !Ref UiCachePolicyAssets
+            ResponseHeadersPolicyId: !Ref UiResponseHeadersPolicy
+        ViewerCertificate: !If
+          - UseCustomDomain
+          - AcmCertificateArn: !Ref UiAcmCertificateArn
+            SslSupportMethod: sni-only
+            MinimumProtocolVersion: TLSv1.2_2021
+          - CloudFrontDefaultCertificate: true
         CustomErrorResponses:
           - ErrorCode: 403
             ResponseCode: 200
@@ -87,6 +195,17 @@ Resources:
           - ErrorCode: 404
             ResponseCode: 200
             ResponsePagePath: /index.html
+
+  UiAliasRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: UseAliasRecord
+    Properties:
+      HostedZoneId: !Ref UiHostedZoneId
+      Name: !Ref UiCustomDomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt UiDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
 
   UiBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -115,3 +234,8 @@ Outputs:
     Value: !Ref UiDistribution
   UiCloudFrontDomainName:
     Value: !GetAtt UiDistribution.DomainName
+  UiAppUrl:
+    Value: !If
+      - UseCustomDomain
+      - !Sub "https://${UiCustomDomainName}"
+      - !Sub "https://${UiDistribution.DomainName}"

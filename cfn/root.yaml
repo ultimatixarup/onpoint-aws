@@ -48,16 +48,29 @@ Parameters:
   CommonLayerS3Key:
     Type: String
     Default: lambda/onpoint_common_layer.zip
+  EnableUiStack:
+    Type: String
+    Default: "false"
   UiBucketName:
     Type: String
     Default: ""
   UiPriceClass:
     Type: String
     Default: PriceClass_100
+  UiCustomDomainName:
+    Type: String
+    Default: ""
+  UiAcmCertificateArn:
+    Type: String
+    Default: ""
+  UiHostedZoneId:
+    Type: String
+    Default: ""
 
 Conditions:
   UseProvidedUserPoolId: !Not [!Equals [!Ref UserPoolId, ""]]
   UseProvidedUiBucketName: !Not [!Equals [!Ref UiBucketName, ""]]
+  EnableUiStackCondition: !Equals [!Ref EnableUiStack, "true"]
 
 Resources:
   StreamsStack:
@@ -183,12 +196,16 @@ Resources:
 
   UiStack:
     Type: AWS::CloudFormation::Stack
+    Condition: EnableUiStackCondition
     Properties:
       Parameters:
         Env: !Ref Env
         ProjectName: !Ref ProjectName
         UiBucketName: !If [UseProvidedUiBucketName, !Ref UiBucketName, ""]
         UiPriceClass: !Ref UiPriceClass
+        UiCustomDomainName: !Ref UiCustomDomainName
+        UiAcmCertificateArn: !Ref UiAcmCertificateArn
+        UiHostedZoneId: !Ref UiHostedZoneId
       TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/ui.yaml
 
 Outputs:
@@ -228,8 +245,14 @@ Outputs:
   UserPoolClientId:
     Value: !GetAtt CognitoStack.Outputs.UserPoolClientId
   UiBucketName:
+    Condition: EnableUiStackCondition
     Value: !GetAtt UiStack.Outputs.UiBucketName
   UiDistributionId:
+    Condition: EnableUiStackCondition
     Value: !GetAtt UiStack.Outputs.UiDistributionId
   UiCloudFrontDomainName:
+    Condition: EnableUiStackCondition
     Value: !GetAtt UiStack.Outputs.UiCloudFrontDomainName
+  UiAppUrl:
+    Condition: EnableUiStackCondition
+    Value: !GetAtt UiStack.Outputs.UiAppUrl

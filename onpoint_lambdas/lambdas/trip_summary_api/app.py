@@ -344,7 +344,7 @@ def _get_role_from_headers(headers: Dict[str, Any]) -> Optional[str]:
 
 
 def _get_role_from_event(event: dict) -> Optional[str]:
-    role = _get_role_from_event(event)
+    role = _get_role_from_headers(event.get("headers") or {})
     if role:
         return role
     return _get_role_from_headers(event.get("multiValueHeaders") or {})
@@ -667,7 +667,7 @@ def lambda_handler(event, context):
     fleet_id_path = (fleet_id or "").strip()
     qs = query
     tenant_id = _get_caller_tenant_id(event)
-    role = _get_role_from_headers(event.get("headers") or {})
+    role = _get_role_from_event(event)
 
     if route_type == "FLEET_TRIPS" and not fleet_id_path and path:
         parts = [p for p in path.split("/") if p]
