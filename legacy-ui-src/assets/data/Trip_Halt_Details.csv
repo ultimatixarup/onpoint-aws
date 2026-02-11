@@ -1,6 +1,0 @@
-TYPE,NAME,PHONE,EMAIL,STREET_ADDRESS,ADDITIONAL_INFO,CITY,STATE,ZIP_CODE,HALT_TIME
-START,John Doe,555-123-4567,john.doe@example.com,123 Elm St.,,Beverly Hills,CA,90210,15
-DELIVERY,Sarah Johnson,555-987-6543,sarah.johnson@example.com,456 Oak Ave.,,New York,NY,10001,10
-DELIVERY,Michael Smith,555-321-7890,michael.smith@example.com,789 Pine Rd.,,Chicago,IL,60606,20
-DELIVERY,Emily Davis,555-654-3210,emily.davis@example.com,321 Maple St.,,Atlanta,GA,30301,12
-END,Robert Brown,555-432-1098,robert.brown@example.com,654 Cedar Blvd.,,Austin,TX,73301,18

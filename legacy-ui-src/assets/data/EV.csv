@@ -1,8 +1,0 @@
-﻿Data Classification,Data Type,,Sub-category,Parameter ID,Parameter Description,Format,Direct/Derived,UOM,Range,Meaning,
-OEM,NPII,Trip Details,EV ,EV Battery,cx_battery_level,Percentage EV battery,Percentage,Direct,Percentage,(0-100%),
-OEM,NPII,Trip Details,EV ,EV Battery,cx_battery_charging_status,EV battery charging status,int,Direct,,0 - 5,
-OEM,NPII,Trip Details,EV ,EV Battery,cx_battery_charging_remaining_time,Remaining time for full EV battery charge,int,Direct,Minutes,,
-OEM,NPII,Trip Details,EV ,EV Battery,cx_battery_charging_mode,Battery charging mode,string,Direct,,"slow, fast",0 - Buckled
-,,,EV ,,,,,,,,1 - Unbuckled
-OEM,NPII,Trip Details,EV ,Battery,cx_battery_level,Engine battery level,Double,Direct,Volts,5 to 18,
-OEM,NPII,Trip Details,EV ,Battery,cx_battery_perc,Engine battery percentage charge,Percentage,Direct,Percentage,(0-100%),

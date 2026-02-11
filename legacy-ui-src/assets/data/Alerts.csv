@@ -1,4 +1,0 @@
-﻿Data Origin,Data Classification,Data Type,,Sub-category,Parameter ID,Parameter Description,Format,Direct/Derived,UOM,Range,Meaning
-OEM,NPII,Alerts,Alerts,,cx_alert_id,Alerts generated ,Array,Direct,,,
-OEM,NPII,Alerts,Alerts,,cx_alert_discription,Alert description,Array,Direct,,,
-OEM,NPII,DTC,Alerts,,cx_vehicle_dtc,Diagnostic Trouble Codes ,String,Direct,,,

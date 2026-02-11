@@ -1,6 +1,0 @@
-﻿Data Classification,Data Type,,Sub-category,Parameter ID,Parameter Description,Format,Direct/Derived,UOM,Range,Meaning,
-OEM,PII,Trip Details,GeoLocation,Geolocation,cx_latitude,Coordinates of the vehicle (Latitude),Array,Direct,Decimal Degrees,"(-90,-180 to 90,80)",
-OEM,PII,Trip Details,GeoLocation,Geolocation,cx_longitude,Coordinates of the vehicle (Longitude),Array,Direct,Decimal Degrees,"(-90,-180 to 90,80)",
-OEM,PII,Trip Details,GeoLocation,Geolocation,cx_gps_accuracy,Accuracy of the vehicle's GPS Device,Percentage,Direct,Percentage,(0-100%),
-OEM,NPII,Trip Details,GeoLocation,Geolocation,cx_heading,Vehicle's driving direction,Decimal Degrees,Direct,Degrees,(-180 to 180),
-OEM,NPII,Trip Details,GeoLocation,Geolocation,cx_altitude,Vehicle's altitude,Double,Direct,Meters,,
