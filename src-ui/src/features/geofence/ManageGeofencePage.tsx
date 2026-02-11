@@ -1,11 +1,408 @@
+import { useQuery } from "@tanstack/react-query";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { useEffect, useMemo, useState } from "react";
+import {
+    Circle,
+    MapContainer,
+    Marker,
+    Polygon,
+    Popup,
+    TileLayer,
+    useMap,
+} from "react-leaflet";
+import { fetchFleets } from "../../api/onpointApi";
+import { queryKeys } from "../../api/queryKeys";
+import { useFleet } from "../../context/FleetContext";
+import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
 import { PageHeader } from "../../ui/PageHeader";
+import {
+    GeofenceRecord,
+    GeofenceType,
+    useGeofenceStore,
+} from "./geofenceStore";
+
+const defaultIcon = L.icon({
+  iconRetinaUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+
+L.Marker.prototype.options.icon = defaultIcon;
+
+const DEFAULT_CENTER: [number, number] = [37.0902, -95.7129];
 
 export function ManageGeofencePage() {
+  const { tenant } = useTenant();
+  const { fleet, setFleet } = useFleet();
+  const tenantId = tenant?.id ?? "";
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "ALL" | "ACTIVE" | "INACTIVE"
+  >("ALL");
+  const [typeFilter, setTypeFilter] = useState<GeofenceType | "ALL">("ALL");
+  const [fleetFilter, setFleetFilter] = useState(fleet?.id ?? "");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const { geofences, updateGeofence, removeGeofence } =
+    useGeofenceStore(tenantId);
+
+  const { data: fleets = [], isLoading: isLoadingFleets } = useQuery({
+    queryKey: tenantId ? queryKeys.fleets(tenantId) : ["fleets", "none"],
+    queryFn: () => fetchFleets(tenantId),
+    enabled: Boolean(tenantId),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const filteredGeofences = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+    return geofences.filter((item) => {
+      if (statusFilter !== "ALL" && item.status !== statusFilter) return false;
+      if (typeFilter !== "ALL" && item.type !== typeFilter) return false;
+      if (fleetFilter && item.fleetId !== fleetFilter) return false;
+      if (
+        normalizedSearch &&
+        !`${item.name} ${item.description ?? ""}`
+          .toLowerCase()
+          .includes(normalizedSearch)
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [geofences, search, statusFilter, typeFilter, fleetFilter]);
+
+  const selectedGeofence = useMemo(
+    () =>
+      filteredGeofences.find((item) => item.id === selectedId) ??
+      filteredGeofences[0] ??
+      null,
+    [filteredGeofences, selectedId],
+  );
+
+  useEffect(() => {
+    if (selectedGeofence?.id && selectedGeofence.id !== selectedId) {
+      setSelectedId(selectedGeofence.id);
+    }
+  }, [selectedGeofence, selectedId]);
+
   return (
     <div className="page">
-      <PageHeader title="Manage Geofence" />
-      <Card title="Geofences">List of geofences.</Card>
+      <PageHeader
+        title="Manage Geofences"
+        subtitle="Review, filter, and update saved geofence zones"
+      />
+      <Card title="Geofence Library">
+        {!tenantId ? (
+          <p>Select a tenant to view geofences.</p>
+        ) : (
+          <div className="geofence-layout">
+            <div className="stack">
+              <div className="form-grid">
+                <label className="form__field">
+                  <span>Search</span>
+                  <input
+                    className="input"
+                    placeholder="Search by name"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                  />
+                </label>
+                <label className="form__field">
+                  <span>Status</span>
+                  <select
+                    className="select"
+                    value={statusFilter}
+                    onChange={(event) =>
+                      setStatusFilter(
+                        event.target.value as "ALL" | "ACTIVE" | "INACTIVE",
+                      )
+                    }
+                  >
+                    <option value="ALL">All</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="INACTIVE">Inactive</option>
+                  </select>
+                </label>
+                <label className="form__field">
+                  <span>Type</span>
+                  <select
+                    className="select"
+                    value={typeFilter}
+                    onChange={(event) =>
+                      setTypeFilter(event.target.value as GeofenceType | "ALL")
+                    }
+                  >
+                    <option value="ALL">All</option>
+                    <option value="CIRCLE">Circle</option>
+                    <option value="POLYGON">Polygon</option>
+                    <option value="RECTANGLE">Rectangle</option>
+                    <option value="POINT">Point</option>
+                  </select>
+                </label>
+                <label className="form__field">
+                  <span>Fleet</span>
+                  <select
+                    className="select"
+                    value={fleetFilter}
+                    onChange={(event) => {
+                      const selected = fleets.find(
+                        (item) => item.fleetId === event.target.value,
+                      );
+                      if (selected) {
+                        setFleet({ id: selected.fleetId, name: selected.name });
+                        setFleetFilter(selected.fleetId);
+                      } else {
+                        setFleet(undefined);
+                        setFleetFilter("");
+                      }
+                    }}
+                    disabled={isLoadingFleets}
+                  >
+                    <option value="">All fleets</option>
+                    {fleets.map((item) => (
+                      <option key={item.fleetId} value={item.fleetId}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              {filteredGeofences.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state__icon">🗺️</div>
+                  <strong>No geofences yet</strong>
+                  <span className="text-muted">
+                    Create a geofence in the setup page to populate this list.
+                  </span>
+                </div>
+              ) : (
+                <div className="table-responsive">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Fleet</th>
+                        <th>Updated</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredGeofences.map((item) => (
+                        <tr
+                          key={item.id}
+                          className={
+                            selectedGeofence?.id === item.id
+                              ? "is-selected"
+                              : undefined
+                          }
+                          onClick={() => setSelectedId(item.id)}
+                        >
+                          <td>
+                            <strong>{item.name}</strong>
+                            {item.description ? (
+                              <div className="text-muted">
+                                {item.description}
+                              </div>
+                            ) : null}
+                          </td>
+                          <td>{item.type}</td>
+                          <td>
+                            <span
+                              className={
+                                item.status === "ACTIVE"
+                                  ? "badge badge--active"
+                                  : "badge badge--inactive"
+                              }
+                            >
+                              {item.status}
+                            </span>
+                          </td>
+                          <td>{item.fleetId ?? "All fleets"}</td>
+                          <td>
+                            {item.updatedAt
+                              ? new Date(item.updatedAt).toLocaleString()
+                              : "--"}
+                          </td>
+                          <td>
+                            <div className="inline">
+                              <button
+                                type="button"
+                                className="icon-button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  updateGeofence(item.id, {
+                                    status:
+                                      item.status === "ACTIVE"
+                                        ? "INACTIVE"
+                                        : "ACTIVE",
+                                  });
+                                }}
+                              >
+                                {item.status === "ACTIVE"
+                                  ? "Deactivate"
+                                  : "Activate"}
+                              </button>
+                              <button
+                                type="button"
+                                className="icon-button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  removeGeofence(item.id);
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="stack">
+              <div className="map-container">
+                <MapContainer
+                  center={DEFAULT_CENTER}
+                  zoom={4}
+                  style={{ height: "100%", width: "100%" }}
+                >
+                  <MapFocus geofence={selectedGeofence ?? undefined} />
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  {filteredGeofences.map((item) => (
+                    <GeofenceLayer
+                      key={item.id}
+                      geofence={item}
+                      isSelected={item.id === selectedGeofence?.id}
+                    />
+                  ))}
+                </MapContainer>
+              </div>
+              {selectedGeofence ? (
+                <Card title="Selected Geofence">
+                  <div className="detail-grid">
+                    <div>
+                      <p className="stat__label">Name</p>
+                      <p className="stat__value">{selectedGeofence.name}</p>
+                    </div>
+                    <div>
+                      <p className="stat__label">Type</p>
+                      <p className="stat__value">{selectedGeofence.type}</p>
+                    </div>
+                    <div>
+                      <p className="stat__label">Status</p>
+                      <p className="stat__value">{selectedGeofence.status}</p>
+                    </div>
+                    <div>
+                      <p className="stat__label">Fleet</p>
+                      <p className="stat__value">
+                        {selectedGeofence.fleetId ?? "All fleets"}
+                      </p>
+                    </div>
+                  </div>
+                  {selectedGeofence.description ? (
+                    <p className="text-muted">{selectedGeofence.description}</p>
+                  ) : null}
+                </Card>
+              ) : null}
+            </div>
+          </div>
+        )}
+      </Card>
     </div>
   );
+}
+
+function GeofenceLayer({
+  geofence,
+  isSelected,
+}: {
+  geofence: GeofenceRecord;
+  isSelected: boolean;
+}) {
+  const color = isSelected ? "#4f46e5" : "#f97316";
+
+  if (geofence.type === "CIRCLE" && geofence.shape.center) {
+    return (
+      <Circle
+        center={geofence.shape.center}
+        radius={geofence.shape.radiusMeters ?? 0}
+        pathOptions={{ color, fillColor: color, fillOpacity: 0.2 }}
+      >
+        <Popup>
+          <strong>{geofence.name}</strong>
+          <div>{geofence.type}</div>
+        </Popup>
+      </Circle>
+    );
+  }
+
+  if (geofence.type === "POINT" && geofence.shape.center) {
+    return (
+      <Marker position={geofence.shape.center}>
+        <Popup>
+          <strong>{geofence.name}</strong>
+          <div>{geofence.type}</div>
+        </Popup>
+      </Marker>
+    );
+  }
+
+  if (geofence.shape.coordinates?.length) {
+    return (
+      <Polygon
+        positions={geofence.shape.coordinates}
+        pathOptions={{ color, fillColor: color, fillOpacity: 0.2 }}
+      >
+        <Popup>
+          <strong>{geofence.name}</strong>
+          <div>{geofence.type}</div>
+        </Popup>
+      </Polygon>
+    );
+  }
+
+  return null;
+}
+
+function MapFocus({ geofence }: { geofence?: GeofenceRecord }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!geofence) {
+      map.setView(DEFAULT_CENTER, 4, { animate: true });
+      return;
+    }
+    if (geofence.type === "POINT" && geofence.shape.center) {
+      map.setView(geofence.shape.center, 12, { animate: true });
+      return;
+    }
+    if (geofence.type === "CIRCLE" && geofence.shape.center) {
+      const radius = geofence.shape.radiusMeters ?? 0;
+      const bounds = L.circle(geofence.shape.center, radius).getBounds();
+      map.fitBounds(bounds, { padding: [24, 24], animate: true });
+      return;
+    }
+    if (geofence.shape.coordinates?.length) {
+      const bounds = L.latLngBounds(
+        geofence.shape.coordinates.map((coord) => [coord[0], coord[1]]),
+      );
+      map.fitBounds(bounds, { padding: [24, 24], animate: true });
+    }
+  }, [geofence, map]);
+
+  return null;
 }
