@@ -47,6 +47,12 @@ export function ManageGeofencePage() {
   const [typeFilter, setTypeFilter] = useState<GeofenceType | "ALL">("ALL");
   const [fleetFilter, setFleetFilter] = useState(fleet?.id ?? "");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editStatus, setEditStatus] = useState<"ACTIVE" | "INACTIVE">(
+    "ACTIVE",
+  );
+  const [editFleetId, setEditFleetId] = useState("");
 
   const { geofences, updateGeofence, removeGeofence } =
     useGeofenceStore(tenantId);
@@ -89,6 +95,20 @@ export function ManageGeofencePage() {
       setSelectedId(selectedGeofence.id);
     }
   }, [selectedGeofence, selectedId]);
+
+  useEffect(() => {
+    if (!selectedGeofence) {
+      setEditName("");
+      setEditDescription("");
+      setEditStatus("ACTIVE");
+      setEditFleetId("");
+      return;
+    }
+    setEditName(selectedGeofence.name);
+    setEditDescription(selectedGeofence.description ?? "");
+    setEditStatus(selectedGeofence.status);
+    setEditFleetId(selectedGeofence.fleetId ?? "");
+  }, [selectedGeofence]);
 
   return (
     <div className="page">
@@ -316,6 +336,92 @@ export function ManageGeofencePage() {
                   {selectedGeofence.description ? (
                     <p className="text-muted">{selectedGeofence.description}</p>
                   ) : null}
+                  <div className="section">
+                    <div className="section__title">Edit details</div>
+                    <div className="form-grid">
+                      <label className="form__field">
+                        <span>Name</span>
+                        <input
+                          className="input"
+                          value={editName}
+                          onChange={(event) => setEditName(event.target.value)}
+                        />
+                      </label>
+                      <label className="form__field">
+                        <span>Description</span>
+                        <input
+                          className="input"
+                          value={editDescription}
+                          onChange={(event) =>
+                            setEditDescription(event.target.value)
+                          }
+                        />
+                      </label>
+                      <label className="form__field">
+                        <span>Status</span>
+                        <select
+                          className="select"
+                          value={editStatus}
+                          onChange={(event) =>
+                            setEditStatus(
+                              event.target.value as "ACTIVE" | "INACTIVE",
+                            )
+                          }
+                        >
+                          <option value="ACTIVE">Active</option>
+                          <option value="INACTIVE">Inactive</option>
+                        </select>
+                      </label>
+                      <label className="form__field">
+                        <span>Fleet</span>
+                        <select
+                          className="select"
+                          value={editFleetId}
+                          onChange={(event) =>
+                            setEditFleetId(event.target.value)
+                          }
+                          disabled={isLoadingFleets}
+                        >
+                          <option value="">All fleets</option>
+                          {fleets.map((item) => (
+                            <option key={item.fleetId} value={item.fleetId}>
+                              {item.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <div className="form__actions">
+                      <button
+                        type="button"
+                        className="btn btn--secondary"
+                        onClick={() => {
+                          if (!selectedGeofence) return;
+                          setEditName(selectedGeofence.name);
+                          setEditDescription(selectedGeofence.description ?? "");
+                          setEditStatus(selectedGeofence.status);
+                          setEditFleetId(selectedGeofence.fleetId ?? "");
+                        }}
+                      >
+                        Reset
+                      </button>
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => {
+                          if (!selectedGeofence) return;
+                          updateGeofence(selectedGeofence.id, {
+                            name: editName.trim() || selectedGeofence.name,
+                            description: editDescription.trim() || undefined,
+                            status: editStatus,
+                            fleetId: editFleetId || undefined,
+                          });
+                        }}
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  </div>
                 </Card>
               ) : null}
             </div>
