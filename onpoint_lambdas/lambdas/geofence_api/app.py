@@ -11,8 +11,97 @@ from boto3.dynamodb.types import TypeDeserializer
 try:
     from onpoint_common.vin_registry import resolve_vin_registry  # type: ignore
 except Exception:
-    def resolve_vin_registry(*args, **kwargs):
-        return None
+    def _vin_utc_now_iso() -> str:
+        return datetime.now(timezone.utc).isoformat()
+
+    def _vin_parse_iso(ts: str) -> Optional[datetime]:
+        if not ts:
+            return None
+        try:
+            return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        except Exception:
+            return None
+
+    def _vin_unmarshal_value(value: dict) -> Any:
+        if "S" in value:
+            return value["S"]
+        if "N" in value:
+            num = value["N"]
+            try:
+                return int(num) if num.isdigit() else float(num)
+            except Exception:
+                return num
+        if "BOOL" in value:
+            return value["BOOL"]
+        if "NULL" in value:
+            return None
+        if "M" in value:
+            return {k: _vin_unmarshal_value(v) for k, v in value["M"].items()}
+        if "L" in value:
+            return [_vin_unmarshal_value(v) for v in value["L"]]
+        return value
+
+    def _vin_unmarshal_item(item: dict) -> dict:
+        return {k: _vin_unmarshal_value(v) for k, v in item.items()}
+
+    def _vin_normalize_as_of(as_of: Optional[str]) -> str:
+        if not as_of:
+            return _vin_utc_now_iso()
+        if isinstance(as_of, str):
+            parsed = _vin_parse_iso(as_of)
+            return parsed.isoformat() if parsed else _vin_utc_now_iso()
+        return _vin_utc_now_iso()
+
+    def resolve_vin_registry(
+        vin: str,
+        *,
+        as_of: Optional[str] = None,
+        table_name: Optional[str] = None,
+        ddb_client=None,
+    ) -> Optional[Dict[str, Any]]:
+        if not vin or not isinstance(vin, str):
+            return None
+
+        table = table_name or os.environ.get("VIN_REGISTRY_TABLE")
+        if not table:
+            return None
+
+        as_of_iso = _vin_normalize_as_of(as_of)
+        pk = f"VIN#{vin}"
+        sk = f"EFFECTIVE_FROM#{as_of_iso}"
+
+        ddb = ddb_client or boto3.client("dynamodb")
+        last_key = None
+
+        while True:
+            params = {
+                "TableName": table,
+                "KeyConditionExpression": "PK = :pk AND SK <= :sk",
+                "ExpressionAttributeValues": {
+                    ":pk": {"S": pk},
+                    ":sk": {"S": sk},
+                },
+                "ScanIndexForward": False,
+                "Limit": 10,
+            }
+            if last_key:
+                params["ExclusiveStartKey"] = last_key
+
+            resp = ddb.query(**params)
+            items = resp.get("Items") or []
+            for item in items:
+                record = _vin_unmarshal_item(item)
+                effective_to = record.get("effectiveTo")
+                if effective_to:
+                    parsed_to = _vin_parse_iso(effective_to)
+                    parsed_as_of = _vin_parse_iso(as_of_iso)
+                    if parsed_to and parsed_as_of and parsed_to < parsed_as_of:
+                        continue
+                return record
+
+            last_key = resp.get("LastEvaluatedKey")
+            if not last_key:
+                return None
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -52,8 +141,17 @@ def _parse_iso(value: Optional[str]) -> Optional[datetime]:
 
 
 def _get_caller_tenant_id(event: dict) -> Optional[str]:
-    headers = event.get("headers") or {}
-    tenant_header = headers.get("x-tenant-id") or headers.get("X-Tenant-Id") or headers.get("x-tenantId")
+    raw_headers = event.get("headers") or {}
+    headers: Dict[str, str] = {}
+    for k, v in raw_headers.items():
+        if isinstance(k, str) and isinstance(v, str):
+            headers[k.lower()] = v
+    multi_headers = event.get("multiValueHeaders") or {}
+    for k, v in multi_headers.items():
+        if isinstance(k, str) and isinstance(v, list) and v:
+            if isinstance(v[0], str):
+                headers.setdefault(k.lower(), v[0])
+    tenant_header = headers.get("x-tenant-id") or headers.get("x-tenantid")
     if isinstance(tenant_header, str) and tenant_header.strip():
         return tenant_header.strip()
 
@@ -78,6 +176,31 @@ def _get_caller_tenant_id(event: dict) -> Optional[str]:
     return None
 
 
+def _normalize_path(event: dict) -> str:
+    path = event.get("rawPath") or event.get("path") or ""
+    stage = event.get("requestContext", {}).get("stage")
+    if stage and path.startswith(f"/{stage}/"):
+        path = path[len(stage) + 1 :]
+    return path
+
+
+def _extract_path_param(path: str, key: str) -> Optional[str]:
+    parts = [p for p in path.split("/") if p]
+    if key == "vin":
+        try:
+            idx = parts.index("vehicles")
+            return parts[idx + 1]
+        except Exception:
+            return None
+    if key == "tripId":
+        try:
+            idx = parts.index("trips")
+            return parts[idx + 1]
+        except Exception:
+            return None
+    return None
+
+
 def _resolve_vin_tenancy(vin: str, as_of: Optional[str]) -> Optional[dict]:
     if not VIN_REGISTRY_TABLE:
         return None
@@ -96,6 +219,7 @@ def _authorize_vin(vin: str, tenant_id: Optional[str], as_of: Optional[str]) -> 
     record = _resolve_vin_tenancy(vin, as_of)
     if not record:
         record = _resolve_vin_tenancy(vin, None)
+    logger.info("vin_registry record vin=%s tenant_id=%s record=%s", vin, tenant_id, record)
     if not record:
         return False
     return record.get("tenantId") == tenant_id
@@ -183,13 +307,15 @@ def lambda_handler(event, context):
     if method == "OPTIONS":
         return _resp(200, {"ok": True})
 
-    path = event.get("rawPath") or event.get("path") or ""
+    path = _normalize_path(event)
     path_params = event.get("pathParameters") or {}
     query = event.get("queryStringParameters") or {}
 
     tenant_id = _get_caller_tenant_id(event)
-    vin = path_params.get("vin")
-    trip_id = path_params.get("tripId")
+    vin = path_params.get("vin") or _extract_path_param(path, "vin")
+    trip_id = path_params.get("tripId") or _extract_path_param(path, "tripId")
+
+    logger.info("geofence-api request path=%s tenant_id=%s vin=%s trip_id=%s vin_registry_table=%s", path, tenant_id, vin, trip_id, VIN_REGISTRY_TABLE)
 
     if "/vehicles/" in path and path.endswith("/geofence-events"):
         if not vin or not _authorize_vin(vin, tenant_id, query.get("from")):

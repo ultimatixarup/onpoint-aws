@@ -3,6 +3,7 @@ import logging
 import os
 import uuid
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
 
 import boto3
@@ -112,9 +113,19 @@ def _parse_body(event: dict) -> Tuple[Optional[dict], Optional[str]]:
         obj = json.loads(body)
         if not isinstance(obj, dict):
             return None, "Payload must be a JSON object"
-        return obj, None
+        return _normalize_numbers(obj), None
     except Exception:
         return None, "Invalid JSON body"
+
+
+def _normalize_numbers(value: Any) -> Any:
+    if isinstance(value, float):
+        return Decimal(str(value))
+    if isinstance(value, dict):
+        return {k: _normalize_numbers(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_normalize_numbers(v) for v in value]
+    return value
 
 
 def _get_caller_tenant_id(event: dict) -> Optional[str]:
@@ -329,7 +340,7 @@ def lambda_handler(event, context):
         item = _create_definition(tenant_id, payload, version=version, geofence_id=geofence_id, change_type="SOFT_DELETE")
         return _resp(200, item)
 
-    if method == "POST" and path == f"/geofences/{geofence_id}:activate":
+    if method == "POST" and path in {f"/geofences/{geofence_id}:activate", f"/geofences/{geofence_id}/activate"}:
         err = _require_write_role(role)
         if err:
             return _resp(403, {"error": err})
@@ -340,7 +351,7 @@ def lambda_handler(event, context):
         item = _create_definition(tenant_id, payload, version=version, geofence_id=geofence_id, change_type="ACTIVATE")
         return _resp(200, item)
 
-    if method == "POST" and path == f"/geofences/{geofence_id}:deactivate":
+    if method == "POST" and path in {f"/geofences/{geofence_id}:deactivate", f"/geofences/{geofence_id}/deactivate"}:
         err = _require_write_role(role)
         if err:
             return _resp(403, {"error": err})
