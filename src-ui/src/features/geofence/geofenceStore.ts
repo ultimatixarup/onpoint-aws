@@ -63,6 +63,10 @@ const GEOFENCE_API_KEY =
   ((import.meta.env.VITE_GEOFENCE_API_KEY as string | undefined) ??
     (import.meta.env.VITE_ONPOINT_API_KEY as string | undefined)) ||
   undefined;
+const GEOFENCE_ROLE_OVERRIDE =
+  ((import.meta.env.VITE_GEOFENCE_ROLE_OVERRIDE as string | undefined) ??
+    (import.meta.env.VITE_ONPOINT_ROLE_OVERRIDE as string | undefined)) ||
+  undefined;
 const USE_GEOFENCE_API = Boolean(GEOFENCE_BASE_URL);
 
 function getStorageKey(tenantId?: string) {
@@ -181,6 +185,7 @@ async function fetchGeofencesFromApi(tenantId: string) {
       headers: {
         "x-tenant-id": tenantId,
         ...(GEOFENCE_API_KEY ? { "x-api-key": GEOFENCE_API_KEY } : {}),
+        ...(GEOFENCE_ROLE_OVERRIDE ? { "x-role": GEOFENCE_ROLE_OVERRIDE } : {}),
       },
     },
   );
@@ -211,6 +216,7 @@ async function createGeofenceApi(
     headers: {
       "x-tenant-id": tenantId,
       ...(GEOFENCE_API_KEY ? { "x-api-key": GEOFENCE_API_KEY } : {}),
+      ...(GEOFENCE_ROLE_OVERRIDE ? { "x-role": GEOFENCE_ROLE_OVERRIDE } : {}),
     },
     body: payload,
   });
@@ -242,6 +248,7 @@ async function updateGeofenceApi(
       headers: {
         "x-tenant-id": tenantId,
         ...(GEOFENCE_API_KEY ? { "x-api-key": GEOFENCE_API_KEY } : {}),
+        ...(GEOFENCE_ROLE_OVERRIDE ? { "x-role": GEOFENCE_ROLE_OVERRIDE } : {}),
       },
       body: payload,
     },
@@ -260,6 +267,7 @@ async function deleteGeofenceApi(tenantId: string, geofenceId: string) {
     headers: {
       "x-tenant-id": tenantId,
       ...(GEOFENCE_API_KEY ? { "x-api-key": GEOFENCE_API_KEY } : {}),
+      ...(GEOFENCE_ROLE_OVERRIDE ? { "x-role": GEOFENCE_ROLE_OVERRIDE } : {}),
     },
   });
 }
