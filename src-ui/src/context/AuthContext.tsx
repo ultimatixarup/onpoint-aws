@@ -1,16 +1,16 @@
 import {
-  fetchAuthSession,
-  getCurrentUser,
-  signIn,
-  signOut,
+    fetchAuthSession,
+    getCurrentUser,
+    signIn,
+    signOut,
 } from "aws-amplify/auth";
 import {
-  createContext,
-  PropsWithChildren,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
+    createContext,
+    PropsWithChildren,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
 } from "react";
 import { Navigate } from "react-router-dom";
 
@@ -19,6 +19,8 @@ export type AuthRole = "platform_admin" | "tenant_admin" | "tenant_user";
 type AuthState = {
   status: "loading" | "authenticated" | "unauthenticated";
   username?: string;
+  displayName?: string;
+  email?: string;
   tenantId?: string;
   roles: AuthRole[];
 };
@@ -60,6 +62,35 @@ function getTenantIdFromSession(
   return tenantId;
 }
 
+function getUserProfileFromSession(
+  session: Awaited<ReturnType<typeof fetchAuthSession>>,
+  fallbackUsername?: string,
+): { displayName?: string; email?: string } {
+  const idPayload = session.tokens?.idToken?.payload ?? {};
+  const accessPayload = session.tokens?.accessToken?.payload ?? {};
+  const email =
+    (idPayload.email as string | undefined) ??
+    (accessPayload.email as string | undefined);
+  const name =
+    (idPayload.name as string | undefined) ??
+    (accessPayload.name as string | undefined) ??
+    (idPayload.given_name as string | undefined) ??
+    (accessPayload.given_name as string | undefined) ??
+    (idPayload.preferred_username as string | undefined) ??
+    (accessPayload.preferred_username as string | undefined);
+  if (name && name.trim()) {
+    return { displayName: name, email };
+  }
+  if (email && email.includes("@")) {
+    const derived = email
+      .split("@")[0]
+      .replace(/[._-]+/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+    return { displayName: derived || email, email };
+  }
+  return { displayName: fallbackUsername, email };
+}
+
 export function AuthProvider({ children }: PropsWithChildren) {
   const [state, setState] = useState<AuthState>({
     status: "loading",
@@ -74,9 +105,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
         const groups = session.tokens?.accessToken?.payload[
           "cognito:groups"
         ] as string[] | undefined;
+        const profile = getUserProfileFromSession(session, user.username);
         setState({
           status: "authenticated",
           username: user.username,
+          displayName: profile.displayName,
+          email: profile.email,
           tenantId: getTenantIdFromSession(session),
           roles: mapGroupsToRoles(groups),
         });
@@ -97,9 +131,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
           const groups = session.tokens?.accessToken?.payload[
             "cognito:groups"
           ] as string[] | undefined;
+          const profile = getUserProfileFromSession(session, username);
           setState({
             status: "authenticated",
             username,
+            displayName: profile.displayName,
+            email: profile.email,
             tenantId: getTenantIdFromSession(session),
             roles: mapGroupsToRoles(groups),
           });

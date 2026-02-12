@@ -369,12 +369,17 @@ function MapViewFocus({ shape }: { shape?: GeofenceShape }) {
       map.setView(shape.center, 12, { animate: true });
       return;
     }
-    if (shape.type === "CIRCLE" && shape.center && shape.radiusMeters) {
-      const bounds = L.circle(shape.center, shape.radiusMeters).getBounds();
-      map.fitBounds(bounds, { padding: [24, 24], animate: true });
+    if (shape.type === "CIRCLE" && shape.center) {
+      const radius = Number(shape.radiusMeters);
+      if (Number.isFinite(radius) && radius > 0) {
+        const bounds = L.latLng(shape.center).toBounds(radius * 2);
+        map.fitBounds(bounds, { padding: [24, 24], animate: true });
+      } else {
+        map.setView(shape.center, 12, { animate: true });
+      }
       return;
     }
-    if (shape.coordinates && shape.coordinates.length) {
+    if (shape.coordinates && shape.coordinates.length > 0) {
       const bounds = L.latLngBounds(
         shape.coordinates.map((coord) => [coord[0], coord[1]]),
       );

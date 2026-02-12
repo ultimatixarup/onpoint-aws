@@ -9,6 +9,7 @@ const links = [
   { to: "/adlp/telemetry/raw", label: "Telemetry Raw" },
   { to: "/adlp/telemetry/normalized", label: "Telemetry Normalized" },
   { to: "/adlp/geofence/manage", label: "Geofence" },
+  { to: "/adlp/geofence/setup", label: "Geofence Setup" },
   { to: "/adlp/vehicles/vin-summary", label: "Vehicles" },
   { to: "/adlp/drivers/dashboard", label: "Drivers" },
   { to: "/adlp/trips/planning", label: "Trips" },

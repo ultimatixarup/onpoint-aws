@@ -1,5 +1,5 @@
-import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "react-router-dom";
 import { fetchFleets } from "../api/onpointApi";
 import { queryKeys } from "../api/queryKeys";
 import { useAuth } from "../context/AuthContext";
@@ -8,7 +8,7 @@ import { useTenant } from "../context/TenantContext";
 
 export function Topbar() {
   const { pathname } = useLocation();
-  const { username, logout } = useAuth();
+  const { displayName, username, logout } = useAuth();
   const { tenant, setTenant, tenants, isLoadingTenants, tenantsError } =
     useTenant();
   const { fleet, setFleet } = useFleet();
@@ -89,7 +89,7 @@ export function Topbar() {
         </div>
       )}
       <div className="topbar__user">
-        <span>{username ?? "User"}</span>
+        <span>{displayName ?? username ?? "User"}</span>
         <button className="btn" onClick={() => logout()}>
           Sign out
         </button>

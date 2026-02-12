@@ -497,9 +497,13 @@ function MapFocus({ geofence }: { geofence?: GeofenceRecord }) {
       return;
     }
     if (geofence.type === "CIRCLE" && geofence.shape.center) {
-      const radius = geofence.shape.radiusMeters ?? 0;
-      const bounds = L.circle(geofence.shape.center, radius).getBounds();
-      map.fitBounds(bounds, { padding: [24, 24], animate: true });
+      const radius = Number(geofence.shape.radiusMeters);
+      if (Number.isFinite(radius) && radius > 0) {
+        const bounds = L.latLng(geofence.shape.center).toBounds(radius * 2);
+        map.fitBounds(bounds, { padding: [24, 24], animate: true });
+      } else {
+        map.setView(geofence.shape.center, 12, { animate: true });
+      }
       return;
     }
     if (geofence.shape.coordinates?.length) {
