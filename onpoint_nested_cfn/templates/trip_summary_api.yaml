@@ -1,0 +1,359 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: onpoint trip summary rest api
+
+Parameters:
+  Env:
+    Type: String
+  ProjectName:
+    Type: String
+  TripSummaryApiFunctionArn:
+    Type: String
+    Default: ""
+
+Conditions:
+  HasTripSummaryApiArn: !Not [!Equals [!Ref TripSummaryApiFunctionArn, ""]]
+
+Resources:
+  TripSummaryRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub "${ProjectName}-${Env}-trip-summary-api"
+      Description: Trip Summary REST API
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # /trips resource
+  TripsResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ParentId: !GetAtt TripSummaryRestApi.RootResourceId
+      PathPart: trips
+
+  # GET /trips method
+  TripsGetMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ResourceId: !Ref TripsResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TripSummaryApiFunctionArn}/invocations"
+
+  TripsOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ResourceId: !Ref TripsResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      ApiKeyRequired: false
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  # /trips/{vin} resource
+  VinResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ParentId: !Ref TripsResource
+      PathPart: "{vin}"
+
+  # /trips/{vin}/{tripId} resource
+  TripIdResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ParentId: !Ref VinResource
+      PathPart: "{tripId}"
+
+  # GET /trips/{vin}/{tripId} method
+  TripDetailGetMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ResourceId: !Ref TripIdResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TripSummaryApiFunctionArn}/invocations"
+
+  # /trips/{vin}/{tripId}/events resource (nested under tripId, not sibling)
+  TripEventsResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ParentId: !Ref TripIdResource
+      PathPart: "events"
+
+  # GET /trips/{vin}/{tripId}/events method
+  TripEventsGetMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ResourceId: !Ref TripEventsResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TripSummaryApiFunctionArn}/invocations"
+
+  TripEventsOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ResourceId: !Ref TripEventsResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      ApiKeyRequired: false
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+
+  # /fleets resource
+  FleetsResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ParentId: !GetAtt TripSummaryRestApi.RootResourceId
+      PathPart: "fleets"
+
+  # /fleets/{fleetId} resource
+  FleetIdResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ParentId: !Ref FleetsResource
+      PathPart: "{fleetId}"
+
+  # /fleets/{fleetId}/trips resource
+  FleetTripsResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ParentId: !Ref FleetIdResource
+      PathPart: "trips"
+
+
+  # GET /fleets/{fleetId}/trips method
+  FleetTripsGetMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ResourceId: !Ref FleetTripsResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TripSummaryApiFunctionArn}/invocations"
+
+  FleetTripsOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ResourceId: !Ref FleetTripsResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      ApiKeyRequired: false
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  RootOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ResourceId: !GetAtt TripSummaryRestApi.RootResourceId
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      ApiKeyRequired: false
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  TripSummaryGatewayResponseDefault4XX:
+    Type: AWS::ApiGateway::GatewayResponse
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ResponseType: DEFAULT_4XX
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+
+  TripSummaryGatewayResponseDefault5XX:
+    Type: AWS::ApiGateway::GatewayResponse
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ResponseType: DEFAULT_5XX
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+
+
+  # Lambda permission for REST API
+  TripSummaryRestApiInvokePermission:
+    Type: AWS::Lambda::Permission
+    Condition: HasTripSummaryApiArn
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref TripSummaryApiFunctionArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TripSummaryRestApi}/*/*/*"
+
+  # API Deployment
+  TripSummaryRestApiDeploymentV3:
+    Type: AWS::ApiGateway::Deployment
+    Condition: HasTripSummaryApiArn
+    DependsOn:
+      - TripsGetMethod
+      - TripsOptionsMethod
+      - TripDetailGetMethod
+      - TripEventsGetMethod
+      - TripEventsOptionsMethod
+      - FleetTripsGetMethod
+      - FleetTripsOptionsMethod
+      - RootOptionsMethod
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      Description: !Sub "Deployment for ${Env} stage"
+
+  # API Stage
+  TripSummaryRestApiStage:
+    Type: AWS::ApiGateway::Stage
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      DeploymentId: !Ref TripSummaryRestApiDeploymentV3
+      StageName: !Ref Env
+      Description: !Sub "${Env} environment stage"
+
+  # API Key
+  TripSummaryRestApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Condition: HasTripSummaryApiArn
+    Properties:
+      Name: !Sub "${ProjectName}-${Env}-trip-summary-key"
+      Description: API Key for Trip Summary API
+      Enabled: true
+
+  # Usage Plan
+  TripSummaryRestApiUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Condition: HasTripSummaryApiArn
+    DependsOn: TripSummaryRestApiStage
+    Properties:
+      UsagePlanName: !Sub "${ProjectName}-${Env}-trip-summary-plan"
+      Description: Usage plan for Trip Summary API
+      ApiStages:
+        - ApiId: !Ref TripSummaryRestApi
+          Stage: !Ref Env
+      Throttle:
+        RateLimit: 100
+        BurstLimit: 200
+
+  # Link API Key to Usage Plan
+  TripSummaryRestApiUsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Condition: HasTripSummaryApiArn
+    Properties:
+      KeyId: !Ref TripSummaryRestApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref TripSummaryRestApiUsagePlan
+
+Outputs:
+  RestApiId:
+    Description: REST API ID
+    Value: !Ref TripSummaryRestApi
+  InvokeUrl:
+    Description: API Gateway invoke URL
+    Value: !Sub "https://${TripSummaryRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Env}"
+  ApiKeyId:
+    Description: API Key ID (retrieve value via AWS Console or CLI)
+    Value: !If [HasTripSummaryApiArn, !Ref TripSummaryRestApiKey, "N/A"]
+    Export:
+      Name: !Sub "${ProjectName}-${Env}-trip-summary-api-key-id"

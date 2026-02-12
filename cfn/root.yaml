@@ -45,6 +45,18 @@ Parameters:
   FleetTenancyApiCodeS3Key:
     Type: String
     Default: lambda/fleet_tenancy_api.zip
+  GeofenceProcessorCodeS3Key:
+    Type: String
+    Default: lambda/geofence_processor.zip
+  GeofenceApiCodeS3Key:
+    Type: String
+    Default: lambda/geofence_api.zip
+  GeofenceAdminApiCodeS3Key:
+    Type: String
+    Default: lambda/geofence_admin_api.zip
+  GeofenceEventsTtlDays:
+    Type: Number
+    Default: 30
   CommonLayerS3Key:
     Type: String
     Default: lambda/onpoint_common_layer.zip
@@ -98,6 +110,15 @@ Resources:
         EnableTenantFleetIndex: !Ref EnableTenantFleetIndex
       TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/tables.yaml
 
+  GeofencingStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        Env: !Ref Env
+        ProjectName: !Ref ProjectName
+        GeofenceEventsTtlDays: !Ref GeofenceEventsTtlDays
+      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/geofencing.yaml
+
   CognitoStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -114,6 +135,7 @@ Resources:
         ProjectName: !Ref ProjectName
         TelematicsStreamName: !GetAtt StreamsStack.Outputs.TelematicsStreamName
         TelematicsStreamArn: !GetAtt StreamsStack.Outputs.TelematicsStreamArn
+        TelemetryEventsStreamArn: !GetAtt TablesStack.Outputs.TelemetryEventsStreamArn
         IngressQueueArn: !GetAtt QueuesStack.Outputs.IngressQueueArn
         PslEnrichQueueUrl: !GetAtt QueuesStack.Outputs.PslEnrichQueueUrl
         PslEnrichQueueArn: !GetAtt QueuesStack.Outputs.PslEnrichQueueArn
@@ -134,6 +156,11 @@ Resources:
         TripSummaryTableName: !GetAtt TablesStack.Outputs.TripSummaryTableName
         PslCacheTableName: !GetAtt TablesStack.Outputs.PslCacheTableName
         OverspeedDedupeTableName: !GetAtt TablesStack.Outputs.OverspeedDedupeTableName
+        GeofenceDefinitionsTableName: !GetAtt GeofencingStack.Outputs.GeofenceDefinitionsTableName
+        GeofenceAssignmentsTableName: !GetAtt GeofencingStack.Outputs.GeofenceAssignmentsTableName
+        GeofenceStateTableName: !GetAtt GeofencingStack.Outputs.GeofenceStateTableName
+        GeofenceEventsTableName: !GetAtt TablesStack.Outputs.GeofenceEventsTableName
+        GeofenceEventsTtlDays: !Ref GeofenceEventsTtlDays
         EnableTenantFleetIndex: !Ref EnableTenantFleetIndex
         UserPoolId: !If [UseProvidedUserPoolId, !Ref UserPoolId, !GetAtt CognitoStack.Outputs.UserPoolId]
         IngressCodeS3Bucket: !Ref TemplateBucket
@@ -152,6 +179,12 @@ Resources:
         VehicleStateApiCodeS3Key: !Ref VehicleStateApiCodeS3Key
         FleetTenancyApiCodeS3Bucket: !Ref TemplateBucket
         FleetTenancyApiCodeS3Key: !Ref FleetTenancyApiCodeS3Key
+        GeofenceProcessorCodeS3Bucket: !Ref TemplateBucket
+        GeofenceProcessorCodeS3Key: !Ref GeofenceProcessorCodeS3Key
+        GeofenceApiCodeS3Bucket: !Ref TemplateBucket
+        GeofenceApiCodeS3Key: !Ref GeofenceApiCodeS3Key
+        GeofenceAdminApiCodeS3Bucket: !Ref TemplateBucket
+        GeofenceAdminApiCodeS3Key: !Ref GeofenceAdminApiCodeS3Key
         CommonLayerS3Bucket: !Ref TemplateBucket
         CommonLayerS3Key: !Ref CommonLayerS3Key
       TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/lambdas.yaml
@@ -182,6 +215,16 @@ Resources:
         ProjectName: !Ref ProjectName
         FleetTenancyApiFunctionArn: !GetAtt LambdasStack.Outputs.FleetTenancyApiFunctionArn
       TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/fleet_tenancy_api.yaml
+
+  GeofencingApiStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        Env: !Ref Env
+        ProjectName: !Ref ProjectName
+        GeofenceApiFunctionArn: !GetAtt LambdasStack.Outputs.GeofenceApiFunctionArn
+        GeofenceAdminApiFunctionArn: !GetAtt LambdasStack.Outputs.GeofenceAdminApiFunctionArn
+      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/geofencing_api.yaml
 
   IngestApiStack:
     Type: AWS::CloudFormation::Stack
@@ -234,6 +277,10 @@ Outputs:
     Value: !GetAtt FleetTenancyApiStack.Outputs.InvokeUrl
   FleetTenancyApiId:
     Value: !GetAtt FleetTenancyApiStack.Outputs.RestApiId
+  GeofencingApiInvokeUrl:
+    Value: !GetAtt GeofencingApiStack.Outputs.InvokeUrl
+  GeofencingApiId:
+    Value: !GetAtt GeofencingApiStack.Outputs.RestApiId
   TemplateVersionUsed:
     Description: TemplateVersion used for nested stack TemplateURL paths
     Value: !Ref TemplateVersion

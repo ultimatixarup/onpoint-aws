@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: onpoint sqs queues
+
+Parameters:
+  Env:
+    Type: String
+  ProjectName:
+    Type: String
+
+Resources:
+  IngressDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${ProjectName}-${Env}-ingress-dlq"
+      MessageRetentionPeriod: 1209600
+
+  IngressQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${ProjectName}-${Env}-ingress-queue"
+      VisibilityTimeout: 60
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt IngressDlq.Arn
+        maxReceiveCount: 5
+
+  PslEnrichDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${ProjectName}-${Env}-psl-enrich-dlq"
+      MessageRetentionPeriod: 1209600
+
+  PslEnrichQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${ProjectName}-${Env}-psl-enrich-queue"
+      VisibilityTimeout: 60
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt PslEnrichDlq.Arn
+        maxReceiveCount: 5
+
+  TripSummaryDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${ProjectName}-${Env}-trip-summary-dlq"
+      MessageRetentionPeriod: 1209600
+
+  TripSummaryQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${ProjectName}-${Env}-trip-summary-queue"
+      VisibilityTimeout: 60
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt TripSummaryDlq.Arn
+        maxReceiveCount: 5
+
+Outputs:
+  IngressQueueUrl:
+    Value: !Ref IngressQueue
+  IngressQueueArn:
+    Value: !GetAtt IngressQueue.Arn
+  IngressQueueName:
+    Value: !GetAtt IngressQueue.QueueName
+  PslEnrichQueueUrl:
+    Value: !Ref PslEnrichQueue
+  PslEnrichQueueArn:
+    Value: !GetAtt PslEnrichQueue.Arn
+  TripSummaryQueueUrl:
+    Value: !Ref TripSummaryQueue
+  TripSummaryQueueArn:
+    Value: !GetAtt TripSummaryQueue.Arn

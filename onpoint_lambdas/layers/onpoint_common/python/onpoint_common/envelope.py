@@ -164,13 +164,13 @@ def build_ingress_envelope(
     # Extract and normalize required fields from raw payload
     vin = raw_payload.get("vin") or raw_payload.get("cx_vehicle_id")
     event_type = raw_payload.get("cx_event_type")
-    
+
     # Time: prefer cx_timestamp, fallback to current time
     event_time = raw_payload.get("cx_timestamp")
     if not event_time:
         event_time = utc_now_iso()
         logger.warning(f"No cx_timestamp in payload for vin={vin}, using current time")
-    
+
     # Message ID: prefer cx_msg_id, fallback to SQS messageId
     msg_id = raw_payload.get("cx_msg_id")
     if not msg_id and isinstance(sqs_record, dict):
@@ -196,14 +196,14 @@ def build_ingress_envelope(
         "domain": domain,
         "schemaVersion": schema_version,
         "ingestedAt": utc_now_iso(),
-        
+
         # Normalized top-level fields required by processor
         "vin": vin,
         "type": event_type,
         "time": event_time,
         "msgId": msg_id,
         "tripId": trip_id,  # optional
-        
+
         "meta": meta,
         "data": raw_payload,  # Keep original payload
     }

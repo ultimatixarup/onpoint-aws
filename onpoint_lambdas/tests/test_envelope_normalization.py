@@ -47,7 +47,7 @@ def test_envelope_normalizes_minimal_payload():
     assert envelope["project"] == "onpoint"
     assert envelope["domain"] == "telematics"
     assert envelope["schemaVersion"] == "telematics-1.0"
-    
+
     # Verify original data is preserved
     assert envelope["data"] == raw_payload
 

@@ -1,0 +1,490 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: onpoint geofencing rest api
+
+Parameters:
+  Env:
+    Type: String
+  ProjectName:
+    Type: String
+  GeofenceApiFunctionArn:
+    Type: String
+    Default: ""
+  GeofenceAdminApiFunctionArn:
+    Type: String
+    Default: ""
+
+Conditions:
+  HasGeofenceApiArn: !Not [!Equals [!Ref GeofenceApiFunctionArn, ""]]
+  HasGeofenceAdminApiArn: !Not [!Equals [!Ref GeofenceAdminApiFunctionArn, ""]]
+
+Resources:
+  GeofencingRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub "${ProjectName}-${Env}-geofencing-api"
+      Description: Geofencing REST API
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  GeofencesResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasGeofenceAdminApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ParentId: !GetAtt GeofencingRestApi.RootResourceId
+      PathPart: geofences
+
+  GeofencesGetMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasGeofenceAdminApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ResourceId: !Ref GeofencesResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GeofenceAdminApiFunctionArn}/invocations"
+
+  GeofencesPostMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasGeofenceAdminApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ResourceId: !Ref GeofencesResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GeofenceAdminApiFunctionArn}/invocations"
+
+  GeofencesOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasGeofenceAdminApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ResourceId: !Ref GeofencesResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      ApiKeyRequired: false
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  GeofenceIdResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasGeofenceAdminApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ParentId: !Ref GeofencesResource
+      PathPart: "{geofenceId}"
+
+  GeofenceIdPutMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasGeofenceAdminApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ResourceId: !Ref GeofenceIdResource
+      HttpMethod: PUT
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GeofenceAdminApiFunctionArn}/invocations"
+
+  GeofenceIdDeleteMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasGeofenceAdminApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ResourceId: !Ref GeofenceIdResource
+      HttpMethod: DELETE
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GeofenceAdminApiFunctionArn}/invocations"
+
+  GeofenceIdOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasGeofenceAdminApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ResourceId: !Ref GeofenceIdResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      ApiKeyRequired: false
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  GeofenceActivateResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasGeofenceAdminApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ParentId: !Ref GeofenceIdResource
+      PathPart: activate
+
+  GeofenceActivatePostMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasGeofenceAdminApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ResourceId: !Ref GeofenceActivateResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GeofenceAdminApiFunctionArn}/invocations"
+
+  GeofenceDeactivateResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasGeofenceAdminApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ParentId: !Ref GeofenceIdResource
+      PathPart: deactivate
+
+  GeofenceDeactivatePostMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasGeofenceAdminApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ResourceId: !Ref GeofenceDeactivateResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GeofenceAdminApiFunctionArn}/invocations"
+
+  GeofenceAssignmentsResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasGeofenceAdminApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ParentId: !Ref GeofenceIdResource
+      PathPart: assignments
+
+  GeofenceAssignmentsPostMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasGeofenceAdminApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ResourceId: !Ref GeofenceAssignmentsResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GeofenceAdminApiFunctionArn}/invocations"
+
+  GeofenceVersionsResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasGeofenceAdminApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ParentId: !Ref GeofenceIdResource
+      PathPart: versions
+
+  GeofenceVersionsGetMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasGeofenceAdminApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ResourceId: !Ref GeofenceVersionsResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GeofenceAdminApiFunctionArn}/invocations"
+
+  VehiclesResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasGeofenceApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ParentId: !GetAtt GeofencingRestApi.RootResourceId
+      PathPart: vehicles
+
+  VehicleVinResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasGeofenceApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ParentId: !Ref VehiclesResource
+      PathPart: "{vin}"
+
+  VehicleGeofenceEventsResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasGeofenceApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ParentId: !Ref VehicleVinResource
+      PathPart: geofence-events
+
+  VehicleGeofenceEventsGetMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasGeofenceApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ResourceId: !Ref VehicleGeofenceEventsResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GeofenceApiFunctionArn}/invocations"
+
+  VehicleGeofenceStateResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasGeofenceApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ParentId: !Ref VehicleVinResource
+      PathPart: geofence-state
+
+  VehicleGeofenceStateGetMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasGeofenceApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ResourceId: !Ref VehicleGeofenceStateResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GeofenceApiFunctionArn}/invocations"
+
+  TripsResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasGeofenceApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ParentId: !GetAtt GeofencingRestApi.RootResourceId
+      PathPart: trips
+
+  TripIdResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasGeofenceApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ParentId: !Ref TripsResource
+      PathPart: "{tripId}"
+
+  TripGeofenceEventsResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasGeofenceApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ParentId: !Ref TripIdResource
+      PathPart: geofence-events
+
+  TripGeofenceEventsGetMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasGeofenceApiArn
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ResourceId: !Ref TripGeofenceEventsResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GeofenceApiFunctionArn}/invocations"
+
+  RootOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ResourceId: !GetAtt GeofencingRestApi.RootResourceId
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      ApiKeyRequired: false
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  GeofencingGatewayResponseDefault4XX:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ResponseType: DEFAULT_4XX
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+
+  GeofencingGatewayResponseDefault5XX:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      ResponseType: DEFAULT_5XX
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+
+  GeofencingApiInvokePermission:
+    Type: AWS::Lambda::Permission
+    Condition: HasGeofenceApiArn
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref GeofenceApiFunctionArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${GeofencingRestApi}/*/*/*"
+
+  GeofencingAdminApiInvokePermission:
+    Type: AWS::Lambda::Permission
+    Condition: HasGeofenceAdminApiArn
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref GeofenceAdminApiFunctionArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${GeofencingRestApi}/*/*/*"
+
+  GeofencingRestApiDeploymentBase:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - RootOptionsMethod
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      Description: !Sub "Base deployment for ${Env} stage"
+
+  GeofencingRestApiDeploymentAdmin:
+    Type: AWS::ApiGateway::Deployment
+    Condition: HasGeofenceAdminApiArn
+    DependsOn:
+      - GeofencesGetMethod
+      - GeofencesPostMethod
+      - GeofenceIdPutMethod
+      - GeofenceIdDeleteMethod
+      - GeofenceActivatePostMethod
+      - GeofenceDeactivatePostMethod
+      - GeofenceAssignmentsPostMethod
+      - GeofenceVersionsGetMethod
+      - RootOptionsMethod
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      Description: !Sub "Admin deployment for ${Env} stage"
+
+  GeofencingRestApiDeploymentPublic:
+    Type: AWS::ApiGateway::Deployment
+    Condition: HasGeofenceApiArn
+    DependsOn:
+      - VehicleGeofenceEventsGetMethod
+      - VehicleGeofenceStateGetMethod
+      - TripGeofenceEventsGetMethod
+      - RootOptionsMethod
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      Description: !Sub "Public deployment for ${Env} stage"
+
+  GeofencingRestApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref GeofencingRestApi
+      DeploymentId: !If
+        - HasGeofenceAdminApiArn
+        - !Ref GeofencingRestApiDeploymentAdmin
+        - !If
+          - HasGeofenceApiArn
+          - !Ref GeofencingRestApiDeploymentPublic
+          - !Ref GeofencingRestApiDeploymentBase
+      StageName: !Ref Env
+      Description: !Sub "${Env} environment stage"
+
+  GeofencingRestApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Name: !Sub "${ProjectName}-${Env}-geofencing-key"
+      Description: API Key for Geofencing API
+      Enabled: true
+
+  GeofencingRestApiUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn: GeofencingRestApiStage
+    Properties:
+      UsagePlanName: !Sub "${ProjectName}-${Env}-geofencing-plan"
+      Description: Usage plan for Geofencing API
+      ApiStages:
+        - ApiId: !Ref GeofencingRestApi
+          Stage: !Ref Env
+      Throttle:
+        RateLimit: 100
+        BurstLimit: 200
+
+  GeofencingRestApiUsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref GeofencingRestApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref GeofencingRestApiUsagePlan
+
+Outputs:
+  RestApiId:
+    Description: REST API ID
+    Value: !Ref GeofencingRestApi
+  InvokeUrl:
+    Description: API Gateway invoke URL
+    Value: !Sub "https://${GeofencingRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Env}"
+  ApiKeyId:
+    Description: API Key ID (retrieve value via AWS Console or CLI)
+    Value: !Ref GeofencingRestApiKey

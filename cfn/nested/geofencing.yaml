@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: onpoint geofencing tables
+
+Parameters:
+  Env:
+    Type: String
+  ProjectName:
+    Type: String
+  GeofenceEventsTtlDays:
+    Type: Number
+    Default: 30
+
+Resources:
+  GeofenceDefinitionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-${Env}-geofence-definitions"
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+        KMSMasterKeyId: alias/aws/dynamodb
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+
+  GeofenceAssignmentsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-${Env}-geofence-assignments"
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+        KMSMasterKeyId: alias/aws/dynamodb
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+
+  GeofenceStateTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-${Env}-geofence-state"
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+        KMSMasterKeyId: alias/aws/dynamodb
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+
+Outputs:
+  GeofenceDefinitionsTableName:
+    Value: !Ref GeofenceDefinitionsTable
+  GeofenceDefinitionsTableArn:
+    Value: !GetAtt GeofenceDefinitionsTable.Arn
+  GeofenceAssignmentsTableName:
+    Value: !Ref GeofenceAssignmentsTable
+  GeofenceAssignmentsTableArn:
+    Value: !GetAtt GeofenceAssignmentsTable.Arn
+  GeofenceStateTableName:
+    Value: !Ref GeofenceStateTable
+  GeofenceStateTableArn:
+    Value: !GetAtt GeofenceStateTable.Arn
+  GeofenceEventsTtlDays:
+    Value: !Ref GeofenceEventsTtlDays

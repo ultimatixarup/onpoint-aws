@@ -1,0 +1,234 @@
+{
+  "info": {
+    "name": "OnPoint - Geofencing API",
+    "_postman_id": "c9f2a2f1-7c0c-4b0f-9e2a-55a0f1f9d1c2",
+    "description": "Geofencing REST API - Admin + query endpoints. Uses geofencingBaseUrl and geofencingApiKey from the environment.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const apiKey = pm.environment.get('geofencingApiKey');",
+          "if (apiKey) {",
+          "  pm.variables.set('apiKey', apiKey);",
+          "}",
+          "const tenantId = pm.environment.get('tenantId');",
+          "const role = pm.environment.get('role');",
+          "if (tenantId) {",
+          "  pm.request.headers.upsert({ key: 'x-tenant-id', value: tenantId });",
+          "}",
+          "if (role) {",
+          "  pm.request.headers.upsert({ key: 'x-role', value: role });",
+          "}",
+          "const headers = {};",
+          "pm.request.headers.each(h => {",
+          "  const key = h.key || '';",
+          "  headers[key] = key.toLowerCase() === 'x-api-key' ? '***' : h.value;",
+          "});",
+          "console.log('Headers (redacted API key):', headers);"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "geofenceId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "List Geofences",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+        ],
+        "url": {
+          "raw": "{{geofencingBaseUrl}}/geofences",
+          "host": ["{{geofencingBaseUrl}}"],
+          "path": ["geofences"]
+        },
+        "description": "List geofences (latest versions)."
+      }
+    },
+    {
+      "name": "Create Geofence",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"CIRCLE\",\n  \"geometry\": {\"center\": [37.7749, -122.4194], \"radiusMeters\": 300},\n  \"priority\": 5,\n  \"status\": \"ACTIVE\",\n  \"createdBy\": \"postman\",\n  \"reason\": \"demo\"\n}"
+        },
+        "url": {
+          "raw": "{{geofencingBaseUrl}}/geofences",
+          "host": ["{{geofencingBaseUrl}}"],
+          "path": ["geofences"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "if (json.geofenceId) {",
+              "  pm.collectionVariables.set('geofenceId', json.geofenceId);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update Geofence (New Version)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"CIRCLE\",\n  \"geometry\": {\"center\": [37.775, -122.418], \"radiusMeters\": 350},\n  \"priority\": 7,\n  \"status\": \"ACTIVE\",\n  \"createdBy\": \"postman\",\n  \"reason\": \"update\"\n}"
+        },
+        "url": {
+          "raw": "{{geofencingBaseUrl}}/geofences/{{geofenceId}}",
+          "host": ["{{geofencingBaseUrl}}"],
+          "path": ["geofences", "{{geofenceId}}"]
+        }
+      }
+    },
+    {
+      "name": "Activate Geofence",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+        ],
+        "url": {
+          "raw": "{{geofencingBaseUrl}}/geofences/{{geofenceId}}:activate",
+          "host": ["{{geofencingBaseUrl}}"],
+          "path": ["geofences", "{{geofenceId}}:activate"]
+        }
+      }
+    },
+    {
+      "name": "Deactivate Geofence",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+        ],
+        "url": {
+          "raw": "{{geofencingBaseUrl}}/geofences/{{geofenceId}}:deactivate",
+          "host": ["{{geofencingBaseUrl}}"],
+          "path": ["geofences", "{{geofenceId}}:deactivate"]
+        }
+      }
+    },
+    {
+      "name": "Soft Delete Geofence",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+        ],
+        "url": {
+          "raw": "{{geofencingBaseUrl}}/geofences/{{geofenceId}}",
+          "host": ["{{geofencingBaseUrl}}"],
+          "path": ["geofences", "{{geofenceId}}"]
+        }
+      }
+    },
+    {
+      "name": "Assign Geofence to Tenant",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"scopeType\": \"TENANT\",\n  \"scopeId\": \"{{tenantId}}\",\n  \"exclude\": false\n}"
+        },
+        "url": {
+          "raw": "{{geofencingBaseUrl}}/geofences/{{geofenceId}}/assignments",
+          "host": ["{{geofencingBaseUrl}}"],
+          "path": ["geofences", "{{geofenceId}}", "assignments"]
+        }
+      }
+    },
+    {
+      "name": "Get Geofence Versions",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+        ],
+        "url": {
+          "raw": "{{geofencingBaseUrl}}/geofences/{{geofenceId}}/versions",
+          "host": ["{{geofencingBaseUrl}}"],
+          "path": ["geofences", "{{geofenceId}}", "versions"]
+        }
+      }
+    },
+    {
+      "name": "List Geofence Events by VIN",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+        ],
+        "url": {
+          "raw": "{{geofencingBaseUrl}}/vehicles/{{vin}}/geofence-events?limit=10",
+          "host": ["{{geofencingBaseUrl}}"],
+          "path": ["vehicles", "{{vin}}", "geofence-events"],
+          "query": [
+            { "key": "from", "value": "2026-02-01T00:00:00Z", "disabled": true },
+            { "key": "to", "value": "2026-02-28T23:59:59Z", "disabled": true },
+            { "key": "limit", "value": "10" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Geofence State by VIN",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+        ],
+        "url": {
+          "raw": "{{geofencingBaseUrl}}/vehicles/{{vin}}/geofence-state",
+          "host": ["{{geofencingBaseUrl}}"],
+          "path": ["vehicles", "{{vin}}", "geofence-state"]
+        }
+      }
+    },
+    {
+      "name": "List Geofence Events by Trip",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+        ],
+        "url": {
+          "raw": "{{geofencingBaseUrl}}/trips/{{tripId}}/geofence-events?limit=10",
+          "host": ["{{geofencingBaseUrl}}"],
+          "path": ["trips", "{{tripId}}", "geofence-events"],
+          "query": [
+            { "key": "limit", "value": "10" }
+          ]
+        }
+      }
+    }
+  ]
+}

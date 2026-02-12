@@ -1,0 +1,297 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: onpoint vehicle state rest api
+
+Parameters:
+  Env:
+    Type: String
+  ProjectName:
+    Type: String
+  VehicleStateApiFunctionArn:
+    Type: String
+    Default: ""
+
+Conditions:
+  HasVehicleStateApiArn: !Not [!Equals [!Ref VehicleStateApiFunctionArn, ""]]
+
+Resources:
+  VehicleStateRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub "${ProjectName}-${Env}-vehicle-state-api"
+      Description: Vehicle State REST API
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # /vehicles resource
+  VehiclesResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasVehicleStateApiArn
+    Properties:
+      RestApiId: !Ref VehicleStateRestApi
+      ParentId: !GetAtt VehicleStateRestApi.RootResourceId
+      PathPart: "vehicles"
+
+  # /vehicles/{vin} resource
+  VehicleVinResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasVehicleStateApiArn
+    Properties:
+      RestApiId: !Ref VehicleStateRestApi
+      ParentId: !Ref VehiclesResource
+      PathPart: "{vin}"
+
+  # /vehicles/{vin}/latest-state resource
+  VehicleLatestStateResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasVehicleStateApiArn
+    Properties:
+      RestApiId: !Ref VehicleStateRestApi
+      ParentId: !Ref VehicleVinResource
+      PathPart: "latest-state"
+
+  # GET /vehicles/{vin}/latest-state method
+  VehicleLatestStateGetMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasVehicleStateApiArn
+    Properties:
+      RestApiId: !Ref VehicleStateRestApi
+      ResourceId: !Ref VehicleLatestStateResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VehicleStateApiFunctionArn}/invocations"
+
+  VehicleLatestStateOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasVehicleStateApiArn
+    Properties:
+      RestApiId: !Ref VehicleStateRestApi
+      ResourceId: !Ref VehicleLatestStateResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      ApiKeyRequired: false
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  # /fleets resource
+  FleetsResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasVehicleStateApiArn
+    Properties:
+      RestApiId: !Ref VehicleStateRestApi
+      ParentId: !GetAtt VehicleStateRestApi.RootResourceId
+      PathPart: "fleets"
+
+  # /fleets/{fleetId} resource
+  FleetIdResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasVehicleStateApiArn
+    Properties:
+      RestApiId: !Ref VehicleStateRestApi
+      ParentId: !Ref FleetsResource
+      PathPart: "{fleetId}"
+
+  # /fleets/{fleetId}/vehicles resource
+  FleetVehiclesResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasVehicleStateApiArn
+    Properties:
+      RestApiId: !Ref VehicleStateRestApi
+      ParentId: !Ref FleetIdResource
+      PathPart: "vehicles"
+
+  # /fleets/{fleetId}/vehicles/state resource
+  FleetVehicleStateResource:
+    Type: AWS::ApiGateway::Resource
+    Condition: HasVehicleStateApiArn
+    Properties:
+      RestApiId: !Ref VehicleStateRestApi
+      ParentId: !Ref FleetVehiclesResource
+      PathPart: "state"
+
+  # GET /fleets/{fleetId}/vehicles/state method
+  FleetVehicleStateGetMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasVehicleStateApiArn
+    Properties:
+      RestApiId: !Ref VehicleStateRestApi
+      ResourceId: !Ref FleetVehicleStateResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VehicleStateApiFunctionArn}/invocations"
+
+  FleetVehicleStateOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasVehicleStateApiArn
+    Properties:
+      RestApiId: !Ref VehicleStateRestApi
+      ResourceId: !Ref FleetVehicleStateResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      ApiKeyRequired: false
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  RootOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasVehicleStateApiArn
+    Properties:
+      RestApiId: !Ref VehicleStateRestApi
+      ResourceId: !GetAtt VehicleStateRestApi.RootResourceId
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      ApiKeyRequired: false
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  VehicleStateGatewayResponseDefault4XX:
+    Type: AWS::ApiGateway::GatewayResponse
+    Condition: HasVehicleStateApiArn
+    Properties:
+      RestApiId: !Ref VehicleStateRestApi
+      ResponseType: DEFAULT_4XX
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+
+  VehicleStateGatewayResponseDefault5XX:
+    Type: AWS::ApiGateway::GatewayResponse
+    Condition: HasVehicleStateApiArn
+    Properties:
+      RestApiId: !Ref VehicleStateRestApi
+      ResponseType: DEFAULT_5XX
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+
+  # Lambda permission for REST API
+  VehicleStateRestApiInvokePermission:
+    Type: AWS::Lambda::Permission
+    Condition: HasVehicleStateApiArn
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref VehicleStateApiFunctionArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${VehicleStateRestApi}/*/*/*"
+
+  # API Deployment
+  VehicleStateRestApiDeploymentV2:
+    Type: AWS::ApiGateway::Deployment
+    Condition: HasVehicleStateApiArn
+    DependsOn:
+      - VehicleLatestStateGetMethod
+      - VehicleLatestStateOptionsMethod
+      - FleetVehicleStateGetMethod
+      - FleetVehicleStateOptionsMethod
+      - RootOptionsMethod
+    Properties:
+      RestApiId: !Ref VehicleStateRestApi
+      Description: !Sub "Deployment for ${Env} stage"
+
+  # API Stage
+  VehicleStateRestApiStage:
+    Type: AWS::ApiGateway::Stage
+    Condition: HasVehicleStateApiArn
+    Properties:
+      RestApiId: !Ref VehicleStateRestApi
+      DeploymentId: !Ref VehicleStateRestApiDeploymentV2
+      StageName: !Ref Env
+      Description: !Sub "${Env} environment stage"
+
+  # API Key
+  VehicleStateRestApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Condition: HasVehicleStateApiArn
+    Properties:
+      Name: !Sub "${ProjectName}-${Env}-vehicle-state-key"
+      Description: API Key for Vehicle State API
+      Enabled: true
+
+  # Usage Plan
+  VehicleStateRestApiUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Condition: HasVehicleStateApiArn
+    DependsOn: VehicleStateRestApiStage
+    Properties:
+      UsagePlanName: !Sub "${ProjectName}-${Env}-vehicle-state-plan"
+      Description: Usage plan for Vehicle State API
+      ApiStages:
+        - ApiId: !Ref VehicleStateRestApi
+          Stage: !Ref Env
+      Throttle:
+        RateLimit: 100
+        BurstLimit: 200
+
+  # Link API Key to Usage Plan
+  VehicleStateRestApiUsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Condition: HasVehicleStateApiArn
+    Properties:
+      KeyId: !Ref VehicleStateRestApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref VehicleStateRestApiUsagePlan
+
+Outputs:
+  RestApiId:
+    Description: REST API ID
+    Value: !Ref VehicleStateRestApi
+  InvokeUrl:
+    Description: API Gateway invoke URL
+    Value: !Sub "https://${VehicleStateRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Env}"
+  ApiKeyId:
+    Description: API Key ID (retrieve value via AWS Console or CLI)
+    Value: !If [HasVehicleStateApiArn, !Ref VehicleStateRestApiKey, "N/A"]
+    Export:
+      Name: !Sub "${ProjectName}-${Env}-vehicle-state-api-key-id"

@@ -50,7 +50,9 @@ describe("useGeofenceStore", () => {
     });
     window.localStorage.clear();
     if (globalThis.crypto && "randomUUID" in globalThis.crypto) {
-      vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValue("test-id");
+      vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValue(
+        "00000000-0000-4000-8000-000000000000",
+      );
     }
   });
 
@@ -62,7 +64,9 @@ describe("useGeofenceStore", () => {
     });
 
     expect(result.current.geofences).toHaveLength(1);
-    expect(result.current.geofences[0].id).toBe("test-id");
+    expect(result.current.geofences[0].id).toBe(
+      "00000000-0000-4000-8000-000000000000",
+    );
     expect(result.current.geofences[0].alerts.enter).toBe(false);
     expect(
       JSON.parse(window.localStorage.getItem("onpoint.geofences.tenant-a") ??
@@ -78,7 +82,7 @@ describe("useGeofenceStore", () => {
     });
 
     act(() => {
-      result.current.updateGeofence("test-id", {
+      result.current.updateGeofence("00000000-0000-4000-8000-000000000000", {
         alerts: {
           enter: true,
           exit: false,
@@ -107,7 +111,7 @@ describe("useGeofenceStore", () => {
     });
 
     act(() => {
-      result.current.removeGeofence("test-id");
+      result.current.removeGeofence("00000000-0000-4000-8000-000000000000");
     });
 
     expect(result.current.geofences).toHaveLength(0);

@@ -1,0 +1,224 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: onpoint ingest REST API -> SQS
+
+Parameters:
+  Env:
+    Type: String
+  ProjectName:
+    Type: String
+  DeploymentNonce:
+    Type: String
+    Default: "2"
+  IngressQueueArn:
+    Type: String
+  IngressQueueName:
+    Type: String
+  IngressQueueUrl:
+    Type: String
+
+Resources:
+  IngestRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub "${ProjectName}-${Env}-ingest-api"
+      Description: !Sub "Ingress queue ${IngressQueueName}"
+
+  IngestApiResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IngestRestApi
+      ParentId: !GetAtt IngestRestApi.RootResourceId
+      PathPart: ingest
+
+  IngestTelematicsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IngestRestApi
+      ParentId: !Ref IngestApiResource
+      PathPart: telematics
+
+  IngestApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-${Env}-ingest-apigw-sqs-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub "${ProjectName}-${Env}-ingest-apigw-sqs"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: sqs:SendMessage
+                Resource: !Ref IngressQueueArn
+
+  IngestRequestValidator:
+    Type: AWS::ApiGateway::RequestValidator
+    Properties:
+      Name: !Sub "${ProjectName}-${Env}-ingest-validator"
+      RestApiId: !Ref IngestRestApi
+      ValidateRequestBody: true
+      ValidateRequestParameters: true
+
+  IngestMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IngestRestApi
+      ResourceId: !Ref IngestTelematicsResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      RequestParameters:
+        method.request.header.x-api-key: true
+        method.request.header.providerId: true
+      RequestValidatorId: !Ref IngestRequestValidator
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:sqs:action/SendMessage
+        Credentials: !GetAtt IngestApiRole.Arn
+        PassthroughBehavior: NEVER
+        RequestParameters:
+          integration.request.header.Content-Type: "'application/x-www-form-urlencoded'"
+        RequestTemplates:
+          application/json: !Sub |
+            Action=SendMessage&Version=2012-11-05&QueueUrl=$util.urlEncode('${IngressQueueUrl}')&MessageBody=$util.urlEncode($input.body)&MessageAttribute.1.Name=providerId&MessageAttribute.1.Value.StringValue=$util.urlEncode($context.identity.apiKey)&MessageAttribute.1.Value.DataType=String
+        IntegrationResponses:
+          - StatusCode: 200
+      MethodResponses:
+        - StatusCode: 200
+
+  IngestOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IngestRestApi
+      ResourceId: !Ref IngestTelematicsResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      ApiKeyRequired: false
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key,ProviderId'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  RootOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IngestRestApi
+      ResourceId: !GetAtt IngestRestApi.RootResourceId
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      ApiKeyRequired: false
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key,ProviderId'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+
+  IngestGatewayResponseDefault4XX:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      RestApiId: !Ref IngestRestApi
+      ResponseType: DEFAULT_4XX
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key,ProviderId'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+
+  IngestGatewayResponseDefault5XX:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      RestApiId: !Ref IngestRestApi
+      ResponseType: DEFAULT_5XX
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key,ProviderId'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+
+  IngestDeploymentV2:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - IngestMethod
+      - IngestOptionsMethod
+      - RootOptionsMethod
+    Properties:
+      RestApiId: !Ref IngestRestApi
+      Description: !Sub "deploy-${AWS::StackName}-${AWS::Region}-${DeploymentNonce}"
+
+  IngestStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref IngestRestApi
+      DeploymentId: !Ref IngestDeploymentV2
+      StageName: v1
+      Variables:
+        PROVIDER_LOOKUP_MODE: dynamodb
+        PROVIDER_TABLE: onpoint-dev-provider-keys
+
+  IngestUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn:
+      - IngestStage
+    Properties:
+      UsagePlanName: !Sub "${ProjectName}-${Env}-ingest-plan"
+      Throttle:
+        BurstLimit: 50
+        RateLimit: 10
+      ApiStages:
+        - ApiId: !Ref IngestRestApi
+          Stage: v1
+
+  ExampleProviderApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Name: CEREBRUMX
+      Enabled: true
+
+  ExampleProviderUsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref ExampleProviderApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref IngestUsagePlan
+
+Outputs:
+  IngestApiInvokeUrl:
+    Value: !Sub "https://${IngestRestApi}.execute-api.${AWS::Region}.amazonaws.com/v1/ingest/telematics"
+  IngestApiId:
+    Value: !Ref IngestRestApi
+  IngestApiStageName:
+    Value: v1
+  IngestQueueUrl:
+    Value: !Ref IngressQueueUrl
+  IngestUsagePlanNote:
+    Value: !Sub "Attach API keys to usage plan ${IngestUsagePlan} and set stage variables PROVIDER_LOOKUP_MODE and PROVIDER_TABLE or PROVIDER_KEYS_PARAM."
+  ExampleProviderApiKeyId:
+    Value: !Ref ExampleProviderApiKey
