@@ -10,7 +10,6 @@ import { queryKeys } from "../../api/queryKeys";
 import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
 import { GeofenceShape, useGeofenceStore } from "./geofenceStore";
 
 const defaultIcon = L.icon({
@@ -164,13 +163,19 @@ export function GeofenceSetupPage() {
   };
 
   return (
-    <div className="page">
-      <div className="page-header-row">
-        <PageHeader
-          title="Geofence Setup"
-          subtitle="Draw and save geofences for tenant fleets"
-        />
-      </div>
+    <div className="page geofence-page">
+      <section className="geofence-hero geofence-hero--setup">
+        <div className="geofence-hero__glow" />
+        <div className="geofence-hero__content">
+          <div>
+            <p className="geofence-hero__eyebrow">Create zones</p>
+            <h1>Geofence Setup</h1>
+            <p className="geofence-hero__subtitle">
+              Draw and save geofences for tenant fleets.
+            </p>
+          </div>
+        </div>
+      </section>
       <Card title="Create Geofence">
         {!tenantId ? (
           <p>Select a tenant to begin configuring geofences.</p>
@@ -324,7 +329,10 @@ export function GeofenceSetupPage() {
   );
 }
 
-function getShapeFromLayer(layer: L.Layer, layerType?: string): GeofenceShape | null {
+function getShapeFromLayer(
+  layer: L.Layer,
+  layerType?: string,
+): GeofenceShape | null {
   if (layer instanceof L.Circle) {
     const center = layer.getLatLng();
     return {

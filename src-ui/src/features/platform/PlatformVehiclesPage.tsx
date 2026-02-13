@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
 import {
   assignVin,
   createVehicle,
@@ -189,10 +188,6 @@ export function PlatformVehiclesPage() {
     if (!vin) return;
     if (!tenantId) {
       setCreateError("Select a tenant before creating a vehicle.");
-      return;
-    }
-    if (assignAfterCreate && !assignmentReason.trim()) {
-      setCreateError("Provide a reason to assign the VIN.");
       return;
     }
     setCreateError("");

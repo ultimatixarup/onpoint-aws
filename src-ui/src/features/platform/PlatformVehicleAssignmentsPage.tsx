@@ -1,15 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
-    assignVin,
-    fetchFleets,
-    fetchTenants,
-    fetchVehicleAssignments,
-    fetchVehicles,
+  assignVin,
+  fetchFleets,
+  fetchTenants,
+  fetchVehicleAssignments,
+  fetchVehicles,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
 
 export function PlatformVehicleAssignmentsPage() {
   const [vin, setVin] = useState("");
@@ -85,11 +84,17 @@ export function PlatformVehicleAssignmentsPage() {
       : [];
 
   return (
-    <div className="page">
-      <PageHeader
-        title="Platform Admin – Vehicle Assignment"
-        subtitle="Assign vehicles to tenants or fleets and review history."
-      />
+    <div className="page platform-page">
+      <section className="platform-hero">
+        <div className="platform-hero__glow" />
+        <div>
+          <p className="platform-hero__eyebrow">Administration</p>
+          <h1>Platform Admin – Vehicle Assignment</h1>
+          <p className="platform-hero__subtitle">
+            Assign vehicles to tenants or fleets and review history.
+          </p>
+        </div>
+      </section>
       <div className="split-layout">
         <Card title="Assignment Actions">
           <div className="stack">

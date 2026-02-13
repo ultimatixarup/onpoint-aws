@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
 import {
   createCustomer,
   fetchCustomers,
@@ -111,11 +110,17 @@ export function PlatformCustomersPage() {
   };
 
   return (
-    <div className="page">
-      <PageHeader
-        title="Platform Admin – Customers"
-        subtitle="Create and maintain customer profiles by tenant."
-      />
+    <div className="page platform-page">
+      <section className="platform-hero">
+        <div className="platform-hero__glow" />
+        <div>
+          <p className="platform-hero__eyebrow">Administration</p>
+          <h1>Platform Admin – Customers</h1>
+          <p className="platform-hero__subtitle">
+            Create and maintain customer profiles by tenant.
+          </p>
+        </div>
+      </section>
       <div className="split-layout">
         <Card title="Customers">
           <div className="stack">

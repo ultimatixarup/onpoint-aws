@@ -12,7 +12,6 @@ import { queryKeys } from "../../api/queryKeys";
 import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
 
 const defaultIcon = L.icon({
   iconRetinaUrl:
@@ -52,7 +51,11 @@ export function LiveTrackingPage() {
     setSelectedVin("");
   }, [selectedFleetId]);
 
-  const { data: vehicleStates = [], isLoading: isLoadingStates } = useQuery({
+  const {
+    data: vehicleStates = [],
+    isLoading: isLoadingStates,
+    refetch: refetchStates,
+  } = useQuery({
     queryKey:
       tenantId && selectedFleetId
         ? ["vehicle-state", tenantId, selectedFleetId]
@@ -105,6 +108,9 @@ export function LiveTrackingPage() {
     [markers, selectedVin],
   );
 
+  const activeCount = filteredMarkers.length;
+  const totalCount = markers.length;
+
   const center = useMemo<[number, number]>(() => {
     if (filteredMarkers.length === 0) return [37.0902, -95.7129];
     const lat =
@@ -117,9 +123,43 @@ export function LiveTrackingPage() {
   }, [filteredMarkers]);
 
   return (
-    <div className="page">
-      <PageHeader title="Live Tracking" subtitle="Real-time fleet location" />
-      <Card title="Fleet Map">
+    <div className="page tracking-page">
+      <section className="tracking-hero">
+        <div className="tracking-hero__glow" />
+        <div className="tracking-hero__content">
+          <div>
+            <p className="tracking-hero__eyebrow">Live operations</p>
+            <h1>Live Tracking</h1>
+            <p className="tracking-hero__subtitle">
+              Real-time fleet visibility with VIN-level filtering and map focus.
+            </p>
+          </div>
+          <div className="tracking-hero__actions">
+            <button className="btn" onClick={() => refetchStates()}>
+              Refresh
+            </button>
+          </div>
+        </div>
+        <div className="tracking-metrics">
+          <div className="tracking-metric">
+            <span>Active vehicles</span>
+            <strong>{activeCount}</strong>
+            <span className="text-muted">On map</span>
+          </div>
+          <div className="tracking-metric">
+            <span>Total reporting</span>
+            <strong>{totalCount}</strong>
+            <span className="text-muted">Fleet telemetry</span>
+          </div>
+          <div className="tracking-metric">
+            <span>Status</span>
+            <strong>{isLoadingStates ? "Syncing" : "Live"}</strong>
+            <span className="text-muted">Updates every 30s</span>
+          </div>
+        </div>
+      </section>
+
+      <Card title="Filters">
         <div className="form-grid">
           <label className="form__field">
             <span className="text-muted">Fleet</span>
@@ -167,91 +207,95 @@ export function LiveTrackingPage() {
             </select>
           </label>
         </div>
-
-        {isLoadingStates ? <p>Loading vehicle locations...</p> : null}
-        {filteredMarkers.length === 0 && !isLoadingStates ? (
-          <p>No vehicle locations available.</p>
-        ) : (
-          <div className="map-container">
-            <MapContainer
-              center={center}
-              zoom={6}
-              style={{ height: "100%", width: "100%" }}
-            >
-              <MapViewUpdater markers={filteredMarkers} center={center} />
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              {filteredMarkers.map((marker) => (
-                <Marker
-                  key={marker.vin}
-                  position={marker.position}
-                  icon={carIcon}
-                >
-                  <Popup>
-                    <div>
-                      <strong>{marker.vin}</strong>
-                      <div>Last event: {marker.lastEventTime ?? "--"}</div>
-                      <div>Speed: {marker.speed_mph ?? "--"} mph</div>
-                      <div>Status: {marker.vehicleState ?? "--"}</div>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
-          </div>
-        )}
       </Card>
-      <Card title="Vehicle Feed">
-        {filteredMarkers.length === 0 ? (
-          <p>No vehicle state data available.</p>
-        ) : (
-          <div className="table-responsive">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>VIN</th>
-                  <th>Last Event</th>
-                  <th>Latitude</th>
-                  <th>Longitude</th>
-                  <th>Speed (mph)</th>
-                </tr>
-              </thead>
-              <tbody>
+
+      <div className="tracking-layout">
+        <Card title="Fleet Map">
+          {isLoadingStates ? <p>Loading vehicle locations...</p> : null}
+          {filteredMarkers.length === 0 && !isLoadingStates ? (
+            <p>No vehicle locations available.</p>
+          ) : (
+            <div className="map-container tracking-map">
+              <MapContainer
+                center={center}
+                zoom={6}
+                style={{ height: "100%", width: "100%" }}
+              >
+                <MapViewUpdater markers={filteredMarkers} center={center} />
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
                 {filteredMarkers.map((marker) => (
-                  <tr
+                  <Marker
                     key={marker.vin}
-                    className={
-                      selectedVin === marker.vin ? "is-selected" : undefined
-                    }
-                    onClick={() =>
-                      setSelectedVin((current) =>
-                        current === marker.vin ? "" : marker.vin,
-                      )
-                    }
-                    tabIndex={0}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
+                    position={marker.position}
+                    icon={carIcon}
+                  >
+                    <Popup>
+                      <div>
+                        <strong>{marker.vin}</strong>
+                        <div>Last event: {marker.lastEventTime ?? "--"}</div>
+                        <div>Speed: {marker.speed_mph ?? "--"} mph</div>
+                        <div>Status: {marker.vehicleState ?? "--"}</div>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
+            </div>
+          )}
+        </Card>
+        <Card title="Vehicle Feed">
+          {filteredMarkers.length === 0 ? (
+            <p>No vehicle state data available.</p>
+          ) : (
+            <div className="table-responsive">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>VIN</th>
+                    <th>Last Event</th>
+                    <th>Latitude</th>
+                    <th>Longitude</th>
+                    <th>Speed (mph)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMarkers.map((marker) => (
+                    <tr
+                      key={marker.vin}
+                      className={
+                        selectedVin === marker.vin ? "is-selected" : undefined
+                      }
+                      onClick={() =>
                         setSelectedVin((current) =>
                           current === marker.vin ? "" : marker.vin,
-                        );
+                        )
                       }
-                    }}
-                  >
-                    <td>{marker.vin}</td>
-                    <td>{marker.lastEventTime ?? "--"}</td>
-                    <td>{marker.position[0].toFixed(5)}</td>
-                    <td>{marker.position[1].toFixed(5)}</td>
-                    <td>{marker.speed_mph ?? "--"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+                      tabIndex={0}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setSelectedVin((current) =>
+                            current === marker.vin ? "" : marker.vin,
+                          );
+                        }
+                      }}
+                    >
+                      <td>{marker.vin}</td>
+                      <td>{marker.lastEventTime ?? "--"}</td>
+                      <td>{marker.position[0].toFixed(5)}</td>
+                      <td>{marker.position[1].toFixed(5)}</td>
+                      <td>{marker.speed_mph ?? "--"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }

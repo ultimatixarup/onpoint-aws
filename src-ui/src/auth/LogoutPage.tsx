@@ -8,5 +8,17 @@ export function LogoutPage() {
     logout();
   }, [logout]);
 
-  return <div className="page">Signing out...</div>;
+  return (
+    <div className="auth-shell auth-shell--single">
+      <div className="auth-panel">
+        <div className="auth-card auth-card--center">
+          <div className="auth-card__header">
+            <h2>Signing out</h2>
+            <p className="text-muted">Closing your session safely.</p>
+          </div>
+          <div className="auth-spinner" />
+        </div>
+      </div>
+    </div>
+  );
 }

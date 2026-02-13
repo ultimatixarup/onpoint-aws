@@ -28,18 +28,52 @@ const adminLinks = [
   { to: "/adlp/platform/driver-assignments", label: "Driver Assignments" },
 ];
 
+const tenantAdminLinks = [
+  { to: "/adlp/users", label: "Users" },
+  { to: "/adlp/groups", label: "Groups" },
+  { to: "/adlp/config", label: "Configuration" },
+  { to: "/adlp/notifications", label: "Notifications" },
+];
+
 export function Sidebar() {
   const { roles } = useAuth();
   const isPlatformAdmin = roles.includes("platform_admin");
+  const isTenantAdmin = roles.includes("tenant_admin");
   const [isAdminOpen, setIsAdminOpen] = useState(true);
+  const [isTenantAdminOpen, setIsTenantAdminOpen] = useState(true);
   return (
     <aside className="sidebar">
       <nav className="sidebar__nav">
-        {links.map((link) => (
-          <NavLink key={link.to} to={link.to} className="sidebar__link">
-            {link.label}
-          </NavLink>
-        ))}
+        <div className="sidebar__section sidebar__section--root">
+          <div className="sidebar__title">Navigation</div>
+          {links.map((link) => (
+            <NavLink key={link.to} to={link.to} className="sidebar__link">
+              {link.label}
+            </NavLink>
+          ))}
+        </div>
+        {isTenantAdmin ? (
+          <div className="sidebar__section">
+            <button
+              type="button"
+              className="sidebar__toggle"
+              onClick={() => setIsTenantAdminOpen((prev) => !prev)}
+              aria-expanded={isTenantAdminOpen}
+            >
+              <span>Tenant Admin</span>
+              <span className="sidebar__chevron">
+                {isTenantAdminOpen ? "▾" : "▸"}
+              </span>
+            </button>
+            {isTenantAdminOpen
+              ? tenantAdminLinks.map((link) => (
+                  <NavLink key={link.to} to={link.to} className="sidebar__link">
+                    {link.label}
+                  </NavLink>
+                ))
+              : null}
+          </div>
+        ) : null}
         {isPlatformAdmin ? (
           <div className="sidebar__section">
             <button

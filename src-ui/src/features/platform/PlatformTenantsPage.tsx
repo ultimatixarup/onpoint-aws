@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
 import { createTenant, fetchTenants, updateTenant } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 
@@ -199,11 +198,17 @@ export function PlatformTenantsPage() {
   };
 
   return (
-    <div className="page">
-      <PageHeader
-        title="Platform Admin – Tenants"
-        subtitle="Platform-level changes apply across all tenant users and data."
-      />
+    <div className="page platform-page">
+      <section className="platform-hero">
+        <div className="platform-hero__glow" />
+        <div>
+          <p className="platform-hero__eyebrow">Administration</p>
+          <h1>Platform Admin – Tenants</h1>
+          <p className="platform-hero__subtitle">
+            Platform-level changes apply across all tenant users and data.
+          </p>
+        </div>
+      </section>
       <div className="banner banner--warning">
         <strong>Warning:</strong> Changes on this page impact tenant-wide
         access, billing scope, and data isolation. Proceed with care.

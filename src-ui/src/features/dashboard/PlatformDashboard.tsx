@@ -1,14 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
-    fetchDrivers,
-    fetchFleets,
-    fetchTenants,
-    fetchUsers,
-    fetchVehicles,
+  fetchDrivers,
+  fetchFleets,
+  fetchTenants,
+  fetchUsers,
+  fetchVehicles,
 } from "../../api/onpointApi";
 import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
 
 type TenantRollup = {
   tenantId: string;
@@ -94,11 +93,15 @@ export function PlatformDashboard() {
   );
 
   return (
-    <div className="page">
-      <PageHeader
-        title="Platform Admin Dashboard"
-        subtitle="Global tenancy overview"
-      />
+    <div className="page platform-page">
+      <section className="platform-hero">
+        <div className="platform-hero__glow" />
+        <div>
+          <p className="platform-hero__eyebrow">Platform intelligence</p>
+          <h1>Platform Admin Dashboard</h1>
+          <p className="platform-hero__subtitle">Global tenancy overview.</p>
+        </div>
+      </section>
       {isLoading ? <p>Loading platform metrics...</p> : null}
       {error ? <p>Unable to load platform metrics.</p> : null}
       <div className="grid">

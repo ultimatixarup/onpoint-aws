@@ -20,7 +20,6 @@ import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
 import { formatDate } from "../../utils/date";
 
 export function TripHistoryPage() {
@@ -290,26 +289,32 @@ export function TripHistoryPage() {
   }, [tripPath]);
 
   return (
-    <div className="page">
-      <div className="page-header-row">
-        <PageHeader title="Trip History" subtitle="Trips and alerts" />
-        <div className="page-header-actions">
-          <Button variant="secondary">Export</Button>
-          <Button onClick={() => refetch()}>Refresh</Button>
+    <div className="page trip-history-page">
+      <section className="trip-hero">
+        <div className="trip-hero__glow" />
+        <div className="trip-hero__content">
+          <div>
+            <p className="trip-hero__eyebrow">Trip intelligence</p>
+            <h1>Trip History</h1>
+            <p className="trip-hero__subtitle">
+              Audit fleet movement, safety signals, and route performance.
+            </p>
+          </div>
+          <div className="trip-hero__actions">
+            <Button variant="secondary">Export</Button>
+            <Button onClick={() => refetch()}>Refresh</Button>
+          </div>
         </div>
-      </div>
-
-      <div className="grid">
-        {stats.map((stat) => (
-          <Card key={stat.label}>
-            <div className="stat">
-              <p className="stat__label">{stat.label}</p>
-              <p className="stat__value">{stat.value}</p>
-              <p className="stat__hint">Compared to previous period</p>
+        <div className="trip-stats">
+          {stats.map((stat) => (
+            <div key={stat.label} className="trip-stat">
+              <span>{stat.label}</span>
+              <strong>{stat.value}</strong>
+              <span className="text-muted">Compared to previous period</span>
             </div>
-          </Card>
-        ))}
-      </div>
+          ))}
+        </div>
+      </section>
 
       <Card title="Filters">
         <div className="form-grid">
@@ -558,7 +563,7 @@ export function TripHistoryPage() {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               {tripBounds ? <FitBounds bounds={tripBounds} /> : null}
-              <Polyline positions={tripPath} color="#4550e6" weight={4} />
+              <Polyline positions={tripPath} color="#1d4ed8" weight={4} />
               {tripPath.length > 0 ? (
                 <Marker position={tripPath[0]}>
                   <Popup>

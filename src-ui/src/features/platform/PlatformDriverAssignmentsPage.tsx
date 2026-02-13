@@ -1,16 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
-    createDriverAssignment,
-    fetchDriverAssignments,
-    fetchDrivers,
-    fetchFleets,
-    fetchTenants,
-    fetchVehicles,
+  createDriverAssignment,
+  fetchDriverAssignments,
+  fetchDrivers,
+  fetchFleets,
+  fetchTenants,
+  fetchVehicles,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
 
 export function PlatformDriverAssignmentsPage() {
   const [driverId, setDriverId] = useState("");
@@ -99,11 +98,17 @@ export function PlatformDriverAssignmentsPage() {
       : [];
 
   return (
-    <div className="page">
-      <PageHeader
-        title="Platform Admin – Driver Assignment"
-        subtitle="Assign drivers to vehicles and review assignment history."
-      />
+    <div className="page platform-page">
+      <section className="platform-hero">
+        <div className="platform-hero__glow" />
+        <div>
+          <p className="platform-hero__eyebrow">Administration</p>
+          <h1>Platform Admin – Driver Assignment</h1>
+          <p className="platform-hero__subtitle">
+            Assign drivers to vehicles and review assignment history.
+          </p>
+        </div>
+      </section>
       <div className="split-layout">
         <Card title="Assignment Actions">
           <div className="stack">

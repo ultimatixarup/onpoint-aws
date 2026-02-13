@@ -1,14 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import {
-    createDriver,
-    fetchDrivers,
-    fetchTenants,
-    updateDriver,
+  createDriver,
+  fetchDrivers,
+  fetchTenants,
+  updateDriver,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
 import { formatDate } from "../../utils/date";
 
 function parseJson(value: string) {
@@ -124,11 +123,17 @@ export function PlatformDriversPage() {
   };
 
   return (
-    <div className="page">
-      <PageHeader
-        title="Platform Admin – Drivers"
-        subtitle="Create, update, and monitor drivers by tenant or fleet."
-      />
+    <div className="page platform-page">
+      <section className="platform-hero">
+        <div className="platform-hero__glow" />
+        <div>
+          <p className="platform-hero__eyebrow">Administration</p>
+          <h1>Platform Admin – Drivers</h1>
+          <p className="platform-hero__subtitle">
+            Create, update, and monitor drivers by tenant or fleet.
+          </p>
+        </div>
+      </section>
       <div className="split-layout">
         <Card title="Drivers">
           <div className="stack">

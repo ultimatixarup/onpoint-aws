@@ -916,12 +916,16 @@ def _list_cognito_users(tenant_id: str, role: str, caller_tenant: Optional[str])
     for it in items:
         username = it.get("userId") or it.get("email")
         status = None
+        enabled = None
         if isinstance(username, str):
             cognito_user = _safe_admin_get_user(username)
             if cognito_user:
                 status = cognito_user.get("UserStatus")
+                enabled = cognito_user.get("Enabled")
         if status:
             it = {**it, "cognitoStatus": status}
+        if isinstance(enabled, bool):
+            it = {**it, "enabled": enabled}
         enriched.append(it)
 
     return _resp(200, {"items": enriched})

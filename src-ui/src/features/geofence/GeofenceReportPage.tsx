@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
 import { useGeofenceStore } from "./geofenceStore";
 
 export function GeofenceReportPage() {
@@ -16,11 +15,19 @@ export function GeofenceReportPage() {
   );
 
   return (
-    <div className="page">
-      <PageHeader
-        title="Geofence Report"
-        subtitle="Summary of configured geofences"
-      />
+    <div className="page geofence-page">
+      <section className="geofence-hero geofence-hero--report">
+        <div className="geofence-hero__glow" />
+        <div className="geofence-hero__content">
+          <div>
+            <p className="geofence-hero__eyebrow">Analytics</p>
+            <h1>Geofence Report</h1>
+            <p className="geofence-hero__subtitle">
+              Summary of configured geofences and zone coverage.
+            </p>
+          </div>
+        </div>
+      </section>
       <Card title="Overview">
         {!tenantId ? (
           <p>Select a tenant to view report data.</p>

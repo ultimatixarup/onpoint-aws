@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
 import {
   createTenantAdmin,
   createTenantUser,
@@ -104,11 +103,17 @@ export function PlatformUsersPage() {
   };
 
   return (
-    <div className="page">
-      <PageHeader
-        title="Platform Admin – Users"
-        subtitle="Provision users, manage roles, and enable or disable access."
-      />
+    <div className="page platform-page">
+      <section className="platform-hero">
+        <div className="platform-hero__glow" />
+        <div>
+          <p className="platform-hero__eyebrow">Administration</p>
+          <h1>Platform Admin – Users</h1>
+          <p className="platform-hero__subtitle">
+            Provision users, manage roles, and enable or disable access.
+          </p>
+        </div>
+      </section>
       <div className="split-layout">
         <Card title="Users">
           <div className="stack">

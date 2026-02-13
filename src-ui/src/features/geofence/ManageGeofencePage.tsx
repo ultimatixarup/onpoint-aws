@@ -3,24 +3,23 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useState } from "react";
 import {
-    Circle,
-    MapContainer,
-    Marker,
-    Polygon,
-    Popup,
-    TileLayer,
-    useMap,
+  Circle,
+  MapContainer,
+  Marker,
+  Polygon,
+  Popup,
+  TileLayer,
+  useMap,
 } from "react-leaflet";
 import { fetchFleets } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
 import {
-    GeofenceRecord,
-    GeofenceType,
-    useGeofenceStore,
+  GeofenceRecord,
+  GeofenceType,
+  useGeofenceStore,
 } from "./geofenceStore";
 
 const defaultIcon = L.icon({
@@ -49,9 +48,7 @@ export function ManageGeofencePage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
-  const [editStatus, setEditStatus] = useState<"ACTIVE" | "INACTIVE">(
-    "ACTIVE",
-  );
+  const [editStatus, setEditStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
   const [editFleetId, setEditFleetId] = useState("");
 
   const { geofences, updateGeofence, removeGeofence } =
@@ -82,6 +79,15 @@ export function ManageGeofencePage() {
     });
   }, [geofences, search, statusFilter, typeFilter, fleetFilter]);
 
+  const geofenceStats = useMemo(() => {
+    const total = geofences.length;
+    const active = geofences.filter((item) => item.status === "ACTIVE").length;
+    const inactive = geofences.filter(
+      (item) => item.status === "INACTIVE",
+    ).length;
+    return { total, active, inactive };
+  }, [geofences]);
+
   const selectedGeofence = useMemo(
     () =>
       filteredGeofences.find((item) => item.id === selectedId) ??
@@ -111,11 +117,36 @@ export function ManageGeofencePage() {
   }, [selectedGeofence]);
 
   return (
-    <div className="page">
-      <PageHeader
-        title="Manage Geofences"
-        subtitle="Review, filter, and update saved geofence zones"
-      />
+    <div className="page geofence-page">
+      <section className="geofence-hero">
+        <div className="geofence-hero__glow" />
+        <div className="geofence-hero__content">
+          <div>
+            <p className="geofence-hero__eyebrow">Zone management</p>
+            <h1>Manage Geofences</h1>
+            <p className="geofence-hero__subtitle">
+              Review, filter, and update saved geofence zones.
+            </p>
+          </div>
+        </div>
+        <div className="geofence-stats">
+          <div className="geofence-stat">
+            <span>Total zones</span>
+            <strong>{geofenceStats.total}</strong>
+            <span className="text-muted">All geofences</span>
+          </div>
+          <div className="geofence-stat">
+            <span>Active</span>
+            <strong>{geofenceStats.active}</strong>
+            <span className="text-muted">Monitoring enabled</span>
+          </div>
+          <div className="geofence-stat">
+            <span>Inactive</span>
+            <strong>{geofenceStats.inactive}</strong>
+            <span className="text-muted">Paused zones</span>
+          </div>
+        </div>
+      </section>
       <Card title="Geofence Library">
         {!tenantId ? (
           <p>Select a tenant to view geofences.</p>
@@ -398,7 +429,9 @@ export function ManageGeofencePage() {
                         onClick={() => {
                           if (!selectedGeofence) return;
                           setEditName(selectedGeofence.name);
-                          setEditDescription(selectedGeofence.description ?? "");
+                          setEditDescription(
+                            selectedGeofence.description ?? "",
+                          );
                           setEditStatus(selectedGeofence.status);
                           setEditFleetId(selectedGeofence.fleetId ?? "");
                         }}

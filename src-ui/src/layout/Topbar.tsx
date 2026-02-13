@@ -12,6 +12,15 @@ export function Topbar() {
   const { tenant, setTenant, tenants, isLoadingTenants, tenantsError } =
     useTenant();
   const { fleet, setFleet } = useFleet();
+  const userLabel = displayName ?? username ?? "User";
+  const initials = userLabel
+    .split("@")[0]
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("")
+    .slice(0, 2);
   const hideContextSelectors = pathname.startsWith("/adlp/platform");
   const {
     data: fleetOptions = [],
@@ -26,13 +35,16 @@ export function Topbar() {
 
   return (
     <header className="topbar">
-      <div className="topbar__brand">OnPoint</div>
+      <div className="topbar__brand">
+        <span className="topbar__logo">OnPoint</span>
+        <span className="topbar__tagline">Fleet Command</span>
+      </div>
       {hideContextSelectors ? null : (
         <div className="topbar__context">
-          <label>
-            Tenant
+          <label className="topbar__context-item">
+            <span className="topbar__context-label">Tenant</span>
             <select
-              className="select"
+              className="select topbar__select"
               value={tenant?.id ?? ""}
               onChange={(event) => {
                 const selected = tenants.find(
@@ -55,13 +67,15 @@ export function Topbar() {
               ))}
             </select>
             {tenantsError ? (
-              <span className="text-muted">Unable to load tenants</span>
+              <span className="topbar__context-hint">
+                Unable to load tenants
+              </span>
             ) : null}
           </label>
-          <label>
-            Fleet
+          <label className="topbar__context-item">
+            <span className="topbar__context-label">Fleet</span>
             <select
-              className="select"
+              className="select topbar__select"
               value={fleet?.id ?? ""}
               onChange={(event) => {
                 const selected = fleetOptions.find(
@@ -83,16 +97,23 @@ export function Topbar() {
               ))}
             </select>
             {fleetsError ? (
-              <span className="text-muted">Unable to load fleets</span>
+              <span className="topbar__context-hint">
+                Unable to load fleets
+              </span>
             ) : null}
           </label>
         </div>
       )}
       <div className="topbar__user">
-        <span>{displayName ?? username ?? "User"}</span>
-        <button className="btn" onClick={() => logout()}>
-          Sign out
-        </button>
+        <div className="topbar__avatar" aria-hidden="true">
+          {initials || "U"}
+        </div>
+        <div className="topbar__user-meta">
+          <span className="topbar__user-name">{userLabel}</span>
+          <button className="btn btn--ghost" onClick={() => logout()}>
+            Sign out
+          </button>
+        </div>
       </div>
     </header>
   );

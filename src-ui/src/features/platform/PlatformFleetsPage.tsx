@@ -1,15 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import {
-    createFleet,
-    fetchCustomers,
-    fetchFleets,
-    fetchTenants,
-    updateFleet,
+  createFleet,
+  fetchCustomers,
+  fetchFleets,
+  fetchTenants,
+  updateFleet,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
 import { formatDate } from "../../utils/date";
 
 function parseJson(value: string) {
@@ -136,11 +135,17 @@ export function PlatformFleetsPage() {
   };
 
   return (
-    <div className="page">
-      <PageHeader
-        title="Platform Admin – Fleets"
-        subtitle="Create fleets, associate customers, and manage fleet policies."
-      />
+    <div className="page platform-page">
+      <section className="platform-hero">
+        <div className="platform-hero__glow" />
+        <div>
+          <p className="platform-hero__eyebrow">Administration</p>
+          <h1>Platform Admin – Fleets</h1>
+          <p className="platform-hero__subtitle">
+            Create fleets, associate customers, and manage fleet policies.
+          </p>
+        </div>
+      </section>
       <div className="split-layout">
         <Card title="Fleets">
           <div className="stack">

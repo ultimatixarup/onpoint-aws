@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
 import { GeofenceRecord, useGeofenceStore } from "./geofenceStore";
 
 export function GeofenceAlertsPage() {
@@ -22,11 +21,19 @@ export function GeofenceAlertsPage() {
   }, [geofences, search]);
 
   return (
-    <div className="page">
-      <PageHeader
-        title="Geofence Alerts"
-        subtitle="Configure alert rules per geofence"
-      />
+    <div className="page geofence-page">
+      <section className="geofence-hero geofence-hero--alerts">
+        <div className="geofence-hero__glow" />
+        <div className="geofence-hero__content">
+          <div>
+            <p className="geofence-hero__eyebrow">Notifications</p>
+            <h1>Geofence Alerts</h1>
+            <p className="geofence-hero__subtitle">
+              Configure alert rules and delivery channels per geofence.
+            </p>
+          </div>
+        </div>
+      </section>
       <Card title="Alert Rules">
         {!tenantId ? (
           <p>Select a tenant to configure alerts.</p>
