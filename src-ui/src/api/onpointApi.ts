@@ -111,14 +111,27 @@ export async function fetchTenants(
   }
 
   if (!params.tenantId) return [];
-  const response = await httpRequest<unknown>(`/tenants/${params.tenantId}`);
-  const tenant =
-    typeof response === "object" && response !== null
-      ? mapTenant(response as Record<string, unknown>)
-      : undefined;
-  if (!tenant) return [];
-  if (tenant.status?.toUpperCase() === "DELETED") return [];
-  return [tenant];
+
+  // For non-admin users, try to fetch tenant details, but if it fails,
+  // fall back to creating a minimal tenant object from the tenantId
+  try {
+    const response = await httpRequest<unknown>(`/tenants/${params.tenantId}`);
+    const tenant =
+      typeof response === "object" && response !== null
+        ? mapTenant(response as Record<string, unknown>)
+        : undefined;
+    if (!tenant) {
+      return [{ id: params.tenantId, name: params.tenantId, status: "ACTIVE" }];
+    }
+    if (tenant.status?.toUpperCase() === "DELETED") return [];
+    return [tenant];
+  } catch (error) {
+    console.warn(
+      "Failed to fetch tenant details, using minimal tenant object",
+      error,
+    );
+    return [{ id: params.tenantId, name: params.tenantId, status: "ACTIVE" }];
+  }
 }
 
 export async function fetchFleets(tenantId: string) {
@@ -133,27 +146,27 @@ export async function fetchFleets(tenantId: string) {
       ? (response as { items: unknown[] }).items
       : [];
 
-    const fleets = items.map((item): FleetSummary | undefined => {
-      const record = item as Record<string, unknown>;
-      const fleetId = record.fleetId ?? record.id;
-      if (!fleetId) return undefined;
-      const name = record.name ?? record.displayName ?? fleetId;
-      const vehicleCount = Number(record.vehicleCount ?? 0);
-      return {
-        fleetId: String(fleetId),
-        name: String(name),
-        vehicleCount,
-        customerId: record.customerId ? String(record.customerId) : undefined,
-        status: record.status ? String(record.status) : undefined,
-        createdAt: record.createdAt ? String(record.createdAt) : undefined,
-        updatedAt: record.updatedAt ? String(record.updatedAt) : undefined,
-        policies:
-          typeof record.policies === "object" || record.policies === null
-            ? (record.policies as Record<string, unknown> | null)
-            : undefined,
-      };
-    });
-    return fleets.filter(Boolean) as FleetSummary[];
+  const fleets = items.map((item): FleetSummary | undefined => {
+    const record = item as Record<string, unknown>;
+    const fleetId = record.fleetId ?? record.id;
+    if (!fleetId) return undefined;
+    const name = record.name ?? record.displayName ?? fleetId;
+    const vehicleCount = Number(record.vehicleCount ?? 0);
+    return {
+      fleetId: String(fleetId),
+      name: String(name),
+      vehicleCount,
+      customerId: record.customerId ? String(record.customerId) : undefined,
+      status: record.status ? String(record.status) : undefined,
+      createdAt: record.createdAt ? String(record.createdAt) : undefined,
+      updatedAt: record.updatedAt ? String(record.updatedAt) : undefined,
+      policies:
+        typeof record.policies === "object" || record.policies === null
+          ? (record.policies as Record<string, unknown> | null)
+          : undefined,
+    };
+  });
+  return fleets.filter(Boolean) as FleetSummary[];
 }
 
 export async function createTenant(payload: {
@@ -199,15 +212,15 @@ export async function fetchCustomers(tenantId: string) {
       : [];
 
   const customers = items.map((item): CustomerSummary | undefined => {
-      const record = item as Record<string, unknown>;
-      const customerId = record.customerId ?? record.id;
-      if (!customerId) return undefined;
-      return {
-        customerId: String(customerId),
-        name: record.name ? String(record.name) : undefined,
-        status: record.status ? String(record.status) : undefined,
-        tenantId: record.tenantId ? String(record.tenantId) : undefined,
-      };
+    const record = item as Record<string, unknown>;
+    const customerId = record.customerId ?? record.id;
+    if (!customerId) return undefined;
+    return {
+      customerId: String(customerId),
+      name: record.name ? String(record.name) : undefined,
+      status: record.status ? String(record.status) : undefined,
+      tenantId: record.tenantId ? String(record.tenantId) : undefined,
+    };
   });
   return customers.filter(Boolean) as CustomerSummary[];
 }
@@ -291,24 +304,24 @@ export async function fetchVehicles(tenantId: string, fleetId?: string) {
       : [];
 
   const vehicles = items.map((item): VehicleSummary | undefined => {
-      const record = item as Record<string, unknown>;
-      const pkValue = record.PK;
-      const vinFromPk =
-        typeof pkValue === "string" && pkValue.startsWith("VEHICLE#")
-          ? pkValue.split("VEHICLE#")[1]
-          : undefined;
-      const vin = record.vin ?? record.VIN ?? record.id ?? vinFromPk;
-      if (!vin) return undefined;
-      const yearValue = record.year ?? record.modelYear;
-      const year = yearValue ? Number(yearValue) : undefined;
-      return {
-        vin: String(vin),
-        status: record.status ? String(record.status) : undefined,
-        fleetId: record.fleetId ? String(record.fleetId) : undefined,
-        make: record.make ? String(record.make) : undefined,
-        model: record.model ? String(record.model) : undefined,
-        year: Number.isNaN(year) ? undefined : year,
-      };
+    const record = item as Record<string, unknown>;
+    const pkValue = record.PK;
+    const vinFromPk =
+      typeof pkValue === "string" && pkValue.startsWith("VEHICLE#")
+        ? pkValue.split("VEHICLE#")[1]
+        : undefined;
+    const vin = record.vin ?? record.VIN ?? record.id ?? vinFromPk;
+    if (!vin) return undefined;
+    const yearValue = record.year ?? record.modelYear;
+    const year = yearValue ? Number(yearValue) : undefined;
+    return {
+      vin: String(vin),
+      status: record.status ? String(record.status) : undefined,
+      fleetId: record.fleetId ? String(record.fleetId) : undefined,
+      make: record.make ? String(record.make) : undefined,
+      model: record.model ? String(record.model) : undefined,
+      year: Number.isNaN(year) ? undefined : year,
+    };
   });
   return vehicles.filter(Boolean) as VehicleSummary[];
 }
@@ -361,28 +374,28 @@ export async function fetchDrivers(tenantId: string, fleetId?: string) {
       : [];
 
   const drivers = items.map((item): DriverSummary | undefined => {
-      const record = item as Record<string, unknown>;
-      const driverId = record.driverId ?? record.id ?? record.userId;
-      if (!driverId) return undefined;
-      const metadata =
-        typeof record.metadata === "object" || record.metadata === null
-          ? (record.metadata as Record<string, unknown> | null)
-          : undefined;
-      const name =
-        record.name ?? record.displayName ?? record.fullName ?? metadata?.name;
-      const status = record.status ?? record.state;
-      return {
-        driverId: String(driverId),
-        name: name ? String(name) : undefined,
-        status: status ? String(status) : undefined,
-        fleetId: record.fleetId ? String(record.fleetId) : undefined,
-        customerId: record.customerId ? String(record.customerId) : undefined,
-        createdAt: record.createdAt ? String(record.createdAt) : undefined,
-        updatedAt: record.updatedAt ? String(record.updatedAt) : undefined,
-        metadata,
-        email: record.email ? String(record.email) : undefined,
-        phone: record.phone ? String(record.phone) : undefined,
-      };
+    const record = item as Record<string, unknown>;
+    const driverId = record.driverId ?? record.id ?? record.userId;
+    if (!driverId) return undefined;
+    const metadata =
+      typeof record.metadata === "object" || record.metadata === null
+        ? (record.metadata as Record<string, unknown> | null)
+        : undefined;
+    const name =
+      record.name ?? record.displayName ?? record.fullName ?? metadata?.name;
+    const status = record.status ?? record.state;
+    return {
+      driverId: String(driverId),
+      name: name ? String(name) : undefined,
+      status: status ? String(status) : undefined,
+      fleetId: record.fleetId ? String(record.fleetId) : undefined,
+      customerId: record.customerId ? String(record.customerId) : undefined,
+      createdAt: record.createdAt ? String(record.createdAt) : undefined,
+      updatedAt: record.updatedAt ? String(record.updatedAt) : undefined,
+      metadata,
+      email: record.email ? String(record.email) : undefined,
+      phone: record.phone ? String(record.phone) : undefined,
+    };
   });
   return drivers.filter(Boolean) as DriverSummary[];
 }
@@ -417,11 +430,17 @@ export async function updateDriver(
   });
 }
 
-export async function fetchUsers(tenantId: string) {
+export async function fetchUsers(tenantId: string, fleetId?: string) {
+  const query = new URLSearchParams({ tenantId });
+  if (fleetId) query.set("fleetId", fleetId);
+
   const response = await httpRequest<unknown>(
-    `/tenants/${tenantId}/users?tenantId=${encodeURIComponent(tenantId)}`,
+    `/tenants/${tenantId}/users?${query.toString()}`,
     {
-      headers: { "x-tenant-id": tenantId },
+      headers: {
+        "x-tenant-id": tenantId,
+        ...(fleetId ? { "x-fleet-id": fleetId } : {}),
+      },
     },
   );
   const items = Array.isArray(response)
@@ -433,69 +452,67 @@ export async function fetchUsers(tenantId: string) {
       : [];
 
   const users = items.map((item): UserSummary | undefined => {
-      const record = item as Record<string, unknown>;
-      const userId = record.userId ?? record.id ?? record.email;
-      if (!userId) return undefined;
-      const groups = Array.isArray(record.groups)
-        ? record.groups.map((g) => String(g))
-        : undefined;
-      const roles = Array.isArray(record.roles)
-        ? record.roles.map((role) => String(role))
-        : groups;
-      const statusValue = record.status ? String(record.status) : undefined;
-      const enabledValue =
-        typeof record.enabled === "boolean"
-          ? record.enabled
-          : statusValue
-            ? ["ENABLED", "ACTIVE"].includes(statusValue.toUpperCase())
-            : undefined;
-
-      const attributes = Array.isArray(record.attributes)
-        ? (record.attributes as Array<{ Name?: string; Value?: string }>)
-        : undefined;
-      const attributeMap = attributes
-        ? Object.fromEntries(
-            attributes
-              .filter((attr) => attr.Name)
-              .map((attr) => [String(attr.Name), String(attr.Value ?? "")]),
-          )
-        : undefined;
-
-      const nameValue =
-        record.name ??
-        record.fullName ??
-        record.displayName ??
-        record.userName ??
-        record.username ??
-        attributeMap?.name ??
-        attributeMap?.given_name ??
-        attributeMap?.preferred_username;
-
-      const rawEmail =
-        record.email ??
-        attributeMap?.email ??
-        (typeof userId === "string" && userId.includes("@")
-          ? userId
-          : undefined);
-      const emailValue = typeof rawEmail === "string" ? rawEmail : undefined;
-
-      const fallbackName =
-        !nameValue && emailValue
-          ? emailValue
-              .split("@")[0]
-              .replace(/[._-]+/g, " ")
-              .replace(/\b\w/g, (char) => char.toUpperCase())
+    const record = item as Record<string, unknown>;
+    const userId = record.userId ?? record.id ?? record.email;
+    if (!userId) return undefined;
+    const groups = Array.isArray(record.groups)
+      ? record.groups.map((g) => String(g))
+      : undefined;
+    const roles = Array.isArray(record.roles)
+      ? record.roles.map((role) => String(role))
+      : groups;
+    const statusValue = record.status ? String(record.status) : undefined;
+    const enabledValue =
+      typeof record.enabled === "boolean"
+        ? record.enabled
+        : statusValue
+          ? ["ENABLED", "ACTIVE"].includes(statusValue.toUpperCase())
           : undefined;
 
-      return {
-        userId: String(userId),
-        email: emailValue ? String(emailValue) : undefined,
-        groups,
-        roles,
-        name: nameValue ? String(nameValue) : fallbackName,
-        status: statusValue,
-        enabled: enabledValue,
-      };
+    const attributes = Array.isArray(record.attributes)
+      ? (record.attributes as Array<{ Name?: string; Value?: string }>)
+      : undefined;
+    const attributeMap = attributes
+      ? Object.fromEntries(
+          attributes
+            .filter((attr) => attr.Name)
+            .map((attr) => [String(attr.Name), String(attr.Value ?? "")]),
+        )
+      : undefined;
+
+    const nameValue =
+      record.name ??
+      record.fullName ??
+      record.displayName ??
+      record.userName ??
+      record.username ??
+      attributeMap?.name ??
+      attributeMap?.given_name ??
+      attributeMap?.preferred_username;
+
+    const rawEmail =
+      record.email ??
+      attributeMap?.email ??
+      (typeof userId === "string" && userId.includes("@") ? userId : undefined);
+    const emailValue = typeof rawEmail === "string" ? rawEmail : undefined;
+
+    const fallbackName =
+      !nameValue && emailValue
+        ? emailValue
+            .split("@")[0]
+            .replace(/[._-]+/g, " ")
+            .replace(/\b\w/g, (char) => char.toUpperCase())
+        : undefined;
+
+    return {
+      userId: String(userId),
+      email: emailValue ? String(emailValue) : undefined,
+      groups,
+      roles,
+      name: nameValue ? String(nameValue) : fallbackName,
+      status: statusValue,
+      enabled: enabledValue,
+    };
   });
   return users.filter(Boolean) as UserSummary[];
 }
@@ -529,45 +546,47 @@ export async function fetchFleetVehicleStates(
 
   const items =
     typeof response === "object" && response !== null
-      ? (response as { items?: unknown[] }).items ?? []
+      ? ((response as { items?: unknown[] }).items ?? [])
       : [];
 
   const vehicleStates = items.map((item): VehicleState | undefined => {
-      const record = item as Record<string, unknown>;
-      const pkValue = record.PK;
-      const vinFromPk =
-        typeof pkValue === "string" && pkValue.startsWith("VEHICLE#")
-          ? pkValue.slice("VEHICLE#".length)
-          : undefined;
-      const vin = record.vin ?? record.VIN ?? record.id ?? vinFromPk;
-      if (!vin) return undefined;
-      const latValue = record.lat ?? record.latitude;
-      const lonValue = record.lon ?? record.longitude;
-      const lat = typeof latValue === "number" ? latValue : Number(latValue);
-      const lon = typeof lonValue === "number" ? lonValue : Number(lonValue);
-      const headingValue = record.heading;
-      const speedValue = record.speed_mph ?? record.speedMph;
-      const odometerValue = record.odometer_miles ?? record.odometerMiles;
-      return {
-        vin: String(vin),
-        lastEventTime: record.lastEventTime
-          ? String(record.lastEventTime)
-          : undefined,
-        lat: Number.isNaN(lat) ? undefined : lat,
-        lon: Number.isNaN(lon) ? undefined : lon,
-        heading:
-          typeof headingValue === "number" ? headingValue : Number(headingValue),
-        speed_mph:
-          typeof speedValue === "number" ? speedValue : Number(speedValue),
-        odometer_miles:
-          typeof odometerValue === "number"
-            ? odometerValue
-            : Number(odometerValue),
-        vehicleState: record.vehicleState ? String(record.vehicleState) : undefined,
-        ignition_status: record.ignition_status
-          ? String(record.ignition_status)
-          : undefined,
-      };
+    const record = item as Record<string, unknown>;
+    const pkValue = record.PK;
+    const vinFromPk =
+      typeof pkValue === "string" && pkValue.startsWith("VEHICLE#")
+        ? pkValue.slice("VEHICLE#".length)
+        : undefined;
+    const vin = record.vin ?? record.VIN ?? record.id ?? vinFromPk;
+    if (!vin) return undefined;
+    const latValue = record.lat ?? record.latitude;
+    const lonValue = record.lon ?? record.longitude;
+    const lat = typeof latValue === "number" ? latValue : Number(latValue);
+    const lon = typeof lonValue === "number" ? lonValue : Number(lonValue);
+    const headingValue = record.heading;
+    const speedValue = record.speed_mph ?? record.speedMph;
+    const odometerValue = record.odometer_miles ?? record.odometerMiles;
+    return {
+      vin: String(vin),
+      lastEventTime: record.lastEventTime
+        ? String(record.lastEventTime)
+        : undefined,
+      lat: Number.isNaN(lat) ? undefined : lat,
+      lon: Number.isNaN(lon) ? undefined : lon,
+      heading:
+        typeof headingValue === "number" ? headingValue : Number(headingValue),
+      speed_mph:
+        typeof speedValue === "number" ? speedValue : Number(speedValue),
+      odometer_miles:
+        typeof odometerValue === "number"
+          ? odometerValue
+          : Number(odometerValue),
+      vehicleState: record.vehicleState
+        ? String(record.vehicleState)
+        : undefined,
+      ignition_status: record.ignition_status
+        ? String(record.ignition_status)
+        : undefined,
+    };
   });
   return vehicleStates.filter(Boolean) as VehicleState[];
 }

@@ -7,7 +7,8 @@ export const queryKeys = {
     ["vehicles", tenantId, fleetId ?? "all"] as const,
   drivers: (tenantId: string, fleetId?: string) =>
     ["drivers", tenantId, fleetId ?? "all"] as const,
-  users: (tenantId: string) => ["users", tenantId] as const,
+  users: (tenantId: string, fleetId?: string) =>
+    ["users", tenantId, fleetId ?? "all"] as const,
   driverAssignments: (driverId: string) =>
     ["driver-assignments", driverId] as const,
   vehicleAssignments: (vin: string) => ["vehicle-assignments", vin] as const,

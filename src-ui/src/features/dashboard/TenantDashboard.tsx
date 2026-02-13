@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
-    fetchDrivers,
-    fetchFleets,
-    fetchUsers,
-    fetchVehicles,
+  fetchDrivers,
+  fetchFleets,
+  fetchUsers,
+  fetchVehicles,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { fetchTripSummaryTrips } from "../../api/tripSummaryApi";
@@ -68,8 +68,10 @@ export function TenantDashboard() {
     isLoading: isLoadingDrivers,
     error: driversError,
   } = useQuery({
-    queryKey: tenantId ? queryKeys.drivers(tenantId) : ["drivers", "none"],
-    queryFn: () => fetchDrivers(tenantId),
+    queryKey: tenantId
+      ? queryKeys.drivers(tenantId, primaryFleetId)
+      : ["drivers", "none"],
+    queryFn: () => fetchDrivers(tenantId, primaryFleetId),
     enabled: Boolean(tenantId),
     staleTime: 5 * 60 * 1000,
   });
@@ -79,8 +81,10 @@ export function TenantDashboard() {
     isLoading: isLoadingUsers,
     error: usersError,
   } = useQuery({
-    queryKey: tenantId ? queryKeys.users(tenantId) : ["users", "none"],
-    queryFn: () => fetchUsers(tenantId),
+    queryKey: tenantId
+      ? queryKeys.users(tenantId, primaryFleetId)
+      : ["users", "none"],
+    queryFn: () => fetchUsers(tenantId, primaryFleetId),
     enabled: Boolean(tenantId),
     staleTime: 5 * 60 * 1000,
   });
@@ -154,7 +158,9 @@ export function TenantDashboard() {
   const tripsFallback = tripPreviewResult?.isFallback ?? false;
 
   const vehicleStats = useMemo(() => {
-    const normalized = vehicles.map((vehicle) => normalizeStatus(vehicle.status));
+    const normalized = vehicles.map((vehicle) =>
+      normalizeStatus(vehicle.status),
+    );
     const active = normalized.filter((status) => status === "ACTIVE").length;
     const inactive = normalized.filter(
       (status) => status === "INACTIVE" || status === "SUSPENDED",
@@ -183,7 +189,9 @@ export function TenantDashboard() {
       .filter((score): score is number => typeof score === "number");
     const avgSafety =
       scores.length > 0
-        ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
+        ? Math.round(
+            scores.reduce((sum, score) => sum + score, 0) / scores.length,
+          )
         : undefined;
     return {
       trips: tripPreview.length,
@@ -218,9 +226,7 @@ export function TenantDashboard() {
         .map((item) => ({
           label: item.label,
           message:
-            item.error instanceof Error
-              ? item.error.message
-              : "Unknown error",
+            item.error instanceof Error ? item.error.message : "Unknown error",
         })),
     [fleetsError, vehiclesError, driversError, usersError, tripsError],
   );
@@ -264,7 +270,8 @@ export function TenantDashboard() {
             <p className="stat__label">Total vehicles</p>
             <p className="stat__value">{vehicles.length}</p>
             <p className="stat__hint">
-              {vehicleStats.active} active · {vehicleStats.inactive} inactive · {vehicleStats.unknown} unknown
+              {vehicleStats.active} active · {vehicleStats.inactive} inactive ·{" "}
+              {vehicleStats.unknown} unknown
             </p>
           </div>
         </Card>

@@ -885,10 +885,10 @@ def _list_cognito_users(tenant_id: str, role: str, caller_tenant: Optional[str])
     # Users are stored in DynamoDB as the system of record for tenant mapping.
     if not isinstance(tenant_id, str) or not tenant_id.strip():
         return _resp(400, {"error": "tenantId is required"})
-    err = _require_role(role, [ROLE_ADMIN, ROLE_TENANT_ADMIN, ROLE_READ_ONLY])
+    err = _require_role(role, [ROLE_ADMIN, ROLE_TENANT_ADMIN, ROLE_FLEET_MANAGER, ROLE_READ_ONLY])
     if err:
         return _resp(403, {"error": err})
-    if role == ROLE_READ_ONLY and not caller_tenant:
+    if role in [ROLE_READ_ONLY, ROLE_FLEET_MANAGER] and not caller_tenant:
         caller_tenant = tenant_id
     err = _require_tenant_access(role, caller_tenant, tenant_id)
     if err:
@@ -1447,11 +1447,14 @@ def _list_fleets(query: Dict[str, str], headers: Dict[str, str], role: str, call
         filtered = [it for it in filtered if it.get("customerId") == customer_id]
     if role == ROLE_FLEET_MANAGER:
         fleet_id = query.get("fleetId") or headers.get("x-fleet-id")
-        scoped, scope_err = _apply_fleet_scope(role, headers, fleet_id)
-        if scope_err:
-            return _resp(403, {"error": scope_err})
-        if scoped:
-            filtered = [it for it in filtered if it.get("fleetId") == scoped]
+        # Allow FleetManager to list fleets without x-fleet-id to discover their assignments
+        # If x-fleet-id is provided, validate and filter by it
+        if fleet_id:
+            scoped, scope_err = _apply_fleet_scope(role, headers, fleet_id)
+            if scope_err:
+                return _resp(403, {"error": scope_err})
+            if scoped:
+                filtered = [it for it in filtered if it.get("fleetId") == scoped]
     return _resp(200, {"items": filtered})
 
 
@@ -1606,10 +1609,13 @@ def _list_vehicles(query: Dict[str, str], headers: Dict[str, str], role: str, ca
     if role == ROLE_FLEET_MANAGER:
         if not fleet_id:
             fleet_id = headers.get("x-fleet-id")
-        scoped, scope_err = _apply_fleet_scope(role, headers, fleet_id)
-        if scope_err:
-            return _resp(403, {"error": scope_err})
-        fleet_id = scoped
+        # Allow FleetManager to list vehicles without x-fleet-id to see all their vehicles
+        # If x-fleet-id is provided, validate and filter by it
+        if fleet_id:
+            scoped, scope_err = _apply_fleet_scope(role, headers, fleet_id)
+            if scope_err:
+                return _resp(403, {"error": scope_err})
+            fleet_id = scoped
     vins = _list_vins_for_tenant(tenant_id, fleet_id, active_only=True)
     items = _batch_get_vehicles(vins)
     if status:
@@ -1943,10 +1949,13 @@ def _list_drivers(query: Dict[str, str], headers: Dict[str, str], role: str, cal
     if role == ROLE_FLEET_MANAGER:
         if not fleet_id:
             fleet_id = headers.get("x-fleet-id")
-        scoped, scope_err = _apply_fleet_scope(role, headers, fleet_id)
-        if scope_err:
-            return _resp(403, {"error": scope_err})
-        fleet_id = scoped
+        # Allow FleetManager to list drivers without x-fleet-id to see all their drivers
+        # If x-fleet-id is provided, validate and filter by it
+        if fleet_id:
+            scoped, scope_err = _apply_fleet_scope(role, headers, fleet_id)
+            if scope_err:
+                return _resp(403, {"error": scope_err})
+            fleet_id = scoped
 
     items = _ddb_scan({"TableName": DRIVERS_TABLE})
     filtered = [it for it in items if it.get("tenantId") == tenant_id]

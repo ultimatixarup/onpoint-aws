@@ -407,8 +407,22 @@ def lambda_handler(event, context):
 
     vin_path = (vin or "").strip()
     fleet_id_path = (fleet_id or "").strip()
+    headers = event.get("headers") or {}
+    tenant_header = headers.get("x-tenant-id") or headers.get("X-Tenant-Id") or headers.get("x-tenantId")
+    tenant_query = query.get("tenantId") or query.get("tenant_id")
     tenant_id = _get_caller_tenant_id(event)
-    role = _get_role_from_headers(event.get("headers") or {})
+    role = _get_role_from_headers(headers)
+    logger.info(
+        json.dumps(
+            {
+                "requestId": request_id,
+                "tenantId": tenant_id,
+                "tenantHeader": tenant_header,
+                "tenantQuery": tenant_query,
+                "role": role,
+            }
+        )
+    )
 
     if route_type == "VEHICLE_STATE":
         if not vin_path:
