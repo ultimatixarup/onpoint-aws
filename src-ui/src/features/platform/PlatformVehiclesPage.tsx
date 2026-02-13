@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "../../ui/Card";
+import { PageHeader } from "../../ui/PageHeader";
 import {
   assignVin,
   createVehicle,
