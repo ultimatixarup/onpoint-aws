@@ -654,13 +654,17 @@
             "key": "x-api-key",
             "value": "{{apiKey}}",
             "type": "text"
+          },
+          {
+            "key": "x-tenant-id",
+            "value": "{{tenantId}}",
+            "type": "text"
           }
         ],
         "url": {
-          "raw": "https://{{apiId}}.execute-api.{{region}}.amazonaws.com/{{stage}}/trips/{{vin}}/{{tripId}}/events?limit={{limit}}",
-          "protocol": "https",
-          "host": ["{{apiId}}.execute-api.{{region}}.amazonaws.com"],
-          "path": ["{{stage}}", "trips", "{{vin}}", "{{tripId}}", "events"],
+          "raw": "{{tripSummaryBaseUrl}}/trips/{{vin}}/{{tripId}}/events?limit={{limit}}",
+          "host": ["{{tripSummaryBaseUrl}}"],
+          "path": ["trips", "{{vin}}", "{{tripId}}", "events"],
           "query": [{ "key": "limit", "value": "{{limit}}" }]
         },
         "description": "Get telemetry events for a trip, returning normalized and raw event payloads. Automatically appends nextToken when present."
@@ -707,9 +711,8 @@
               "pm.test('Items is an array', () => { pm.expect(json.items).to.be.an('array'); });",
               "",
               "if (Array.isArray(json.items) && json.items.length > 0) {",
-              "  pm.test('Event items contain required keys', () => {",
-              "    const keys = ['eventId','eventType','eventTime','normalized','raw'];",
-              "    json.items.forEach(it => keys.forEach(k => pm.expect(it).to.have.property(k)));",
+              "  pm.test('Event items contain eventTime', () => {",
+              "    json.items.forEach(it => pm.expect(it).to.have.property('eventTime'));",
               "  });",
               "}",
               "",

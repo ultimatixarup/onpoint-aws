@@ -1,4 +1,12 @@
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  fetchTripEvents,
+  fetchTripSummaryTrips,
+} from "../../api/tripSummaryApi";
+import { useFleet } from "../../context/FleetContext";
+import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
 import { PageHeader } from "../../ui/PageHeader";
 
@@ -15,97 +23,43 @@ type TelemetryEvent = {
   payload: Record<string, unknown>;
 };
 
-const SAMPLE_EVENTS: TelemetryEvent[] = [
-  {
-    id: "evt_0c95f",
-    timestamp: "2026-02-07T21:02:14.000Z",
-    vin: "4JGFB4FB7RA981998",
-    tripId: "trip-9f82a",
-    provider: "CerebrumX",
-    level: "info",
-    size: 1324,
-    status: "accepted",
-    summary: "Ignition off, parked in San Diego",
-    payload: {
-      provider: "CerebrumX",
-      eventTime: "2026-02-07T21:02:14.000Z",
-      vin: "4JGFB4FB7RA981998",
-      tripId: "trip-9f82a",
-      coordinates: { lat: 32.958121, lon: -117.140695 },
-      speedMph: 0,
-      heading: 149,
-      fuelPercent: 69,
-      ignition: "OFF",
-      status: "TRIP_ENDED",
-    },
-  },
-  {
-    id: "evt_12fae",
-    timestamp: "2026-02-07T20:58:02.000Z",
-    vin: "1FM5K8AB7PGB60162",
-    tripId: "trip-2271c",
-    provider: "CerebrumX",
-    level: "warn",
-    size: 1480,
-    status: "queued",
-    summary: "Speed spike detected (85 mph)",
-    payload: {
-      provider: "CerebrumX",
-      eventTime: "2026-02-07T20:58:02.000Z",
-      vin: "1FM5K8AB7PGB60162",
-      tripId: "trip-2271c",
-      speedMph: 85,
-      limitMph: 65,
-      overspeed: true,
-      location: { lat: 33.01421, lon: -117.10212 },
-    },
-  },
-  {
-    id: "evt_7bb10",
-    timestamp: "2026-02-07T20:45:41.000Z",
-    vin: "1C6RREMT0PN664947",
-    tripId: "trip-5b1aa",
-    provider: "RoadReady",
-    level: "info",
-    size: 1011,
-    status: "accepted",
-    summary: "Route checkpoint captured",
-    payload: {
-      provider: "RoadReady",
-      eventTime: "2026-02-07T20:45:41.000Z",
-      vin: "1C6RREMT0PN664947",
-      tripId: "trip-5b1aa",
-      routeId: "rr-2249",
-      checkpoint: 12,
-      location: { lat: 32.991, lon: -117.102 },
-      odometerMiles: 19264.5,
-    },
-  },
-  {
-    id: "evt_4aa66",
-    timestamp: "2026-02-07T20:22:19.000Z",
-    vin: "4JGFB4FB7RA981998",
-    tripId: "trip-9f82a",
-    provider: "CerebrumX",
-    level: "error",
-    size: 940,
-    status: "rejected",
-    summary: "Malformed payload - missing odometer",
-    payload: {
-      provider: "CerebrumX",
-      eventTime: "2026-02-07T20:22:19.000Z",
-      vin: "4JGFB4FB7RA981998",
-      tripId: "trip-9f82a",
-      error: "Missing required field: odometer",
-    },
-  },
-];
+const MAX_TRIPS = 10;
+const EVENTS_PER_TRIP = 200;
+const MAX_EVENT_PAGES = 5;
+const AUTO_REFRESH_MS = 30_000;
+
+function extractTimestamp(value?: string) {
+  if (!value) return undefined;
+  if (value.startsWith("TS#")) {
+    const parts = value.split("#");
+    return parts.length > 1 ? parts[1] : undefined;
+  }
+  return value;
+}
+
+function normalizeLevel(value?: string): TelemetryEvent["level"] {
+  const normalized = (value ?? "").toLowerCase();
+  if (normalized === "warn" || normalized === "warning") return "warn";
+  if (normalized === "error" || normalized === "failed") return "error";
+  return "info";
+}
+
+function normalizeStatus(value?: string): TelemetryEvent["status"] {
+  const normalized = (value ?? "").toLowerCase();
+  if (normalized === "rejected" || normalized === "failed") return "rejected";
+  if (normalized === "queued" || normalized === "pending") return "queued";
+  return "accepted";
+}
 
 function formatTimestamp(value: string) {
   return new Date(value).toLocaleString();
 }
 
 export function TelemetryRawPage() {
+  const { tenant } = useTenant();
+  const { fleet } = useFleet();
+  const tenantId = tenant?.id ?? "";
+  const fleetId = fleet?.id ?? "";
   const [providerFilter, setProviderFilter] = useState("all");
   const [vinFilter, setVinFilter] = useState("all");
   const [tripIdFilter, setTripIdFilter] = useState("all");
@@ -115,43 +69,152 @@ export function TelemetryRawPage() {
   const [activeTab, setActiveTab] = useState<
     "payload" | "overview" | "headers"
   >("payload");
+  const [paused, setPaused] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<string | null>(null);
+
+  const {
+    data: telemetryEvents = [],
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["telemetry-raw", tenantId, fleetId],
+    queryFn: async (): Promise<TelemetryEvent[]> => {
+      if (!tenantId || !fleetId) return [];
+      const trips = await fetchTripSummaryTrips({
+        tenantId,
+        fleetId,
+        limit: MAX_TRIPS,
+      });
+
+      const tripItems = trips.items ?? [];
+      const eventsByTrip = await Promise.all(
+        tripItems
+          .filter((trip) => trip.vin && trip.tripId)
+          .map(async (trip) => {
+            const items: Record<string, unknown>[] = [];
+            let nextToken: string | undefined;
+            let pages = 0;
+
+            do {
+              const response = await fetchTripEvents({
+                tenantId,
+                vin: trip.vin,
+                tripId: trip.tripId,
+                limit: EVENTS_PER_TRIP,
+                nextToken,
+              });
+              items.push(...(response.items ?? []));
+              nextToken = response.nextToken ?? undefined;
+              pages += 1;
+            } while (nextToken && pages < MAX_EVENT_PAGES);
+
+            return {
+              vin: trip.vin,
+              tripId: trip.tripId,
+              items,
+            };
+          }),
+      );
+
+      return eventsByTrip
+        .flatMap(({ vin, tripId, items }) =>
+          items.map((item, index) => {
+            const record = item as Record<string, unknown>;
+            const rawTimestamp =
+              (record.eventTime as string | undefined) ??
+              (record.timestamp as string | undefined) ??
+              extractTimestamp(record.SK as string | undefined) ??
+              new Date().toISOString();
+            const provider =
+              (record.provider as string | undefined) ??
+              (record.source as string | undefined) ??
+              "Unknown";
+            const level = normalizeLevel(record.level as string | undefined);
+            const status = normalizeStatus(
+              (record.status as string | undefined) ??
+                (record.processingStatus as string | undefined),
+            );
+            const summary =
+              (record.summary as string | undefined) ??
+              (record.message as string | undefined) ??
+              (record.description as string | undefined) ??
+              (record.error as string | undefined) ??
+              "Telemetry event";
+            const size =
+              typeof record.size === "number"
+                ? record.size
+                : JSON.stringify(record).length;
+            const eventId =
+              (record.messageId as string | undefined) ??
+              (record.id as string | undefined) ??
+              (record.SK as string | undefined) ??
+              `${tripId}-${index}`;
+
+            return {
+              id: eventId,
+              timestamp: rawTimestamp,
+              vin: String(record.vin ?? record.VIN ?? vin),
+              tripId,
+              provider,
+              level,
+              size,
+              status,
+              summary,
+              payload: record,
+            } as TelemetryEvent;
+          }),
+        )
+        .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+    },
+    enabled: Boolean(tenantId && fleetId),
+    refetchInterval: paused ? false : AUTO_REFRESH_MS,
+  });
 
   const providers = useMemo(
-    () => Array.from(new Set(SAMPLE_EVENTS.map((event) => event.provider))),
-    [],
+    () => Array.from(new Set(telemetryEvents.map((event) => event.provider))),
+    [telemetryEvents],
   );
 
   const vins = useMemo(
-    () => Array.from(new Set(SAMPLE_EVENTS.map((event) => event.vin))),
-    [],
+    () => Array.from(new Set(telemetryEvents.map((event) => event.vin))),
+    [telemetryEvents],
   );
 
   const tripIds = useMemo(
-    () => Array.from(new Set(SAMPLE_EVENTS.map((event) => event.tripId))),
-    [],
+    () => Array.from(new Set(telemetryEvents.map((event) => event.tripId))),
+    [telemetryEvents],
   );
 
   const filteredEvents = useMemo(() => {
     const searchTerm = search.trim().toLowerCase();
-    return SAMPLE_EVENTS.filter((event) => {
-      if (providerFilter !== "all" && event.provider !== providerFilter) {
-        return false;
-      }
-      if (levelFilter !== "all" && event.level !== levelFilter) {
-        return false;
-      }
-      if (vinFilter !== "all" && event.vin !== vinFilter) {
-        return false;
-      }
-      if (tripIdFilter !== "all" && event.tripId !== tripIdFilter) {
-        return false;
-      }
-      if (searchTerm && !event.summary.toLowerCase().includes(searchTerm)) {
-        return false;
-      }
-      return true;
-    }).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-  }, [levelFilter, providerFilter, search, tripIdFilter, vinFilter]);
+    return telemetryEvents
+      .filter((event) => {
+        if (providerFilter !== "all" && event.provider !== providerFilter) {
+          return false;
+        }
+        if (levelFilter !== "all" && event.level !== levelFilter) {
+          return false;
+        }
+        if (vinFilter !== "all" && event.vin !== vinFilter) {
+          return false;
+        }
+        if (tripIdFilter !== "all" && event.tripId !== tripIdFilter) {
+          return false;
+        }
+        if (searchTerm && !event.summary.toLowerCase().includes(searchTerm)) {
+          return false;
+        }
+        return true;
+      })
+      .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  }, [
+    levelFilter,
+    providerFilter,
+    search,
+    telemetryEvents,
+    tripIdFilter,
+    vinFilter,
+  ]);
 
   const selectedEvent =
     filteredEvents.find((event) => event.id === selectedId) ??
@@ -173,6 +236,17 @@ export function TelemetryRawPage() {
     return { total, errors, warnings, avgSize };
   }, [filteredEvents]);
 
+  const streamStatus = paused ? "Paused" : isLoading ? "Syncing" : "Live";
+  const lastUpdatedLabel = lastRefreshed
+    ? formatTimestamp(lastRefreshed)
+    : "--";
+
+  useEffect(() => {
+    if (telemetryEvents.length > 0) {
+      setLastRefreshed(new Date().toISOString());
+    }
+  }, [telemetryEvents]);
+
   useEffect(() => {
     if (!filteredEvents.length) {
       setSelectedId(null);
@@ -188,7 +262,23 @@ export function TelemetryRawPage() {
 
   return (
     <div className="page telemetry-raw">
-      <PageHeader title="Telemetry (Raw)" subtitle="Provider payloads" />
+      <div className="telemetry-header">
+        <PageHeader title="Telemetry (Raw)" subtitle="Provider payloads" />
+        <div className="telemetry-switcher">
+          <Link
+            className="telemetry-switcher__item telemetry-switcher__item--active"
+            to="/adlp/telemetry/raw"
+          >
+            Raw
+          </Link>
+          <Link
+            className="telemetry-switcher__item"
+            to="/adlp/telemetry/normalized"
+          >
+            Normalized
+          </Link>
+        </div>
+      </div>
       <div className="telemetry-hero">
         <div className="telemetry-hero__glow" />
         <div className="telemetry-hero__content">
@@ -199,6 +289,16 @@ export function TelemetryRawPage() {
               Monitor raw provider payloads, spot anomalies, and inspect
               rejected messages with full context.
             </p>
+            <div className="telemetry-hero__meta">
+              <span
+                className={`telemetry-status-badge telemetry-status-badge--${streamStatus.toLowerCase()}`}
+              >
+                {streamStatus}
+              </span>
+              <span className="telemetry-meta">
+                Last updated {lastUpdatedLabel}
+              </span>
+            </div>
           </div>
           <div className="telemetry-hero__metrics">
             <div className="telemetry-metric">
@@ -221,10 +321,21 @@ export function TelemetryRawPage() {
                 {counts.avgSize} B
               </span>
             </div>
+            <div className="telemetry-metric">
+              <span className="telemetry-metric__label">Trips in view</span>
+              <span className="telemetry-metric__value">{tripIds.length}</span>
+            </div>
           </div>
           <div className="telemetry-hero__actions">
-            <button className="btn">Refresh stream</button>
-            <button className="btn btn--secondary">Pause</button>
+            <button className="btn" onClick={() => refetch()}>
+              Refresh stream
+            </button>
+            <button
+              className="btn btn--secondary"
+              onClick={() => setPaused((prev) => !prev)}
+            >
+              {paused ? "Resume" : "Pause"}
+            </button>
           </div>
         </div>
       </div>
@@ -304,7 +415,13 @@ export function TelemetryRawPage() {
       <div className="telemetry-layout">
         <Card title="Raw Stream">
           <div className="telemetry-stream">
-            {filteredEvents.length === 0 ? (
+            {isLoading ? (
+              <div className="empty-state">
+                <div className="empty-state__icon">Signal</div>
+                <h3>Loading telemetry</h3>
+                <p className="text-muted">Fetching recent provider events.</p>
+              </div>
+            ) : filteredEvents.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state__icon">Signal</div>
                 <h3>No matching events</h3>
@@ -395,31 +512,41 @@ export function TelemetryRawPage() {
                 <div className="telemetry-overview">
                   <div>
                     <div className="text-muted">VIN</div>
-                    <div className="mono">{selectedEvent.vin}</div>
+                    <div className="mono telemetry-overview__value">
+                      {selectedEvent.vin}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted">Trip ID</div>
-                    <div className="mono">{selectedEvent.tripId}</div>
+                    <div className="mono telemetry-overview__value">
+                      {selectedEvent.tripId}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted">Provider</div>
-                    <div>{selectedEvent.provider}</div>
+                    <div className="telemetry-overview__value">
+                      {selectedEvent.provider}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted">Timestamp</div>
-                    <div>{formatTimestamp(selectedEvent.timestamp)}</div>
+                    <div className="telemetry-overview__value">
+                      {formatTimestamp(selectedEvent.timestamp)}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted">Status</div>
                     <div
-                      className={`telemetry-status telemetry-status--${selectedEvent.status}`}
+                      className={`telemetry-status telemetry-status--${selectedEvent.status} telemetry-overview__value`}
                     >
                       {selectedEvent.status}
                     </div>
                   </div>
                   <div>
                     <div className="text-muted">Payload size</div>
-                    <div>{selectedEvent.size} bytes</div>
+                    <div className="telemetry-overview__value">
+                      {selectedEvent.size} bytes
+                    </div>
                   </div>
                 </div>
               ) : null}
@@ -434,19 +561,27 @@ export function TelemetryRawPage() {
                 <div className="telemetry-overview">
                   <div>
                     <div className="text-muted">Correlation ID</div>
-                    <div className="mono">{selectedEvent.id}</div>
+                    <div className="mono telemetry-overview__value">
+                      {selectedEvent.id}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted">Source</div>
-                    <div>{selectedEvent.provider}</div>
+                    <div className="telemetry-overview__value">
+                      {selectedEvent.provider}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted">Enqueued</div>
-                    <div>{formatTimestamp(selectedEvent.timestamp)}</div>
+                    <div className="telemetry-overview__value">
+                      {formatTimestamp(selectedEvent.timestamp)}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted">Retries</div>
-                    <div>{selectedEvent.level === "error" ? "2" : "0"}</div>
+                    <div className="telemetry-overview__value">
+                      {selectedEvent.level === "error" ? "2" : "0"}
+                    </div>
                   </div>
                 </div>
               ) : null}
