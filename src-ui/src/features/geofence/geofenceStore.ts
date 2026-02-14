@@ -67,7 +67,8 @@ const GEOFENCE_ROLE_OVERRIDE =
   ((import.meta.env.VITE_GEOFENCE_ROLE_OVERRIDE as string | undefined) ??
     (import.meta.env.VITE_ONPOINT_ROLE_OVERRIDE as string | undefined)) ||
   undefined;
-const USE_GEOFENCE_API = Boolean(GEOFENCE_BASE_URL);
+const USE_GEOFENCE_API =
+  Boolean(GEOFENCE_BASE_URL) && import.meta.env.MODE !== "test";
 
 function getStorageKey(tenantId?: string) {
   return `onpoint.geofences.${tenantId ?? "global"}`;

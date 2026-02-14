@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
-  createDriverAssignment,
-  fetchDriverAssignments,
-  fetchDrivers,
-  fetchFleets,
-  fetchTenants,
-  fetchVehicles,
+    createDriverAssignment,
+    type DriverAssignment,
+    fetchDriverAssignments,
+    fetchDrivers,
+    fetchFleets,
+    fetchTenants,
+    fetchVehicles,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { Card } from "../../ui/Card";
@@ -64,12 +65,14 @@ export function PlatformDriverAssignmentsPage() {
     enabled: Boolean(tenantId),
   });
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data = [], isLoading, error, refetch } = useQuery<
+    DriverAssignment[]
+  >({
     queryKey: driverId
       ? ["driver-assignments", driverId, tenantId]
       : ["driver-assignments", "none"],
-    queryFn: () => fetchDriverAssignments(driverId, tenantId || undefined),
-    enabled: Boolean(driverId),
+    queryFn: () => fetchDriverAssignments(tenantId, driverId),
+    enabled: Boolean(driverId && tenantId),
   });
 
   const handleAssign = async () => {
@@ -91,11 +94,7 @@ export function PlatformDriverAssignmentsPage() {
     refetch();
   };
 
-  const assignmentItems = Array.isArray(data)
-    ? data
-    : Array.isArray((data as { items?: unknown[] } | undefined)?.items)
-      ? (data as { items: unknown[] }).items
-      : [];
+  const assignmentItems = data;
 
   return (
     <div className="page platform-page">

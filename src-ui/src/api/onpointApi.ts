@@ -56,6 +56,7 @@ export type DriverSummary = {
 };
 
 export type DriverAssignment = {
+  assignmentId?: string;
   vin: string;
   effectiveFrom?: string;
   effectiveTo?: string;

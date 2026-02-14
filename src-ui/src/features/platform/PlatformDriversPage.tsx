@@ -1,14 +1,15 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import {
-  createDriver,
-  fetchDrivers,
-  fetchTenants,
-  updateDriver,
+    createDriver,
+    fetchDrivers,
+    fetchTenants,
+    updateDriver,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { Card } from "../../ui/Card";
 import { formatDate } from "../../utils/date";
+import { createIdempotencyKey } from "../../utils/id";
 
 function parseJson(value: string) {
   if (!value.trim()) return undefined;
@@ -92,14 +93,17 @@ export function PlatformDriversPage() {
 
   const handleCreate = async () => {
     if (!tenantId) return;
-    await createDriver({
-      driverId: driverId || undefined,
-      tenantId,
-      fleetId: fleetId || undefined,
-      customerId: customerId || undefined,
-      metadata: parseJson(metadata),
-      reason: reason || undefined,
-    });
+    await createDriver(
+      {
+        driverId: driverId || undefined,
+        tenantId,
+        fleetId: fleetId || undefined,
+        customerId: customerId || undefined,
+        metadata: parseJson(metadata),
+        reason: reason || undefined,
+      },
+      createIdempotencyKey(),
+    );
     setDriverId("");
     setCustomerId("");
     setMetadata("");
@@ -110,8 +114,8 @@ export function PlatformDriversPage() {
   };
 
   const handleUpdate = async () => {
-    if (!editDriverId) return;
-    await updateDriver(editDriverId, {
+    if (!editDriverId || !tenantId) return;
+    await updateDriver(tenantId, editDriverId, {
       fleetId: editFleetId || undefined,
       customerId: editCustomerId || undefined,
       metadata: parseJson(editMetadata),
