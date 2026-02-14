@@ -1,16 +1,20 @@
 {
-    "Variables": {
-        "TENANTS_TABLE": "onpoint-dev-tenants",
-        "CUSTOMERS_TABLE": "onpoint-dev-customers",
-        "FLEETS_TABLE": "onpoint-dev-fleets",
-        "VEHICLES_TABLE": "onpoint-dev-vehicles",
-        "VIN_REGISTRY_TABLE": "onpoint-dev-vin-registry",
-        "DRIVERS_TABLE": "onpoint-dev-drivers",
-        "DRIVER_ASSIGNMENTS_TABLE": "onpoint-dev-driver-assignments",
-        "AUDIT_LOG_TABLE": "onpoint-dev-audit-log",
-        "IDEMPOTENCY_TABLE": "onpoint-dev-idempotency",
-        "VIN_TENANT_INDEX": "TenantIndex",
-        "USER_POOL_ID": "us-east-1_S1HR9gcRA",
-        "USERS_TABLE": "onpoint-dev-tenants"
-    }
+  "Variables": {
+    "TENANTS_TABLE": "onpoint-dev-tenants",
+    "CUSTOMERS_TABLE": "onpoint-dev-customers",
+    "FLEETS_TABLE": "onpoint-dev-fleets",
+    "VEHICLES_TABLE": "onpoint-dev-vehicles",
+    "VIN_REGISTRY_TABLE": "onpoint-dev-vin-registry",
+    "DRIVERS_TABLE": "onpoint-dev-drivers",
+    "DRIVER_ASSIGNMENTS_TABLE": "onpoint-dev-driver-assignments",
+    "TELEMETRY_EVENTS_TABLE": "onpoint-dev-telemetry-events",
+    "TRIP_SUMMARY_TABLE": "onpoint-dev-trip-summary",
+    "AUDIT_LOG_TABLE": "onpoint-dev-audit-log",
+    "IDEMPOTENCY_TABLE": "onpoint-dev-idempotency",
+    "VIN_TENANT_INDEX": "TenantIndex",
+    "DRIVER_TENANT_INDEX": "DriverTenantIndex",
+    "DRIVER_TENANT_FLEET_INDEX": "DriverTenantFleetIndex",
+    "USER_POOL_ID": "us-east-1_S1HR9gcRA",
+    "USERS_TABLE": "onpoint-dev-tenants"
+  }
 }

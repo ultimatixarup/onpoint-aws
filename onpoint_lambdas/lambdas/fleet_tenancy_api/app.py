@@ -2,6 +2,7 @@ import json
 import os
 import logging
 import hashlib
+import base64
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -38,6 +39,8 @@ VEHICLES_TABLE = os.environ.get("VEHICLES_TABLE")
 VIN_REGISTRY_TABLE = os.environ.get("VIN_REGISTRY_TABLE")
 DRIVERS_TABLE = os.environ.get("DRIVERS_TABLE")
 DRIVER_ASSIGNMENTS_TABLE = os.environ.get("DRIVER_ASSIGNMENTS_TABLE")
+TELEMETRY_EVENTS_TABLE = os.environ.get("TELEMETRY_EVENTS_TABLE")
+TRIP_SUMMARY_TABLE = os.environ.get("TRIP_SUMMARY_TABLE")
 AUDIT_LOG_TABLE = os.environ.get("AUDIT_LOG_TABLE")
 IDEMPOTENCY_TABLE = os.environ.get("IDEMPOTENCY_TABLE")
 USER_POOL_ID = os.environ.get("USER_POOL_ID")
@@ -45,6 +48,8 @@ USERS_TABLE = os.environ.get("USERS_TABLE")
 
 VIN_TENANT_INDEX = os.environ.get("VIN_TENANT_INDEX", "TenantIndex")
 VIN_TENANT_FLEET_INDEX = os.environ.get("VIN_TENANT_FLEET_INDEX")
+DRIVER_TENANT_INDEX = os.environ.get("DRIVER_TENANT_INDEX", "DriverTenantIndex")
+DRIVER_TENANT_FLEET_INDEX = os.environ.get("DRIVER_TENANT_FLEET_INDEX")
 
 ROLE_ADMIN = "admin"
 ROLE_TENANT_ADMIN = "tenant-admin"
@@ -200,6 +205,10 @@ def _require_write_role(role: str) -> Optional[str]:
     return _require_role(role, [ROLE_ADMIN, ROLE_TENANT_ADMIN])
 
 
+def _require_driver_write_role(role: str) -> Optional[str]:
+    return _require_role(role, [ROLE_ADMIN, ROLE_TENANT_ADMIN, ROLE_FLEET_MANAGER])
+
+
 def _apply_fleet_scope(role: str, headers: Dict[str, str], fleet_id: Optional[str]) -> Tuple[Optional[str], Optional[str]]:
     if role != ROLE_FLEET_MANAGER:
         return fleet_id, None
@@ -283,6 +292,16 @@ def _ddb_query(params: Dict[str, Any]) -> List[dict]:
     return items
 
 
+def _ddb_query_page(params: Dict[str, Any], limit: Optional[int], last_key: Optional[dict]) -> Tuple[List[dict], Optional[dict]]:
+    if limit:
+        params["Limit"] = limit
+    if last_key:
+        params["ExclusiveStartKey"] = last_key
+    resp = _ddb.query(**params)
+    items = [_ddb_deserialize(it) for it in resp.get("Items") or []]
+    return items, resp.get("LastEvaluatedKey")
+
+
 def _ddb_scan(params: Dict[str, Any]) -> List[dict]:
     items: List[dict] = []
     last_key = None
@@ -298,6 +317,16 @@ def _ddb_scan(params: Dict[str, Any]) -> List[dict]:
     return items
 
 
+def _ddb_scan_page(params: Dict[str, Any], limit: Optional[int], last_key: Optional[dict]) -> Tuple[List[dict], Optional[dict]]:
+    if limit:
+        params["Limit"] = limit
+    if last_key:
+        params["ExclusiveStartKey"] = last_key
+    resp = _ddb.scan(**params)
+    items = [_ddb_deserialize(it) for it in resp.get("Items") or []]
+    return items, resp.get("LastEvaluatedKey")
+
+
 def _ddb_batch_get(table: str, keys: List[Dict[str, Any]]) -> List[dict]:
     if not keys:
         return []
@@ -310,6 +339,26 @@ def _ddb_batch_get(table: str, keys: List[Dict[str, Any]]) -> List[dict]:
 def _hash_request(method: str, path: str, body: Optional[dict]) -> str:
     payload = json.dumps({"method": method, "path": path, "body": body}, sort_keys=True, default=str)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _encode_next_token(lek: Optional[dict]) -> Optional[str]:
+    if not lek:
+        return None
+    raw = json.dumps(lek, default=str).encode("utf-8")
+    return base64.urlsafe_b64encode(raw).decode("utf-8")
+
+
+def _decode_next_token(token: Optional[str]) -> Tuple[Optional[dict], Optional[str]]:
+    if not token:
+        return None, None
+    try:
+        raw = base64.urlsafe_b64decode(token.encode("utf-8"))
+        data = json.loads(raw.decode("utf-8"))
+        if not isinstance(data, dict):
+            return None, "Invalid nextToken"
+        return data, None
+    except Exception:
+        return None, "Invalid nextToken"
 
 
 def _get_idempotency_key(headers: Dict[str, str]) -> Optional[str]:
@@ -418,6 +467,22 @@ def _normalize_iso(ts: str) -> Optional[str]:
     return parsed.isoformat() if parsed else None
 
 
+def _parse_limit(value: Optional[str], default: int = 100, max_limit: int = 200) -> int:
+    try:
+        parsed = int(value) if value is not None else default
+    except Exception:
+        parsed = default
+    if parsed < 1:
+        return 1
+    return min(parsed, max_limit)
+
+
+def _driver_tenant_fleet_key(fleet_id: Optional[str], driver_id: str) -> Optional[str]:
+    if not fleet_id:
+        return None
+    return f"FLEET#{fleet_id}#DRIVER#{driver_id}"
+
+
 def _range_overlaps(a_from: str, a_to: Optional[str], b_from: str, b_to: Optional[str]) -> bool:
     a_start = parse_iso(a_from) if a_from else None
     b_start = parse_iso(b_from) if b_from else None
@@ -430,9 +495,179 @@ def _range_overlaps(a_from: str, a_to: Optional[str], b_from: str, b_to: Optiona
     return a_start <= b_end and b_start <= a_end
 
 
+def _parse_iso_range(query: Dict[str, str]) -> Tuple[Optional[datetime], Optional[datetime], Optional[str]]:
+    frm_raw = query.get("from")
+    to_raw = query.get("to")
+    frm = parse_iso(frm_raw) if frm_raw else None
+    to = parse_iso(to_raw) if to_raw else None
+    if frm and to and frm > to:
+        return None, None, "from must be before to"
+    return frm, to, None
+
+
+def _in_time_range(start_time: Optional[str], end_time: Optional[str], frm: Optional[datetime], to: Optional[datetime]) -> bool:
+    if not frm and not to:
+        return True
+    start_dt = parse_iso(start_time) if start_time else None
+    end_dt = parse_iso(end_time) if end_time else None
+    if not start_dt and not end_dt:
+        return False
+    if frm and end_dt and end_dt < frm:
+        return False
+    if to and start_dt and start_dt > to:
+        return False
+    return True
+
+
+def _assignment_overlaps(ef: Optional[str], et: Optional[str], frm: Optional[datetime], to: Optional[datetime]) -> bool:
+    if not frm and not to:
+        return True
+    start_dt = parse_iso(ef) if ef else None
+    end_dt = parse_iso(et) if et else None
+    if frm and end_dt and end_dt < frm:
+        return False
+    if to and start_dt and start_dt > to:
+        return False
+    return True
+
+
+def _parse_summary_json(value: Optional[str]) -> Optional[dict]:
+    if not value:
+        return None
+    if isinstance(value, dict):
+        return value
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = json.loads(value)
+        return parsed if isinstance(parsed, dict) else None
+    except Exception:
+        return None
+
+
+def _hms_to_seconds(value: Optional[str]) -> int:
+    if not value:
+        return 0
+    if isinstance(value, (int, float)):
+        return int(value)
+    if not isinstance(value, str):
+        return 0
+    parts = [p for p in value.split(":") if p.strip()]
+    if len(parts) != 3:
+        return 0
+    try:
+        hours = int(parts[0])
+        minutes = int(parts[1])
+        seconds = int(parts[2])
+        return hours * 3600 + minutes * 60 + seconds
+    except Exception:
+        return 0
+
+
+def _to_float(value: Any, default: float = 0.0) -> float:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return float(value)
+    try:
+        return float(value)
+    except Exception:
+        return default
+
+
+def _query_trip_summaries(
+    vin: str,
+    limit: Optional[int] = None,
+    last_key: Optional[dict] = None,
+) -> Tuple[List[dict], Optional[dict]]:
+    pk = f"VEHICLE#{vin}"
+    params: Dict[str, Any] = {
+        "TableName": TRIP_SUMMARY_TABLE,
+        "KeyConditionExpression": "PK = :pk AND begins_with(SK, :skp)",
+        "ExpressionAttributeValues": {
+            ":pk": {"S": pk},
+            ":skp": {"S": "TRIP_SUMMARY#"},
+        },
+        "ScanIndexForward": False,
+    }
+    return _ddb_query_page(params, limit, last_key)
+
+
+def _summarize_trip_item(it: dict) -> dict:
+    trip_id = it.get("tripId")
+    vin = it.get("vin")
+    start_time = it.get("startTime")
+    end_time = it.get("endTime")
+    miles = it.get("milesDriven")
+    fuel = it.get("fuelConsumed")
+    score = it.get("safetyScore")
+    if not trip_id:
+        sk = it.get("SK") or ""
+        if isinstance(sk, str) and sk.startswith("TRIP_SUMMARY#"):
+            trip_id = sk.split("#", 1)[1]
+    if not vin:
+        pk = it.get("PK") or ""
+        if isinstance(pk, str) and pk.startswith("VEHICLE#"):
+            vin = pk.split("#", 1)[1]
+    summary = {
+        "vin": vin,
+        "tripId": trip_id,
+        "startTime": start_time,
+        "endTime": end_time,
+        "milesDriven": miles,
+        "fuelConsumed": fuel,
+        "safetyScore": score,
+        "overspeedMilesStandard": it.get("overspeedMilesStandard"),
+        "overspeedMilesSevere": it.get("overspeedMilesSevere"),
+        "overspeedMilesTotal": it.get("overspeedMilesTotal"),
+        "overspeedEventCountStandard": it.get("overspeedEventCountStandard"),
+        "overspeedEventCountSevere": it.get("overspeedEventCountSevere"),
+        "overspeedEventCountTotal": it.get("overspeedEventCountTotal"),
+    }
+    return summary
+
+
+def _query_trip_events_raw(
+    vin: str,
+    trip_id: str,
+    limit: int,
+    last_key: Optional[dict] = None,
+) -> Tuple[List[dict], Optional[dict]]:
+    pk = f"VEHICLE#{vin}#TRIP#{trip_id}"
+    params: Dict[str, Any] = {
+        "TableName": TELEMETRY_EVENTS_TABLE,
+        "KeyConditionExpression": "PK = :pk AND begins_with(SK, :skp)",
+        "ExpressionAttributeValues": {
+            ":pk": {"S": pk},
+            ":skp": {"S": "TS#"},
+        },
+        "Limit": limit,
+        "ScanIndexForward": True,
+    }
+    if last_key:
+        params["ExclusiveStartKey"] = last_key
+    resp = _ddb.query(**params)
+    items = [_ddb_deserialize(it) for it in resp.get("Items") or []]
+    return items, resp.get("LastEvaluatedKey")
+
+
 def _is_missing_index_error(exc: Exception) -> bool:
     msg = str(exc).lower()
-    return "validationexception" in msg and "index" in msg and ("not found" in msg or "does not exist" in msg)
+    if "validationexception" not in msg or "index" not in msg:
+        return False
+    return (
+        "not found" in msg
+        or "does not exist" in msg
+        or "does not have the specified index" in msg
+    )
+
+
+def _is_query_validation_error(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    if "validationexception" not in msg:
+        return False
+    return "missed key schema element" in msg or "invalid keyconditionexpression" in msg
+
 
 def _vin_history(vin: str) -> List[dict]:
     if not VIN_REGISTRY_TABLE:
@@ -552,6 +787,8 @@ def _require_tables() -> Optional[str]:
         (VIN_REGISTRY_TABLE, "VIN_REGISTRY_TABLE"),
         (DRIVERS_TABLE, "DRIVERS_TABLE"),
         (DRIVER_ASSIGNMENTS_TABLE, "DRIVER_ASSIGNMENTS_TABLE"),
+        (TELEMETRY_EVENTS_TABLE, "TELEMETRY_EVENTS_TABLE"),
+        (TRIP_SUMMARY_TABLE, "TRIP_SUMMARY_TABLE"),
         (AUDIT_LOG_TABLE, "AUDIT_LOG_TABLE"),
         (IDEMPOTENCY_TABLE, "IDEMPOTENCY_TABLE"),
     ]
@@ -1874,38 +2111,73 @@ def _list_vin_registry(query: Dict[str, str], role: str, caller_tenant: Optional
     return _resp(200, {"items": items})
 
 
-def _create_driver(body: dict, headers: Dict[str, str], role: str, caller_tenant: Optional[str]) -> dict:
-    err = _require_write_role(role)
+def _create_driver_for_tenant(
+    tenant_id: Optional[str],
+    body: dict,
+    headers: Dict[str, str],
+    role: str,
+    caller_tenant: Optional[str],
+    route_key: str,
+    path: str,
+) -> dict:
+    err = _require_driver_write_role(role)
     if err:
         return _resp(403, {"error": err})
-    tenant_id = body.get("tenantId")
     if not tenant_id:
         return _resp(400, {"error": "tenantId is required"})
     err = _require_tenant_access(role, caller_tenant, tenant_id)
     if err:
         return _resp(403, {"error": err})
 
+    idempotency_key = _get_idempotency_key(headers)
+    if not idempotency_key:
+        return _resp(400, {"error": "Idempotency-Key is required for driver creation"})
+
     driver_id = body.get("driverId") or body.get("id")
     if not isinstance(driver_id, str) or not driver_id.strip():
         driver_id = hashlib.sha1(utc_now_iso().encode("utf-8")).hexdigest()[:12]
+
+    fleet_id = body.get("fleetId")
+    if role == ROLE_FLEET_MANAGER:
+        scoped, scope_err = _apply_fleet_scope(role, headers, fleet_id)
+        if scope_err:
+            return _resp(403, {"error": scope_err})
+        fleet_id = scoped
+
+    status = (body.get("status") or "ACTIVE").upper()
+    if status not in {"ACTIVE", "INACTIVE", "SUSPENDED"}:
+        return _resp(400, {"error": "Invalid status"})
 
     now = utc_now_iso()
     item = {
         "PK": f"DRIVER#{driver_id}",
         "SK": "META",
+        "entityType": "DRIVER",
         "driverId": driver_id,
         "tenantId": tenant_id,
+        "displayName": body.get("displayName") or body.get("name"),
+        "email": body.get("email"),
+        "phone": body.get("phone"),
+        "employeeId": body.get("employeeId") or body.get("employee_id"),
+        "externalRef": body.get("externalRef") or body.get("external_ref"),
         "customerId": body.get("customerId"),
-        "fleetId": body.get("fleetId"),
+        "fleetId": fleet_id,
+        "license": body.get("license"),
+        "medicalCertExpiresAt": body.get("medicalCertExpiresAt") or body.get("medicalCertExpiration"),
+        "endorsements": body.get("endorsements"),
+        "riskCategory": body.get("riskCategory"),
+        "cdl": body.get("cdl"),
+        "dqStatus": body.get("dqStatus"),
         "metadata": body.get("metadata"),
-        "status": "ACTIVE",
+        "status": status,
         "createdAt": now,
         "updatedAt": now,
     }
+    tenant_fleet_key = _driver_tenant_fleet_key(fleet_id, driver_id)
+    if tenant_fleet_key:
+        item["tenantFleetKey"] = tenant_fleet_key
 
-    idempotency_key = _get_idempotency_key(headers)
-    route_key = "POST:/drivers"
-    request_hash = _hash_request("POST", "/drivers", body)
+    request_hash = _hash_request("POST", path, body)
 
     def _do():
         try:
@@ -1924,31 +2196,54 @@ def _create_driver(body: dict, headers: Dict[str, str], role: str, caller_tenant
             tenant_id=tenant_id,
             correlation_id=headers.get("x-correlation-id"),
         )
-        return _resp(201, {"driverId": driver_id, "status": "ACTIVE"})
+        return _resp(201, {"driverId": driver_id, "status": status})
 
     return _with_idempotency(idempotency_key, route_key, request_hash, caller_tenant, _do)
 
 
-def _get_driver(driver_id: str, role: str, caller_tenant: Optional[str]) -> dict:
+def _create_driver(body: dict, headers: Dict[str, str], role: str, caller_tenant: Optional[str]) -> dict:
+    tenant_id = body.get("tenantId")
+    return _create_driver_for_tenant(tenant_id, body, headers, role, caller_tenant, "POST:/drivers", "/drivers")
+
+
+def _get_driver(
+    driver_id: str,
+    role: str,
+    caller_tenant: Optional[str],
+    expected_tenant_id: Optional[str] = None,
+) -> dict:
     item = _ddb_get(DRIVERS_TABLE, {"PK": f"DRIVER#{driver_id}", "SK": "META"})
     if not item:
         return _resp(404, {"error": "Driver not found"})
 
     tenant_id = item.get("tenantId")
+    if expected_tenant_id and tenant_id != expected_tenant_id:
+        return _resp(404, {"error": "Driver not found"})
     err = _require_tenant_access(role, caller_tenant, tenant_id)
     if err:
         return _resp(403, {"error": err})
     return _resp(200, item)
 
 
-def _list_drivers(query: Dict[str, str], headers: Dict[str, str], role: str, caller_tenant: Optional[str]) -> dict:
-    tenant_id = query.get("tenantId")
-    fleet_id = query.get("fleetId")
+def _list_drivers_for_tenant(
+    tenant_id: str,
+    query: Dict[str, str],
+    headers: Dict[str, str],
+    role: str,
+    caller_tenant: Optional[str],
+) -> dict:
+    if not DRIVERS_TABLE:
+        return _resp(500, {"error": "Drivers table not configured"})
+
     err = _require_tenant_access(role, caller_tenant, tenant_id)
     if err:
         return _resp(403, {"error": err})
-    if not tenant_id:
-        return _resp(400, {"error": "tenantId is required"})
+
+    fleet_id = query.get("fleetId")
+    limit = _parse_limit(query.get("limit"), default=100, max_limit=200)
+    last_key, token_err = _decode_next_token(query.get("nextToken"))
+    if token_err:
+        return _resp(400, {"error": token_err})
 
     if role == ROLE_FLEET_MANAGER:
         if not fleet_id:
@@ -1961,15 +2256,67 @@ def _list_drivers(query: Dict[str, str], headers: Dict[str, str], role: str, cal
                 return _resp(403, {"error": scope_err})
             fleet_id = scoped
 
-    items = _ddb_scan({"TableName": DRIVERS_TABLE})
-    filtered = [it for it in items if it.get("tenantId") == tenant_id]
+    params = {
+        "TableName": DRIVERS_TABLE,
+        "IndexName": DRIVER_TENANT_INDEX,
+        "KeyConditionExpression": "tenantId = :tenant",
+        "ExpressionAttributeValues": {":tenant": {"S": tenant_id}},
+        "ScanIndexForward": True,
+    }
+    if fleet_id and DRIVER_TENANT_FLEET_INDEX:
+        params = {
+            "TableName": DRIVERS_TABLE,
+            "IndexName": DRIVER_TENANT_FLEET_INDEX,
+            "KeyConditionExpression": "tenantId = :tenant AND begins_with(tenantFleetKey, :tfk)",
+            "ExpressionAttributeValues": {
+                ":tenant": {"S": tenant_id},
+                ":tfk": {"S": f"FLEET#{fleet_id}#"},
+            },
+            "ScanIndexForward": True,
+        }
+
+    try:
+        items, next_key = _ddb_query_page(params, limit, last_key)
+    except Exception as exc:
+        if fleet_id and DRIVER_TENANT_FLEET_INDEX and (
+            _is_missing_index_error(exc) or _is_query_validation_error(exc)
+        ):
+            params = {
+                "TableName": DRIVERS_TABLE,
+                "IndexName": DRIVER_TENANT_INDEX,
+                "KeyConditionExpression": "tenantId = :tenant",
+                "ExpressionAttributeValues": {":tenant": {"S": tenant_id}},
+                "ScanIndexForward": True,
+            }
+            items, next_key = _ddb_query_page(params, limit, last_key)
+        elif _is_missing_index_error(exc) or _is_query_validation_error(exc):
+            scan_params = {"TableName": DRIVERS_TABLE}
+            items, next_key = _ddb_scan_page(scan_params, limit, last_key)
+        else:
+            raise
+
+    items = [it for it in items if it.get("SK") == "META" and it.get("tenantId") == tenant_id]
     if fleet_id:
-        filtered = [it for it in filtered if it.get("fleetId") == fleet_id]
-    return _resp(200, {"items": filtered})
+        items = [it for it in items if it.get("fleetId") == fleet_id]
+    return _resp(200, {"items": items, "nextToken": _encode_next_token(next_key)})
 
 
-def _patch_driver(driver_id: str, body: dict, headers: Dict[str, str], role: str, caller_tenant: Optional[str]) -> dict:
-    err = _require_write_role(role)
+def _list_drivers(query: Dict[str, str], headers: Dict[str, str], role: str, caller_tenant: Optional[str]) -> dict:
+    tenant_id = query.get("tenantId")
+    if not tenant_id:
+        return _resp(400, {"error": "tenantId is required"})
+    return _list_drivers_for_tenant(tenant_id, query, headers, role, caller_tenant)
+
+
+def _patch_driver(
+    driver_id: str,
+    body: dict,
+    headers: Dict[str, str],
+    role: str,
+    caller_tenant: Optional[str],
+    expected_tenant_id: Optional[str] = None,
+) -> dict:
+    err = _require_driver_write_role(role)
     if err:
         return _resp(403, {"error": err})
     existing = _ddb_get(DRIVERS_TABLE, {"PK": f"DRIVER#{driver_id}", "SK": "META"})
@@ -1977,19 +2324,46 @@ def _patch_driver(driver_id: str, body: dict, headers: Dict[str, str], role: str
         return _resp(404, {"error": "Driver not found"})
 
     tenant_id = existing.get("tenantId")
+    if expected_tenant_id and tenant_id != expected_tenant_id:
+        return _resp(404, {"error": "Driver not found"})
     err = _require_tenant_access(role, caller_tenant, tenant_id)
     if err:
         return _resp(403, {"error": err})
 
+    fleet_id = body.get("fleetId", existing.get("fleetId"))
+    if role == ROLE_FLEET_MANAGER:
+        scoped, scope_err = _apply_fleet_scope(role, headers, fleet_id)
+        if scope_err:
+            return _resp(403, {"error": scope_err})
+        fleet_id = scoped
+
     now = utc_now_iso()
+    tenant_fleet_key = _driver_tenant_fleet_key(fleet_id, driver_id)
     updated = _ddb_update(
         DRIVERS_TABLE,
         {"PK": f"DRIVER#{driver_id}", "SK": "META"},
-        "SET metadata=:m, fleetId=:f, customerId=:c, updatedAt=:u",
+        "SET displayName=:dn, email=:e, phone=:p, employeeId=:eid, externalRef=:er, "
+        "customerId=:c, fleetId=:f, license=:l, medicalCertExpiresAt=:mc, endorsements=:en, "
+        "riskCategory=:rc, cdl=:cdl, dqStatus=:dq, metadata=:m, tenantFleetKey=:tfk, updatedAt=:u",
         {
-            ":m": body.get("metadata", existing.get("metadata")),
-            ":f": body.get("fleetId", existing.get("fleetId")),
+            ":dn": body.get("displayName", existing.get("displayName")),
+            ":e": body.get("email", existing.get("email")),
+            ":p": body.get("phone", existing.get("phone")),
+            ":eid": body.get("employeeId", body.get("employee_id", existing.get("employeeId"))),
+            ":er": body.get("externalRef", body.get("external_ref", existing.get("externalRef"))),
             ":c": body.get("customerId", existing.get("customerId")),
+            ":f": fleet_id,
+            ":l": body.get("license", existing.get("license")),
+            ":mc": body.get(
+                "medicalCertExpiresAt",
+                body.get("medicalCertExpiration", existing.get("medicalCertExpiresAt")),
+            ),
+            ":en": body.get("endorsements", existing.get("endorsements")),
+            ":rc": body.get("riskCategory", existing.get("riskCategory")),
+            ":cdl": body.get("cdl", existing.get("cdl")),
+            ":dq": body.get("dqStatus", existing.get("dqStatus")),
+            ":m": body.get("metadata", existing.get("metadata")),
+            ":tfk": tenant_fleet_key,
             ":u": now,
         },
     )
@@ -2007,8 +2381,18 @@ def _patch_driver(driver_id: str, body: dict, headers: Dict[str, str], role: str
     return _resp(200, updated or {})
 
 
-def _set_driver_status(driver_id: str, status: str, headers: Dict[str, str], role: str, caller_tenant: Optional[str]) -> dict:
-    err = _require_write_role(role)
+def _set_driver_status(
+    driver_id: str,
+    status: str,
+    headers: Dict[str, str],
+    role: str,
+    caller_tenant: Optional[str],
+    expected_tenant_id: Optional[str] = None,
+) -> dict:
+    status = status.upper()
+    if status not in {"ACTIVE", "INACTIVE", "SUSPENDED"}:
+        return _resp(400, {"error": "Invalid status"})
+    err = _require_driver_write_role(role)
     if err:
         return _resp(403, {"error": err})
     existing = _ddb_get(DRIVERS_TABLE, {"PK": f"DRIVER#{driver_id}", "SK": "META"})
@@ -2016,9 +2400,18 @@ def _set_driver_status(driver_id: str, status: str, headers: Dict[str, str], rol
         return _resp(404, {"error": "Driver not found"})
 
     tenant_id = existing.get("tenantId")
+    if expected_tenant_id and tenant_id != expected_tenant_id:
+        return _resp(404, {"error": "Driver not found"})
     err = _require_tenant_access(role, caller_tenant, tenant_id)
     if err:
         return _resp(403, {"error": err})
+
+    if role == ROLE_FLEET_MANAGER:
+        scoped, scope_err = _apply_fleet_scope(role, headers, existing.get("fleetId"))
+        if scope_err:
+            return _resp(403, {"error": scope_err})
+        if existing.get("fleetId") and scoped != existing.get("fleetId"):
+            return _resp(403, {"error": "Forbidden"})
 
     now = utc_now_iso()
     updated = _ddb_update(
@@ -2042,14 +2435,31 @@ def _set_driver_status(driver_id: str, status: str, headers: Dict[str, str], rol
     return _resp(200, {"driverId": driver_id, "status": status})
 
 
-def _create_driver_assignment(driver_id: str, body: dict, headers: Dict[str, str], role: str, caller_tenant: Optional[str]) -> dict:
-    err = _require_write_role(role)
+def _create_driver_assignment(
+    driver_id: str,
+    body: dict,
+    headers: Dict[str, str],
+    role: str,
+    caller_tenant: Optional[str],
+    expected_tenant_id: Optional[str] = None,
+) -> dict:
+    err = _require_driver_write_role(role)
     if err:
         return _resp(403, {"error": err})
     tenant_id = body.get("tenantId") or caller_tenant
+    if expected_tenant_id and not tenant_id:
+        tenant_id = expected_tenant_id
     err = _require_tenant_access(role, caller_tenant, tenant_id)
     if err:
         return _resp(403, {"error": err})
+    if expected_tenant_id and tenant_id != expected_tenant_id:
+        return _resp(404, {"error": "Driver not found"})
+
+    driver = _ddb_get(DRIVERS_TABLE, {"PK": f"DRIVER#{driver_id}", "SK": "META"})
+    if not driver:
+        return _resp(404, {"error": "Driver not found"})
+    if driver.get("tenantId") != tenant_id:
+        return _resp(404, {"error": "Driver not found"})
 
     vin = body.get("vin")
     effective_from = _normalize_iso(body.get("effectiveFrom"))
@@ -2059,12 +2469,39 @@ def _create_driver_assignment(driver_id: str, body: dict, headers: Dict[str, str
     if tenant_id and not _vin_active_for_tenant(vin, tenant_id, effective_from):
         return _resp(403, {"error": "Forbidden"})
 
+    if role == ROLE_FLEET_MANAGER:
+        scoped, scope_err = _apply_fleet_scope(role, headers, headers.get("x-fleet-id"))
+        if scope_err:
+            return _resp(403, {"error": scope_err})
+        vins = _list_vins_for_tenant(tenant_id, scoped, active_only=True)
+        if vin not in vins:
+            return _resp(403, {"error": "Forbidden"})
+
     idempotency_key = _get_idempotency_key(headers)
     if not idempotency_key:
         return _resp(400, {"error": "Idempotency-Key is required for driver assignments"})
 
     effective_to = _normalize_iso(body.get("effectiveTo"))
     assignment_type = body.get("assignmentType")
+
+    existing_assignments = _ddb_query(
+        {
+            "TableName": DRIVER_ASSIGNMENTS_TABLE,
+            "KeyConditionExpression": "PK = :pk",
+            "ExpressionAttributeValues": {":pk": {"S": f"DRIVER#{driver_id}"}},
+            "ScanIndexForward": True,
+        }
+    )
+    for existing in existing_assignments:
+        if existing.get("tenantId") != tenant_id:
+            continue
+        if _range_overlaps(
+            effective_from,
+            effective_to,
+            existing.get("effectiveFrom"),
+            existing.get("effectiveTo"),
+        ):
+            return _resp(409, {"error": "Driver assignment overlaps existing record"})
 
     item = {
         "PK": f"DRIVER#{driver_id}",
@@ -2081,7 +2518,11 @@ def _create_driver_assignment(driver_id: str, body: dict, headers: Dict[str, str
     }
 
     route_key = f"POST:/drivers/{driver_id}/assignments"
-    request_hash = _hash_request("POST", f"/drivers/{driver_id}/assignments", body)
+    path = f"/drivers/{driver_id}/assignments"
+    if expected_tenant_id:
+        route_key = f"POST:/tenants/{tenant_id}/drivers/{driver_id}/assignments"
+        path = f"/tenants/{tenant_id}/drivers/{driver_id}/assignments"
+    request_hash = _hash_request("POST", path, body)
 
     def _do():
         try:
@@ -2105,7 +2546,19 @@ def _create_driver_assignment(driver_id: str, body: dict, headers: Dict[str, str
     return _with_idempotency(idempotency_key, route_key, request_hash, caller_tenant, _do)
 
 
-def _list_driver_assignments(driver_id: str, role: str, caller_tenant: Optional[str]) -> dict:
+def _list_driver_assignments(
+    driver_id: str,
+    role: str,
+    caller_tenant: Optional[str],
+    expected_tenant_id: Optional[str] = None,
+) -> dict:
+    if expected_tenant_id:
+        err = _require_tenant_access(role, caller_tenant, expected_tenant_id)
+        if err:
+            return _resp(403, {"error": err})
+        driver = _ddb_get(DRIVERS_TABLE, {"PK": f"DRIVER#{driver_id}", "SK": "META"})
+        if not driver or driver.get("tenantId") != expected_tenant_id:
+            return _resp(404, {"error": "Driver not found"})
     params = {
         "TableName": DRIVER_ASSIGNMENTS_TABLE,
         "KeyConditionExpression": "PK = :pk",
@@ -2136,6 +2589,415 @@ def _list_vehicle_assignments(vin: str, role: str, caller_tenant: Optional[str])
     }
     items = _ddb_query(params)
     return _resp(200, {"items": items})
+
+
+def _driver_dashboard_access(
+    tenant_id: str,
+    driver_id: str,
+    query: Dict[str, str],
+    headers: Dict[str, str],
+    role: str,
+    caller_tenant: Optional[str],
+) -> Tuple[Optional[dict], Optional[str], Optional[dict]]:
+    err = _require_tenant_access(role, caller_tenant, tenant_id)
+    if err:
+        return None, None, _resp(403, {"error": err})
+
+    driver = _ddb_get(DRIVERS_TABLE, {"PK": f"DRIVER#{driver_id}", "SK": "META"})
+    if not driver or driver.get("tenantId") != tenant_id:
+        return None, None, _resp(404, {"error": "Driver not found"})
+
+    fleet_id = query.get("fleetId")
+    if role == ROLE_FLEET_MANAGER:
+        if not fleet_id:
+            fleet_id = headers.get("x-fleet-id")
+        scoped, scope_err = _apply_fleet_scope(role, headers, fleet_id)
+        if scope_err:
+            return None, None, _resp(403, {"error": scope_err})
+        fleet_id = scoped
+        if driver.get("fleetId") and driver.get("fleetId") != fleet_id:
+            return None, None, _resp(403, {"error": "Forbidden"})
+
+    return driver, fleet_id, None
+
+
+def _driver_assignment_vins(
+    driver_id: str,
+    tenant_id: str,
+    fleet_id: Optional[str],
+    frm: Optional[datetime],
+    to: Optional[datetime],
+) -> List[str]:
+    params = {
+        "TableName": DRIVER_ASSIGNMENTS_TABLE,
+        "KeyConditionExpression": "PK = :pk",
+        "ExpressionAttributeValues": {":pk": {"S": f"DRIVER#{driver_id}"}},
+        "ScanIndexForward": True,
+    }
+    items = _ddb_query(params)
+    fleet_vins = None
+    if fleet_id:
+        fleet_vins = set(_list_vins_for_tenant(tenant_id, fleet_id, active_only=False))
+
+    vins: List[str] = []
+    for it in items:
+        if it.get("tenantId") != tenant_id:
+            continue
+        if not _assignment_overlaps(it.get("effectiveFrom"), it.get("effectiveTo"), frm, to):
+            continue
+        vin = it.get("vin")
+        if not vin:
+            continue
+        if fleet_vins is not None and vin not in fleet_vins:
+            continue
+        if vin not in vins:
+            vins.append(vin)
+    return vins
+
+
+def _collect_driver_trip_items(vins: List[str], frm: Optional[datetime], to: Optional[datetime]) -> List[dict]:
+    trips: List[dict] = []
+    for vin in vins:
+        params = {
+            "TableName": TRIP_SUMMARY_TABLE,
+            "KeyConditionExpression": "PK = :pk AND begins_with(SK, :skp)",
+            "ExpressionAttributeValues": {
+                ":pk": {"S": f"VEHICLE#{vin}"},
+                ":skp": {"S": "TRIP_SUMMARY#"},
+            },
+            "ScanIndexForward": False,
+        }
+        items = _ddb_query(params)
+        for it in items:
+            if _in_time_range(it.get("startTime"), it.get("endTime"), frm, to):
+                trips.append(it)
+    return trips
+
+
+def _driver_dashboard(
+    tenant_id: str,
+    driver_id: str,
+    query: Dict[str, str],
+    headers: Dict[str, str],
+    role: str,
+    caller_tenant: Optional[str],
+) -> dict:
+    driver, fleet_id, err = _driver_dashboard_access(tenant_id, driver_id, query, headers, role, caller_tenant)
+    if err:
+        return err
+
+    frm, to, range_err = _parse_iso_range(query)
+    if range_err:
+        return _resp(400, {"error": range_err})
+
+    vins = _driver_assignment_vins(driver_id, tenant_id, fleet_id, frm, to)
+    if not vins:
+        return _resp(
+            200,
+            {
+                "driverId": driver_id,
+                "tenantId": tenant_id,
+                "fleetId": fleet_id,
+                "from": frm.isoformat() if frm else None,
+                "to": to.isoformat() if to else None,
+                "totals": {},
+                "trips": {"count": 0},
+            },
+        )
+
+    trips = _collect_driver_trip_items(vins, frm, to)
+
+    total_miles = 0.0
+    total_fuel = 0.0
+    total_night_miles = 0.0
+    total_driving_sec = 0
+    total_idling_sec = 0
+    total_hb = 0
+    total_ha = 0
+    total_hc = 0
+    total_collisions = 0
+    total_seatbelt = 0
+    os_std_cnt = 0
+    os_sev_cnt = 0
+    os_total_cnt = 0
+    os_std_miles = 0.0
+    os_sev_miles = 0.0
+    os_total_miles = 0.0
+    top_speed = None
+
+    safety_weighted = 0.0
+    safety_weight = 0.0
+    mpg_weighted = 0.0
+    mpg_weight = 0.0
+
+    for it in trips:
+        miles = _to_float(it.get("milesDriven"), 0.0)
+        fuel = _to_float(it.get("fuelConsumed"), 0.0)
+        total_miles += miles
+        total_fuel += fuel
+
+        summary = _parse_summary_json(it.get("summary")) or {}
+        speed = summary.get("speed") or {}
+        distance = summary.get("distance") or {}
+        events = summary.get("events") or {}
+        mpg = summary.get("mpg") or {}
+
+        total_night_miles += _to_float(distance.get("nightMiles"), 0.0)
+
+        max_mph = speed.get("maxMph")
+        if max_mph is not None:
+            top_speed = max(_to_float(max_mph, 0.0), top_speed or 0.0)
+
+        total_driving_sec += _hms_to_seconds(summary.get("drivingTime"))
+        total_idling_sec += _hms_to_seconds(summary.get("idlingTime"))
+
+        total_hb += int(events.get("harshBrakingCount") or 0)
+        total_ha += int(events.get("harshAccelerationCount") or 0)
+        total_hc += int(events.get("harshCorneringCount") or 0)
+        total_collisions += int(events.get("collisionCount") or 0)
+        total_seatbelt += int(events.get("seatbeltViolationCount") or 0)
+
+        os_std_cnt += int(it.get("overspeedEventCountStandard") or 0)
+        os_sev_cnt += int(it.get("overspeedEventCountSevere") or 0)
+        os_total_cnt += int(it.get("overspeedEventCountTotal") or 0)
+        os_std_miles += _to_float(it.get("overspeedMilesStandard"), 0.0)
+        os_sev_miles += _to_float(it.get("overspeedMilesSevere"), 0.0)
+        os_total_miles += _to_float(it.get("overspeedMilesTotal"), 0.0)
+
+        score = it.get("safetyScore")
+        if score is not None and miles:
+            safety_weighted += _to_float(score, 0.0) * miles
+            safety_weight += miles
+
+        actual_mpg = mpg.get("actualMpg")
+        if actual_mpg is not None and miles:
+            mpg_weighted += _to_float(actual_mpg, 0.0) * miles
+            mpg_weight += miles
+
+    avg_speed = None
+    if total_driving_sec > 0:
+        avg_speed = round(total_miles / (total_driving_sec / 3600.0), 2)
+
+    safety_score = None
+    if safety_weight > 0:
+        safety_score = round(safety_weighted / safety_weight, 2)
+
+    fuel_efficiency = None
+    if mpg_weight > 0:
+        fuel_efficiency = round(mpg_weighted / mpg_weight, 2)
+
+    return _resp(
+        200,
+        {
+            "driverId": driver_id,
+            "tenantId": tenant_id,
+            "fleetId": fleet_id,
+            "from": frm.isoformat() if frm else None,
+            "to": to.isoformat() if to else None,
+            "totals": {
+                "milesDriven": round(total_miles, 2),
+                "fuelConsumedGallons": round(total_fuel, 2),
+                "drivingTimeSeconds": total_driving_sec,
+                "idlingTimeSeconds": total_idling_sec,
+                "nightMiles": round(total_night_miles, 2),
+                "averageSpeedMph": avg_speed,
+                "topSpeedMph": top_speed,
+                "harshBraking": total_hb,
+                "harshAcceleration": total_ha,
+                "harshCornering": total_hc,
+                "collisionCount": total_collisions,
+                "seatbeltViolations": total_seatbelt,
+                "overspeed": {
+                    "eventCountStandard": os_std_cnt,
+                    "eventCountSevere": os_sev_cnt,
+                    "eventCountTotal": os_total_cnt,
+                    "milesStandard": round(os_std_miles, 2),
+                    "milesSevere": round(os_sev_miles, 2),
+                    "milesTotal": round(os_total_miles, 2),
+                },
+                "safetyScore": safety_score,
+                "fuelEfficiencyMpg": fuel_efficiency,
+            },
+            "trips": {"count": len(trips)},
+        },
+    )
+
+
+def _driver_dashboard_trips(
+    tenant_id: str,
+    driver_id: str,
+    query: Dict[str, str],
+    headers: Dict[str, str],
+    role: str,
+    caller_tenant: Optional[str],
+) -> dict:
+    driver, fleet_id, err = _driver_dashboard_access(tenant_id, driver_id, query, headers, role, caller_tenant)
+    if err:
+        return err
+
+    frm, to, range_err = _parse_iso_range(query)
+    if range_err:
+        return _resp(400, {"error": range_err})
+
+    vins = _driver_assignment_vins(driver_id, tenant_id, fleet_id, frm, to)
+    if not vins:
+        return _resp(200, {"items": [], "nextToken": None})
+
+    limit = _parse_limit(query.get("limit"), default=50, max_limit=200)
+    token_obj, token_err = _decode_next_token(query.get("nextToken"))
+    if token_err:
+        return _resp(400, {"error": token_err})
+    if token_obj and token_obj.get("v") not in (None, 1):
+        token_obj = {}
+    per_vin_state = token_obj.get("vins") if isinstance(token_obj, dict) else {}
+    if not isinstance(per_vin_state, dict):
+        per_vin_state = {}
+
+    results: List[dict] = []
+    next_state: Dict[str, Any] = {"v": 1, "vins": {}}
+    page_size = 50
+    max_pages_per_vin = 3
+    expansion_cap = max(limit * 3, 50)
+
+    for vin in vins:
+        esk = per_vin_state.get(vin)
+        pages = 0
+        collected: List[dict] = []
+
+        while pages < max_pages_per_vin:
+            items, lek = _query_trip_summaries(vin, page_size, esk)
+            pages += 1
+
+            for it in items:
+                if _in_time_range(it.get("startTime"), it.get("endTime"), frm, to):
+                    row = _summarize_trip_item(it)
+                    summary = _parse_summary_json(it.get("summary")) or {}
+                    speed = summary.get("speed") or {}
+                    if "maxMph" in speed:
+                        row["topSpeedMph"] = speed.get("maxMph")
+                    collected.append(row)
+
+            esk = lek
+            if not lek or len(collected) >= expansion_cap:
+                break
+
+        if esk:
+            next_state["vins"][vin] = esk
+        results.extend(collected)
+
+    results.sort(key=lambda r: r.get("endTime") or "", reverse=True)
+    results = results[:limit]
+    next_token = None
+    if any(next_state["vins"].get(v) for v in vins):
+        next_token = _encode_next_token(next_state)
+
+    return _resp(200, {"items": results, "nextToken": next_token})
+
+
+def _driver_dashboard_events(
+    tenant_id: str,
+    driver_id: str,
+    query: Dict[str, str],
+    headers: Dict[str, str],
+    role: str,
+    caller_tenant: Optional[str],
+) -> dict:
+    driver, fleet_id, err = _driver_dashboard_access(tenant_id, driver_id, query, headers, role, caller_tenant)
+    if err:
+        return err
+
+    frm, to, range_err = _parse_iso_range(query)
+    if range_err:
+        return _resp(400, {"error": range_err})
+
+    vins = _driver_assignment_vins(driver_id, tenant_id, fleet_id, frm, to)
+    if not vins:
+        return _resp(200, {"items": [], "nextToken": None})
+
+    trips = _collect_driver_trip_items(vins, frm, to)
+    trip_refs = []
+    for it in trips:
+        summary = _summarize_trip_item(it)
+        if summary.get("vin") and summary.get("tripId"):
+            trip_refs.append(summary)
+    trip_refs.sort(key=lambda r: r.get("endTime") or "", reverse=True)
+    if not trip_refs:
+        return _resp(200, {"items": [], "nextToken": None})
+
+    limit = _parse_limit(query.get("limit"), default=50, max_limit=200)
+    token_obj, token_err = _decode_next_token(query.get("nextToken"))
+    if token_err:
+        return _resp(400, {"error": token_err})
+    token_idx = 0
+    token_lek = None
+    if isinstance(token_obj, dict):
+        token_idx = int(token_obj.get("i") or 0)
+        token_lek = token_obj.get("lek")
+
+    type_filter = query.get("type")
+    allowed_types = None
+    if type_filter:
+        allowed_types = {t.strip() for t in type_filter.split(",") if t.strip()}
+
+    items: List[dict] = []
+    idx = max(0, token_idx)
+    lek = token_lek
+    max_pages_per_trip = 5
+
+    while idx < len(trip_refs) and len(items) < limit:
+        trip = trip_refs[idx]
+        vin = trip.get("vin")
+        trip_id = trip.get("tripId")
+        if not vin or not trip_id:
+            idx += 1
+            lek = None
+            continue
+
+        pages = 0
+        while pages < max_pages_per_trip and len(items) < limit:
+            events, next_lek = _query_trip_events_raw(vin, trip_id, limit, lek)
+            pages += 1
+            for evt in events:
+                evt_time = evt.get("eventTime")
+                if not _in_time_range(evt_time, evt_time, frm, to):
+                    continue
+                evt_type = evt.get("eventType")
+                if allowed_types and evt_type not in allowed_types:
+                    continue
+                items.append(
+                    {
+                        "vin": vin,
+                        "tripId": trip_id,
+                        "eventType": evt_type,
+                        "eventTime": evt_time,
+                        "speedMph": evt.get("speed_mph"),
+                        "lat": evt.get("lat"),
+                        "lon": evt.get("lon"),
+                        "raw": evt.get("raw"),
+                    }
+                )
+                if len(items) >= limit:
+                    break
+
+            if next_lek and len(items) < limit:
+                lek = next_lek
+                continue
+            if next_lek and len(items) >= limit:
+                return _resp(200, {"items": items, "nextToken": _encode_next_token({"i": idx, "lek": next_lek})})
+
+            lek = None
+            break
+
+        if lek:
+            return _resp(200, {"items": items, "nextToken": _encode_next_token({"i": idx, "lek": lek})})
+        idx += 1
+        lek = None
+
+    next_token = None
+    if idx < len(trip_refs):
+        next_token = _encode_next_token({"i": idx, "lek": None})
+
+    return _resp(200, {"items": items, "nextToken": next_token})
 
 
 # -----------------------------
@@ -2221,6 +3083,60 @@ def lambda_handler(event, context):
             if method == "PATCH":
                 err = _require_body(body)
                 return _resp(400, {"error": err}) if err else _patch_tenant(tenant_id, body, headers, role, caller_tenant)
+        if len(segments) >= 3 and segments[2] == "drivers":
+            tenant_id = segments[1]
+            if len(segments) == 3:
+                if method == "POST":
+                    err = _require_body(body)
+                    return (
+                        _resp(400, {"error": err})
+                        if err
+                        else _create_driver_for_tenant(
+                            tenant_id,
+                            body,
+                            headers,
+                            role,
+                            caller_tenant,
+                            f"POST:/tenants/{tenant_id}/drivers",
+                            f"/tenants/{tenant_id}/drivers",
+                        )
+                    )
+                if method == "GET":
+                    return _list_drivers_for_tenant(tenant_id, query, headers, role, caller_tenant)
+            if len(segments) == 4 and segments[3].endswith(":deactivate") and method == "POST":
+                driver_id = segments[3].split(":deactivate")[0]
+                return _set_driver_status(driver_id, "INACTIVE", headers, role, caller_tenant, tenant_id)
+            if len(segments) == 4:
+                driver_id = segments[3]
+                if method == "GET":
+                    return _get_driver(driver_id, role, caller_tenant, tenant_id)
+                if method == "PATCH":
+                    err = _require_body(body)
+                    return (
+                        _resp(400, {"error": err})
+                        if err
+                        else _patch_driver(driver_id, body, headers, role, caller_tenant, tenant_id)
+                    )
+            if len(segments) == 5 and segments[4] == "dashboard" and method == "GET":
+                driver_id = segments[3]
+                return _driver_dashboard(tenant_id, driver_id, query, headers, role, caller_tenant)
+            if len(segments) == 6 and segments[4] == "dashboard":
+                driver_id = segments[3]
+                if segments[5] == "trips" and method == "GET":
+                    return _driver_dashboard_trips(tenant_id, driver_id, query, headers, role, caller_tenant)
+                if segments[5] == "events" and method == "GET":
+                    return _driver_dashboard_events(tenant_id, driver_id, query, headers, role, caller_tenant)
+            if len(segments) == 5 and segments[4] == "assignments":
+                driver_id = segments[3]
+                if method == "POST":
+                    err = _require_body(body)
+                    return (
+                        _resp(400, {"error": err})
+                        if err
+                        else _create_driver_assignment(driver_id, body, headers, role, caller_tenant, tenant_id)
+                    )
+                if method == "GET":
+                    return _list_driver_assignments(driver_id, role, caller_tenant, tenant_id)
         if len(segments) == 2 and segments[1].endswith(":suspend") and method == "POST":
             tenant_id = segments[1].split(":suspend")[0]
             return _set_tenant_status(tenant_id, "SUSPENDED", headers, role, caller_tenant)
