@@ -11,7 +11,9 @@ const links = [
   { to: "/adlp/geofence/manage", label: "Geofence" },
   { to: "/adlp/geofence/setup", label: "Geofence Setup" },
   { to: "/adlp/vehicles/vin-summary", label: "Vehicles" },
-  { to: "/adlp/drivers/dashboard", label: "Drivers" },
+  { to: "/adlp/drivers/summary", label: "Drivers" },
+  { to: "/adlp/drivers/add", label: "Add Driver" },
+  { to: "/adlp/drivers/assign", label: "Assign Driver" },
   { to: "/adlp/trips/planning", label: "Trips" },
   { to: "/adlp/reports", label: "Reports" },
 ];

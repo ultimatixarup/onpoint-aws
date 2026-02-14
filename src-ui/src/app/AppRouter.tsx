@@ -16,6 +16,7 @@ import { TenantDashboard } from "../features/dashboard/TenantDashboard";
 import { AddDriverPage } from "../features/drivers/AddDriverPage";
 import { AssignDriverPage } from "../features/drivers/AssignDriverPage";
 import { DriverDashboardPage } from "../features/drivers/DriverDashboardPage";
+import { DriverProfilePage } from "../features/drivers/DriverProfilePage";
 import { DriverSummaryPage } from "../features/drivers/DriverSummaryPage";
 import { GeofenceAlertsPage } from "../features/geofence/GeofenceAlertsPage";
 import { GeofenceReportPage } from "../features/geofence/GeofenceReportPage";
@@ -188,11 +189,23 @@ export function AppRouter() {
           />
           <Route
             path="/adlp/drivers/dashboard"
-            element={<DriverDashboardPage />}
+            element={<DriverSummaryPage />}
           />
+          <Route
+            path="/adlp/drivers"
+            element={<Navigate to="/adlp/drivers/summary" replace />}
+          />
+          <Route path="/adlp/drivers/summary" element={<DriverSummaryPage />} />
           <Route path="/adlp/drivers/add" element={<AddDriverPage />} />
           <Route path="/adlp/drivers/assign" element={<AssignDriverPage />} />
-          <Route path="/adlp/drivers/summary" element={<DriverSummaryPage />} />
+          <Route
+            path="/adlp/drivers/:driverId"
+            element={<DriverProfilePage />}
+          />
+          <Route
+            path="/adlp/drivers/:driverId/dashboard"
+            element={<DriverDashboardPage />}
+          />
           <Route path="/adlp/trips/planning" element={<TripPlanningPage />} />
           <Route path="/adlp/trips/add" element={<AddTripPage />} />
           <Route

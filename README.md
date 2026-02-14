@@ -20,6 +20,15 @@ pre-commit run -a
 Never delete stacks; redeploy via update-stack.
 Nested templates must be uploaded to S3 first; stack references them from TemplateBucket/TemplatePrefix.
 
+## Driver GSIs staged deploy
+
+When enabling the optional driver tenant+fleet index:
+
+1. Deploy tables with `EnableDriverTenantFleetIndex=false` (default).
+2. Backfill driver items with `tenantFleetKey` (example: `FLEET#<fleetId>#DRIVER#<driverId>`).
+3. Redeploy with `EnableDriverTenantFleetIndex=true`.
+4. Confirm Fleet Tenancy API reads from `DriverTenantFleetIndex` and fallback scan only if needed.
+
 ## Diagnosing stale nested templates
 
 If CloudFormation reports `IntegrationResponses` on a Lambda proxy method, run the deploy script with a new `--template-version` and inspect the outputs:
@@ -35,15 +44,18 @@ Run:
 python -m pytest tests/e2e -v
 
 Required environment variables:
+
 - ONPOINT_BASE_URL
 - ONPOINT_API_KEY
 - ONPOINT_VIN
 - ONPOINT_TRIP_ID
 
 Optional:
+
 - ONPOINT_FORBIDDEN_VIN (for 403 test)
 - ONPOINT_IDEMPOTENCY_KEY (defaults to e2e-idempotency)
 
 Notes:
+
 - Tests are black-box API calls only.
 - All requests use `x-api-key` only (no bearer tokens).

@@ -464,6 +464,142 @@
       ]
     },
     {
+      "name": "Tenant Drivers",
+      "item": [
+        {
+          "name": "Create tenant driver",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"driverId\": \"{{driverId}}\",\n  \"displayName\": \"{{driverName1}}\",\n  \"email\": \"driver@example.com\",\n  \"phone\": \"+1-555-0100\",\n  \"fleetId\": \"{{fleetId}}\",\n  \"reason\": \"new driver\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List tenant drivers",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers?fleetId={{fleetId}}&limit=50"
+          }
+        },
+        {
+          "name": "Get tenant driver",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}"
+          }
+        },
+        {
+          "name": "Patch tenant driver",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+1-555-0101\",\n  \"license\": {\"number\": \"A123\", \"state\": \"CA\"},\n  \"reason\": \"update\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Deactivate tenant driver",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}:deactivate"
+          }
+        },
+        {
+          "name": "Assign tenant driver to vehicle",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}/assignments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vin\": \"{{vin}}\",\n  \"effectiveFrom\": \"{{assignmentEffectiveFrom}}\",\n  \"assignmentType\": \"PRIMARY\",\n  \"reason\": \"shift assignment\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List tenant driver assignments",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}/assignments"
+          }
+        },
+        {
+          "name": "Driver dashboard KPIs",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}/dashboard?from={{metricsFrom}}&to={{metricsTo}}&fleetId={{fleetId}}"
+          }
+        },
+        {
+          "name": "Driver dashboard trips",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}/dashboard/trips?from={{metricsFrom}}&to={{metricsTo}}&limit=25"
+          }
+        },
+        {
+          "name": "Driver dashboard events",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}/dashboard/events?from={{metricsFrom}}&to={{metricsTo}}&type=harsh_braking&limit=25"
+          }
+        }
+      ]
+    },
+    {
       "name": "Driver Assignments",
       "item": [
         {

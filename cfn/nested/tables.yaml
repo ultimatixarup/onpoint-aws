@@ -9,9 +9,13 @@ Parameters:
   EnableTenantFleetIndex:
     Type: String
     Default: "false"
+  EnableDriverTenantFleetIndex:
+    Type: String
+    Default: "false"
 
 Conditions:
   EnableTenantFleetIndexCondition: !Equals [!Ref EnableTenantFleetIndex, "true"]
+  EnableDriverTenantFleetIndexCondition: !Equals [!Ref EnableDriverTenantFleetIndex, "true"]
 
 Resources:
   TelemetryEventsTable:
@@ -192,11 +196,40 @@ Resources:
           AttributeType: S
         - AttributeName: SK
           AttributeType: S
+        - AttributeName: tenantId
+          AttributeType: S
+        - AttributeName: driverId
+          AttributeType: S
+        - !If
+          - EnableDriverTenantFleetIndexCondition
+          - AttributeName: tenantFleetKey
+            AttributeType: S
+          - !Ref AWS::NoValue
       KeySchema:
         - AttributeName: PK
           KeyType: HASH
         - AttributeName: SK
           KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: DriverTenantIndex
+          KeySchema:
+            - AttributeName: tenantId
+              KeyType: HASH
+            - AttributeName: driverId
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - !If
+          - EnableDriverTenantFleetIndexCondition
+          - IndexName: DriverTenantFleetIndex
+            KeySchema:
+              - AttributeName: tenantId
+                KeyType: HASH
+              - AttributeName: tenantFleetKey
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - !Ref AWS::NoValue
 
   DriverAssignmentsTable:
     Type: AWS::DynamoDB::Table

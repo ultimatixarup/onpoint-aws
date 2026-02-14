@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { fetchDrivers } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useFleet } from "../../context/FleetContext";
@@ -74,6 +75,7 @@ export function DriverSummaryPage() {
       if (!query) return true;
       return [
         driver.name,
+        driver.displayName,
         driver.driverId,
         driver.email,
         driver.phone,
@@ -99,6 +101,12 @@ export function DriverSummaryPage() {
             </p>
           </div>
           <div className="drivers-hero__actions">
+            <Link className="btn btn--secondary" to="/adlp/drivers/add">
+              Add driver
+            </Link>
+            <Link className="btn btn--secondary" to="/adlp/drivers/assign">
+              Assign driver
+            </Link>
             <button className="btn" type="button" onClick={() => refetch()}>
               Refresh
             </button>
@@ -196,7 +204,7 @@ export function DriverSummaryPage() {
                 <div className="driver-card__header">
                   <div>
                     <div className="driver-card__name">
-                      {driver.name ?? "Unnamed driver"}
+                      {driver.name ?? driver.displayName ?? "Unnamed driver"}
                     </div>
                     <div className="driver-card__id mono">
                       {driver.driverId}
@@ -223,6 +231,20 @@ export function DriverSummaryPage() {
                     <span className="text-muted">Customer ID</span>
                     <strong>{driver.customerId ?? "--"}</strong>
                   </div>
+                </div>
+                <div className="driver-card__actions">
+                  <Link
+                    className="btn btn--secondary"
+                    to={`/adlp/drivers/${driver.driverId}`}
+                  >
+                    Profile
+                  </Link>
+                  <Link
+                    className="btn"
+                    to={`/adlp/drivers/${driver.driverId}/dashboard`}
+                  >
+                    Dashboard
+                  </Link>
                 </div>
               </article>
             ))}

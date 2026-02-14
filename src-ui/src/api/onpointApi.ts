@@ -44,6 +44,81 @@ export type DriverSummary = {
   metadata?: Record<string, unknown> | null;
   email?: string;
   phone?: string;
+  displayName?: string;
+  employeeId?: string;
+  externalRef?: string;
+  license?: Record<string, unknown> | null;
+  endorsements?: unknown;
+  medicalCertExpiresAt?: string;
+  riskCategory?: string;
+  cdl?: unknown;
+  dqStatus?: string;
+};
+
+export type DriverAssignment = {
+  vin: string;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+  assignmentType?: string;
+  tenantId?: string;
+  driverId?: string;
+};
+
+export type DriverDashboardTotals = {
+  milesDriven?: number;
+  fuelConsumedGallons?: number;
+  drivingTimeSeconds?: number;
+  idlingTimeSeconds?: number;
+  nightMiles?: number;
+  averageSpeedMph?: number | null;
+  topSpeedMph?: number | null;
+  harshBraking?: number;
+  harshAcceleration?: number;
+  harshCornering?: number;
+  collisionCount?: number;
+  seatbeltViolations?: number;
+  overspeed?: {
+    eventCountStandard?: number;
+    eventCountSevere?: number;
+    eventCountTotal?: number;
+    milesStandard?: number;
+    milesSevere?: number;
+    milesTotal?: number;
+  };
+  safetyScore?: number | null;
+  fuelEfficiencyMpg?: number | null;
+};
+
+export type DriverDashboard = {
+  driverId: string;
+  tenantId: string;
+  fleetId?: string | null;
+  from?: string | null;
+  to?: string | null;
+  totals?: DriverDashboardTotals;
+  trips?: { count?: number };
+};
+
+export type DriverTrip = {
+  vin?: string;
+  tripId?: string;
+  startTime?: string;
+  endTime?: string;
+  milesDriven?: number;
+  fuelConsumed?: number;
+  safetyScore?: number;
+  topSpeedMph?: number;
+};
+
+export type DriverEvent = {
+  vin?: string;
+  tripId?: string;
+  eventType?: string;
+  eventTime?: string;
+  speedMph?: number;
+  lat?: number;
+  lon?: number;
+  raw?: unknown;
 };
 
 export type VehicleState = {
@@ -358,12 +433,15 @@ export async function fetchDrivers(tenantId: string, fleetId?: string) {
   const query = new URLSearchParams({ tenantId });
   if (fleetId) query.set("fleetId", fleetId);
 
-  const response = await httpRequest<unknown>(`/drivers?${query.toString()}`, {
-    headers: {
-      "x-tenant-id": tenantId,
-      ...(fleetId ? { "x-fleet-id": fleetId } : {}),
+  const response = await httpRequest<unknown>(
+    `/tenants/${tenantId}/drivers?${query.toString()}`,
+    {
+      headers: {
+        "x-tenant-id": tenantId,
+        ...(fleetId ? { "x-fleet-id": fleetId } : {}),
+      },
     },
-  });
+  );
 
   const items = Array.isArray(response)
     ? response
@@ -395,38 +473,186 @@ export async function fetchDrivers(tenantId: string, fleetId?: string) {
       metadata,
       email: record.email ? String(record.email) : undefined,
       phone: record.phone ? String(record.phone) : undefined,
+      displayName: record.displayName ? String(record.displayName) : undefined,
+      employeeId: record.employeeId ? String(record.employeeId) : undefined,
+      externalRef: record.externalRef ? String(record.externalRef) : undefined,
+      license:
+        typeof record.license === "object" || record.license === null
+          ? (record.license as Record<string, unknown> | null)
+          : undefined,
+      endorsements: record.endorsements,
+      medicalCertExpiresAt: record.medicalCertExpiresAt
+        ? String(record.medicalCertExpiresAt)
+        : undefined,
+      riskCategory: record.riskCategory
+        ? String(record.riskCategory)
+        : undefined,
+      cdl: record.cdl,
+      dqStatus: record.dqStatus ? String(record.dqStatus) : undefined,
     };
   });
   return drivers.filter(Boolean) as DriverSummary[];
 }
 
-export async function createDriver(payload: {
-  driverId?: string;
-  tenantId: string;
-  fleetId?: string;
-  customerId?: string;
-  metadata?: Record<string, unknown>;
-  reason?: string;
-}) {
-  return httpRequest<unknown>("/drivers", {
+export async function fetchDriverDetail(tenantId: string, driverId: string) {
+  const response = await httpRequest<unknown>(
+    `/tenants/${tenantId}/drivers/${driverId}`,
+    { headers: { "x-tenant-id": tenantId } },
+  );
+  const record = (response ?? {}) as Record<string, unknown>;
+  const id = record.driverId ?? record.id ?? driverId;
+  return {
+    driverId: String(id),
+    name:
+      record.name ??
+      record.displayName ??
+      record.fullName ??
+      (record.metadata as Record<string, unknown> | undefined)?.name,
+    status: record.status ? String(record.status) : undefined,
+    fleetId: record.fleetId ? String(record.fleetId) : undefined,
+    customerId: record.customerId ? String(record.customerId) : undefined,
+    createdAt: record.createdAt ? String(record.createdAt) : undefined,
+    updatedAt: record.updatedAt ? String(record.updatedAt) : undefined,
+    metadata:
+      typeof record.metadata === "object" || record.metadata === null
+        ? (record.metadata as Record<string, unknown> | null)
+        : undefined,
+    email: record.email ? String(record.email) : undefined,
+    phone: record.phone ? String(record.phone) : undefined,
+    displayName: record.displayName ? String(record.displayName) : undefined,
+    employeeId: record.employeeId ? String(record.employeeId) : undefined,
+    externalRef: record.externalRef ? String(record.externalRef) : undefined,
+    license:
+      typeof record.license === "object" || record.license === null
+        ? (record.license as Record<string, unknown> | null)
+        : undefined,
+    endorsements: record.endorsements,
+    medicalCertExpiresAt: record.medicalCertExpiresAt
+      ? String(record.medicalCertExpiresAt)
+      : undefined,
+    riskCategory: record.riskCategory ? String(record.riskCategory) : undefined,
+    cdl: record.cdl,
+    dqStatus: record.dqStatus ? String(record.dqStatus) : undefined,
+  } as DriverSummary;
+}
+
+export async function fetchDriverDashboard(
+  tenantId: string,
+  driverId: string,
+  params: { from?: string; to?: string; fleetId?: string } = {},
+) {
+  const query = new URLSearchParams();
+  if (params.from) query.set("from", params.from);
+  if (params.to) query.set("to", params.to);
+  if (params.fleetId) query.set("fleetId", params.fleetId);
+  return httpRequest<DriverDashboard>(
+    `/tenants/${tenantId}/drivers/${driverId}/dashboard?${query.toString()}`,
+    { headers: { "x-tenant-id": tenantId } },
+  );
+}
+
+export async function fetchDriverDashboardTrips(
+  tenantId: string,
+  driverId: string,
+  params: {
+    from?: string;
+    to?: string;
+    limit?: number;
+    nextToken?: string;
+  } = {},
+) {
+  const query = new URLSearchParams();
+  if (params.from) query.set("from", params.from);
+  if (params.to) query.set("to", params.to);
+  if (params.limit) query.set("limit", String(params.limit));
+  if (params.nextToken) query.set("nextToken", params.nextToken);
+  return httpRequest<{ items?: DriverTrip[]; nextToken?: string }>(
+    `/tenants/${tenantId}/drivers/${driverId}/dashboard/trips?${query.toString()}`,
+    { headers: { "x-tenant-id": tenantId } },
+  );
+}
+
+export async function fetchDriverDashboardEvents(
+  tenantId: string,
+  driverId: string,
+  params: {
+    from?: string;
+    to?: string;
+    type?: string;
+    limit?: number;
+    nextToken?: string;
+  } = {},
+) {
+  const query = new URLSearchParams();
+  if (params.from) query.set("from", params.from);
+  if (params.to) query.set("to", params.to);
+  if (params.type) query.set("type", params.type);
+  if (params.limit) query.set("limit", String(params.limit));
+  if (params.nextToken) query.set("nextToken", params.nextToken);
+  return httpRequest<{ items?: DriverEvent[]; nextToken?: string }>(
+    `/tenants/${tenantId}/drivers/${driverId}/dashboard/events?${query.toString()}`,
+    { headers: { "x-tenant-id": tenantId } },
+  );
+}
+
+export async function createDriver(
+  payload: {
+    driverId?: string;
+    tenantId: string;
+    fleetId?: string;
+    customerId?: string;
+    displayName?: string;
+    email?: string;
+    phone?: string;
+    employeeId?: string;
+    externalRef?: string;
+    license?: Record<string, unknown>;
+    medicalCertExpiresAt?: string;
+    endorsements?: unknown;
+    riskCategory?: string;
+    cdl?: unknown;
+    dqStatus?: string;
+    metadata?: Record<string, unknown>;
+    status?: string;
+    reason?: string;
+  },
+  idempotencyKey: string,
+) {
+  return httpRequest<unknown>(`/tenants/${payload.tenantId}/drivers`, {
     method: "POST",
     body: payload,
-    headers: { "x-tenant-id": payload.tenantId },
+    headers: {
+      "x-tenant-id": payload.tenantId,
+      "idempotency-key": idempotencyKey,
+    },
   });
 }
 
 export async function updateDriver(
+  tenantId: string,
   driverId: string,
   payload: {
     fleetId?: string;
     customerId?: string;
+    displayName?: string;
+    email?: string;
+    phone?: string;
+    employeeId?: string;
+    externalRef?: string;
+    license?: Record<string, unknown>;
+    medicalCertExpiresAt?: string;
+    endorsements?: unknown;
+    riskCategory?: string;
+    cdl?: unknown;
+    dqStatus?: string;
     metadata?: Record<string, unknown>;
     reason?: string;
   },
 ) {
-  return httpRequest<unknown>(`/drivers/${driverId}`, {
+  return httpRequest<unknown>(`/tenants/${tenantId}/drivers/${driverId}`, {
     method: "PATCH",
     body: payload,
+    headers: { "x-tenant-id": tenantId },
   });
 }
 
@@ -680,23 +906,37 @@ export async function createDriverAssignment(
   },
   idempotencyKey: string,
 ) {
-  return httpRequest<unknown>(`/drivers/${driverId}/assignments`, {
-    method: "POST",
-    body: payload,
-    headers: {
-      "x-tenant-id": payload.tenantId,
-      "idempotency-key": idempotencyKey,
+  return httpRequest<unknown>(
+    `/tenants/${payload.tenantId}/drivers/${driverId}/assignments`,
+    {
+      method: "POST",
+      body: payload,
+      headers: {
+        "x-tenant-id": payload.tenantId,
+        "idempotency-key": idempotencyKey,
+      },
     },
-  });
+  );
 }
 
 export async function fetchDriverAssignments(
+  tenantId: string,
   driverId: string,
-  tenantId?: string,
 ) {
-  return httpRequest<unknown>(`/drivers/${driverId}/assignments`, {
-    headers: tenantId ? { "x-tenant-id": tenantId } : undefined,
-  });
+  const response = await httpRequest<unknown>(
+    `/tenants/${tenantId}/drivers/${driverId}/assignments`,
+    {
+      headers: { "x-tenant-id": tenantId },
+    },
+  );
+  const items = Array.isArray(response)
+    ? response
+    : typeof response === "object" &&
+        response !== null &&
+        Array.isArray((response as { items?: unknown[] }).items)
+      ? (response as { items: unknown[] }).items
+      : [];
+  return items.map((item) => item as DriverAssignment);
 }
 
 export async function fetchVehicleAssignments(vin: string, tenantId?: string) {
