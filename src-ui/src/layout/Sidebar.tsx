@@ -34,6 +34,7 @@ const adminLinks = [
 ];
 
 const tenantAdminLinks = [
+  { to: "/adlp/drivers/summary", label: "Drivers" },
   { to: "/adlp/users", label: "Users" },
   { to: "/adlp/groups", label: "Groups" },
   { to: "/adlp/config", label: "Configuration" },
