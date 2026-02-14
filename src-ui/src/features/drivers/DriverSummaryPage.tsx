@@ -7,15 +7,17 @@ import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
 
-const STATUS_FILTERS = [
-  "all",
-  "active",
-  "inactive",
-  "suspended",
-  "deleted",
-  "unknown",
+const FILTERS = [
+  { key: "all", label: "All" },
+  { key: "active", label: "Active" },
+  { key: "inactive", label: "Inactive" },
+  { key: "attention", label: "Needs attention" },
+  { key: "assigned", label: "Assigned" },
+  { key: "unassigned", label: "Unassigned" },
+  { key: "compliance", label: "Compliance alerts" },
+  { key: "highRisk", label: "High risk" },
 ] as const;
-type StatusFilter = (typeof STATUS_FILTERS)[number];
+type DriverFilter = (typeof FILTERS)[number]["key"];
 
 function normalizeStatus(value?: string) {
   return (value ?? "unknown").toLowerCase();
@@ -30,13 +32,99 @@ function toBadgeClass(status?: string) {
   return "badge";
 }
 
+function isAssigned(driver: { fleetId?: string | null }) {
+  return Boolean(driver.fleetId);
+}
+
+const COMPLIANCE_WINDOW_DAYS = 30;
+
+function parseDate(value: unknown) {
+  if (value instanceof Date) return value;
+  if (typeof value === "number") {
+    const millis = value < 1e12 ? value * 1000 : value;
+    const date = new Date(millis);
+    return Number.isNaN(date.getTime()) ? undefined : date;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? undefined : date;
+  }
+  return undefined;
+}
+
+function getLicenseExpiry(license?: Record<string, unknown> | null) {
+  if (!license) return undefined;
+  const keys = [
+    "expiresAt",
+    "expirationDate",
+    "expiryDate",
+    "expires",
+    "expiration",
+    "expires_on",
+    "expiry",
+  ];
+  for (const key of keys) {
+    const value = license[key];
+    const date = parseDate(value);
+    if (date) return date;
+  }
+  return undefined;
+}
+
+function getComplianceFlags(driver: {
+  dqStatus?: string | null;
+  medicalCertExpiresAt?: string | null;
+  license?: Record<string, unknown> | null;
+}) {
+  const issues: string[] = [];
+  const status = String(driver.dqStatus ?? "").toLowerCase();
+  if (status && !["compliant", "clear", "pass", "passed", "active"].includes(status)) {
+    issues.push("DQ status");
+  }
+
+  const now = Date.now();
+  const windowMs = COMPLIANCE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+
+  const licenseExpiry = getLicenseExpiry(driver.license ?? undefined);
+  if (licenseExpiry) {
+    const diff = licenseExpiry.getTime() - now;
+    if (diff <= 0) issues.push("License expired");
+    else if (diff <= windowMs) issues.push("License expiring");
+  }
+
+  const medicalExpiry = parseDate(driver.medicalCertExpiresAt);
+  if (medicalExpiry) {
+    const diff = medicalExpiry.getTime() - now;
+    if (diff <= 0) issues.push("Medical cert expired");
+    else if (diff <= windowMs) issues.push("Medical cert expiring");
+  }
+
+  return {
+    hasAlert: issues.length > 0,
+    issues,
+  };
+}
+
+function isComplianceAlert(driver: {
+  dqStatus?: string | null;
+  medicalCertExpiresAt?: string | null;
+  license?: Record<string, unknown> | null;
+}) {
+  return getComplianceFlags(driver).hasAlert;
+}
+
+function isHighRisk(driver: { riskCategory?: string | null }) {
+  const risk = String(driver.riskCategory ?? "").toLowerCase();
+  return ["high", "severe", "critical"].includes(risk);
+}
+
 export function DriverSummaryPage() {
   const { tenant } = useTenant();
   const { fleet } = useFleet();
   const tenantId = tenant?.id;
   const fleetId = fleet?.id;
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [filter, setFilter] = useState<DriverFilter>("all");
 
   const {
     data: drivers = [],
@@ -48,7 +136,7 @@ export function DriverSummaryPage() {
       ? queryKeys.drivers(tenantId, fleetId)
       : ["drivers", "none"],
     queryFn: () => fetchDrivers(tenantId ?? "", fleetId),
-    enabled: Boolean(tenantId && fleetId),
+    enabled: Boolean(tenantId),
   });
 
   const stats = useMemo(() => {
@@ -57,13 +145,21 @@ export function DriverSummaryPage() {
       active: 0,
       inactive: 0,
       attention: 0,
+      assigned: 0,
+      unassigned: 0,
+      compliance: 0,
+      highRisk: 0,
     };
     drivers.forEach((driver) => {
       const status = normalizeStatus(driver.status);
       if (status === "active") counts.active += 1;
       else if (status === "inactive") counts.inactive += 1;
       else counts.attention += 1;
+      if (isAssigned(driver)) counts.assigned += 1;
+      if (isComplianceAlert(driver)) counts.compliance += 1;
+      if (isHighRisk(driver)) counts.highRisk += 1;
     });
+    counts.unassigned = counts.total - counts.assigned;
     return counts;
   }, [drivers]);
 
@@ -71,7 +167,15 @@ export function DriverSummaryPage() {
     const query = search.trim().toLowerCase();
     return drivers.filter((driver) => {
       const status = normalizeStatus(driver.status);
-      if (statusFilter !== "all" && status !== statusFilter) return false;
+      if (filter === "active" && status !== "active") return false;
+      if (filter === "inactive" && status !== "inactive") return false;
+      if (filter === "attention" && (status === "active" || status === "inactive")) {
+        return false;
+      }
+      if (filter === "assigned" && !isAssigned(driver)) return false;
+      if (filter === "unassigned" && isAssigned(driver)) return false;
+      if (filter === "compliance" && !isComplianceAlert(driver)) return false;
+      if (filter === "highRisk" && !isHighRisk(driver)) return false;
       if (!query) return true;
       return [
         driver.name,
@@ -86,7 +190,7 @@ export function DriverSummaryPage() {
         .toLowerCase()
         .includes(query);
     });
-  }, [drivers, search, statusFilter]);
+  }, [drivers, search, filter]);
 
   return (
     <div className="page drivers-page">
@@ -113,26 +217,86 @@ export function DriverSummaryPage() {
           </div>
         </div>
         <div className="drivers-stats">
-          <div className="driver-stat">
+          <button
+            type="button"
+            className="driver-stat"
+            onClick={() => setFilter("all")}
+            aria-pressed={filter === "all"}
+          >
             <span>Total drivers</span>
             <strong>{stats.total}</strong>
             <span className="text-muted">Fleet roster</span>
-          </div>
-          <div className="driver-stat">
+          </button>
+          <button
+            type="button"
+            className="driver-stat"
+            onClick={() => setFilter("active")}
+            aria-pressed={filter === "active"}
+          >
             <span>Active</span>
             <strong>{stats.active}</strong>
             <span className="text-muted">Currently enabled</span>
-          </div>
-          <div className="driver-stat">
+          </button>
+          <button
+            type="button"
+            className="driver-stat"
+            onClick={() => setFilter("inactive")}
+            aria-pressed={filter === "inactive"}
+          >
             <span>Inactive</span>
             <strong>{stats.inactive}</strong>
             <span className="text-muted">Off duty</span>
-          </div>
-          <div className="driver-stat">
+          </button>
+          <button
+            type="button"
+            className="driver-stat"
+            onClick={() => setFilter("attention")}
+            aria-pressed={filter === "attention"}
+          >
             <span>Needs attention</span>
             <strong>{stats.attention}</strong>
             <span className="text-muted">Suspended or unknown</span>
-          </div>
+          </button>
+          <button
+            type="button"
+            className="driver-stat"
+            onClick={() => setFilter("assigned")}
+            aria-pressed={filter === "assigned"}
+          >
+            <span>Assigned</span>
+            <strong>{stats.assigned}</strong>
+            <span className="text-muted">Active fleet assignments</span>
+          </button>
+          <button
+            type="button"
+            className="driver-stat"
+            onClick={() => setFilter("unassigned")}
+            aria-pressed={filter === "unassigned"}
+          >
+            <span>Unassigned</span>
+            <strong>{stats.unassigned}</strong>
+            <span className="text-muted">No fleet assigned</span>
+          </button>
+          <button
+            type="button"
+            className="driver-stat"
+            onClick={() => setFilter("compliance")}
+            aria-pressed={filter === "compliance"}
+          >
+            <span>Compliance alerts</span>
+            <strong>{stats.compliance}</strong>
+            <span className="text-muted">Action required</span>
+          </button>
+          <button
+            type="button"
+            className="driver-stat"
+            onClick={() => setFilter("highRisk")}
+            aria-pressed={filter === "highRisk"}
+          >
+            <span>High risk drivers</span>
+            <strong>{stats.highRisk}</strong>
+            <span className="text-muted">Risk category high</span>
+          </button>
         </div>
       </section>
 
@@ -148,16 +312,16 @@ export function DriverSummaryPage() {
             />
           </label>
           <div className="drivers-filters__chips">
-            {STATUS_FILTERS.map((status) => (
+            {FILTERS.map((item) => (
               <button
-                key={status}
+                key={item.key}
                 className={`filter-chip${
-                  statusFilter === status ? " filter-chip--active" : ""
+                  filter === item.key ? " filter-chip--active" : ""
                 }`}
                 type="button"
-                onClick={() => setStatusFilter(status)}
+                onClick={() => setFilter(item.key)}
               >
-                {status}
+                {item.label}
               </button>
             ))}
           </div>
@@ -170,12 +334,6 @@ export function DriverSummaryPage() {
             <div className="empty-state__icon">Fleet</div>
             <h3>Select a tenant</h3>
             <p className="text-muted">Choose a tenant to view drivers.</p>
-          </div>
-        ) : !fleetId ? (
-          <div className="empty-state">
-            <div className="empty-state__icon">Fleet</div>
-            <h3>Select a fleet</h3>
-            <p className="text-muted">Pick a fleet to see drivers.</p>
           </div>
         ) : isLoading ? (
           <div className="empty-state">
@@ -199,8 +357,11 @@ export function DriverSummaryPage() {
           </div>
         ) : (
           <div className="drivers-grid">
-            {filteredDrivers.map((driver) => (
-              <article key={driver.driverId} className="driver-card">
+            {filteredDrivers.map((driver) => {
+              const compliance = getComplianceFlags(driver);
+              const highRisk = isHighRisk(driver);
+              return (
+                <article key={driver.driverId} className="driver-card">
                 <div className="driver-card__header">
                   <div>
                     <div className="driver-card__name">
@@ -231,6 +392,16 @@ export function DriverSummaryPage() {
                     <span className="text-muted">Customer ID</span>
                     <strong>{driver.customerId ?? "--"}</strong>
                   </div>
+                  <div>
+                    <span className="text-muted">Compliance</span>
+                    <strong>
+                      {compliance.hasAlert ? "Alert" : "Clear"}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-muted">Risk</span>
+                    <strong>{highRisk ? "High" : "Standard"}</strong>
+                  </div>
                 </div>
                 <div className="driver-card__actions">
                   <Link
@@ -246,8 +417,9 @@ export function DriverSummaryPage() {
                     Dashboard
                   </Link>
                 </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         )}
       </Card>

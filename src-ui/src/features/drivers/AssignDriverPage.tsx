@@ -2,9 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-  createDriverAssignment,
-  fetchDrivers,
-  fetchVehicles,
+    createDriverAssignment,
+    fetchDrivers,
+    fetchVehicles,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useFleet } from "../../context/FleetContext";
@@ -182,6 +182,12 @@ export function AssignDriverPage() {
           >
             {isSubmitting ? "Saving..." : "Assign driver"}
           </button>
+        </div>
+      </Card>
+      <Card title="Assignment timeline">
+        <div className="empty-state">
+          Timeline data will appear after assignments are created. Overlap
+          validation runs on submission to prevent conflicting assignments.
         </div>
       </Card>
     </div>

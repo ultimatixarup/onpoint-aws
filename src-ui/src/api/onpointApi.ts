@@ -430,7 +430,7 @@ export async function updateVehicle(
   });
 }
 
-export async function fetchDrivers(tenantId: string, fleetId?: string) {
+async function fetchDriversFromApi(tenantId: string, fleetId?: string) {
   const query = new URLSearchParams({ tenantId });
   if (fleetId) query.set("fleetId", fleetId);
 
@@ -493,6 +493,52 @@ export async function fetchDrivers(tenantId: string, fleetId?: string) {
     };
   });
   return drivers.filter(Boolean) as DriverSummary[];
+}
+
+function normalizeAssignments(response: unknown) {
+  const items = Array.isArray(response)
+    ? response
+    : typeof response === "object" &&
+        response !== null &&
+        Array.isArray((response as { items?: unknown[] }).items)
+      ? (response as { items: unknown[] }).items
+      : [];
+  return items.map((item) => item as DriverAssignment);
+}
+
+export async function fetchDrivers(tenantId: string, fleetId?: string) {
+  if (!fleetId) {
+    return fetchDriversFromApi(tenantId);
+  }
+
+  try {
+    return await fetchDriversFromApi(tenantId, fleetId);
+  } catch (error) {
+    console.warn("Fleet driver lookup failed; falling back", error);
+  }
+
+  const vehicles = await fetchVehicles(tenantId, fleetId);
+  const vins = vehicles.map((vehicle) => vehicle.vin).filter(Boolean);
+  if (vins.length === 0) return [];
+
+  const assignmentResponses = await Promise.all(
+    vins.map((vin) =>
+      fetchVehicleAssignments(vin, tenantId).catch(() => [])
+    )
+  );
+  const driverIds = new Set(
+    assignmentResponses
+      .flatMap((response) => normalizeAssignments(response))
+      .map((assignment) => assignment.driverId)
+      .filter(Boolean) as string[]
+  );
+
+  const allDrivers = await fetchDriversFromApi(tenantId);
+  return allDrivers.filter(
+    (driver) =>
+      (driver.fleetId && driver.fleetId === fleetId) ||
+      (driver.driverId && driverIds.has(driver.driverId))
+  );
 }
 
 export async function fetchDriverDetail(tenantId: string, driverId: string) {

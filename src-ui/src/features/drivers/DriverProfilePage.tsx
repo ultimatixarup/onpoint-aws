@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
-  fetchDriverAssignments,
-  fetchDriverDetail,
-  DriverAssignment,
+    DriverAssignment,
+    fetchDriverAssignments,
+    fetchDriverDetail,
+    updateDriver,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useFleet } from "../../context/FleetContext";
@@ -57,6 +59,90 @@ export function DriverProfilePage() {
     queryFn: () => fetchDriverAssignments(tenantId ?? "", driverId ?? ""),
     enabled: Boolean(tenantId && driverId),
   });
+
+  const [form, setForm] = useState({
+    displayName: "",
+    email: "",
+    phone: "",
+    employeeId: "",
+    externalRef: "",
+    medicalCertExpiresAt: "",
+    dqStatus: "",
+    riskCategory: "",
+    fleetId: "",
+    customerId: "",
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!driver) return;
+    setForm({
+      displayName: driver.displayName ?? driver.name ?? "",
+      email: driver.email ?? "",
+      phone: driver.phone ?? "",
+      employeeId: driver.employeeId ?? "",
+      externalRef: driver.externalRef ?? "",
+      medicalCertExpiresAt: driver.medicalCertExpiresAt ?? "",
+      dqStatus: driver.dqStatus ?? "",
+      riskCategory: driver.riskCategory ?? "",
+      fleetId: driver.fleetId ?? fleetId ?? "",
+      customerId: driver.customerId ?? "",
+    });
+  }, [driver, fleetId]);
+
+  const isDirty = useMemo(() => {
+    if (!driver) return false;
+    return (
+      (driver.displayName ?? driver.name ?? "") !== form.displayName ||
+      (driver.email ?? "") !== form.email ||
+      (driver.phone ?? "") !== form.phone ||
+      (driver.employeeId ?? "") !== form.employeeId ||
+      (driver.externalRef ?? "") !== form.externalRef ||
+      (driver.medicalCertExpiresAt ?? "") !== form.medicalCertExpiresAt ||
+      (driver.dqStatus ?? "") !== form.dqStatus ||
+      (driver.riskCategory ?? "") !== form.riskCategory ||
+      (driver.fleetId ?? fleetId ?? "") !== form.fleetId ||
+      (driver.customerId ?? "") !== form.customerId
+    );
+  }, [driver, form, fleetId]);
+
+  const handleChange = (field: string, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = async () => {
+    if (!tenantId || !driverId) {
+      setErrorMessage("Select a tenant and driver to continue.");
+      return;
+    }
+    setIsSaving(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    try {
+      await updateDriver(tenantId, driverId, {
+        displayName: form.displayName.trim() || undefined,
+        email: form.email.trim() || undefined,
+        phone: form.phone.trim() || undefined,
+        employeeId: form.employeeId.trim() || undefined,
+        externalRef: form.externalRef.trim() || undefined,
+        medicalCertExpiresAt: form.medicalCertExpiresAt.trim() || undefined,
+        dqStatus: form.dqStatus.trim() || undefined,
+        riskCategory: form.riskCategory.trim() || undefined,
+        fleetId: form.fleetId.trim() || undefined,
+        customerId: form.customerId.trim() || undefined,
+        reason: "Update driver profile",
+      });
+      setSuccessMessage("Driver updated.");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to update driver.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (!driverId) {
     return (
@@ -128,6 +214,118 @@ export function DriverProfilePage() {
           ) : (
             <div className="empty-state">Driver not found.</div>
           )}
+        </Card>
+
+        <Card title="Edit driver">
+          {errorMessage ? <div className="form-error">{errorMessage}</div> : null}
+          {successMessage ? (
+            <div className="form-success">{successMessage}</div>
+          ) : null}
+          <div className="form-grid">
+            <label className="form__field">
+              <span className="text-muted">Display name</span>
+              <input
+                className="input"
+                value={form.displayName}
+                onChange={(event) =>
+                  handleChange("displayName", event.target.value)
+                }
+              />
+            </label>
+            <label className="form__field">
+              <span className="text-muted">Email</span>
+              <input
+                className="input"
+                value={form.email}
+                onChange={(event) => handleChange("email", event.target.value)}
+              />
+            </label>
+            <label className="form__field">
+              <span className="text-muted">Phone</span>
+              <input
+                className="input"
+                value={form.phone}
+                onChange={(event) => handleChange("phone", event.target.value)}
+              />
+            </label>
+            <label className="form__field">
+              <span className="text-muted">Employee ID</span>
+              <input
+                className="input"
+                value={form.employeeId}
+                onChange={(event) =>
+                  handleChange("employeeId", event.target.value)
+                }
+              />
+            </label>
+            <label className="form__field">
+              <span className="text-muted">External ref</span>
+              <input
+                className="input"
+                value={form.externalRef}
+                onChange={(event) =>
+                  handleChange("externalRef", event.target.value)
+                }
+              />
+            </label>
+            <label className="form__field">
+              <span className="text-muted">Fleet ID</span>
+              <input
+                className="input"
+                value={form.fleetId}
+                onChange={(event) => handleChange("fleetId", event.target.value)}
+              />
+            </label>
+            <label className="form__field">
+              <span className="text-muted">Customer ID</span>
+              <input
+                className="input"
+                value={form.customerId}
+                onChange={(event) =>
+                  handleChange("customerId", event.target.value)
+                }
+              />
+            </label>
+            <label className="form__field">
+              <span className="text-muted">Medical cert expires</span>
+              <input
+                className="input"
+                value={form.medicalCertExpiresAt}
+                onChange={(event) =>
+                  handleChange("medicalCertExpiresAt", event.target.value)
+                }
+                placeholder="YYYY-MM-DD"
+              />
+            </label>
+            <label className="form__field">
+              <span className="text-muted">DQ status</span>
+              <input
+                className="input"
+                value={form.dqStatus}
+                onChange={(event) => handleChange("dqStatus", event.target.value)}
+              />
+            </label>
+            <label className="form__field">
+              <span className="text-muted">Risk category</span>
+              <input
+                className="input"
+                value={form.riskCategory}
+                onChange={(event) =>
+                  handleChange("riskCategory", event.target.value)
+                }
+              />
+            </label>
+          </div>
+          <div className="form__actions">
+            <button
+              className="btn"
+              type="button"
+              onClick={handleSave}
+              disabled={!isDirty || isSaving}
+            >
+              {isSaving ? "Saving..." : "Update driver"}
+            </button>
+          </div>
         </Card>
 
         <Card title="Compliance & credentials">

@@ -11,11 +11,14 @@ const links = [
   { to: "/adlp/geofence/manage", label: "Geofence" },
   { to: "/adlp/geofence/setup", label: "Geofence Setup" },
   { to: "/adlp/vehicles/vin-summary", label: "Vehicles" },
-  { to: "/adlp/drivers/summary", label: "Drivers" },
-  { to: "/adlp/drivers/add", label: "Add Driver" },
-  { to: "/adlp/drivers/assign", label: "Assign Driver" },
+  { to: "/adlp/drivers/summary", label: "Driver Directory" },
+  { to: "/adlp/drivers/dashboard", label: "Driver Dashboard" },
+  { to: "/adlp/drivers/assign", label: "Assignments" },
+  { to: "/adlp/drivers/compliance", label: "Compliance" },
+  { to: "/adlp/drivers/safety", label: "Safety Analytics" },
+  { to: "/adlp/drivers/reports", label: "Reports" },
   { to: "/adlp/trips/planning", label: "Trips" },
-  { to: "/adlp/reports", label: "Reports" },
+  { to: "/adlp/reports", label: "Fleet Reports" },
 ];
 
 const adminLinks = [

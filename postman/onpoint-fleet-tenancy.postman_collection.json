@@ -389,7 +389,7 @@
       ]
     },
     {
-      "name": "Drivers",
+      "name": "Driver Management (Tenant)",
       "item": [
         {
           "name": "Create driver",
@@ -402,10 +402,10 @@
               { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{fleetTenancyBaseUrl}}/drivers",
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"driverId\": \"{{driverId}}\",\n  \"tenantId\": \"{{tenantId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"fleetId\": \"{{fleetId}}\",\n  \"metadata\": {\"name\": \"{{driverName1}}\"},\n  \"reason\": \"new driver\"\n}"
+              "raw": "{\n  \"driverId\": \"{{driverId}}\",\n  \"displayName\": \"{{driverName1}}\",\n  \"email\": \"driver@example.com\",\n  \"phone\": \"+1-555-0100\",\n  \"employeeId\": \"EMP-1001\",\n  \"externalRef\": \"HR-001\",\n  \"fleetId\": \"{{fleetId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"license\": {\"number\": \"A123\", \"state\": \"CA\", \"expiresAt\": \"2026-06-01T00:00:00Z\"},\n  \"medicalCertExpiresAt\": \"2026-05-15T00:00:00Z\",\n  \"riskCategory\": \"standard\",\n  \"dqStatus\": \"compliant\",\n  \"reason\": \"new driver\"\n}"
             }
           }
         },
@@ -417,7 +417,7 @@
               { "key": "x-api-key", "value": "{{apiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
-            "url": "{{fleetTenancyBaseUrl}}/drivers/{{driverId}}"
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}"
           }
         },
         {
@@ -431,10 +431,10 @@
               { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{fleetTenancyBaseUrl}}/drivers/{{driverId}}",
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"metadata\": {\"license\": \"A123\"},\n  \"reason\": \"update\"\n}"
+              "raw": "{\n  \"phone\": \"+1-555-0101\",\n  \"license\": {\"number\": \"A123\", \"state\": \"CA\", \"expiresAt\": \"2026-08-01T00:00:00Z\"},\n  \"medicalCertExpiresAt\": \"2026-07-01T00:00:00Z\",\n  \"riskCategory\": \"high\",\n  \"dqStatus\": \"review\",\n  \"reason\": \"update\"\n}"
             }
           }
         },
@@ -447,7 +447,7 @@
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" }
             ],
-            "url": "{{fleetTenancyBaseUrl}}/drivers/{{driverId}}:deactivate"
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}:deactivate"
           }
         },
         {
@@ -458,7 +458,7 @@
               { "key": "x-api-key", "value": "{{apiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
-            "url": "{{fleetTenancyBaseUrl}}/drivers?tenantId={{tenantId}}&fleetId={{fleetId}}"
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers?fleetId={{fleetId}}&limit=50"
           }
         }
       ]
@@ -603,7 +603,7 @@
       "name": "Driver Assignments",
       "item": [
         {
-          "name": "Assign driver to vehicle",
+          "name": "Assign driver to vehicle (tenant)",
           "request": {
             "method": "POST",
             "header": [
@@ -613,7 +613,7 @@
               { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": "{{fleetTenancyBaseUrl}}/drivers/{{driverId}}/assignments",
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}/assignments",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"vin\": \"{{vin}}\",\n  \"effectiveFrom\": \"{{assignmentEffectiveFrom}}\",\n  \"assignmentType\": \"PRIMARY\",\n  \"reason\": \"shift assignment\"\n}"
@@ -621,14 +621,14 @@
           }
         },
         {
-          "name": "List driver assignments",
+          "name": "List driver assignments (tenant)",
           "request": {
             "method": "GET",
             "header": [
               { "key": "x-api-key", "value": "{{apiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
-            "url": "{{fleetTenancyBaseUrl}}/drivers/{{driverId}}/assignments"
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}/assignments"
           }
         },
         {

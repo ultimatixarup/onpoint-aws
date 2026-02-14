@@ -15,14 +15,26 @@ import { PlatformDashboard } from "../features/dashboard/PlatformDashboard";
 import { TenantDashboard } from "../features/dashboard/TenantDashboard";
 import { AddDriverPage } from "../features/drivers/AddDriverPage";
 import { AssignDriverPage } from "../features/drivers/AssignDriverPage";
+import { DriverCompliancePage } from "../features/drivers/DriverCompliancePage";
+import { DriverDashboardOverviewPage } from "../features/drivers/DriverDashboardOverviewPage";
 import { DriverDashboardPage } from "../features/drivers/DriverDashboardPage";
 import { DriverProfilePage } from "../features/drivers/DriverProfilePage";
+import { DriverReportsPage } from "../features/drivers/DriverReportsPage";
+import { DriverSafetyAnalyticsPage } from "../features/drivers/DriverSafetyAnalyticsPage";
 import { DriverSummaryPage } from "../features/drivers/DriverSummaryPage";
 import { GeofenceAlertsPage } from "../features/geofence/GeofenceAlertsPage";
 import { GeofenceReportPage } from "../features/geofence/GeofenceReportPage";
 import { GeofenceSetupPage } from "../features/geofence/GeofenceSetupPage";
 import { ManageGeofencePage } from "../features/geofence/ManageGeofencePage";
 import { NotFoundPage } from "../features/NotFoundPage";
+import { PlatformCustomersPage } from "../features/platform/PlatformCustomersPage";
+import { PlatformDriverAssignmentsPage } from "../features/platform/PlatformDriverAssignmentsPage";
+import { PlatformDriversPage } from "../features/platform/PlatformDriversPage";
+import { PlatformFleetsPage } from "../features/platform/PlatformFleetsPage";
+import { PlatformTenantsPage } from "../features/platform/PlatformTenantsPage";
+import { PlatformUsersPage } from "../features/platform/PlatformUsersPage";
+import { PlatformVehicleAssignmentsPage } from "../features/platform/PlatformVehicleAssignmentsPage";
+import { PlatformVehiclesPage } from "../features/platform/PlatformVehiclesPage";
 import { LiveFeedPage } from "../features/reports/LiveFeedPage";
 import { ReportsPage } from "../features/reports/ReportsPage";
 import { SafetyEventsPage } from "../features/reports/SafetyEventsPage";
@@ -40,14 +52,6 @@ import { ManageUsersPage } from "../features/users/ManageUsersPage";
 import { VehicleConsentPage } from "../features/vehicles/VehicleConsentPage";
 import { VinHistoryPage } from "../features/vehicles/VinHistoryPage";
 import { VinSummaryPage } from "../features/vehicles/VinSummaryPage";
-import { PlatformCustomersPage } from "../features/platform/PlatformCustomersPage";
-import { PlatformDriverAssignmentsPage } from "../features/platform/PlatformDriverAssignmentsPage";
-import { PlatformDriversPage } from "../features/platform/PlatformDriversPage";
-import { PlatformFleetsPage } from "../features/platform/PlatformFleetsPage";
-import { PlatformTenantsPage } from "../features/platform/PlatformTenantsPage";
-import { PlatformUsersPage } from "../features/platform/PlatformUsersPage";
-import { PlatformVehicleAssignmentsPage } from "../features/platform/PlatformVehicleAssignmentsPage";
-import { PlatformVehiclesPage } from "../features/platform/PlatformVehiclesPage";
 import { AppShell } from "../layout/AppShell";
 
 export function AppRouter() {
@@ -189,7 +193,7 @@ export function AppRouter() {
           />
           <Route
             path="/adlp/drivers/dashboard"
-            element={<DriverSummaryPage />}
+            element={<DriverDashboardOverviewPage />}
           />
           <Route
             path="/adlp/drivers"
@@ -198,6 +202,18 @@ export function AppRouter() {
           <Route path="/adlp/drivers/summary" element={<DriverSummaryPage />} />
           <Route path="/adlp/drivers/add" element={<AddDriverPage />} />
           <Route path="/adlp/drivers/assign" element={<AssignDriverPage />} />
+          <Route
+            path="/adlp/drivers/compliance"
+            element={<DriverCompliancePage />}
+          />
+          <Route
+            path="/adlp/drivers/safety"
+            element={<DriverSafetyAnalyticsPage />}
+          />
+          <Route
+            path="/adlp/drivers/reports"
+            element={<DriverReportsPage />}
+          />
           <Route
             path="/adlp/drivers/:driverId"
             element={<DriverProfilePage />}

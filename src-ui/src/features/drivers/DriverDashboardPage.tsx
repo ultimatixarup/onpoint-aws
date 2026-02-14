@@ -2,9 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
-  fetchDriverDashboard,
-  fetchDriverDashboardEvents,
-  fetchDriverDashboardTrips,
+    fetchDriverDashboard,
+    fetchDriverDashboardEvents,
+    fetchDriverDashboardTrips,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useFleet } from "../../context/FleetContext";
@@ -43,6 +43,23 @@ export function DriverDashboardPage() {
   const [to, setTo] = useState(dateToInput(now));
   const [eventType, setEventType] = useState("harsh_braking");
   const [view, setView] = useState<"trips" | "events">("trips");
+
+  const handleKpiView = (nextView: "trips" | "events", nextEventType?: string) => {
+    setView(nextView);
+    if (nextEventType) setEventType(nextEventType);
+  };
+
+  const clickableProps = (handler: () => void) => ({
+    role: "button" as const,
+    tabIndex: 0,
+    onClick: handler,
+    onKeyDown: (event: { key: string; preventDefault: () => void }) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        handler();
+      }
+    },
+  });
 
   const fromIso = inputToIso(from);
   const toIso = inputToIso(to, true);
@@ -158,61 +175,61 @@ export function DriverDashboardPage() {
           <div className="empty-state">Unable to load dashboard.</div>
         ) : (
           <div className="kpi-grid">
-            <div className="kpi-card">
+            <div className="kpi-card" {...clickableProps(() => handleKpiView("trips"))}>
               <span>Total miles</span>
               <strong>{formatNumber(totals?.milesDriven)}</strong>
             </div>
-            <div className="kpi-card">
+            <div className="kpi-card" {...clickableProps(() => handleKpiView("trips"))}>
               <span>Driving time</span>
               <strong>{formatNumber(totals?.drivingTimeSeconds, "s")}</strong>
             </div>
-            <div className="kpi-card">
+            <div className="kpi-card" {...clickableProps(() => handleKpiView("events", "idling"))}>
               <span>Idling time</span>
               <strong>{formatNumber(totals?.idlingTimeSeconds, "s")}</strong>
             </div>
-            <div className="kpi-card">
+            <div className="kpi-card" {...clickableProps(() => handleKpiView("trips"))}>
               <span>Night miles</span>
               <strong>{formatNumber(totals?.nightMiles)}</strong>
             </div>
-            <div className="kpi-card">
+            <div className="kpi-card" {...clickableProps(() => handleKpiView("trips"))}>
               <span>Average speed</span>
               <strong>{formatNumber(totals?.averageSpeedMph, " mph")}</strong>
             </div>
-            <div className="kpi-card">
+            <div className="kpi-card" {...clickableProps(() => handleKpiView("events", "overspeed"))}>
               <span>Top speed</span>
               <strong>{formatNumber(totals?.topSpeedMph, " mph")}</strong>
             </div>
-            <div className="kpi-card">
+            <div className="kpi-card" {...clickableProps(() => handleKpiView("events", "safety_score"))}>
               <span>Safety score</span>
               <strong>{formatNumber(totals?.safetyScore)}</strong>
             </div>
-            <div className="kpi-card">
+            <div className="kpi-card" {...clickableProps(() => handleKpiView("trips"))}>
               <span>Fuel efficiency</span>
               <strong>{formatNumber(totals?.fuelEfficiencyMpg, " mpg")}</strong>
             </div>
-            <div className="kpi-card">
+            <div className="kpi-card" {...clickableProps(() => handleKpiView("events", "harsh_braking"))}>
               <span>Harsh braking</span>
               <strong>{formatNumber(totals?.harshBraking)}</strong>
             </div>
-            <div className="kpi-card">
+            <div className="kpi-card" {...clickableProps(() => handleKpiView("events", "harsh_acceleration"))}>
               <span>Harsh acceleration</span>
               <strong>{formatNumber(totals?.harshAcceleration)}</strong>
             </div>
-            <div className="kpi-card">
+            <div className="kpi-card" {...clickableProps(() => handleKpiView("events", "harsh_cornering"))}>
               <span>Harsh cornering</span>
               <strong>{formatNumber(totals?.harshCornering)}</strong>
             </div>
-            <div className="kpi-card">
+            <div className="kpi-card" {...clickableProps(() => handleKpiView("events", "seatbelt_violation"))}>
               <span>Seatbelt violations</span>
               <strong>{formatNumber(totals?.seatbeltViolations)}</strong>
             </div>
-            <div className="kpi-card">
+            <div className="kpi-card" {...clickableProps(() => handleKpiView("events", "overspeed"))}>
               <span>Overspeed events</span>
               <strong>
                 {formatNumber(totals?.overspeed?.eventCountTotal)}
               </strong>
             </div>
-            <div className="kpi-card">
+            <div className="kpi-card" {...clickableProps(() => handleKpiView("events", "overspeed"))}>
               <span>Overspeed miles</span>
               <strong>{formatNumber(totals?.overspeed?.milesTotal)}</strong>
             </div>

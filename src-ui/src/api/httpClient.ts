@@ -44,11 +44,16 @@ export async function httpRequest<T>(
   let role: string | undefined;
   try {
     const session = await fetchAuthSession();
-    token = session.tokens?.idToken?.toString();
+    const accessToken = session.tokens?.accessToken?.toString();
+    const idToken = session.tokens?.idToken?.toString();
+    token = accessToken ?? idToken;
     const accessPayload = session.tokens?.accessToken?.payload ?? {};
-    role = getRoleFromGroups(
-      accessPayload["cognito:groups"] ?? accessPayload.groups,
-    );
+    const idPayload = session.tokens?.idToken?.payload ?? {};
+    role =
+      getRoleFromGroups(
+        accessPayload["cognito:groups"] ?? accessPayload.groups,
+      ) ??
+      getRoleFromGroups(idPayload["cognito:groups"] ?? idPayload.groups);
   } catch (error) {
     console.warn("Auth session unavailable, continuing without token", error);
   }

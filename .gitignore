@@ -20,3 +20,12 @@ src-ui/dist/
 src-ui/.vite/
 src-ui/.env
 src-ui/.env.*
+
+# Local artifacts
+tmp/
+*.tsbuildinfo
+*.log
+*.zip
+.deploy.txt
+.status.txt
+.ui-devserver.txt
