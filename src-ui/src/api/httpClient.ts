@@ -77,7 +77,29 @@ export async function httpRequest<T>(
   });
 
   if (!response.ok) {
-    const message = await response.text();
+    const rawMessage = await response.text();
+    let message = rawMessage;
+    if (rawMessage) {
+      try {
+        const parsed = JSON.parse(rawMessage) as
+          | { error?: unknown; message?: unknown }
+          | string
+          | number
+          | boolean
+          | null;
+        if (typeof parsed === "string") {
+          message = parsed;
+        } else if (typeof parsed === "object" && parsed !== null) {
+          if (parsed.error !== undefined) {
+            message = String(parsed.error);
+          } else if (parsed.message !== undefined) {
+            message = String(parsed.message);
+          }
+        }
+      } catch (error) {
+        console.warn("Unable to parse error response", error);
+      }
+    }
     throw new Error(message || `Request failed (${response.status})`);
   }
 

@@ -993,6 +993,7 @@ export async function assignVin(
     reason: string;
   },
   idempotencyKey: string,
+  options?: { roleOverride?: string },
 ) {
   return httpRequest<unknown>("/vin-registry/assign", {
     method: "POST",
@@ -1000,6 +1001,32 @@ export async function assignVin(
     headers: {
       "x-tenant-id": payload.tenantId,
       "idempotency-key": idempotencyKey,
+      ...(options?.roleOverride ? { "x-role": options.roleOverride } : {}),
+    },
+  });
+}
+
+export async function transferVin(
+  payload: {
+    vin: string;
+    fromTenantId: string;
+    toTenantId: string;
+    toFleetId?: string;
+    toCustomerId?: string;
+    effectiveFrom: string;
+    reason: string;
+    approvalRef?: string;
+  },
+  idempotencyKey: string,
+  options?: { roleOverride?: string },
+) {
+  return httpRequest<unknown>("/vin-registry/transfer", {
+    method: "POST",
+    body: payload,
+    headers: {
+      "x-tenant-id": payload.toTenantId,
+      "idempotency-key": idempotencyKey,
+      ...(options?.roleOverride ? { "x-role": options.roleOverride } : {}),
     },
   });
 }
@@ -1049,8 +1076,15 @@ export async function fetchDriverAssignments(
   return items.map((item) => item as DriverAssignment);
 }
 
-export async function fetchVehicleAssignments(vin: string, tenantId?: string) {
+export async function fetchVehicleAssignments(
+  vin: string,
+  tenantId?: string,
+  options?: { roleOverride?: string },
+) {
   return httpRequest<unknown>(`/vehicles/${vin}/driver-assignments`, {
-    headers: tenantId ? { "x-tenant-id": tenantId } : undefined,
+    headers: {
+      ...(tenantId ? { "x-tenant-id": tenantId } : {}),
+      ...(options?.roleOverride ? { "x-role": options.roleOverride } : {}),
+    },
   });
 }

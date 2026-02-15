@@ -49,6 +49,27 @@ function mapGroupsToRoles(groups: string[] | undefined): AuthRole[] {
     .filter((role): role is AuthRole => Boolean(role));
 }
 
+function getGroupsFromSession(
+  session: Awaited<ReturnType<typeof fetchAuthSession>>,
+): string[] {
+  const accessPayload = session.tokens?.accessToken?.payload ?? {};
+  const idPayload = session.tokens?.idToken?.payload ?? {};
+  const groups =
+    (accessPayload["cognito:groups"] as string[] | string | undefined) ??
+    (accessPayload.groups as string[] | string | undefined) ??
+    (idPayload["cognito:groups"] as string[] | string | undefined) ??
+    (idPayload.groups as string[] | string | undefined);
+  if (!groups) return [];
+  if (Array.isArray(groups)) return groups;
+  if (typeof groups === "string") {
+    return groups
+      .split(",")
+      .map((group) => group.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
 function getTenantIdFromSession(
   session: Awaited<ReturnType<typeof fetchAuthSession>>,
 ): string | undefined {
@@ -102,9 +123,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       try {
         const user = await getCurrentUser();
         const session = await fetchAuthSession();
-        const groups = session.tokens?.accessToken?.payload[
-          "cognito:groups"
-        ] as string[] | undefined;
+        const groups = getGroupsFromSession(session);
         const profile = getUserProfileFromSession(session, user.username);
         setState({
           status: "authenticated",
@@ -128,9 +147,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         try {
           await signIn({ username, password });
           const session = await fetchAuthSession();
-          const groups = session.tokens?.accessToken?.payload[
-            "cognito:groups"
-          ] as string[] | undefined;
+          const groups = getGroupsFromSession(session);
           const profile = getUserProfileFromSession(session, username);
           setState({
             status: "authenticated",
