@@ -6,7 +6,6 @@ import { queryKeys } from "../../api/queryKeys";
 import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
 
 const COMPLIANCE_WINDOW_DAYS = 30;
 
@@ -111,8 +110,7 @@ export function DriverCompliancePage() {
         driver,
         issues: flags.issues,
         dqAlert: flags.dqAlert,
-        expired:
-          flags.licenseState.isExpired || flags.medicalState.isExpired,
+        expired: flags.licenseState.isExpired || flags.medicalState.isExpired,
         expiring:
           flags.licenseState.isExpiring || flags.medicalState.isExpiring,
       };
@@ -136,97 +134,120 @@ export function DriverCompliancePage() {
     return counts;
   }, [complianceData, drivers.length]);
 
-  const alertDrivers = complianceData.filter(
-    (item) => item.issues.length > 0,
-  );
+  const alertDrivers = complianceData.filter((item) => item.issues.length > 0);
 
   return (
     <div className="page">
-      <PageHeader
-        title="Driver compliance"
-        subtitle="Track license, medical, and inspection compliance across the fleet."
-      />
-      <Card title="Compliance overview">
-        {!tenantId ? (
-          <div className="empty-state">Select a tenant to view compliance.</div>
-        ) : !fleetId ? (
-          <div className="empty-state">Select a fleet to view compliance.</div>
-        ) : isLoading ? (
-          <div className="empty-state">Loading compliance data...</div>
-        ) : error ? (
-          <div className="empty-state">Unable to load compliance data.</div>
-        ) : (
-          <div className="kpi-grid">
-            <div className="kpi-card">
-              <span>Total drivers</span>
-              <strong>{summary.total}</strong>
-            </div>
-            <div className="kpi-card">
-              <span>Compliance alerts</span>
-              <strong>{summary.alerts}</strong>
-            </div>
-            <div className="kpi-card">
-              <span>Expired credentials</span>
-              <strong>{summary.expired}</strong>
-            </div>
-            <div className="kpi-card">
-              <span>Expiring soon</span>
-              <strong>{summary.expiring}</strong>
-            </div>
-            <div className="kpi-card">
-              <span>DQ alerts</span>
-              <strong>{summary.dqAlerts}</strong>
-            </div>
+      <section className="insight-hero insight-hero--compliance">
+        <div className="insight-hero__glow" />
+        <div className="insight-hero__content">
+          <div>
+            <p className="insight-hero__eyebrow">Compliance</p>
+            <h1>Driver compliance</h1>
+            <p className="insight-hero__subtitle">
+              Track license, medical, and DQ status health across the fleet.
+            </p>
           </div>
-        )}
-      </Card>
-      <Card title={`Compliance alerts (${alertDrivers.length})`}>
-        {!tenantId || !fleetId ? (
-          <div className="empty-state">Select a tenant and fleet.</div>
-        ) : isLoading ? (
-          <div className="empty-state">Loading alerts...</div>
-        ) : alertDrivers.length === 0 ? (
-          <div className="empty-state">No compliance alerts.</div>
-        ) : (
-          <div className="table-list">
-            {alertDrivers.map((item) => (
-              <div key={item.driver.driverId} className="table-row">
-                <div>
-                  <strong>
-                    {item.driver.name ??
-                      item.driver.displayName ??
-                      "Unnamed driver"}
-                  </strong>
-                  <div className="text-muted mono">
-                    {item.driver.driverId}
+          <div className="insight-hero__meta">
+            <div className="insight-chip">Total drivers: {summary.total}</div>
+            <div className="insight-chip">Alerts: {summary.alerts}</div>
+            <div className="insight-chip">Expired: {summary.expired}</div>
+            <div className="insight-chip">
+              Expiring soon: {summary.expiring}
+            </div>
+            <div className="insight-chip">DQ alerts: {summary.dqAlerts}</div>
+          </div>
+        </div>
+      </section>
+
+      <div className="insight-grid">
+        <Card title="Compliance overview">
+          {!tenantId ? (
+            <div className="empty-state">
+              Select a tenant to view compliance.
+            </div>
+          ) : !fleetId ? (
+            <div className="empty-state">
+              Select a fleet to view compliance.
+            </div>
+          ) : isLoading ? (
+            <div className="empty-state">Loading compliance data...</div>
+          ) : error ? (
+            <div className="empty-state">Unable to load compliance data.</div>
+          ) : (
+            <div className="kpi-grid">
+              <div className="kpi-card">
+                <span>Total drivers</span>
+                <strong>{summary.total}</strong>
+              </div>
+              <div className="kpi-card">
+                <span>Compliance alerts</span>
+                <strong>{summary.alerts}</strong>
+              </div>
+              <div className="kpi-card">
+                <span>Expired credentials</span>
+                <strong>{summary.expired}</strong>
+              </div>
+              <div className="kpi-card">
+                <span>Expiring soon</span>
+                <strong>{summary.expiring}</strong>
+              </div>
+              <div className="kpi-card">
+                <span>DQ alerts</span>
+                <strong>{summary.dqAlerts}</strong>
+              </div>
+            </div>
+          )}
+        </Card>
+        <Card title={`Compliance alerts (${alertDrivers.length})`}>
+          {!tenantId || !fleetId ? (
+            <div className="empty-state">Select a tenant and fleet.</div>
+          ) : isLoading ? (
+            <div className="empty-state">Loading alerts...</div>
+          ) : alertDrivers.length === 0 ? (
+            <div className="empty-state">No compliance alerts.</div>
+          ) : (
+            <div className="table-list">
+              {alertDrivers.map((item) => (
+                <div key={item.driver.driverId} className="table-row">
+                  <div>
+                    <strong>
+                      {item.driver.name ??
+                        item.driver.displayName ??
+                        "Unnamed driver"}
+                    </strong>
+                    <div className="text-muted mono">
+                      {item.driver.driverId}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-muted">Issues</span>
+                    <div>{item.issues.join(" · ")}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted">Fleet</span>
+                    <div>{item.driver.fleetId ?? "--"}</div>
                   </div>
                 </div>
-                <div>
-                  <span className="text-muted">Issues</span>
-                  <div>{item.issues.join(" · ")}</div>
-                </div>
-                <div>
-                  <span className="text-muted">Fleet</span>
-                  <div>{item.driver.fleetId ?? "--"}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-      <Card title="Compliance checklist">
-        <ul className="list">
-          <li>License expiration tracking</li>
-          <li>Medical certificate tracking</li>
-          <li>HOS placeholder layout</li>
-          <li>
-            DVIR logs available in the
-            <Link className="link" to="/adlp/trips/dvir">
-              {" "}DVIR view
-            </Link>
-          </li>
-        </ul>
-      </Card>
+              ))}
+            </div>
+          )}
+        </Card>
+        <Card title="Compliance checklist">
+          <ul className="insight-list">
+            <li>License expiration tracking</li>
+            <li>Medical certificate tracking</li>
+            <li>DQ status review cadence</li>
+            <li>
+              DVIR logs available in the
+              <Link className="link" to="/adlp/trips/dvir">
+                {" "}
+                DVIR view
+              </Link>
+            </li>
+          </ul>
+        </Card>
+      </div>
     </div>
   );
 }

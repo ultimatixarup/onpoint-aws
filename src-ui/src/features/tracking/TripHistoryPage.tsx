@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   MapContainer,
   Marker,
@@ -23,6 +24,10 @@ import { Card } from "../../ui/Card";
 import { formatDate } from "../../utils/date";
 
 export function TripHistoryPage() {
+  const [searchParams] = useSearchParams();
+  const paramsApplied = useRef(false);
+  const queryTripId = searchParams.get("tripId") ?? "";
+  const queryVin = searchParams.get("vin") ?? "";
   const [dateRange, setDateRange] = useState("last90");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -243,6 +248,23 @@ export function TripHistoryPage() {
     () => vehicles.map((vehicle) => vehicle.vin).filter(Boolean),
     [vehicles],
   );
+
+  useEffect(() => {
+    if (paramsApplied.current) return;
+    if (queryTripId) setSearch(queryTripId);
+    if (queryVin) setSelectedVin(queryVin);
+    if (queryTripId || queryVin) paramsApplied.current = true;
+  }, [queryTripId, queryVin]);
+
+  useEffect(() => {
+    if (!queryTripId) return;
+    const match = trips.find((trip) => trip.id === queryTripId);
+    if (!match) return;
+    if (selectedTripId !== match.id || selectedTripVin !== match.vin) {
+      setSelectedTripId(match.id);
+      setSelectedTripVin(match.vin);
+    }
+  }, [queryTripId, selectedTripId, selectedTripVin, trips]);
 
   useEffect(() => {
     if (!selectedTripId || !selectedTripVin) return;

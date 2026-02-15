@@ -1,20 +1,32 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
-    fetchDriverDashboard,
-    fetchDriverDashboardEvents,
-    fetchDriverDashboardTrips,
+  fetchDriverDashboard,
+  fetchDriverDashboardEvents,
+  fetchDriverDashboardTrips,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
 
-function formatNumber(value?: number | null, suffix = "") {
+const numberFormatter = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 2,
+});
+
+function formatNumber(
+  value?: number | string | null,
+  suffix = "",
+  options?: Intl.NumberFormatOptions,
+) {
   if (value === null || value === undefined) return "--";
-  return `${value}${suffix}`;
+  const parsed = typeof value === "string" ? Number(value) : value;
+  if (!Number.isFinite(parsed)) return "--";
+  const formatter = options
+    ? new Intl.NumberFormat("en-US", options)
+    : numberFormatter;
+  return `${formatter.format(parsed)}${suffix}`;
 }
 
 function dateToInput(value: Date) {
@@ -29,6 +41,7 @@ function inputToIso(value: string, endOfDay = false) {
 
 export function DriverDashboardPage() {
   const { driverId } = useParams();
+  const navigate = useNavigate();
   const { tenant } = useTenant();
   const { fleet } = useFleet();
   const tenantId = tenant?.id;
@@ -44,9 +57,20 @@ export function DriverDashboardPage() {
   const [eventType, setEventType] = useState("harsh_braking");
   const [view, setView] = useState<"trips" | "events">("trips");
 
-  const handleKpiView = (nextView: "trips" | "events", nextEventType?: string) => {
+  const handleKpiView = (
+    nextView: "trips" | "events",
+    nextEventType?: string,
+  ) => {
     setView(nextView);
     if (nextEventType) setEventType(nextEventType);
+  };
+
+  const handleTripDrilldown = (tripId?: string | null, vin?: string | null) => {
+    if (!tripId) return;
+    const params = new URLSearchParams();
+    params.set("tripId", tripId);
+    if (vin) params.set("vin", vin);
+    navigate(`/adlp/tracking/trips?${params.toString()}`);
   };
 
   const clickableProps = (handler: () => void) => ({
@@ -117,11 +141,27 @@ export function DriverDashboardPage() {
 
   if (!driverId) {
     return (
-      <div className="page">
-        <PageHeader
-          title="Driver dashboard"
-          subtitle="Select a driver first."
-        />
+      <div className="page driver-dashboard">
+        <section className="insight-hero insight-hero--drivers">
+          <div className="insight-hero__glow" />
+          <div className="insight-hero__content">
+            <div>
+              <p className="insight-hero__eyebrow">Driver operations</p>
+              <h1>Driver dashboard</h1>
+              <p className="insight-hero__subtitle">
+                Select a driver to view detailed safety and efficiency
+                analytics.
+              </p>
+            </div>
+            <div className="insight-hero__meta">
+              <div className="insight-chip">Driver: Not selected</div>
+              <div className="insight-chip">Range: --</div>
+              <Link className="btn" to="/adlp/drivers/summary">
+                Go to driver directory
+              </Link>
+            </div>
+          </div>
+        </section>
       </div>
     );
   }
@@ -130,130 +170,67 @@ export function DriverDashboardPage() {
 
   return (
     <div className="page driver-dashboard">
-      <PageHeader
-        title="Driver dashboard"
-        subtitle={
-          dashboard?.driverId ? `Driver ${dashboard.driverId}` : undefined
-        }
-      />
-
-      <div className="driver-dashboard__actions">
-        <div className="inline">
-          <label className="form__field">
-            <span className="text-muted">From</span>
-            <input
-              className="input"
-              type="date"
-              value={from}
-              onChange={(event) => setFrom(event.target.value)}
-            />
-          </label>
-          <label className="form__field">
-            <span className="text-muted">To</span>
-            <input
-              className="input"
-              type="date"
-              value={to}
-              onChange={(event) => setTo(event.target.value)}
-            />
-          </label>
-        </div>
-        <div className="inline">
-          <Link className="btn btn--secondary" to={`/adlp/drivers/${driverId}`}>
-            Profile
-          </Link>
-          <button className="btn" type="button" onClick={() => refetch()}>
-            Refresh
-          </button>
-        </div>
-      </div>
-
-      <Card title="Safety & efficiency">
-        {isLoading ? (
-          <div className="empty-state">Loading dashboard...</div>
-        ) : error ? (
-          <div className="empty-state">Unable to load dashboard.</div>
-        ) : (
-          <div className="kpi-grid">
-            <div className="kpi-card" {...clickableProps(() => handleKpiView("trips"))}>
-              <span>Total miles</span>
-              <strong>{formatNumber(totals?.milesDriven)}</strong>
-            </div>
-            <div className="kpi-card" {...clickableProps(() => handleKpiView("trips"))}>
-              <span>Driving time</span>
-              <strong>{formatNumber(totals?.drivingTimeSeconds, "s")}</strong>
-            </div>
-            <div className="kpi-card" {...clickableProps(() => handleKpiView("events", "idling"))}>
-              <span>Idling time</span>
-              <strong>{formatNumber(totals?.idlingTimeSeconds, "s")}</strong>
-            </div>
-            <div className="kpi-card" {...clickableProps(() => handleKpiView("trips"))}>
-              <span>Night miles</span>
-              <strong>{formatNumber(totals?.nightMiles)}</strong>
-            </div>
-            <div className="kpi-card" {...clickableProps(() => handleKpiView("trips"))}>
-              <span>Average speed</span>
-              <strong>{formatNumber(totals?.averageSpeedMph, " mph")}</strong>
-            </div>
-            <div className="kpi-card" {...clickableProps(() => handleKpiView("events", "overspeed"))}>
-              <span>Top speed</span>
-              <strong>{formatNumber(totals?.topSpeedMph, " mph")}</strong>
-            </div>
-            <div className="kpi-card" {...clickableProps(() => handleKpiView("events", "safety_score"))}>
-              <span>Safety score</span>
-              <strong>{formatNumber(totals?.safetyScore)}</strong>
-            </div>
-            <div className="kpi-card" {...clickableProps(() => handleKpiView("trips"))}>
-              <span>Fuel efficiency</span>
-              <strong>{formatNumber(totals?.fuelEfficiencyMpg, " mpg")}</strong>
-            </div>
-            <div className="kpi-card" {...clickableProps(() => handleKpiView("events", "harsh_braking"))}>
-              <span>Harsh braking</span>
-              <strong>{formatNumber(totals?.harshBraking)}</strong>
-            </div>
-            <div className="kpi-card" {...clickableProps(() => handleKpiView("events", "harsh_acceleration"))}>
-              <span>Harsh acceleration</span>
-              <strong>{formatNumber(totals?.harshAcceleration)}</strong>
-            </div>
-            <div className="kpi-card" {...clickableProps(() => handleKpiView("events", "harsh_cornering"))}>
-              <span>Harsh cornering</span>
-              <strong>{formatNumber(totals?.harshCornering)}</strong>
-            </div>
-            <div className="kpi-card" {...clickableProps(() => handleKpiView("events", "seatbelt_violation"))}>
-              <span>Seatbelt violations</span>
-              <strong>{formatNumber(totals?.seatbeltViolations)}</strong>
-            </div>
-            <div className="kpi-card" {...clickableProps(() => handleKpiView("events", "overspeed"))}>
-              <span>Overspeed events</span>
-              <strong>
-                {formatNumber(totals?.overspeed?.eventCountTotal)}
-              </strong>
-            </div>
-            <div className="kpi-card" {...clickableProps(() => handleKpiView("events", "overspeed"))}>
-              <span>Overspeed miles</span>
-              <strong>{formatNumber(totals?.overspeed?.milesTotal)}</strong>
-            </div>
+      <section className="insight-hero insight-hero--drivers">
+        <div className="insight-hero__glow" />
+        <div className="insight-hero__content">
+          <div>
+            <p className="insight-hero__eyebrow">Driver operations</p>
+            <h1>Driver dashboard</h1>
+            <p className="insight-hero__subtitle">
+              {dashboard?.driverId
+                ? `Driver ${dashboard.driverId}`
+                : "Loading driver insights."}
+            </p>
           </div>
-        )}
-      </Card>
+          <div className="insight-hero__meta">
+            <div className="insight-chip">
+              Range: {from} - {to}
+            </div>
+            <div className="insight-chip">
+              Safety score: {formatNumber(totals?.safetyScore)}
+            </div>
+            <div className="insight-chip">
+              Total miles: {formatNumber(totals?.milesDriven)}
+            </div>
+            <div className="insight-chip">Events loaded: {events.length}</div>
+            <div className="insight-chip">View: {view}</div>
+            <div className="insight-chip">Event type: {eventType}</div>
+            <Link
+              className="btn btn--secondary"
+              to={`/adlp/drivers/${driverId}`}
+            >
+              Profile
+            </Link>
+            <button className="btn" type="button" onClick={() => refetch()}>
+              Refresh
+            </button>
+          </div>
+        </div>
+      </section>
 
-      <Card title="Drilldowns">
-        <div className="inline">
-          <button
-            className={`filter-chip${view === "trips" ? " filter-chip--active" : ""}`}
-            type="button"
-            onClick={() => setView("trips")}
-          >
-            Trips
-          </button>
-          <button
-            className={`filter-chip${view === "events" ? " filter-chip--active" : ""}`}
-            type="button"
-            onClick={() => setView("events")}
-          >
-            Events
-          </button>
-          {view === "events" ? (
+      <Card title="Filters & date range">
+        <div className="driver-dashboard__actions">
+          <div className="inline">
+            <label className="form__field">
+              <span className="text-muted">From</span>
+              <input
+                className="input"
+                type="date"
+                value={from}
+                onChange={(event) => setFrom(event.target.value)}
+              />
+            </label>
+            <label className="form__field">
+              <span className="text-muted">To</span>
+              <input
+                className="input"
+                type="date"
+                value={to}
+                onChange={(event) => setTo(event.target.value)}
+              />
+            </label>
+          </div>
+          <div className="inline">
             <label className="form__field">
               <span className="text-muted">Event type</span>
               <input
@@ -263,27 +240,175 @@ export function DriverDashboardPage() {
                 placeholder="harsh_braking"
               />
             </label>
-          ) : null}
+            <div className="inline">
+              <button
+                className={`filter-chip${view === "trips" ? " filter-chip--active" : ""}`}
+                type="button"
+                onClick={() => setView("trips")}
+              >
+                Trips
+              </button>
+              <button
+                className={`filter-chip${view === "events" ? " filter-chip--active" : ""}`}
+                type="button"
+                onClick={() => setView("events")}
+              >
+                Events
+              </button>
+            </div>
+          </div>
         </div>
+      </Card>
 
+      <Card title="Safety & efficiency">
+        {isLoading ? (
+          <div className="empty-state">Loading dashboard...</div>
+        ) : error ? (
+          <div className="empty-state">Unable to load dashboard.</div>
+        ) : (
+          <div className="kpi-grid">
+            <div
+              className="kpi-card"
+              {...clickableProps(() => handleKpiView("trips"))}
+            >
+              <span>Total miles</span>
+              <strong>{formatNumber(totals?.milesDriven)}</strong>
+            </div>
+            <div
+              className="kpi-card"
+              {...clickableProps(() => handleKpiView("trips"))}
+            >
+              <span>Driving time</span>
+              <strong>{formatNumber(totals?.drivingTimeSeconds, "s")}</strong>
+            </div>
+            <div
+              className="kpi-card"
+              {...clickableProps(() => handleKpiView("events", "idling"))}
+            >
+              <span>Idling time</span>
+              <strong>{formatNumber(totals?.idlingTimeSeconds, "s")}</strong>
+            </div>
+            <div
+              className="kpi-card"
+              {...clickableProps(() => handleKpiView("trips"))}
+            >
+              <span>Night miles</span>
+              <strong>{formatNumber(totals?.nightMiles)}</strong>
+            </div>
+            <div
+              className="kpi-card"
+              {...clickableProps(() => handleKpiView("trips"))}
+            >
+              <span>Average speed</span>
+              <strong>{formatNumber(totals?.averageSpeedMph, " mph")}</strong>
+            </div>
+            <div
+              className="kpi-card"
+              {...clickableProps(() => handleKpiView("events", "overspeed"))}
+            >
+              <span>Top speed</span>
+              <strong>{formatNumber(totals?.topSpeedMph, " mph")}</strong>
+            </div>
+            <div
+              className="kpi-card"
+              {...clickableProps(() => handleKpiView("events", "safety_score"))}
+            >
+              <span>Safety score</span>
+              <strong>{formatNumber(totals?.safetyScore)}</strong>
+            </div>
+            <div
+              className="kpi-card"
+              {...clickableProps(() => handleKpiView("trips"))}
+            >
+              <span>Fuel efficiency</span>
+              <strong>{formatNumber(totals?.fuelEfficiencyMpg, " mpg")}</strong>
+            </div>
+            <div
+              className="kpi-card"
+              {...clickableProps(() =>
+                handleKpiView("events", "harsh_braking"),
+              )}
+            >
+              <span>Harsh braking</span>
+              <strong>{formatNumber(totals?.harshBraking)}</strong>
+            </div>
+            <div
+              className="kpi-card"
+              {...clickableProps(() =>
+                handleKpiView("events", "harsh_acceleration"),
+              )}
+            >
+              <span>Harsh acceleration</span>
+              <strong>{formatNumber(totals?.harshAcceleration)}</strong>
+            </div>
+            <div
+              className="kpi-card"
+              {...clickableProps(() =>
+                handleKpiView("events", "harsh_cornering"),
+              )}
+            >
+              <span>Harsh cornering</span>
+              <strong>{formatNumber(totals?.harshCornering)}</strong>
+            </div>
+            <div
+              className="kpi-card"
+              {...clickableProps(() =>
+                handleKpiView("events", "seatbelt_violation"),
+              )}
+            >
+              <span>Seatbelt violations</span>
+              <strong>{formatNumber(totals?.seatbeltViolations)}</strong>
+            </div>
+            <div
+              className="kpi-card"
+              {...clickableProps(() => handleKpiView("events", "overspeed"))}
+            >
+              <span>Overspeed events</span>
+              <strong>
+                {formatNumber(totals?.overspeed?.eventCountTotal)}
+              </strong>
+            </div>
+            <div
+              className="kpi-card"
+              {...clickableProps(() => handleKpiView("events", "overspeed"))}
+            >
+              <span>Overspeed miles</span>
+              <strong>{formatNumber(totals?.overspeed?.milesTotal)}</strong>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      <Card title="Drilldowns">
         {view === "trips" ? (
           <div className="table-list">
             {trips.length === 0 ? (
               <div className="empty-state">No trips in this range.</div>
             ) : (
               trips.map((trip) => (
-                <div key={`${trip.tripId}-${trip.vin}`} className="table-row">
-                  <div>
-                    <strong>{trip.tripId ?? "--"}</strong>
-                    <div className="text-muted">{trip.vin ?? "--"}</div>
+                <div
+                  key={`${trip.tripId}-${trip.vin}`}
+                  className="table-row table-row--drilldown"
+                  {...clickableProps(() =>
+                    handleTripDrilldown(trip.tripId, trip.vin),
+                  )}
+                >
+                  <div className="table-row__primary">
+                    <span className="text-muted">Trip ID</span>
+                    <strong className="mono">{trip.tripId ?? "--"}</strong>
+                    <div className="text-muted">VIN: {trip.vin ?? "--"}</div>
                   </div>
-                  <div>
+                  <div className="table-row__metric">
                     <span className="text-muted">Miles</span>
                     <strong>{formatNumber(trip.milesDriven)}</strong>
                   </div>
-                  <div>
+                  <div className="table-row__metric">
                     <span className="text-muted">Top speed</span>
-                    <strong>{formatNumber(trip.topSpeedMph, " mph")}</strong>
+                    <strong>
+                      {formatNumber(trip.topSpeedMph, " mph", {
+                        maximumFractionDigits: 0,
+                      })}
+                    </strong>
                   </div>
                 </div>
               ))
@@ -297,19 +422,27 @@ export function DriverDashboardPage() {
               events.map((event, index) => (
                 <div
                   key={`${event.tripId}-${event.eventTime}-${index}`}
-                  className="table-row"
+                  className="table-row table-row--drilldown"
+                  {...clickableProps(() =>
+                    handleTripDrilldown(event.tripId ?? undefined),
+                  )}
                 >
-                  <div>
+                  <div className="table-row__primary">
+                    <span className="text-muted">Event</span>
                     <strong>{event.eventType ?? "--"}</strong>
                     <div className="text-muted">{event.eventTime ?? "--"}</div>
                   </div>
-                  <div>
-                    <span className="text-muted">Trip</span>
-                    <strong>{event.tripId ?? "--"}</strong>
+                  <div className="table-row__metric">
+                    <span className="text-muted">Trip ID</span>
+                    <strong className="mono">{event.tripId ?? "--"}</strong>
                   </div>
-                  <div>
+                  <div className="table-row__metric">
                     <span className="text-muted">Speed</span>
-                    <strong>{formatNumber(event.speedMph, " mph")}</strong>
+                    <strong>
+                      {formatNumber(event.speedMph, " mph", {
+                        maximumFractionDigits: 0,
+                      })}
+                    </strong>
                   </div>
                 </div>
               ))

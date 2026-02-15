@@ -705,6 +705,20 @@ def _vin_active_for_tenant(vin: str, tenant_id: str, as_of: Optional[str]) -> bo
         return False
 
 
+def _vin_current_assignment(vin: str, as_of: Optional[str]) -> Optional[dict]:
+    if not VIN_REGISTRY_TABLE:
+        return None
+    try:
+        from onpoint_common.vin_registry import resolve_vin_registry  # type: ignore
+        return resolve_vin_registry(vin, as_of=as_of, table_name=VIN_REGISTRY_TABLE, ddb_client=_ddb)
+    except Exception:
+        as_of_value = as_of or utc_now_iso()
+        for rec in _vin_history(vin):
+            if _range_overlaps(rec.get("effectiveFrom"), rec.get("effectiveTo"), as_of_value, as_of_value):
+                return rec
+        return None
+
+
 def _list_vins_for_tenant(tenant_id: str, fleet_id: Optional[str], active_only: bool) -> List[str]:
     if not VIN_REGISTRY_TABLE:
         return []
@@ -1837,6 +1851,9 @@ def _get_vehicle(vin: str, role: str, caller_tenant: Optional[str]) -> dict:
     item = _ddb_get(VEHICLES_TABLE, {"PK": f"VIN#{vin}", "SK": "META"})
     if not item:
         return _resp(404, {"error": "Vehicle not found"})
+    current = _vin_current_assignment(vin, utc_now_iso())
+    if current and current.get("fleetId"):
+        item["fleetId"] = current.get("fleetId")
     return _resp(200, item)
 
 
@@ -1863,6 +1880,15 @@ def _list_vehicles(query: Dict[str, str], headers: Dict[str, str], role: str, ca
             fleet_id = scoped
     vins = _list_vins_for_tenant(tenant_id, fleet_id, active_only=True)
     items = _batch_get_vehicles(vins)
+    if items:
+        now = utc_now_iso()
+        for item in items:
+            vin = item.get("vin")
+            if not vin:
+                continue
+            current = _vin_current_assignment(vin, now)
+            if current and current.get("fleetId"):
+                item["fleetId"] = current.get("fleetId")
     if status:
         items = [it for it in items if it.get("status") == status]
     return _resp(200, {"items": items})
@@ -2024,7 +2050,7 @@ def _assign_vin(body: dict, headers: Dict[str, str], role: str, caller_tenant: O
 
 
 def _transfer_vin(body: dict, headers: Dict[str, str], role: str, caller_tenant: Optional[str]) -> dict:
-    err = _require_role(role, [ROLE_ADMIN])
+    err = _require_role(role, [ROLE_ADMIN, ROLE_TENANT_ADMIN])
     if err:
         return _resp(403, {"error": err})
 
@@ -2033,10 +2059,21 @@ def _transfer_vin(body: dict, headers: Dict[str, str], role: str, caller_tenant:
     to_tenant = body.get("toTenantId")
     effective_from = _normalize_iso(body.get("effectiveFrom"))
     reason = body.get("reason")
+    to_fleet_id = body.get("toFleetId")
     if not vin or not from_tenant or not to_tenant or not effective_from:
         return _resp(400, {"error": "vin, fromTenantId, toTenantId, effectiveFrom are required"})
     if not reason:
         return _resp(400, {"error": "reason is required"})
+
+    if role != ROLE_ADMIN:
+        if not caller_tenant:
+            return _resp(403, {"error": "Tenant identity required"})
+        if caller_tenant != from_tenant or caller_tenant != to_tenant:
+            return _resp(403, {"error": "Forbidden"})
+        if to_fleet_id and FLEETS_TABLE:
+            fleet = _ddb_get(FLEETS_TABLE, {"PK": f"FLEET#{to_fleet_id}", "SK": "META"})
+            if not fleet or fleet.get("tenantId") != to_tenant:
+                return _resp(403, {"error": "Forbidden"})
 
     idempotency_key = _get_idempotency_key(headers)
     if not idempotency_key:
@@ -2688,6 +2725,69 @@ def _list_vehicle_assignments(vin: str, role: str, caller_tenant: Optional[str])
     return _resp(200, {"items": items})
 
 
+def _delete_driver_assignment(
+    driver_id: str,
+    vin: str,
+    effective_from: str,
+    headers: Dict[str, str],
+    role: str,
+    caller_tenant: Optional[str],
+    expected_tenant_id: Optional[str] = None,
+) -> dict:
+    err = _require_driver_write_role(role)
+    if err:
+        return _resp(403, {"error": err})
+    if expected_tenant_id:
+        err = _require_tenant_access(role, caller_tenant, expected_tenant_id)
+        if err:
+            return _resp(403, {"error": err})
+        driver = _ddb_get(DRIVERS_TABLE, {"PK": f"DRIVER#{driver_id}", "SK": "META"})
+        if not driver or driver.get("tenantId") != expected_tenant_id:
+            return _resp(404, {"error": "Driver not found"})
+
+    if role != ROLE_ADMIN and not caller_tenant:
+        return _resp(403, {"error": "Tenant identity required"})
+
+    if not DRIVER_ASSIGNMENTS_TABLE:
+        return _resp(500, {"error": "Driver assignments table not configured"})
+
+    normalized_from = _normalize_iso(effective_from) or effective_from
+    key = {"PK": f"DRIVER#{driver_id}", "SK": f"EFFECTIVE_FROM#{normalized_from}#VIN#{vin}"}
+    existing = _ddb_get(DRIVER_ASSIGNMENTS_TABLE, key)
+    if not existing:
+        return _resp(404, {"error": "Assignment not found"})
+
+    tenant_id = existing.get("tenantId")
+    if role != ROLE_ADMIN:
+        if expected_tenant_id and tenant_id != expected_tenant_id:
+            return _resp(404, {"error": "Assignment not found"})
+        if caller_tenant != tenant_id:
+            return _resp(403, {"error": "Forbidden"})
+
+    if role == ROLE_FLEET_MANAGER:
+        scoped, scope_err = _apply_fleet_scope(role, headers, headers.get("x-fleet-id"))
+        if scope_err:
+            return _resp(403, {"error": scope_err})
+        vins = _list_vins_for_tenant(tenant_id, scoped, active_only=True)
+        if vin not in vins:
+            return _resp(403, {"error": "Forbidden"})
+
+    _ddb_delete(DRIVER_ASSIGNMENTS_TABLE, key)
+
+    _audit(
+        entity_type="driver-assignment",
+        entity_id=f"{driver_id}:{vin}:{normalized_from}",
+        action="delete",
+        actor=_get_actor(headers, caller_tenant),
+        reason=headers.get("x-reason"),
+        before=existing,
+        after=None,
+        tenant_id=tenant_id,
+        correlation_id=headers.get("x-correlation-id"),
+    )
+    return _resp(200, {"driverId": driver_id, "vin": vin, "effectiveFrom": normalized_from})
+
+
 def _driver_dashboard_access(
     tenant_id: str,
     driver_id: str,
@@ -3236,6 +3336,20 @@ def lambda_handler(event, context):
                     )
                 if method == "GET":
                     return _list_driver_assignments(driver_id, role, caller_tenant, tenant_id)
+                if method == "DELETE":
+                    vin = query.get("vin") or ""
+                    effective_from = query.get("effectiveFrom") or query.get("effective_from") or ""
+                    if not vin or not effective_from:
+                        return _resp(400, {"error": "vin and effectiveFrom are required"})
+                    return _delete_driver_assignment(
+                        driver_id,
+                        vin,
+                        effective_from,
+                        headers,
+                        role,
+                        caller_tenant,
+                        tenant_id,
+                    )
         if len(segments) == 2 and segments[1].endswith(":suspend") and method == "POST":
             tenant_id = segments[1].split(":suspend")[0]
             return _set_tenant_status(tenant_id, "SUSPENDED", headers, role, caller_tenant)
@@ -3342,5 +3456,18 @@ def lambda_handler(event, context):
                 return _resp(400, {"error": err}) if err else _create_driver_assignment(driver_id, body, headers, role, caller_tenant)
             if method == "GET":
                 return _list_driver_assignments(driver_id, role, caller_tenant)
+            if method == "DELETE":
+                vin = query.get("vin") or ""
+                effective_from = query.get("effectiveFrom") or query.get("effective_from") or ""
+                if not vin or not effective_from:
+                    return _resp(400, {"error": "vin and effectiveFrom are required"})
+                return _delete_driver_assignment(
+                    driver_id,
+                    vin,
+                    effective_from,
+                    headers,
+                    role,
+                    caller_tenant,
+                )
 
     return _resp(404, {"error": "Not found"})

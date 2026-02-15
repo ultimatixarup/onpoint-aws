@@ -1,14 +1,16 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import {
-    assignVin,
-    createVehicle,
-    deleteVehicle,
-    fetchFleets,
-    fetchVehicleAssignments,
-    fetchVehicles,
-    transferVin,
-    updateVehicle,
+  assignVin,
+  createVehicle,
+  deleteVehicle,
+  fetchFleets,
+  fetchVinRegistryHistory,
+  fetchVehicleAssignments,
+  fetchVehicles,
+  transferVin,
+  updateVehicle,
+  VinRegistryRecord,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useAuth } from "../../context/AuthContext";
@@ -65,6 +67,32 @@ function toIso(value: string) {
   return date.toISOString();
 }
 
+function parseIsoToMs(value?: string) {
+  if (!value) return undefined;
+  const date = new Date(value);
+  const time = date.getTime();
+  return Number.isNaN(time) ? undefined : time;
+}
+
+function maxIso(...values: Array<string | undefined>) {
+  let max: number | undefined;
+  for (const value of values) {
+    const time = parseIsoToMs(value);
+    if (time === undefined) continue;
+    if (max === undefined || time > max) {
+      max = time;
+    }
+  }
+  return max !== undefined ? new Date(max).toISOString() : undefined;
+}
+
+function formatDate(value?: string) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString();
+}
+
 function normalizeAssignments(response: unknown) {
   const items = Array.isArray(response)
     ? response
@@ -82,6 +110,17 @@ function normalizeAssignments(response: unknown) {
     tenantId?: string;
     driverId?: string;
   }>;
+}
+
+function normalizeVinHistory(response: unknown) {
+  const items = Array.isArray(response)
+    ? response
+    : typeof response === "object" &&
+        response !== null &&
+        Array.isArray((response as { items?: unknown[] }).items)
+      ? (response as { items: unknown[] }).items
+      : [];
+  return items as VinRegistryRecord[];
 }
 
 export function TenantVehicleAdminPage() {
@@ -187,6 +226,39 @@ export function TenantVehicleAdminPage() {
     );
   }, [assignmentResponse]);
 
+  const { data: vinHistoryResponse } = useQuery({
+    queryKey:
+      tenantId && selectedVehicle?.vin
+        ? ["vinHistory", tenantId, selectedVehicle.vin]
+        : ["vinHistory", "none"],
+    queryFn: () =>
+      fetchVinRegistryHistory(selectedVehicle!.vin, tenantId, {
+        roleOverride: resolvedRoleHeader,
+      }),
+    enabled: Boolean(tenantId && selectedVehicle?.vin),
+  });
+
+  const currentVinAssignment = useMemo(() => {
+    const history = normalizeVinHistory(vinHistoryResponse);
+    if (!history.length) return undefined;
+    const now = Date.now();
+    const active = history.find((record) => {
+      const from = parseIsoToMs(record.effectiveFrom);
+      const to = parseIsoToMs(record.effectiveTo);
+      if (from === undefined) return false;
+      if (to === undefined) return from <= now;
+      return from <= now && now <= to;
+    });
+    if (active) return active;
+    return history
+      .slice()
+      .sort((a, b) =>
+        String(b.effectiveFrom ?? "").localeCompare(
+          String(a.effectiveFrom ?? ""),
+        ),
+      )[0];
+  }, [vinHistoryResponse]);
+
   useEffect(() => {
     if (!selectedVehicle) {
       setEditForm({ make: "", model: "", year: "", status: "ACTIVE" });
@@ -235,7 +307,8 @@ export function TenantVehicleAdminPage() {
     return undefined;
   }, [roles]);
 
-  const resolvedRoleHeader = roleHeader ?? (tenantId ? "tenant-admin" : undefined);
+  const resolvedRoleHeader =
+    roleHeader ?? (tenantId ? "tenant-admin" : undefined);
 
   const hasChanges = useMemo(() => {
     if (!selectedVehicle) return false;
@@ -336,13 +409,17 @@ export function TenantVehicleAdminPage() {
       const message = err instanceof Error ? err.message : "";
       if (message.toLowerCase().includes("overlaps existing record")) {
         try {
+          const currentAssignment = currentVinAssignment;
+          const transferEffectiveFrom =
+            maxIso(effectiveFrom, currentAssignment?.effectiveFrom) ??
+            effectiveFrom;
           await transferVin(
             {
               vin: selectedVehicle.vin,
               fromTenantId: tenantId,
               toTenantId: tenantId,
               toFleetId: assignForm.fleetId,
-              effectiveFrom,
+              effectiveFrom: transferEffectiveFrom,
               reason: sanitize(assignForm.reason),
             },
             createIdempotencyKey(),
@@ -675,6 +752,10 @@ export function TenantVehicleAdminPage() {
                       }))
                     }
                   />
+                  <span className="text-muted">
+                    Current effective from:{" "}
+                    {formatDate(currentVinAssignment?.effectiveFrom)}
+                  </span>
                 </label>
                 <label className="form__field">
                   <span className="text-muted">Reason</span>
@@ -725,7 +806,8 @@ export function TenantVehicleAdminPage() {
                             key={
                               assignment.assignmentId ??
                               `${assignment.driverId ?? "driver"}-${
-                                assignment.effectiveFrom ?? ""}
+                                assignment.effectiveFrom ?? ""
+                              }
                             `
                             }
                           >

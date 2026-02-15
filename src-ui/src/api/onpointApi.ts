@@ -65,6 +65,17 @@ export type DriverAssignment = {
   driverId?: string;
 };
 
+export type VinRegistryRecord = {
+  vin: string;
+  tenantId?: string;
+  fleetId?: string;
+  customerId?: string;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+  status?: string;
+  reason?: string;
+};
+
 export type DriverDashboardTotals = {
   milesDriven?: number;
   fuelConsumedGallons?: number;
@@ -1056,6 +1067,26 @@ export async function createDriverAssignment(
   );
 }
 
+export async function deleteDriverAssignment(
+  tenantId: string,
+  driverId: string,
+  vin: string,
+  effectiveFrom: string,
+  roleOverride?: string,
+) {
+  const query = new URLSearchParams({ vin, effectiveFrom });
+  return httpRequest<unknown>(
+    `/tenants/${tenantId}/drivers/${driverId}/assignments?${query.toString()}`,
+    {
+      method: "DELETE",
+      headers: {
+        "x-tenant-id": tenantId,
+        ...(roleOverride ? { "x-role": roleOverride } : {}),
+      },
+    },
+  );
+}
+
 export async function fetchDriverAssignments(
   tenantId: string,
   driverId: string,
@@ -1082,6 +1113,19 @@ export async function fetchVehicleAssignments(
   options?: { roleOverride?: string },
 ) {
   return httpRequest<unknown>(`/vehicles/${vin}/driver-assignments`, {
+    headers: {
+      ...(tenantId ? { "x-tenant-id": tenantId } : {}),
+      ...(options?.roleOverride ? { "x-role": options.roleOverride } : {}),
+    },
+  });
+}
+
+export async function fetchVinRegistryHistory(
+  vin: string,
+  tenantId?: string,
+  options?: { roleOverride?: string },
+) {
+  return httpRequest<unknown>(`/vin-registry/${vin}`, {
     headers: {
       ...(tenantId ? { "x-tenant-id": tenantId } : {}),
       ...(options?.roleOverride ? { "x-role": options.roleOverride } : {}),
