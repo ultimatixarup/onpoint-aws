@@ -74,7 +74,7 @@ def _resp(status: int, body: dict):
         "headers": {
             "content-type": "application/json",
             "access-control-allow-origin": "*",
-            "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
+            "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
             "access-control-allow-headers": "content-type,authorization,x-api-key,idempotency-key,x-tenant-id,x-role,x-fleet-id,x-actor-id,x-correlation-id",
         },
         "body": json.dumps(body, default=str),
@@ -275,6 +275,10 @@ def _ddb_update(
     resp = _ddb.update_item(**params)
     item = resp.get("Attributes")
     return _ddb_deserialize(item) if item else None
+
+
+def _ddb_delete(table: str, key: Dict[str, Any]):
+    _ddb.delete_item(TableName=table, Key=_ddb_serialize(key))
 
 
 def _ddb_query(params: Dict[str, Any]) -> List[dict]:
@@ -1908,8 +1912,38 @@ def _patch_vehicle(vin: str, body: dict, headers: Dict[str, str], role: str, cal
     return _resp(200, updated or {})
 
 
+def _delete_vehicle(vin: str, headers: Dict[str, str], role: str, caller_tenant: Optional[str]) -> dict:
+    err = _require_write_role(role)
+    if err:
+        return _resp(403, {"error": err})
+    if role != ROLE_ADMIN:
+        if not caller_tenant:
+            return _resp(403, {"error": "Tenant identity required"})
+        if not _vin_active_for_tenant(vin, caller_tenant, utc_now_iso()):
+            return _resp(403, {"error": "Forbidden"})
+
+    existing = _ddb_get(VEHICLES_TABLE, {"PK": f"VIN#{vin}", "SK": "META"})
+    if not existing:
+        return _resp(404, {"error": "Vehicle not found"})
+
+    _ddb_delete(VEHICLES_TABLE, {"PK": f"VIN#{vin}", "SK": "META"})
+
+    _audit(
+        entity_type="vehicle",
+        entity_id=vin,
+        action="delete",
+        actor=_get_actor(headers, caller_tenant),
+        reason=headers.get("x-reason"),
+        before=existing,
+        after=None,
+        tenant_id=caller_tenant,
+        correlation_id=headers.get("x-correlation-id"),
+    )
+    return _resp(200, {"vin": vin, "status": "DELETED"})
+
+
 def _assign_vin(body: dict, headers: Dict[str, str], role: str, caller_tenant: Optional[str]) -> dict:
-    err = _require_role(role, [ROLE_ADMIN])
+    err = _require_role(role, [ROLE_ADMIN, ROLE_TENANT_ADMIN])
     if err:
         return _resp(403, {"error": err})
 
@@ -1921,6 +1955,17 @@ def _assign_vin(body: dict, headers: Dict[str, str], role: str, caller_tenant: O
         return _resp(400, {"error": "vin, tenantId, effectiveFrom are required"})
     if not reason:
         return _resp(400, {"error": "reason is required"})
+
+    if role != ROLE_ADMIN:
+        if not caller_tenant:
+            return _resp(403, {"error": "Tenant identity required"})
+        if caller_tenant != tenant_id:
+            return _resp(403, {"error": "Forbidden"})
+        fleet_id = body.get("fleetId")
+        if fleet_id and FLEETS_TABLE:
+            fleet = _ddb_get(FLEETS_TABLE, {"PK": f"FLEET#{fleet_id}", "SK": "META"})
+            if not fleet or fleet.get("tenantId") != tenant_id:
+                return _resp(403, {"error": "Forbidden"})
 
     effective_to = _normalize_iso(body.get("effectiveTo"))
     history = _vin_history(vin)
@@ -2433,6 +2478,58 @@ def _set_driver_status(
         correlation_id=headers.get("x-correlation-id"),
     )
     return _resp(200, {"driverId": driver_id, "status": status})
+
+
+def _delete_driver(
+    driver_id: str,
+    headers: Dict[str, str],
+    role: str,
+    caller_tenant: Optional[str],
+    expected_tenant_id: Optional[str] = None,
+) -> dict:
+    err = _require_write_role(role)
+    if err:
+        return _resp(403, {"error": err})
+    existing = _ddb_get(DRIVERS_TABLE, {"PK": f"DRIVER#{driver_id}", "SK": "META"})
+    if not existing:
+        return _resp(404, {"error": "Driver not found"})
+
+    tenant_id = existing.get("tenantId")
+    if expected_tenant_id and tenant_id != expected_tenant_id:
+        return _resp(404, {"error": "Driver not found"})
+    err = _require_tenant_access(role, caller_tenant, tenant_id)
+    if err:
+        return _resp(403, {"error": err})
+
+    if DRIVER_ASSIGNMENTS_TABLE:
+        assignments = _ddb_query(
+            {
+                "TableName": DRIVER_ASSIGNMENTS_TABLE,
+                "KeyConditionExpression": "PK = :pk",
+                "ExpressionAttributeValues": {":pk": {"S": f"DRIVER#{driver_id}"}},
+                "ScanIndexForward": True,
+            }
+        )
+        for assignment in assignments:
+            _ddb_delete(
+                DRIVER_ASSIGNMENTS_TABLE,
+                {"PK": assignment.get("PK"), "SK": assignment.get("SK")},
+            )
+
+    _ddb_delete(DRIVERS_TABLE, {"PK": f"DRIVER#{driver_id}", "SK": "META"})
+
+    _audit(
+        entity_type="driver",
+        entity_id=driver_id,
+        action="delete",
+        actor=_get_actor(headers, caller_tenant),
+        reason=headers.get("x-reason"),
+        before=existing,
+        after=None,
+        tenant_id=tenant_id,
+        correlation_id=headers.get("x-correlation-id"),
+    )
+    return _resp(200, {"driverId": driver_id, "status": "DELETED"})
 
 
 def _create_driver_assignment(
@@ -3117,6 +3214,8 @@ def lambda_handler(event, context):
                         if err
                         else _patch_driver(driver_id, body, headers, role, caller_tenant, tenant_id)
                     )
+                if method == "DELETE":
+                    return _delete_driver(driver_id, headers, role, caller_tenant, tenant_id)
             if len(segments) == 5 and segments[4] == "dashboard" and method == "GET":
                 driver_id = segments[3]
                 return _driver_dashboard(tenant_id, driver_id, query, headers, role, caller_tenant)
@@ -3197,6 +3296,8 @@ def lambda_handler(event, context):
             if method == "PATCH":
                 err = _require_body(body)
                 return _resp(400, {"error": err}) if err else _patch_vehicle(vin, body, headers, role, caller_tenant)
+            if method == "DELETE":
+                return _delete_vehicle(vin, headers, role, caller_tenant)
         if len(segments) == 3 and segments[2] == "driver-assignments" and method == "GET":
             vin = segments[1]
             return _list_vehicle_assignments(vin, role, caller_tenant)

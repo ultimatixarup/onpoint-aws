@@ -320,6 +320,18 @@
           }
         },
         {
+          "name": "Delete vehicle",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/vehicles/{{vin}}"
+          }
+        },
+        {
           "name": "List vehicles",
           "request": {
             "method": "GET",
@@ -451,6 +463,18 @@
           }
         },
         {
+          "name": "Delete driver",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}"
+          }
+        },
+        {
           "name": "List drivers",
           "request": {
             "method": "GET",
@@ -533,6 +557,18 @@
               { "key": "x-role", "value": "{{roleTenantAdmin}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}:deactivate"
+          }
+        },
+        {
+          "name": "Delete tenant driver",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}"
           }
         },
         {

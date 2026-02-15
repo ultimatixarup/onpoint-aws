@@ -22,6 +22,7 @@ import { DriverProfilePage } from "../features/drivers/DriverProfilePage";
 import { DriverReportsPage } from "../features/drivers/DriverReportsPage";
 import { DriverSafetyAnalyticsPage } from "../features/drivers/DriverSafetyAnalyticsPage";
 import { DriverSummaryPage } from "../features/drivers/DriverSummaryPage";
+import { TenantDriverAdminPage } from "../features/drivers/TenantDriverAdminPage";
 import { GeofenceAlertsPage } from "../features/geofence/GeofenceAlertsPage";
 import { GeofenceReportPage } from "../features/geofence/GeofenceReportPage";
 import { GeofenceSetupPage } from "../features/geofence/GeofenceSetupPage";
@@ -49,6 +50,7 @@ import { RouteOptimizationPage } from "../features/trips/RouteOptimizationPage";
 import { TripPlanningPage } from "../features/trips/TripPlanningPage";
 import { ManageGroupsPage } from "../features/users/ManageGroupsPage";
 import { ManageUsersPage } from "../features/users/ManageUsersPage";
+import { TenantVehicleAdminPage } from "../features/vehicles/TenantVehicleAdminPage";
 import { VehicleConsentPage } from "../features/vehicles/VehicleConsentPage";
 import { VinHistoryPage } from "../features/vehicles/VinHistoryPage";
 import { VinSummaryPage } from "../features/vehicles/VinSummaryPage";
@@ -210,10 +212,7 @@ export function AppRouter() {
             path="/adlp/drivers/safety"
             element={<DriverSafetyAnalyticsPage />}
           />
-          <Route
-            path="/adlp/drivers/reports"
-            element={<DriverReportsPage />}
-          />
+          <Route path="/adlp/drivers/reports" element={<DriverReportsPage />} />
           <Route
             path="/adlp/drivers/:driverId"
             element={<DriverProfilePage />}
@@ -238,6 +237,14 @@ export function AppRouter() {
           <Route path="/adlp/config" element={<ConfigurationPage />} />
           <Route path="/adlp/notifications" element={<NotificationsPage />} />
           <Route path="/adlp/faq" element={<FaqPage />} />
+          <Route
+            path="/adlp/tenant/drivers"
+            element={<TenantDriverAdminPage />}
+          />
+          <Route
+            path="/adlp/tenant/vehicles"
+            element={<TenantVehicleAdminPage />}
+          />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />

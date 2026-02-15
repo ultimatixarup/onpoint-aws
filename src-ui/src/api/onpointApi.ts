@@ -402,17 +402,24 @@ export async function fetchVehicles(tenantId: string, fleetId?: string) {
   return vehicles.filter(Boolean) as VehicleSummary[];
 }
 
-export async function createVehicle(payload: {
-  vin: string;
-  make?: string;
-  model?: string;
-  year?: number | string;
-  status?: string;
-  reason?: string;
-}) {
+export async function createVehicle(
+  payload: {
+    vin: string;
+    make?: string;
+    model?: string;
+    year?: number | string;
+    status?: string;
+    reason?: string;
+  },
+  options?: { tenantId?: string; roleOverride?: string },
+) {
   return httpRequest<unknown>("/vehicles", {
     method: "POST",
     body: payload,
+    headers: {
+      ...(options?.tenantId ? { "x-tenant-id": options.tenantId } : {}),
+      ...(options?.roleOverride ? { "x-role": options.roleOverride } : {}),
+    },
   });
 }
 
@@ -422,11 +429,32 @@ export async function updateVehicle(
     status?: string;
     metadata?: Record<string, unknown>;
     assetTags?: string[];
+    make?: string;
+    model?: string;
+    year?: number | string;
   },
+  options?: { tenantId?: string; roleOverride?: string },
 ) {
   return httpRequest<unknown>(`/vehicles/${vin}`, {
     method: "PATCH",
     body: payload,
+    headers: {
+      ...(options?.tenantId ? { "x-tenant-id": options.tenantId } : {}),
+      ...(options?.roleOverride ? { "x-role": options.roleOverride } : {}),
+    },
+  });
+}
+
+export async function deleteVehicle(
+  vin: string,
+  options?: { tenantId?: string; roleOverride?: string },
+) {
+  return httpRequest<unknown>(`/vehicles/${vin}`, {
+    method: "DELETE",
+    headers: {
+      ...(options?.tenantId ? { "x-tenant-id": options.tenantId } : {}),
+      ...(options?.roleOverride ? { "x-role": options.roleOverride } : {}),
+    },
   });
 }
 
@@ -522,22 +550,20 @@ export async function fetchDrivers(tenantId: string, fleetId?: string) {
   if (vins.length === 0) return [];
 
   const assignmentResponses = await Promise.all(
-    vins.map((vin) =>
-      fetchVehicleAssignments(vin, tenantId).catch(() => [])
-    )
+    vins.map((vin) => fetchVehicleAssignments(vin, tenantId).catch(() => [])),
   );
   const driverIds = new Set(
     assignmentResponses
       .flatMap((response) => normalizeAssignments(response))
       .map((assignment) => assignment.driverId)
-      .filter(Boolean) as string[]
+      .filter(Boolean) as string[],
   );
 
   const allDrivers = await fetchDriversFromApi(tenantId);
   return allDrivers.filter(
     (driver) =>
       (driver.fleetId && driver.fleetId === fleetId) ||
-      (driver.driverId && driverIds.has(driver.driverId))
+      (driver.driverId && driverIds.has(driver.driverId)),
   );
 }
 
@@ -664,12 +690,14 @@ export async function createDriver(
     reason?: string;
   },
   idempotencyKey: string,
+  roleOverride?: string,
 ) {
   return httpRequest<unknown>(`/tenants/${payload.tenantId}/drivers`, {
     method: "POST",
     body: payload,
     headers: {
       "x-tenant-id": payload.tenantId,
+      ...(roleOverride ? { "x-role": roleOverride } : {}),
       "idempotency-key": idempotencyKey,
     },
   });
@@ -695,12 +723,47 @@ export async function updateDriver(
     metadata?: Record<string, unknown>;
     reason?: string;
   },
+  roleOverride?: string,
 ) {
   return httpRequest<unknown>(`/tenants/${tenantId}/drivers/${driverId}`, {
     method: "PATCH",
     body: payload,
-    headers: { "x-tenant-id": tenantId },
+    headers: {
+      "x-tenant-id": tenantId,
+      ...(roleOverride ? { "x-role": roleOverride } : {}),
+    },
   });
+}
+
+export async function deleteDriver(
+  tenantId: string,
+  driverId: string,
+  roleOverride?: string,
+) {
+  return httpRequest<unknown>(`/tenants/${tenantId}/drivers/${driverId}`, {
+    method: "DELETE",
+    headers: {
+      "x-tenant-id": tenantId,
+      ...(roleOverride ? { "x-role": roleOverride } : {}),
+    },
+  });
+}
+
+export async function deactivateDriver(
+  tenantId: string,
+  driverId: string,
+  roleOverride?: string,
+) {
+  return httpRequest<unknown>(
+    `/tenants/${tenantId}/drivers/${driverId}:deactivate`,
+    {
+      method: "POST",
+      headers: {
+        "x-tenant-id": tenantId,
+        ...(roleOverride ? { "x-role": roleOverride } : {}),
+      },
+    },
+  );
 }
 
 export async function fetchUsers(tenantId: string, fleetId?: string) {

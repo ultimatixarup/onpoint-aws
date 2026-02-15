@@ -2,23 +2,55 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-const links = [
-  { to: "/adlp/dashboard", label: "Dashboard" },
-  { to: "/adlp/tracking/live", label: "Live Tracking" },
-  { to: "/adlp/tracking/trips", label: "Trip History" },
-  { to: "/adlp/telemetry/raw", label: "Telemetry Raw" },
-  { to: "/adlp/telemetry/normalized", label: "Telemetry Normalized" },
-  { to: "/adlp/geofence/manage", label: "Geofence" },
-  { to: "/adlp/geofence/setup", label: "Geofence Setup" },
-  { to: "/adlp/vehicles/vin-summary", label: "Vehicles" },
-  { to: "/adlp/drivers/summary", label: "Driver Directory" },
-  { to: "/adlp/drivers/dashboard", label: "Driver Dashboard" },
-  { to: "/adlp/drivers/assign", label: "Assignments" },
-  { to: "/adlp/drivers/compliance", label: "Compliance" },
-  { to: "/adlp/drivers/safety", label: "Safety Analytics" },
-  { to: "/adlp/drivers/reports", label: "Reports" },
-  { to: "/adlp/trips/planning", label: "Trips" },
-  { to: "/adlp/reports", label: "Fleet Reports" },
+const navSections = [
+  {
+    title: "Overview",
+    icon: "◎",
+    links: [{ to: "/adlp/dashboard", label: "Dashboard" }],
+  },
+  {
+    title: "Operations",
+    icon: "⚙",
+    links: [
+      { to: "/adlp/tracking/live", label: "Live Tracking" },
+      { to: "/adlp/tracking/trips", label: "Trip History" },
+      { to: "/adlp/trips/planning", label: "Trip Planning" },
+    ],
+  },
+  {
+    title: "Drivers",
+    icon: "▣",
+    links: [
+      { to: "/adlp/drivers/summary", label: "Driver Directory" },
+      { to: "/adlp/drivers/dashboard", label: "Driver Dashboard" },
+      { to: "/adlp/drivers/assign", label: "Assignments" },
+      { to: "/adlp/drivers/compliance", label: "Compliance" },
+      { to: "/adlp/drivers/safety", label: "Safety Analytics" },
+      { to: "/adlp/drivers/reports", label: "Reports" },
+    ],
+  },
+  {
+    title: "Fleet",
+    icon: "◆",
+    links: [
+      { to: "/adlp/vehicles/vin-summary", label: "Vehicles" },
+      { to: "/adlp/geofence/manage", label: "Geofence" },
+      { to: "/adlp/geofence/setup", label: "Geofence Setup" },
+    ],
+  },
+  {
+    title: "Telemetry",
+    icon: "◇",
+    links: [
+      { to: "/adlp/telemetry/raw", label: "Telemetry Raw" },
+      { to: "/adlp/telemetry/normalized", label: "Telemetry Normalized" },
+    ],
+  },
+  {
+    title: "Reports",
+    icon: "●",
+    links: [{ to: "/adlp/reports", label: "Fleet Reports" }],
+  },
 ];
 
 const adminLinks = [
@@ -34,7 +66,8 @@ const adminLinks = [
 ];
 
 const tenantAdminLinks = [
-  { to: "/adlp/drivers/summary", label: "Drivers" },
+  { to: "/adlp/tenant/drivers", label: "Drivers" },
+  { to: "/adlp/tenant/vehicles", label: "Vehicles" },
   { to: "/adlp/users", label: "Users" },
   { to: "/adlp/groups", label: "Groups" },
   { to: "/adlp/config", label: "Configuration" },
@@ -47,17 +80,58 @@ export function Sidebar() {
   const isTenantAdmin = roles.includes("tenant_admin");
   const [isAdminOpen, setIsAdminOpen] = useState(true);
   const [isTenantAdminOpen, setIsTenantAdminOpen] = useState(true);
+  const [openSections, setOpenSections] = useState(() =>
+    Object.fromEntries(navSections.map((section) => [section.title, true])),
+  );
   return (
     <aside className="sidebar">
       <nav className="sidebar__nav">
-        <div className="sidebar__section sidebar__section--root">
-          <div className="sidebar__title">Navigation</div>
-          {links.map((link) => (
-            <NavLink key={link.to} to={link.to} className="sidebar__link">
-              {link.label}
-            </NavLink>
-          ))}
-        </div>
+        {navSections.map((section) => {
+          const isOpen = openSections[section.title];
+          const sectionId = `nav-section-${section.title
+            .toLowerCase()
+            .replace(/\s+/g, "-")}`;
+          return (
+            <div
+              key={section.title}
+              className="sidebar__section sidebar__section--root"
+            >
+              <button
+                type="button"
+                className="sidebar__section-toggle"
+                aria-expanded={isOpen}
+                aria-controls={sectionId}
+                onClick={() =>
+                  setOpenSections((prev) => ({
+                    ...prev,
+                    [section.title]: !prev[section.title],
+                  }))
+                }
+              >
+                <span className="sidebar__section-title">
+                  <span className="sidebar__section-icon" aria-hidden="true">
+                    {section.icon}
+                  </span>
+                  {section.title}
+                </span>
+                <span className="sidebar__chevron">{isOpen ? "▾" : "▸"}</span>
+              </button>
+              {isOpen ? (
+                <div id={sectionId} className="sidebar__section-links">
+                  {section.links.map((link) => (
+                    <NavLink
+                      key={link.to}
+                      to={link.to}
+                      className="sidebar__link"
+                    >
+                      {link.label}
+                    </NavLink>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
         {isTenantAdmin ? (
           <div className="sidebar__section">
             <button

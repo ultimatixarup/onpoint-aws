@@ -1170,6 +1170,51 @@ a {
   border-top: none;
 }
 
+.sidebar__section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: var(--space-1) var(--space-1);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.sidebar__section-toggle:hover {
+  color: var(--color-primary);
+}
+
+.sidebar__section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sidebar__section-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  font-size: 11px;
+  color: var(--color-primary);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.sidebar__section-links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 .sidebar__title {
   font-size: 12px;
   text-transform: uppercase;
