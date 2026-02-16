@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 [--file <path>] [--env <postman_env_json>] [--base-url <url>] [--api-key <key>] [--provider-id <id>] [--limit <n>] [--dry-run]" >&2
+  echo "Usage: $0 [--file <path>] [--env <postman_env_json>] [--base-url <url>] [--api-key <key>] [--provider-id <id>] [--region <aws_region>] [--limit <n>] [--dry-run]" >&2
 }
 
 FILE_PATH=""
@@ -10,6 +10,7 @@ ENV_PATH=""
 BASE_URL=""
 API_KEY=""
 PROVIDER_ID=""
+REGION=""
 LIMIT=""
 DRY_RUN="false"
 
@@ -20,6 +21,7 @@ while [[ $# -gt 0 ]]; do
     --base-url) BASE_URL="$2"; shift 2;;
     --api-key) API_KEY="$2"; shift 2;;
     --provider-id) PROVIDER_ID="$2"; shift 2;;
+    --region) REGION="$2"; shift 2;;
     --limit) LIMIT="$2"; shift 2;;
     --dry-run) DRY_RUN="true"; shift 1;;
     -h|--help) usage; exit 0;;
@@ -72,14 +74,21 @@ BASE_URL="${BASE_URL//\{\{region\}\}/${REGION_VAL}}"
 BASE_URL="${BASE_URL//\{\{ingestApiId\}\}/${INGEST_API_ID_VAL}}"
 BASE_URL="${BASE_URL//\{\{ingestStage\}\}/${INGEST_STAGE_VAL}}"
 
+if [[ "$BASE_URL" == *"{{"*"}}"* ]]; then
+  echo "Unresolved base URL template values in $BASE_URL" >&2
+  exit 1
+fi
+
 if [[ "$BASE_URL" != */ingest/telematics ]]; then
   BASE_URL="${BASE_URL%/}/ingest/telematics"
 fi
 
+REGION_VAL="${REGION:-${REGION_VAL:-us-east-1}}"
+
 if [[ -z "$API_KEY" || "$API_KEY" == "<API_KEY>" ]]; then
-  API_KEY="$(aws apigateway get-api-keys --include-values --region us-east-1 --query "items[?name=='CEREBRUMX']|[0].value" --output text)"
+  API_KEY="$(AWS_PAGER="" aws apigateway get-api-keys --include-values --region "$REGION_VAL" --query "items[?name=='CEREBRUMX']|[0].value" --output text)"
   if [[ -z "$API_KEY" || "$API_KEY" == "None" ]]; then
-    API_KEY="$(aws apigateway get-api-keys --include-values --region us-east-1 --query "items[?name=='cerebrumx-dev']|[0].value" --output text)"
+    API_KEY="$(AWS_PAGER="" aws apigateway get-api-keys --include-values --region "$REGION_VAL" --query "items[?name=='cerebrumx-dev']|[0].value" --output text)"
   fi
 fi
 
@@ -131,21 +140,24 @@ fi
 ok=0
 failed=0
 idx=0
+TMP_BODY="$(mktemp -t ingest_body.XXXXXX)"
+trap 'rm -f "$TMP_BODY"' EXIT
 
 while IFS= read -r payload; do
   idx=$((idx+1))
-  http_code=$(curl -sS -o /tmp/ingest_body.json -w "%{http_code}" \
+  http_code=$(curl -sS -o "$TMP_BODY" -w "%{http_code}" \
     -X POST \
     -H "Content-Type: application/json" \
     -H "x-api-key: ${API_KEY}" \
     -H "providerId: ${PROVIDER_ID}" \
+    -H "x-provider-id: ${PROVIDER_ID}" \
     --data "$payload" \
     "$INGEST_URL" || true)
   if [[ "$http_code" == "200" || "$http_code" == "202" ]]; then
     ok=$((ok+1))
   else
     failed=$((failed+1))
-    echo "FAILED[$idx] status=$http_code body=$(cat /tmp/ingest_body.json)" >&2
+    echo "FAILED[$idx] status=$http_code body=$(cat "$TMP_BODY")" >&2
   fi
 done < <(
   python3 - <<'PY'
