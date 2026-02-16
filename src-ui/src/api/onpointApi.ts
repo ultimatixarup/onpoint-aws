@@ -22,6 +22,11 @@ export type TenantSummary = {
   id: string;
   name: string;
   status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  updatedBy?: string;
+  updatedByEmail?: string;
+  updatedByName?: string;
 };
 
 export type VehicleSummary = {
@@ -164,6 +169,15 @@ function mapTenant(record: Record<string, unknown>): TenantSummary | undefined {
     id: String(id),
     name: String(name),
     status: status ? String(status) : undefined,
+    createdAt: record.createdAt ? String(record.createdAt) : undefined,
+    updatedAt: record.updatedAt ? String(record.updatedAt) : undefined,
+    updatedBy: record.updatedBy ? String(record.updatedBy) : undefined,
+    updatedByEmail: record.updatedByEmail
+      ? String(record.updatedByEmail)
+      : undefined,
+    updatedByName: record.updatedByName
+      ? String(record.updatedByName)
+      : undefined,
   };
 }
 

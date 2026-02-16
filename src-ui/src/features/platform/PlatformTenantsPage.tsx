@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card } from "../../ui/Card";
+import { useEffect, useMemo, useState } from "react";
 import { createTenant, fetchTenants, updateTenant } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
+import { Card } from "../../ui/Card";
 
 function parseJson(value: string) {
   if (!value.trim()) return undefined;
@@ -24,6 +24,24 @@ function slugify(value: string) {
 
 const DEFAULT_RETENTION_DAYS = 90;
 const DEFAULT_CONFIG = { retentionDays: String(DEFAULT_RETENTION_DAYS) };
+
+function formatDateTime(value?: string) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+
+function formatUpdatedBy(tenant: Record<string, unknown>) {
+  const updatedBy = tenant.updatedBy ?? tenant.actor ?? tenant.updatedByUserId;
+  const updatedByName = tenant.updatedByName;
+  const updatedByEmail = tenant.updatedByEmail;
+  const value =
+    (updatedByName as string | undefined) ??
+    (updatedByEmail as string | undefined) ??
+    (updatedBy as string | undefined);
+  return value && String(value).trim() ? String(value) : "Not available";
+}
 
 export function PlatformTenantsPage() {
   const queryClient = useQueryClient();
@@ -232,13 +250,11 @@ export function PlatformTenantsPage() {
             ) : error ? (
               <p>Unable to load tenants.</p>
             ) : (
-              <table className="table">
+              <table className="table table--tenants">
                 <thead>
                   <tr>
                     <th>Tenant Name</th>
-                    <th>Tenant ID</th>
                     <th>Status</th>
-                    <th>Created</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -252,32 +268,11 @@ export function PlatformTenantsPage() {
                     >
                       <td>{tenant.name}</td>
                       <td>
-                        <div className="inline">
-                          <span className="mono">{tenant.id}</span>
-                          <button
-                            type="button"
-                            className="icon-button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleCopy(tenant.id);
-                            }}
-                          >
-                            Copy
-                          </button>
-                        </div>
-                      </td>
-                      <td>
                         <span
                           className={`badge badge--${tenant.status?.toLowerCase() ?? "active"}`}
                         >
                           {tenant.status ?? "ACTIVE"}
                         </span>
-                      </td>
-                      <td>
-                        {
-                          (tenant as Record<string, unknown>)
-                            .createdAt as string
-                        }
                       </td>
                     </tr>
                   ))}
@@ -334,24 +329,28 @@ export function PlatformTenantsPage() {
                     <div>
                       <div className="text-muted">Created</div>
                       <div>
-                        {
+                        {formatDateTime(
                           (selectedTenant as Record<string, unknown>)
-                            .createdAt as string
-                        }
+                            .createdAt as string,
+                        )}
                       </div>
                     </div>
                     <div>
                       <div className="text-muted">Last Updated</div>
                       <div>
-                        {
+                        {formatDateTime(
                           (selectedTenant as Record<string, unknown>)
-                            .updatedAt as string
-                        }
+                            .updatedAt as string,
+                        )}
                       </div>
                     </div>
                     <div>
                       <div className="text-muted">Updated By</div>
-                      <div>Unknown</div>
+                      <div>
+                        {formatUpdatedBy(
+                          selectedTenant as Record<string, unknown>,
+                        )}
+                      </div>
                     </div>
                   </div>
                   <label className="form__field">

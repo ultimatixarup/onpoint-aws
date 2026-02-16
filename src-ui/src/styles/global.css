@@ -1665,6 +1665,7 @@ a {
   border-radius: var(--radius-md);
   padding: var(--space-4);
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
 .card__title {
@@ -2030,6 +2031,91 @@ a {
 .platform-page {
   display: grid;
   gap: var(--space-5);
+}
+
+.platform-page .card {
+  padding: var(--space-5);
+}
+
+.platform-page .card__title {
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+
+.platform-page .detail-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.platform-page .detail-grid .text-muted {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.platform-page .detail-grid > div > div:last-child {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.platform-page .table {
+  table-layout: fixed;
+}
+
+.platform-page .table th,
+.platform-page .table td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.platform-page .table td .mono {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.platform-page .table--tenants th,
+.platform-page .table--tenants td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.platform-page .table--tenants td .mono {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.platform-page .table--tenants .inline {
+  flex-wrap: nowrap;
+}
+
+.platform-page .detail-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.platform-page .detail-grid > div {
+  min-width: 0;
+}
+
+.platform-page .detail-grid .inline {
+  flex-wrap: wrap;
+}
+
+.platform-page .detail-grid .mono {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.platform-page .detail-grid > div > div:last-child {
+  font-size: 14px;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .platform-hero {
