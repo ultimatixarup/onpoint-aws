@@ -18,6 +18,9 @@ Parameters:
   EnableTenantFleetIndex:
     Type: String
     Default: "false"
+  EnableDriverTenantFleetIndex:
+    Type: String
+    Default: "false"
   IngressCodeS3Key:
     Type: String
     Default: lambda/ingress.zip
@@ -109,6 +112,7 @@ Resources:
         Env: !Ref Env
         ProjectName: !Ref ProjectName
         EnableTenantFleetIndex: !Ref EnableTenantFleetIndex
+        EnableDriverTenantFleetIndex: !Ref EnableDriverTenantFleetIndex
       TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/tables.yaml
 
   GeofencingStack:
@@ -164,6 +168,7 @@ Resources:
         GeofenceEventsTableName: !GetAtt TablesStack.Outputs.GeofenceEventsTableName
         GeofenceEventsTtlDays: !Ref GeofenceEventsTtlDays
         EnableTenantFleetIndex: !Ref EnableTenantFleetIndex
+        EnableDriverTenantFleetIndex: !Ref EnableDriverTenantFleetIndex
         UserPoolId: !If [UseProvidedUserPoolId, !Ref UserPoolId, !GetAtt CognitoStack.Outputs.UserPoolId]
         IngressCodeS3Bucket: !Ref TemplateBucket
         IngressCodeS3Key: !Ref IngressCodeS3Key

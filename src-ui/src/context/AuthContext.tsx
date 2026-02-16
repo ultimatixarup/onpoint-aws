@@ -1,20 +1,26 @@
 import {
-    fetchAuthSession,
-    getCurrentUser,
-    signIn,
-    signOut,
+  fetchAuthSession,
+  getCurrentUser,
+  signIn,
+  signOut,
 } from "aws-amplify/auth";
 import {
-    createContext,
-    PropsWithChildren,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
+  createContext,
+  PropsWithChildren,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
 } from "react";
 import { Navigate } from "react-router-dom";
 
-export type AuthRole = "platform_admin" | "tenant_admin" | "tenant_user";
+export type AuthRole =
+  | "platform_admin"
+  | "tenant_admin"
+  | "tenant_user"
+  | "fleet_manager"
+  | "dispatcher"
+  | "read_only";
 
 type AuthState = {
   status: "loading" | "authenticated" | "unauthenticated";
@@ -38,9 +44,14 @@ function mapGroupsToRoles(groups: string[] | undefined): AuthRole[] {
     platformadmin: "platform_admin",
     tenantadmin: "tenant_admin",
     tenantuser: "tenant_user",
+    fleetmanager: "fleet_manager",
+    dispatcher: "dispatcher",
+    readonly: "read_only",
     platform_admin: "platform_admin",
     tenant_admin: "tenant_admin",
     tenant_user: "tenant_user",
+    fleet_manager: "fleet_manager",
+    read_only: "read_only",
   };
 
   return groups
