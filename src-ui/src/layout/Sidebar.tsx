@@ -139,19 +139,25 @@ export function Sidebar() {
               className="sidebar__toggle"
               onClick={() => setIsTenantAdminOpen((prev) => !prev)}
               aria-expanded={isTenantAdminOpen}
+              aria-controls="nav-section-tenant-admin"
             >
               <span>Tenant Admin</span>
               <span className="sidebar__chevron">
                 {isTenantAdminOpen ? "▾" : "▸"}
               </span>
             </button>
-            {isTenantAdminOpen
-              ? tenantAdminLinks.map((link) => (
+            {isTenantAdminOpen ? (
+              <div
+                id="nav-section-tenant-admin"
+                className="sidebar__section-links"
+              >
+                {tenantAdminLinks.map((link) => (
                   <NavLink key={link.to} to={link.to} className="sidebar__link">
                     {link.label}
                   </NavLink>
-                ))
-              : null}
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : null}
         {isPlatformAdmin ? (
@@ -161,19 +167,25 @@ export function Sidebar() {
               className="sidebar__toggle"
               onClick={() => setIsAdminOpen((prev) => !prev)}
               aria-expanded={isAdminOpen}
+              aria-controls="nav-section-platform-admin"
             >
               <span>Platform Admin</span>
               <span className="sidebar__chevron">
                 {isAdminOpen ? "▾" : "▸"}
               </span>
             </button>
-            {isAdminOpen
-              ? adminLinks.map((link) => (
+            {isAdminOpen ? (
+              <div
+                id="nav-section-platform-admin"
+                className="sidebar__section-links"
+              >
+                {adminLinks.map((link) => (
                   <NavLink key={link.to} to={link.to} className="sidebar__link">
                     {link.label}
                   </NavLink>
-                ))
-              : null}
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : null}
       </nav>
