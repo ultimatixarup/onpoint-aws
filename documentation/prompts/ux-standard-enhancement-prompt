@@ -1,0 +1,158 @@
+You are a senior frontend architect and UX engineer working on the OnPoint Fleet Command platform.
+
+All work MUST comply with:
+"OnPoint Enterprise UX & Frontend Engineering Standards v2.0"
+
+This document is the authoritative UX specification for all UI enhancements, bug fixes, and refactoring.
+
+---
+
+# OBJECTIVE
+
+Perform a full UX audit and refactor of the current UI implementation to ensure strict compliance with the Enterprise UX Standard v2.0.
+
+This includes:
+
+1. Reviewing current component structure
+2. Identifying deviations from the standard
+3. Implementing required UX corrections
+4. Improving accessibility
+5. Standardizing validation, loading, and feedback patterns
+
+---
+
+# SCOPE
+
+Review and update:
+
+- All Create/Edit modals
+- All data tables
+- All forms
+- All toast notifications
+- Loading and empty states
+- Accessibility attributes
+- Submission and API interaction behavior
+
+---
+
+# STEP 1 – UX AUDIT
+
+Analyze the current UI and produce:
+
+## 1. Validation Compliance Check
+- Are required fields clearly marked with `*`?
+- Is validation happening on blur and submit?
+- Are error messages inline and accessible?
+- Are immutable identifiers editable post-creation?
+
+## 2. Primary CTA Behavior
+- Is the CTA disabled until valid?
+- Is duplicate submission prevented?
+- Is loading state visible?
+
+## 3. Success / Error Feedback
+- Is a non-blocking success toast shown?
+- Does modal auto-close on success?
+- Does table refresh?
+- Are API errors mapped properly?
+
+## 4. Accessibility Compliance
+- Proper label association?
+- aria-invalid usage?
+- aria-describedby linked?
+- Focus trap in modal?
+- ESC closes modal?
+
+## 5. Loading & Empty States
+- Are skeleton loaders used?
+- Is empty state clear and actionable?
+
+## 6. Table UX Consistency
+- Sorting available?
+- Search/filter implemented?
+- Pagination consistent?
+- Row hover states?
+- Newly created row highlight?
+
+Provide a structured compliance report before making changes.
+
+---
+
+# STEP 2 – IMPLEMENT ENTERPRISE FIXES
+
+Refactor the UI to comply with UX Standard v2.0:
+
+## Modal Enhancements
+- Required fields enforced
+- Inline validation added
+- Disable primary CTA until valid
+- Add spinner during submission
+- Prevent duplicate submits
+- Auto-focus first field
+- Focus first invalid field on error
+
+## Toast Standardization
+- Use centralized Toast Provider
+- Support: success, error, warning, info
+- Auto-dismiss 3–5 seconds
+- Do not block workflow
+
+## Form Architecture
+- Implement reusable enterprise validation hook
+- Prevent closing modal with unsaved changes
+- Map API validation errors to fields
+
+## Accessibility
+- Ensure all inputs have associated labels
+- Add aria-invalid when needed
+- Link error text with aria-describedby
+- Add proper keyboard navigation
+
+## Data Integrity
+- Ensure required identifiers are immutable after creation
+- Validate uniqueness via API
+
+---
+
+# STEP 3 – CODE OUTPUT
+
+Provide:
+
+1. Updated component code
+2. Reusable hooks created
+3. Toast provider implementation
+4. Any new utility components
+5. Explanation of changes
+6. Confirmation of compliance with UX Standard v2.0
+
+---
+
+# STEP 4 – FUTURE-PROOFING
+
+Propose:
+
+- Reusable modal wrapper component
+- Enterprise Form component abstraction
+- Table standardization wrapper
+- Validation utility library
+- Design token enforcement improvements
+
+---
+
+# CONSTRAINTS
+
+- Maintain existing visual branding
+- Do not modify backend APIs
+- Do not introduce unnecessary dependencies
+- Keep code modular and scalable
+- Follow React best practices (functional components + hooks)
+
+---
+
+# OUTPUT FORMAT
+
+1. Compliance Audit Report
+2. Refactored Code
+3. New Shared Utilities
+4. UX Compliance Confirmation
+5. Future Enhancement Recommendations

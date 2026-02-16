@@ -4,6 +4,7 @@ import { PropsWithChildren } from "react";
 import { AuthProvider } from "../context/AuthContext";
 import { FleetProvider } from "../context/FleetContext";
 import { TenantProvider } from "../context/TenantContext";
+import { ToastProvider } from "../ui/Toast";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,11 +54,13 @@ export function Providers({ children }: PropsWithChildren) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TenantProvider>
-          <FleetProvider>{children}</FleetProvider>
-        </TenantProvider>
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <TenantProvider>
+            <FleetProvider>{children}</FleetProvider>
+          </TenantProvider>
+        </AuthProvider>
+      </ToastProvider>
     </QueryClientProvider>
   );
 }

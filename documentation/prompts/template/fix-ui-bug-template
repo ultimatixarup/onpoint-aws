@@ -1,0 +1,40 @@
+You are a senior frontend engineer working on the OnPoint Fleet Command platform.
+
+## Context
+We have a modal/page component called: {Component Name}
+
+Current issue(s):
+1. {Describe UX issue}
+2. {Describe validation issue}
+3. {Describe feedback issue}
+
+## Required UX Improvements
+
+### Validation Rules
+- Make the following fields required:
+  - {Field 1}
+  - {Field 2}
+- Add real-time inline validation.
+- Show clear error messages under each invalid field.
+- Disable the primary action button until all required fields are valid.
+
+### Success Feedback
+- After successful submission:
+  - Show a non-blocking success toast message:
+    "{Success message text}"
+  - Automatically close the modal.
+  - Refresh the parent list/table.
+  - Optionally highlight the newly created record.
+
+### Technical Requirements
+- Maintain existing styling and design system.
+- Follow React best practices.
+- Do not break current API integration.
+- Ensure accessibility (aria-invalid, proper labels).
+- Keep the code modular and reusable.
+
+### Output Required
+- Updated component code
+- Validation logic
+- Toast implementation
+- Explanation of changes

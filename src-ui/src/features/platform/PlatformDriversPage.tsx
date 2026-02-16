@@ -7,7 +7,11 @@ import {
     updateDriver,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
+import { useEnterpriseForm } from "../../hooks/useEnterpriseForm";
 import { Card } from "../../ui/Card";
+import { Modal } from "../../ui/Modal";
+import { TableSkeleton } from "../../ui/TableSkeleton";
+import { useToast } from "../../ui/Toast";
 import { formatDate } from "../../utils/date";
 import { createIdempotencyKey } from "../../utils/id";
 
@@ -26,6 +30,7 @@ function formatTimestamp(value?: string | null) {
 
 export function PlatformDriversPage() {
   const queryClient = useQueryClient();
+  const { addToast } = useToast();
   const { data: tenants = [] } = useQuery({
     queryKey: queryKeys.tenants(undefined, true),
     queryFn: () => fetchTenants({ isAdmin: true }),
@@ -51,10 +56,21 @@ export function PlatformDriversPage() {
     enabled: Boolean(tenantId),
   });
 
-  const [driverId, setDriverId] = useState("");
-  const [customerId, setCustomerId] = useState("");
-  const [metadata, setMetadata] = useState("");
-  const [reason, setReason] = useState("");
+  const createForm = useEnterpriseForm(
+    { driverId: "", customerId: "", metadata: "", reason: "" },
+    {
+      driverId: (value) =>
+        value && String(value).trim() ? null : "Driver ID is required.",
+      metadata: (value) => {
+        const text = String(value ?? "").trim();
+        if (!text) return null;
+        return parseJson(text) ? null : "Metadata JSON is invalid.";
+      },
+    },
+  );
+  const [isCreateSubmitting, setIsCreateSubmitting] = useState(false);
+  const [isUpdateSubmitting, setIsUpdateSubmitting] = useState(false);
+  const [recentDriverId, setRecentDriverId] = useState("");
 
   const [selectedDriverId, setSelectedDriverId] = useState("");
   const selectedDriver = useMemo(
@@ -78,6 +94,22 @@ export function PlatformDriversPage() {
     );
   }, [selectedDriver]);
 
+  useEffect(() => {
+    if (!isCreateOpen) {
+      createForm.resetForm({ driverId: "", customerId: "", metadata: "", reason: "" });
+    }
+  }, [createForm.resetForm, isCreateOpen]);
+
+  useEffect(() => {
+    setSelectedDriverId("");
+  }, [tenantId, fleetId]);
+
+  useEffect(() => {
+    if (!recentDriverId) return;
+    const timer = window.setTimeout(() => setRecentDriverId(""), 4000);
+    return () => window.clearTimeout(timer);
+  }, [recentDriverId]);
+
   const filteredDrivers = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return drivers;
@@ -92,38 +124,66 @@ export function PlatformDriversPage() {
   }, [drivers, search]);
 
   const handleCreate = async () => {
-    if (!tenantId) return;
-    await createDriver(
-      {
-        driverId: driverId || undefined,
-        tenantId,
-        fleetId: fleetId || undefined,
-        customerId: customerId || undefined,
-        metadata: parseJson(metadata),
-        reason: reason || undefined,
-      },
-      createIdempotencyKey(),
-    );
-    setDriverId("");
-    setCustomerId("");
-    setMetadata("");
-    setReason("");
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.drivers(tenantId, fleetId || undefined),
-    });
+    if (!tenantId || isCreateSubmitting) return;
+    const nextErrors = createForm.validateAll();
+    if (Object.values(nextErrors).some(Boolean)) {
+      createForm.focusFirstInvalid({
+        order: ["driverId", "customerId", "metadata", "reason"],
+        getId: (field) => `create-${String(field)}`,
+      });
+      return;
+    }
+    try {
+      setIsCreateSubmitting(true);
+      const createdDriverId = String(createForm.values.driverId).trim();
+      await createDriver(
+        {
+          driverId: createdDriverId || undefined,
+          tenantId,
+          fleetId: fleetId || undefined,
+          customerId: String(createForm.values.customerId || "").trim() || undefined,
+          metadata: parseJson(String(createForm.values.metadata || "")),
+          reason: String(createForm.values.reason || "").trim() || undefined,
+        },
+        createIdempotencyKey(),
+      );
+      createForm.resetForm({ driverId: "", customerId: "", metadata: "", reason: "" });
+      setIsCreateOpen(false);
+      setRecentDriverId(createdDriverId);
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.drivers(tenantId, fleetId || undefined),
+      });
+      addToast({ type: "success", message: "Driver created successfully." });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to create driver.";
+      addToast({ type: "error", message });
+    } finally {
+      setIsCreateSubmitting(false);
+    }
   };
 
   const handleUpdate = async () => {
-    if (!editDriverId || !tenantId) return;
-    await updateDriver(tenantId, editDriverId, {
-      fleetId: editFleetId || undefined,
-      customerId: editCustomerId || undefined,
-      metadata: parseJson(editMetadata),
-    });
-    setEditMetadata("");
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.drivers(tenantId, fleetId || undefined),
-    });
+    if (!editDriverId || !tenantId || isUpdateSubmitting) return;
+    try {
+      setIsUpdateSubmitting(true);
+      await updateDriver(tenantId, editDriverId, {
+        fleetId: editFleetId || undefined,
+        customerId: editCustomerId || undefined,
+        metadata: parseJson(editMetadata),
+      });
+      setEditMetadata("");
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.drivers(tenantId, fleetId || undefined),
+      });
+      addToast({ type: "success", message: "Driver updated successfully." });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to update driver.";
+      addToast({ type: "error", message });
+    } finally {
+      setIsUpdateSubmitting(false);
+    }
   };
 
   return (
@@ -183,9 +243,19 @@ export function PlatformDriversPage() {
             {!tenantId ? (
               <p>Select a tenant to view drivers.</p>
             ) : isLoading ? (
-              <p>Loading drivers...</p>
+              <TableSkeleton rows={5} columns={5} />
             ) : error ? (
               <p>Unable to load drivers.</p>
+            ) : filteredDrivers.length === 0 ? (
+              <div className="stack">
+                <p>No drivers found.</p>
+                <button
+                  className="btn btn--secondary"
+                  onClick={() => setIsCreateOpen(true)}
+                >
+                  Create your first driver
+                </button>
+              </div>
             ) : (
               <table className="table">
                 <thead>
@@ -201,11 +271,14 @@ export function PlatformDriversPage() {
                   {filteredDrivers.map((driver) => (
                     <tr
                       key={driver.driverId}
-                      className={
+                      className={[
                         driver.driverId === selectedDriverId
                           ? "is-selected"
-                          : undefined
-                      }
+                          : "",
+                        driver.driverId === recentDriverId ? "is-new" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                       onClick={() => setSelectedDriverId(driver.driverId)}
                     >
                       <td>{driver.name ?? "—"}</td>
@@ -354,11 +427,19 @@ export function PlatformDriversPage() {
                         : "",
                     );
                   }}
+                  disabled={isUpdateSubmitting}
                 >
                   Cancel
                 </button>
-                <button className="btn" onClick={handleUpdate}>
-                  Save Changes
+                <button
+                  className={`btn ${isUpdateSubmitting ? "btn--loading" : ""}`}
+                  onClick={handleUpdate}
+                  disabled={isUpdateSubmitting}
+                >
+                  {isUpdateSubmitting ? (
+                    <span className="btn__spinner" aria-hidden="true" />
+                  ) : null}
+                  {isUpdateSubmitting ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </div>
@@ -366,78 +447,114 @@ export function PlatformDriversPage() {
         </Card>
       </div>
 
-      {isCreateOpen ? (
-        <div className="modal__backdrop">
-          <div className="modal">
-            <div className="modal__header">
-              <h2>Create Driver</h2>
-              <button
-                type="button"
-                className="icon-button"
-                onClick={() => setIsCreateOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="modal__body">
-              <div className="stack">
-                <label className="form__field">
-                  <span>Driver ID</span>
-                  <input
-                    className="input"
-                    placeholder="Optional"
-                    value={driverId}
-                    onChange={(event) => setDriverId(event.target.value)}
-                  />
-                </label>
-                <label className="form__field">
-                  <span>Customer ID</span>
-                  <input
-                    className="input"
-                    placeholder="Optional"
-                    value={customerId}
-                    onChange={(event) => setCustomerId(event.target.value)}
-                  />
-                </label>
-                <label className="form__field">
-                  <span>Metadata JSON</span>
-                  <textarea
-                    className="textarea"
-                    placeholder='Optional e.g. {"license": "A123"}'
-                    value={metadata}
-                    onChange={(event) => setMetadata(event.target.value)}
-                    rows={5}
-                  />
-                </label>
-                <label className="form__field">
-                  <span>Reason</span>
-                  <input
-                    className="input"
-                    placeholder="Optional"
-                    value={reason}
-                    onChange={(event) => setReason(event.target.value)}
-                  />
-                </label>
-              </div>
-            </div>
-            <div className="modal__footer">
-              <button
-                className="btn btn--secondary"
-                onClick={() => setIsCreateOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn"
-                onClick={handleCreate}
-                disabled={!tenantId}
-              >
-                Create Driver
-              </button>
-            </div>
-          </div>
+      <Modal
+        isOpen={isCreateOpen}
+        title="Create Driver"
+        onRequestClose={() => setIsCreateOpen(false)}
+        isDirty={createForm.isDirty}
+        initialFocusId="create-driverId"
+        footer={
+          <>
+            <button
+              className="btn btn--secondary"
+              onClick={() => setIsCreateOpen(false)}
+              disabled={isCreateSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              className={`btn ${isCreateSubmitting ? "btn--loading" : ""}`}
+              onClick={handleCreate}
+              disabled={!tenantId || !createForm.isValid || isCreateSubmitting}
+            >
+              {isCreateSubmitting ? (
+                <span className="btn__spinner" aria-hidden="true" />
+              ) : null}
+              {isCreateSubmitting ? "Creating..." : "Create Driver"}
+            </button>
+          </>
+        }
+      >
+        <div className="stack">
+          <label className="form__field" htmlFor="create-driverId">
+            <span>
+              Driver ID<span className="required">*</span>
+            </span>
+            <input
+              id="create-driverId"
+              name="driverId"
+              className="input"
+              placeholder="e.g. driver-001"
+              value={String(createForm.values.driverId)}
+              onChange={createForm.handleChange}
+              onBlur={createForm.handleBlur}
+              aria-invalid={Boolean(
+                createForm.touched.driverId && createForm.errors.driverId,
+              )}
+              aria-describedby={
+                createForm.touched.driverId && createForm.errors.driverId
+                  ? "create-driverId-error"
+                  : undefined
+              }
+            />
+            {createForm.touched.driverId && createForm.errors.driverId ? (
+              <span id="create-driverId-error" className="form__error">
+                {createForm.errors.driverId}
+              </span>
+            ) : null}
+          </label>
+          <label className="form__field" htmlFor="create-customerId">
+            <span>Customer ID</span>
+            <input
+              id="create-customerId"
+              name="customerId"
+              className="input"
+              placeholder="Optional"
+              value={String(createForm.values.customerId)}
+              onChange={createForm.handleChange}
+              onBlur={createForm.handleBlur}
+            />
+          </label>
+          <label className="form__field" htmlFor="create-metadata">
+            <span>Metadata JSON</span>
+            <textarea
+              id="create-metadata"
+              name="metadata"
+              className="textarea"
+              placeholder='Optional e.g. {"license": "A123"}'
+              value={String(createForm.values.metadata)}
+              onChange={createForm.handleChange}
+              onBlur={createForm.handleBlur}
+              rows={5}
+              aria-invalid={Boolean(
+                createForm.touched.metadata && createForm.errors.metadata,
+              )}
+              aria-describedby={
+                createForm.touched.metadata && createForm.errors.metadata
+                  ? "create-metadata-error"
+                  : undefined
+              }
+            />
+            {createForm.touched.metadata && createForm.errors.metadata ? (
+              <span id="create-metadata-error" className="form__error">
+                {createForm.errors.metadata}
+              </span>
+            ) : null}
+          </label>
+          <label className="form__field" htmlFor="create-reason">
+            <span>Reason</span>
+            <input
+              id="create-reason"
+              name="reason"
+              className="input"
+              placeholder="Optional"
+              value={String(createForm.values.reason)}
+              onChange={createForm.handleChange}
+              onBlur={createForm.handleBlur}
+            />
+          </label>
         </div>
-      ) : null}
+      </Modal>
     </div>
   );
 }

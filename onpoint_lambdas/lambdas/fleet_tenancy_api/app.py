@@ -1688,7 +1688,13 @@ def _get_fleet(fleet_id: str, headers: Dict[str, str], role: str, caller_tenant:
     scoped, scope_err = _apply_fleet_scope(role, headers, fleet_id)
     if scope_err:
         return _resp(403, {"error": scope_err})
-    return _resp(200, item)
+    tenant_name = tenant_id
+    tenant_item = _ddb_get(TENANTS_TABLE, {"PK": f"TENANT#{tenant_id}", "SK": "META"}) if tenant_id else None
+    if isinstance(tenant_item, dict) and tenant_item.get("name"):
+        tenant_name = tenant_item.get("name")
+    response_item = dict(item)
+    response_item["tenantName"] = tenant_name
+    return _resp(200, response_item)
 
 
 def _list_fleets(query: Dict[str, str], headers: Dict[str, str], role: str, caller_tenant: Optional[str]) -> dict:
@@ -1714,7 +1720,12 @@ def _list_fleets(query: Dict[str, str], headers: Dict[str, str], role: str, call
                 return _resp(403, {"error": scope_err})
             if scoped:
                 filtered = [it for it in filtered if it.get("fleetId") == scoped]
-    return _resp(200, {"items": filtered})
+    tenant_name = tenant_id
+    tenant_item = _ddb_get(TENANTS_TABLE, {"PK": f"TENANT#{tenant_id}", "SK": "META"})
+    if isinstance(tenant_item, dict) and tenant_item.get("name"):
+        tenant_name = tenant_item.get("name")
+    enriched = [{**it, "tenantName": tenant_name} for it in filtered]
+    return _resp(200, {"items": enriched})
 
 
 def _patch_fleet(fleet_id: str, body: dict, headers: Dict[str, str], role: str, caller_tenant: Optional[str]) -> dict:

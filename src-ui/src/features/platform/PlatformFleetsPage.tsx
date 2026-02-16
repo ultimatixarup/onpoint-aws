@@ -8,7 +8,11 @@ import {
     updateFleet,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
+import { useEnterpriseForm } from "../../hooks/useEnterpriseForm";
 import { Card } from "../../ui/Card";
+import { Modal } from "../../ui/Modal";
+import { TableSkeleton } from "../../ui/TableSkeleton";
+import { useToast } from "../../ui/Toast";
 import { formatDate } from "../../utils/date";
 
 function parseJson(value: string) {
@@ -26,6 +30,7 @@ function formatTimestamp(value?: string | null) {
 
 export function PlatformFleetsPage() {
   const queryClient = useQueryClient();
+  const { addToast } = useToast();
   const { data: tenants = [] } = useQuery({
     queryKey: queryKeys.tenants(undefined, true),
     queryFn: () => fetchTenants({ isAdmin: true }),
@@ -34,6 +39,9 @@ export function PlatformFleetsPage() {
 
   const [search, setSearch] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isCreateSubmitting, setIsCreateSubmitting] = useState(false);
+  const [isUpdateSubmitting, setIsUpdateSubmitting] = useState(false);
+  const [recentFleetKey, setRecentFleetKey] = useState("");
   const [activeTab, setActiveTab] = useState<"overview" | "policies" | "audit">(
     "overview",
   );
@@ -64,12 +72,18 @@ export function PlatformFleetsPage() {
     {},
   );
 
-  const [fleetId, setFleetId] = useState("");
-  const [customerId, setCustomerId] = useState("");
-  const [name, setName] = useState("");
-  const [reason, setReason] = useState("");
+  const createForm = useEnterpriseForm({
+    fleetId: "",
+    customerId: "",
+    name: "",
+    reason: "",
+  });
 
   const [selectedFleetId, setSelectedFleetId] = useState("");
+  const selectedTenantName = useMemo(
+    () => tenants.find((tenant) => tenant.id === tenantId)?.name ?? tenantId,
+    [tenants, tenantId],
+  );
   const selectedFleet = useMemo(
     () => fleets.find((fleet) => fleet.fleetId === selectedFleetId),
     [fleets, selectedFleetId],
@@ -89,6 +103,27 @@ export function PlatformFleetsPage() {
     setEditReason("");
   }, [selectedFleet]);
 
+  useEffect(() => {
+    if (!isCreateOpen) {
+      createForm.resetForm({
+        fleetId: "",
+        customerId: "",
+        name: "",
+        reason: "",
+      });
+    }
+  }, [createForm.resetForm, isCreateOpen]);
+
+  useEffect(() => {
+    setSelectedFleetId("");
+  }, [tenantId]);
+
+  useEffect(() => {
+    if (!recentFleetKey) return;
+    const timer = window.setTimeout(() => setRecentFleetKey(""), 4000);
+    return () => window.clearTimeout(timer);
+  }, [recentFleetKey]);
+
   const filteredFleets = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return fleets;
@@ -102,35 +137,51 @@ export function PlatformFleetsPage() {
   }, [fleets, search]);
 
   const handleCreate = async () => {
-    if (!tenantId) return;
-    await createFleet({
-      fleetId: fleetId || undefined,
-      tenantId,
-      customerId: customerId || undefined,
-      name: name || undefined,
-      reason: reason || undefined,
-    });
-    setFleetId("");
-    setCustomerId("");
-    setName("");
-    setReason("");
-    queryClient.invalidateQueries({ queryKey: queryKeys.fleets(tenantId) });
+    if (!tenantId || isCreateSubmitting) return;
+    const fleetId = String(createForm.values.fleetId ?? "").trim();
+    const customerId = String(createForm.values.customerId ?? "").trim();
+    const name = String(createForm.values.name ?? "").trim();
+    const reason = String(createForm.values.reason ?? "").trim();
+
+    try {
+      setIsCreateSubmitting(true);
+      await createFleet({
+        fleetId: fleetId || undefined,
+        tenantId,
+        customerId: customerId || undefined,
+        name: name || undefined,
+        reason: reason || undefined,
+      });
+      createForm.resetForm({ fleetId: "", customerId: "", name: "", reason: "" });
+      setIsCreateOpen(false);
+      setRecentFleetKey((fleetId || name).toLowerCase());
+      queryClient.invalidateQueries({ queryKey: queryKeys.fleets(tenantId) });
+      addToast({ type: "success", message: "Fleet created successfully." });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to create fleet.";
+      addToast({ type: "error", message });
+    } finally {
+      setIsCreateSubmitting(false);
+    }
   };
 
   const handleUpdate = async () => {
-    if (!editFleetId) return;
-    await updateFleet(editFleetId, {
-      policies: parseJson(policies),
-      reason: editReason || undefined,
-    });
-    queryClient.invalidateQueries({ queryKey: queryKeys.fleets(tenantId) });
-  };
-
-  const handleCopy = async (value: string) => {
+    if (!editFleetId || isUpdateSubmitting) return;
     try {
-      await navigator.clipboard.writeText(value);
-    } catch {
-      // ignore
+      setIsUpdateSubmitting(true);
+      await updateFleet(editFleetId, {
+        policies: parseJson(policies),
+        reason: editReason || undefined,
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.fleets(tenantId) });
+      addToast({ type: "success", message: "Fleet updated." });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to update fleet.";
+      addToast({ type: "error", message });
+    } finally {
+      setIsUpdateSubmitting(false);
     }
   };
 
@@ -182,11 +233,19 @@ export function PlatformFleetsPage() {
             {!tenantId ? (
               <p>Select a tenant to view fleets.</p>
             ) : isLoading ? (
-              <p>Loading fleets...</p>
+              <TableSkeleton rows={5} columns={4} />
             ) : error ? (
               <p>Unable to load fleets.</p>
             ) : filteredFleets.length === 0 ? (
-              <p>No fleets found.</p>
+              <div className="stack">
+                <p>No fleets found.</p>
+                <button
+                  className="btn btn--secondary"
+                  onClick={() => setIsCreateOpen(true)}
+                >
+                  Create your first fleet
+                </button>
+              </div>
             ) : (
               <table className="table">
                 <thead>
@@ -201,28 +260,20 @@ export function PlatformFleetsPage() {
                   {filteredFleets.map((fleet) => (
                     <tr
                       key={fleet.fleetId}
-                      className={
-                        fleet.fleetId === selectedFleetId
-                          ? "is-selected"
-                          : undefined
-                      }
+                      className={[
+                        fleet.fleetId === selectedFleetId ? "is-selected" : "",
+                        fleet.fleetId.toLowerCase() === recentFleetKey ||
+                        (fleet.name ?? "").toLowerCase() === recentFleetKey
+                          ? "is-new"
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                       onClick={() => setSelectedFleetId(fleet.fleetId)}
                     >
                       <td>{fleet.name ?? fleet.fleetId}</td>
                       <td>
-                        <div className="inline">
-                          <span className="mono">{fleet.fleetId}</span>
-                          <button
-                            type="button"
-                            className="icon-button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleCopy(fleet.fleetId);
-                            }}
-                          >
-                            Copy
-                          </button>
-                        </div>
+                        <span className="mono">{fleet.fleetId}</span>
                       </td>
                       <td>
                         {fleet.customerId
@@ -281,20 +332,11 @@ export function PlatformFleetsPage() {
                   <div className="detail-grid">
                     <div>
                       <div className="text-muted">Fleet ID</div>
-                      <div className="inline">
-                        <span className="mono">{selectedFleet.fleetId}</span>
-                        <button
-                          type="button"
-                          className="icon-button"
-                          onClick={() => handleCopy(selectedFleet.fleetId)}
-                        >
-                          Copy
-                        </button>
-                      </div>
+                      <div className="mono">{selectedFleet.fleetId}</div>
                     </div>
                     <div>
                       <div className="text-muted">Tenant</div>
-                      <div>{tenantId}</div>
+                      <div>{selectedTenantName || "—"}</div>
                     </div>
                     <div>
                       <div className="text-muted">Customer</div>
@@ -366,15 +408,19 @@ export function PlatformFleetsPage() {
                     );
                     setEditReason("");
                   }}
+                  disabled={isUpdateSubmitting}
                 >
                   Cancel
                 </button>
                 <button
-                  className="btn"
+                  className={`btn ${isUpdateSubmitting ? "btn--loading" : ""}`}
                   onClick={handleUpdate}
-                  disabled={!editFleetId}
+                  disabled={!editFleetId || isUpdateSubmitting}
                 >
-                  Save Changes
+                  {isUpdateSubmitting ? (
+                    <span className="btn__spinner" aria-hidden="true" />
+                  ) : null}
+                  {isUpdateSubmitting ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </div>
@@ -382,73 +428,85 @@ export function PlatformFleetsPage() {
         </Card>
       </div>
 
-      {isCreateOpen ? (
-        <div className="modal__backdrop">
-          <div className="modal">
-            <div className="modal__header">
-              <h2>Create Fleet</h2>
-              <button
-                type="button"
-                className="icon-button"
-                onClick={() => setIsCreateOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="modal__body">
-              <div className="stack">
-                <label className="form__field">
-                  <span>Fleet ID</span>
-                  <input
-                    className="input"
-                    placeholder="Optional"
-                    value={fleetId}
-                    onChange={(event) => setFleetId(event.target.value)}
-                  />
-                </label>
-                <label className="form__field">
-                  <span>Customer ID</span>
-                  <input
-                    className="input"
-                    placeholder="Optional"
-                    value={customerId}
-                    onChange={(event) => setCustomerId(event.target.value)}
-                  />
-                </label>
-                <label className="form__field">
-                  <span>Name</span>
-                  <input
-                    className="input"
-                    placeholder="Optional"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                  />
-                </label>
-                <label className="form__field">
-                  <span>Reason</span>
-                  <input
-                    className="input"
-                    placeholder="Optional"
-                    value={reason}
-                    onChange={(event) => setReason(event.target.value)}
-                  />
-                </label>
-              </div>
-            </div>
-            <div className="modal__footer">
-              <button
-                className="btn btn--secondary"
-                onClick={() => setIsCreateOpen(false)}
-              >
-                Cancel
-              </button>
-              <button className="btn" onClick={handleCreate}>
-                Create Fleet
-              </button>
-            </div>
-          </div>
+      <Modal
+        isOpen={isCreateOpen}
+        title="Create Fleet"
+        onRequestClose={() => setIsCreateOpen(false)}
+        isDirty={createForm.isDirty}
+        initialFocusId="create-fleet-id"
+        footer={
+          <>
+            <button
+              className="btn btn--secondary"
+              onClick={() => setIsCreateOpen(false)}
+              disabled={isCreateSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              className={`btn ${isCreateSubmitting ? "btn--loading" : ""}`}
+              onClick={handleCreate}
+              disabled={!tenantId || isCreateSubmitting}
+            >
+              {isCreateSubmitting ? (
+                <span className="btn__spinner" aria-hidden="true" />
+              ) : null}
+              {isCreateSubmitting ? "Creating..." : "Create Fleet"}
+            </button>
+          </>
+        }
+      >
+        <div className="stack">
+          <label className="form__field" htmlFor="create-fleet-id">
+            <span>Fleet ID</span>
+            <input
+              id="create-fleet-id"
+              name="fleetId"
+              className="input"
+              placeholder="Optional"
+              value={String(createForm.values.fleetId)}
+              onChange={createForm.handleChange}
+              onBlur={createForm.handleBlur}
+            />
+          </label>
+          <label className="form__field" htmlFor="create-customer-id">
+            <span>Customer ID</span>
+            <input
+              id="create-customer-id"
+              name="customerId"
+              className="input"
+              placeholder="Optional"
+              value={String(createForm.values.customerId)}
+              onChange={createForm.handleChange}
+              onBlur={createForm.handleBlur}
+            />
+          </label>
+          <label className="form__field" htmlFor="create-fleet-name">
+            <span>Name</span>
+            <input
+              id="create-fleet-name"
+              name="name"
+              className="input"
+              placeholder="Optional"
+              value={String(createForm.values.name)}
+              onChange={createForm.handleChange}
+              onBlur={createForm.handleBlur}
+            />
+          </label>
+          <label className="form__field" htmlFor="create-fleet-reason">
+            <span>Reason</span>
+            <input
+              id="create-fleet-reason"
+              name="reason"
+              className="input"
+              placeholder="Optional"
+              value={String(createForm.values.reason)}
+              onChange={createForm.handleChange}
+              onBlur={createForm.handleBlur}
+            />
+          </label>
         </div>
-      ) : null}
+      </Modal>
     </div>
   );
 }

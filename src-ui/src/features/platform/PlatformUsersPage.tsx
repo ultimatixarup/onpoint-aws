@@ -1,18 +1,23 @@
-import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card } from "../../ui/Card";
+import { useEffect, useMemo, useState } from "react";
 import {
-  createTenantAdmin,
-  createTenantUser,
-  fetchTenants,
-  fetchUsers,
-  setUserStatus,
-  updateUserRoles,
+    createTenantAdmin,
+    createTenantUser,
+    fetchTenants,
+    fetchUsers,
+    setUserStatus,
+    updateUserRoles,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
+import { useEnterpriseForm } from "../../hooks/useEnterpriseForm";
+import { Card } from "../../ui/Card";
+import { Modal } from "../../ui/Modal";
+import { TableSkeleton } from "../../ui/TableSkeleton";
+import { useToast } from "../../ui/Toast";
 
 export function PlatformUsersPage() {
   const queryClient = useQueryClient();
+  const { addToast } = useToast();
   const { data: tenants = [] } = useQuery({
     queryKey: queryKeys.tenants(undefined, true),
     queryFn: () => fetchTenants({ isAdmin: true }),
@@ -25,6 +30,22 @@ export function PlatformUsersPage() {
     "overview",
   );
 
+  const createForm = useEnterpriseForm(
+    { email: "", name: "", roles: "" },
+    {
+      email: (value) => {
+        const text = String(value ?? "").trim();
+        if (!text) return "Email is required.";
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)
+          ? null
+          : "Enter a valid email address.";
+      },
+    },
+  );
+  const [isCreateSubmitting, setIsCreateSubmitting] = useState(false);
+  const [isAccessSubmitting, setIsAccessSubmitting] = useState(false);
+  const [recentUserKey, setRecentUserKey] = useState("");
+
   const {
     data: users = [],
     isLoading,
@@ -35,9 +56,6 @@ export function PlatformUsersPage() {
     enabled: Boolean(tenantId),
   });
 
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [roles, setRoles] = useState("");
   const [createAdmin, setCreateAdmin] = useState(false);
 
   const [selectedUserId, setSelectedUserId] = useState("");
@@ -52,6 +70,23 @@ export function PlatformUsersPage() {
     setRoleUpdate(selectedUser.roles?.join(", ") ?? "");
   }, [selectedUser]);
 
+  useEffect(() => {
+    if (!isCreateOpen) {
+      createForm.resetForm({ email: "", name: "", roles: "" });
+      setCreateAdmin(false);
+    }
+  }, [createForm.resetForm, isCreateOpen]);
+
+  useEffect(() => {
+    setSelectedUserId("");
+  }, [tenantId]);
+
+  useEffect(() => {
+    if (!recentUserKey) return;
+    const timer = window.setTimeout(() => setRecentUserKey(""), 4000);
+    return () => window.clearTimeout(timer);
+  }, [recentUserKey]);
+
   const filteredUsers = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return users;
@@ -65,41 +100,84 @@ export function PlatformUsersPage() {
   }, [users, search]);
 
   const handleCreateUser = async () => {
-    if (!tenantId || !email) return;
-    if (createAdmin) {
-      await createTenantAdmin(tenantId, { email, name: name || undefined });
-    } else {
-      const roleList = roles
-        .split(",")
-        .map((role) => role.trim())
-        .filter(Boolean);
-      await createTenantUser(tenantId, {
-        email,
-        name: name || undefined,
-        roles: roleList,
+    if (!tenantId || isCreateSubmitting) return;
+    const errors = createForm.validateAll();
+    if (Object.values(errors).some(Boolean)) {
+      createForm.focusFirstInvalid({
+        order: ["email", "name", "roles"],
+        getId: (field) => `create-${String(field)}`,
       });
+      return;
     }
-    setEmail("");
-    setName("");
-    setRoles("");
-    queryClient.invalidateQueries({ queryKey: queryKeys.users(tenantId) });
+
+    try {
+      setIsCreateSubmitting(true);
+      const email = String(createForm.values.email).trim();
+      const name = String(createForm.values.name ?? "").trim();
+      if (createAdmin) {
+        await createTenantAdmin(tenantId, { email, name: name || undefined });
+      } else {
+        const roleList = String(createForm.values.roles ?? "")
+          .split(",")
+          .map((role) => role.trim())
+          .filter(Boolean);
+        await createTenantUser(tenantId, {
+          email,
+          name: name || undefined,
+          roles: roleList,
+        });
+      }
+      createForm.resetForm({ email: "", name: "", roles: "" });
+      setIsCreateOpen(false);
+      setRecentUserKey(email.toLowerCase());
+      queryClient.invalidateQueries({ queryKey: queryKeys.users(tenantId) });
+      addToast({ type: "success", message: "User created successfully." });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to create user.";
+      addToast({ type: "error", message });
+    } finally {
+      setIsCreateSubmitting(false);
+    }
   };
 
   const handleUpdateRoles = async () => {
-    if (!tenantId || !selectedUserId) return;
-    const roleList = roleUpdate
-      .split(",")
-      .map((role) => role.trim())
-      .filter(Boolean);
-    await updateUserRoles(tenantId, selectedUserId, roleList);
-    setRoleUpdate("");
-    queryClient.invalidateQueries({ queryKey: queryKeys.users(tenantId) });
+    if (!tenantId || !selectedUserId || isAccessSubmitting) return;
+    try {
+      setIsAccessSubmitting(true);
+      const roleList = roleUpdate
+        .split(",")
+        .map((role) => role.trim())
+        .filter(Boolean);
+      await updateUserRoles(tenantId, selectedUserId, roleList);
+      queryClient.invalidateQueries({ queryKey: queryKeys.users(tenantId) });
+      addToast({ type: "success", message: "User roles updated." });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to update roles.";
+      addToast({ type: "error", message });
+    } finally {
+      setIsAccessSubmitting(false);
+    }
   };
 
   const handleToggleStatus = async (enabled: boolean) => {
-    if (!tenantId || !selectedUserId) return;
-    await setUserStatus(tenantId, selectedUserId, enabled);
-    queryClient.invalidateQueries({ queryKey: queryKeys.users(tenantId) });
+    if (!tenantId || !selectedUserId || isAccessSubmitting) return;
+    try {
+      setIsAccessSubmitting(true);
+      await setUserStatus(tenantId, selectedUserId, enabled);
+      queryClient.invalidateQueries({ queryKey: queryKeys.users(tenantId) });
+      addToast({
+        type: "success",
+        message: `User ${enabled ? "enabled" : "disabled"}.`,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to change status.";
+      addToast({ type: "error", message });
+    } finally {
+      setIsAccessSubmitting(false);
+    }
   };
 
   return (
@@ -150,9 +228,19 @@ export function PlatformUsersPage() {
             {!tenantId ? (
               <p>Select a tenant to view users.</p>
             ) : isLoading ? (
-              <p>Loading users...</p>
+              <TableSkeleton rows={5} columns={4} />
             ) : error ? (
               <p>Unable to load users.</p>
+            ) : filteredUsers.length === 0 ? (
+              <div className="stack">
+                <p>No users found.</p>
+                <button
+                  className="btn btn--secondary"
+                  onClick={() => setIsCreateOpen(true)}
+                >
+                  Create your first user
+                </button>
+              </div>
             ) : (
               <table className="table">
                 <thead>
@@ -167,11 +255,15 @@ export function PlatformUsersPage() {
                   {filteredUsers.map((user) => (
                     <tr
                       key={user.userId}
-                      className={
-                        user.userId === selectedUserId
-                          ? "is-selected"
-                          : undefined
-                      }
+                      className={[
+                        user.userId === selectedUserId ? "is-selected" : "",
+                        user.userId === recentUserKey ||
+                        user.email?.toLowerCase() === recentUserKey
+                          ? "is-new"
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                       onClick={() => setSelectedUserId(user.userId)}
                     >
                       <td className="mono">{user.email}</td>
@@ -258,12 +350,14 @@ export function PlatformUsersPage() {
                     <button
                       className="btn btn--secondary"
                       onClick={() => handleToggleStatus(true)}
+                      disabled={isAccessSubmitting}
                     >
                       Enable
                     </button>
                     <button
                       className="btn btn--secondary"
                       onClick={() => handleToggleStatus(false)}
+                      disabled={isAccessSubmitting}
                     >
                       Disable
                     </button>
@@ -286,11 +380,19 @@ export function PlatformUsersPage() {
                   onClick={() =>
                     setRoleUpdate(selectedUser.roles?.join(", ") ?? "")
                   }
+                  disabled={isAccessSubmitting}
                 >
                   Cancel
                 </button>
-                <button className="btn" onClick={handleUpdateRoles}>
-                  Save Changes
+                <button
+                  className={`btn ${isAccessSubmitting ? "btn--loading" : ""}`}
+                  onClick={handleUpdateRoles}
+                  disabled={isAccessSubmitting}
+                >
+                  {isAccessSubmitting ? (
+                    <span className="btn__spinner" aria-hidden="true" />
+                  ) : null}
+                  {isAccessSubmitting ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </div>
@@ -298,77 +400,97 @@ export function PlatformUsersPage() {
         </Card>
       </div>
 
-      {isCreateOpen ? (
-        <div className="modal__backdrop">
-          <div className="modal">
-            <div className="modal__header">
-              <h2>Create User</h2>
-              <button
-                type="button"
-                className="icon-button"
-                onClick={() => setIsCreateOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="modal__body">
-              <div className="stack">
-                <label className="form__field">
-                  <span>Email</span>
-                  <input
-                    className="input"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                  />
-                </label>
-                <label className="form__field">
-                  <span>Name</span>
-                  <input
-                    className="input"
-                    placeholder="Optional"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                  />
-                </label>
-                <label className="form__field">
-                  <span>Roles (comma-separated)</span>
-                  <input
-                    className="input"
-                    placeholder="Optional"
-                    value={roles}
-                    onChange={(event) => setRoles(event.target.value)}
-                    disabled={createAdmin}
-                  />
-                </label>
-                <label className="checkbox">
-                  <input
-                    type="checkbox"
-                    checked={createAdmin}
-                    onChange={(event) => setCreateAdmin(event.target.checked)}
-                  />
-                  Create tenant admin
-                </label>
-              </div>
-            </div>
-            <div className="modal__footer">
-              <button
-                className="btn btn--secondary"
-                onClick={() => setIsCreateOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn"
-                onClick={handleCreateUser}
-                disabled={!tenantId || !email}
-              >
-                Create User
-              </button>
-            </div>
-          </div>
+      <Modal
+        isOpen={isCreateOpen}
+        title="Create User"
+        onRequestClose={() => setIsCreateOpen(false)}
+        isDirty={createForm.isDirty || createAdmin}
+        initialFocusId="create-email"
+        footer={
+          <>
+            <button
+              className="btn btn--secondary"
+              onClick={() => setIsCreateOpen(false)}
+              disabled={isCreateSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              className={`btn ${isCreateSubmitting ? "btn--loading" : ""}`}
+              onClick={handleCreateUser}
+              disabled={!tenantId || !createForm.isValid || isCreateSubmitting}
+            >
+              {isCreateSubmitting ? (
+                <span className="btn__spinner" aria-hidden="true" />
+              ) : null}
+              {isCreateSubmitting ? "Creating..." : "Create User"}
+            </button>
+          </>
+        }
+      >
+        <div className="stack">
+          <label className="form__field" htmlFor="create-email">
+            <span>
+              Email<span className="required">*</span>
+            </span>
+            <input
+              id="create-email"
+              name="email"
+              className="input"
+              placeholder="Email"
+              value={String(createForm.values.email)}
+              onChange={createForm.handleChange}
+              onBlur={createForm.handleBlur}
+              aria-invalid={Boolean(
+                createForm.touched.email && createForm.errors.email,
+              )}
+              aria-describedby={
+                createForm.touched.email && createForm.errors.email
+                  ? "create-email-error"
+                  : undefined
+              }
+            />
+            {createForm.touched.email && createForm.errors.email ? (
+              <span id="create-email-error" className="form__error">
+                {createForm.errors.email}
+              </span>
+            ) : null}
+          </label>
+          <label className="form__field" htmlFor="create-name">
+            <span>Name</span>
+            <input
+              id="create-name"
+              name="name"
+              className="input"
+              placeholder="Optional"
+              value={String(createForm.values.name)}
+              onChange={createForm.handleChange}
+              onBlur={createForm.handleBlur}
+            />
+          </label>
+          <label className="form__field" htmlFor="create-roles">
+            <span>Roles (comma-separated)</span>
+            <input
+              id="create-roles"
+              name="roles"
+              className="input"
+              placeholder="Optional"
+              value={String(createForm.values.roles)}
+              onChange={createForm.handleChange}
+              onBlur={createForm.handleBlur}
+              disabled={createAdmin}
+            />
+          </label>
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={createAdmin}
+              onChange={(event) => setCreateAdmin(event.target.checked)}
+            />
+            Create tenant admin
+          </label>
         </div>
-      ) : null}
+      </Modal>
     </div>
   );
 }

@@ -44,8 +44,6 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-      VersioningConfiguration:
-        Status: Enabled
       OwnershipControls:
         Rules:
           - ObjectOwnership: BucketOwnerPreferred

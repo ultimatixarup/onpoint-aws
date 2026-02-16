@@ -206,3 +206,69 @@ def test_list_vins_for_tenant_uses_fleet_index(monkeypatch):
 
     vins = mod._list_vins_for_tenant("tenant-1", "fleet-1", active_only=False)
     assert vins == []
+
+
+def test_list_fleets_includes_tenant_name(monkeypatch):
+    add_common_to_path()
+
+    def fake_client(service_name):
+        return DummyClient()
+
+    _set_env(monkeypatch)
+    monkeypatch.setattr(boto3, "client", fake_client)
+
+    module_path = Path(__file__).resolve().parents[1] / "lambdas" / "fleet_tenancy_api" / "app.py"
+    mod = load_lambda_module("fleet_tenancy_api_app_list_fleets", module_path)
+
+    mod._ddb_scan = lambda _args: [
+        {
+            "PK": "FLEET#fleet-1",
+            "SK": "META",
+            "fleetId": "fleet-1",
+            "tenantId": "tenant-1",
+            "status": "ACTIVE",
+        }
+    ]
+    mod._ddb_get = lambda _table, key: (
+        {"tenantId": "tenant-1", "name": "Test Tenant"}
+        if key == {"PK": "TENANT#tenant-1", "SK": "META"}
+        else None
+    )
+
+    response = mod._list_fleets({"tenantId": "tenant-1"}, {}, "admin", None)
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert body["items"][0]["tenantName"] == "Test Tenant"
+
+
+def test_get_fleet_includes_tenant_name(monkeypatch):
+    add_common_to_path()
+
+    def fake_client(service_name):
+        return DummyClient()
+
+    _set_env(monkeypatch)
+    monkeypatch.setattr(boto3, "client", fake_client)
+
+    module_path = Path(__file__).resolve().parents[1] / "lambdas" / "fleet_tenancy_api" / "app.py"
+    mod = load_lambda_module("fleet_tenancy_api_app_get_fleet", module_path)
+
+    def fake_ddb_get(_table, key):
+        if key == {"PK": "FLEET#fleet-1", "SK": "META"}:
+            return {
+                "PK": "FLEET#fleet-1",
+                "SK": "META",
+                "fleetId": "fleet-1",
+                "tenantId": "tenant-1",
+                "status": "ACTIVE",
+            }
+        if key == {"PK": "TENANT#tenant-1", "SK": "META"}:
+            return {"tenantId": "tenant-1", "name": "Test Tenant"}
+        return None
+
+    mod._ddb_get = fake_ddb_get
+
+    response = mod._get_fleet("fleet-1", {}, "admin", None)
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert body["tenantName"] == "Test Tenant"

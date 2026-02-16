@@ -1,17 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
-import type { MouseEvent as ReactMouseEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card } from "../../ui/Card";
-import { PageHeader } from "../../ui/PageHeader";
+import type { MouseEvent as ReactMouseEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  assignVin,
-  createVehicle,
-  fetchFleets,
-  fetchTenants,
-  fetchVehicles,
-  updateVehicle,
+    assignVin,
+    createVehicle,
+    fetchFleets,
+    fetchTenants,
+    fetchVehicles,
+    updateVehicle,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
+import { Card } from "../../ui/Card";
+import { Modal } from "../../ui/Modal";
+import { PageHeader } from "../../ui/PageHeader";
+import { TableSkeleton } from "../../ui/TableSkeleton";
+import { useToast } from "../../ui/Toast";
 
 function parseJson(value: string) {
   if (!value.trim()) return undefined;
@@ -24,6 +27,7 @@ function parseJson(value: string) {
 
 export function PlatformVehiclesPage() {
   const queryClient = useQueryClient();
+  const { addToast } = useToast();
   const { data: tenants = [] } = useQuery({
     queryKey: queryKeys.tenants(undefined, true),
     queryFn: () => fetchTenants({ isAdmin: true }),
@@ -68,6 +72,7 @@ export function PlatformVehiclesPage() {
   const [assignmentReason, setAssignmentReason] = useState("");
   const [createError, setCreateError] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [recentVin, setRecentVin] = useState("");
 
   const [selectedVin, setSelectedVin] = useState("");
   const selectedVehicle = useMemo(
@@ -98,6 +103,18 @@ export function PlatformVehiclesPage() {
     setMetadata("");
     setUpdateError("");
   }, [selectedVehicle]);
+
+  useEffect(() => {
+    if (!isCreateOpen) {
+      setCreateError("");
+    }
+  }, [isCreateOpen]);
+
+  useEffect(() => {
+    if (!recentVin) return;
+    const timer = window.setTimeout(() => setRecentVin(""), 4000);
+    return () => window.clearTimeout(timer);
+  }, [recentVin]);
 
   const filteredVehicles = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -186,7 +203,7 @@ export function PlatformVehiclesPage() {
   }, [filteredVehicles, selectedVin]);
 
   const handleCreate = async () => {
-    if (!vin) return;
+    if (!vin || isCreating) return;
     if (!tenantId) {
       setCreateError("Select a tenant before creating a vehicle.");
       return;
@@ -224,18 +241,23 @@ export function PlatformVehiclesPage() {
       setModel("");
       setYear("");
       setAssignmentReason("");
+      setIsCreateOpen(false);
+      setRecentVin(vin);
       queryClient.invalidateQueries({
         queryKey: queryKeys.vehicles(tenantId, fleetId || undefined),
       });
+      addToast({ type: "success", message: "Vehicle created successfully." });
     } catch (err) {
-      setCreateError(err instanceof Error ? err.message : "Create failed.");
+      const message = err instanceof Error ? err.message : "Create failed.";
+      setCreateError(message);
+      addToast({ type: "error", message });
     } finally {
       setIsCreating(false);
     }
   };
 
   const handleUpdate = async () => {
-    if (!editVin) return;
+    if (!editVin || isUpdating) return;
     setUpdateError("");
     setIsUpdating(true);
     try {
@@ -253,8 +275,11 @@ export function PlatformVehiclesPage() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.vehicles(tenantId, fleetId || undefined),
       });
+      addToast({ type: "success", message: "Vehicle updated successfully." });
     } catch (err) {
-      setUpdateError(err instanceof Error ? err.message : "Update failed.");
+      const message = err instanceof Error ? err.message : "Update failed.";
+      setUpdateError(message);
+      addToast({ type: "error", message });
     } finally {
       setIsUpdating(false);
     }
@@ -331,14 +356,22 @@ export function PlatformVehiclesPage() {
             {!tenantId ? (
               <p>Select a tenant to view vehicles.</p>
             ) : isLoading ? (
-              <p>Loading vehicles...</p>
+              <TableSkeleton rows={6} columns={5} />
             ) : error ? (
               <p>Unable to load vehicles.</p>
             ) : filteredVehicles.length === 0 ? (
-              <p>
-                No vehicles match this selection. Assign VINs to the tenant to
-                populate the list.
-              </p>
+              <div className="stack">
+                <p>No vehicles match this selection.</p>
+                <button
+                  className="btn btn--secondary"
+                  onClick={() => {
+                    setCreateError("");
+                    setIsCreateOpen(true);
+                  }}
+                >
+                  Create your first vehicle
+                </button>
+              </div>
             ) : (
               <div className="table-responsive">
                 <table className="table table--vehicles">
@@ -392,11 +425,12 @@ export function PlatformVehiclesPage() {
                     {filteredVehicles.map((vehicle) => (
                       <tr
                         key={vehicle.vin}
-                        className={
-                          vehicle.vin === selectedVin
-                            ? "is-selected"
-                            : undefined
-                        }
+                        className={[
+                          vehicle.vin === selectedVin ? "is-selected" : "",
+                          vehicle.vin === recentVin ? "is-new" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
                         onClick={() => setSelectedVin(vehicle.vin)}
                       >
                         <td className="mono col-vin">{vehicle.vin}</td>
@@ -534,15 +568,19 @@ export function PlatformVehiclesPage() {
                     setMetadata("");
                     setUpdateError("");
                   }}
+                  disabled={isUpdating}
                 >
                   Cancel
                 </button>
                 <button
-                  className="btn"
+                  className={`btn ${isUpdating ? "btn--loading" : ""}`}
                   onClick={handleUpdate}
                   disabled={!selectedVehicle || isUpdating}
                 >
-                  Save Changes
+                  {isUpdating ? (
+                    <span className="btn__spinner" aria-hidden="true" />
+                  ) : null}
+                  {isUpdating ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </div>
@@ -550,121 +588,131 @@ export function PlatformVehiclesPage() {
         </Card>
       </div>
 
-      {isCreateOpen ? (
-        <div className="modal__backdrop">
-          <div className="modal">
-            <div className="modal__header">
-              <h2>Create Vehicle</h2>
-              <button
-                type="button"
-                className="icon-button"
-                onClick={() => setIsCreateOpen(false)}
-              >
-                ✕
-              </button>
+      <Modal
+        isOpen={isCreateOpen}
+        title="Create Vehicle"
+        onRequestClose={() => setIsCreateOpen(false)}
+        isDirty={
+          Boolean(vin || make || model || year || assignmentReason) ||
+          status !== "ACTIVE" ||
+          !assignAfterCreate
+        }
+        initialFocusId="create-vin"
+        footer={
+          <>
+            <button
+              className="btn btn--secondary"
+              onClick={() => setIsCreateOpen(false)}
+              disabled={isCreating}
+            >
+              Cancel
+            </button>
+            <button
+              className={`btn ${isCreating ? "btn--loading" : ""}`}
+              onClick={handleCreate}
+              disabled={!vin || isCreating || (assignAfterCreate && !assignmentReason.trim())}
+            >
+              {isCreating ? (
+                <span className="btn__spinner" aria-hidden="true" />
+              ) : null}
+              {isCreating ? "Creating..." : "Create Vehicle"}
+            </button>
+          </>
+        }
+      >
+        <div className="stack">
+          <label className="form__field" htmlFor="create-vin">
+            <span>
+              VIN<span className="required">*</span>
+            </span>
+            <input
+              id="create-vin"
+              className="input"
+              placeholder="VIN"
+              value={vin}
+              onChange={(event) => setVin(event.target.value)}
+              aria-invalid={Boolean(!vin.trim() && createError)}
+            />
+          </label>
+          <label className="form__field" htmlFor="create-make">
+            <span>Make</span>
+            <input
+              id="create-make"
+              className="input"
+              placeholder="Optional"
+              value={make}
+              onChange={(event) => setMake(event.target.value)}
+            />
+          </label>
+          <label className="form__field" htmlFor="create-model">
+            <span>Model</span>
+            <input
+              id="create-model"
+              className="input"
+              placeholder="Optional"
+              value={model}
+              onChange={(event) => setModel(event.target.value)}
+            />
+          </label>
+          <label className="form__field" htmlFor="create-year">
+            <span>Year</span>
+            <input
+              id="create-year"
+              className="input"
+              placeholder="Optional"
+              value={year}
+              onChange={(event) => setYear(event.target.value)}
+            />
+          </label>
+          <label className="form__field" htmlFor="create-status">
+            <span>Status</span>
+            <select
+              id="create-status"
+              className="select"
+              value={status}
+              onChange={(event) => setStatus(event.target.value)}
+            >
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="INACTIVE">INACTIVE</option>
+            </select>
+          </label>
+          <label className="form__field">
+            <span>Assign VIN to tenant</span>
+            <div className="inline">
+              <input
+                type="checkbox"
+                checked={assignAfterCreate}
+                onChange={(event) =>
+                  setAssignAfterCreate(event.target.checked)
+                }
+              />
+              <span className="text-muted">
+                {fleetId
+                  ? `Assign to ${tenantId} / ${fleetId}`
+                  : `Assign to ${tenantId}`}
+              </span>
             </div>
-            <div className="modal__body">
-              <div className="stack">
-                <label className="form__field">
-                  <span>VIN</span>
-                  <input
-                    className="input"
-                    placeholder="VIN"
-                    value={vin}
-                    onChange={(event) => setVin(event.target.value)}
-                  />
-                </label>
-                <label className="form__field">
-                  <span>Make</span>
-                  <input
-                    className="input"
-                    placeholder="Optional"
-                    value={make}
-                    onChange={(event) => setMake(event.target.value)}
-                  />
-                </label>
-                <label className="form__field">
-                  <span>Model</span>
-                  <input
-                    className="input"
-                    placeholder="Optional"
-                    value={model}
-                    onChange={(event) => setModel(event.target.value)}
-                  />
-                </label>
-                <label className="form__field">
-                  <span>Year</span>
-                  <input
-                    className="input"
-                    placeholder="Optional"
-                    value={year}
-                    onChange={(event) => setYear(event.target.value)}
-                  />
-                </label>
-                <label className="form__field">
-                  <span>Status</span>
-                  <select
-                    className="select"
-                    value={status}
-                    onChange={(event) => setStatus(event.target.value)}
-                  >
-                    <option value="ACTIVE">ACTIVE</option>
-                    <option value="INACTIVE">INACTIVE</option>
-                  </select>
-                </label>
-                <label className="form__field">
-                  <span>Assign VIN to tenant</span>
-                  <div className="inline">
-                    <input
-                      type="checkbox"
-                      checked={assignAfterCreate}
-                      onChange={(event) =>
-                        setAssignAfterCreate(event.target.checked)
-                      }
-                    />
-                    <span className="text-muted">
-                      {fleetId
-                        ? `Assign to ${tenantId} / ${fleetId}`
-                        : `Assign to ${tenantId}`}
-                    </span>
-                  </div>
-                </label>
-                {assignAfterCreate ? (
-                  <label className="form__field">
-                    <span>Assignment reason</span>
-                    <input
-                      className="input"
-                      placeholder="Required"
-                      value={assignmentReason}
-                      onChange={(event) =>
-                        setAssignmentReason(event.target.value)
-                      }
-                    />
-                  </label>
-                ) : null}
-                {createError ? (
-                  <span className="text-muted">{createError}</span>
-                ) : null}
-              </div>
-            </div>
-            <div className="modal__footer">
-              <button
-                className="btn btn--secondary"
-                onClick={() => setIsCreateOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn"
-                onClick={handleCreate}
-                disabled={!vin || isCreating}
-              >
-                Create Vehicle
-              </button>
-            </div>
-          </div>
+          </label>
+          {assignAfterCreate ? (
+            <label className="form__field" htmlFor="create-assignmentReason">
+              <span>
+                Assignment reason<span className="required">*</span>
+              </span>
+              <input
+                id="create-assignmentReason"
+                className="input"
+                placeholder="Required"
+                value={assignmentReason}
+                onChange={(event) =>
+                  setAssignmentReason(event.target.value)
+                }
+                aria-invalid={Boolean(!assignmentReason.trim())}
+              />
+            </label>
+          ) : null}
+          {createError ? <span className="form__error">{createError}</span> : null}
         </div>
-      ) : null}
+      </Modal>
     </div>
   );
 }
