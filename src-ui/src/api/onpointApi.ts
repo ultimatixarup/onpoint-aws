@@ -236,9 +236,24 @@ export async function fetchTenants(
 }
 
 export async function fetchFleets(tenantId: string) {
-  const response = await httpRequest<unknown>(`/fleets?tenantId=${tenantId}`, {
-    headers: { "x-tenant-id": tenantId },
-  });
+  let response: unknown;
+  try {
+    response = await httpRequest<unknown>(`/fleets?tenantId=${tenantId}`, {
+      headers: { "x-tenant-id": tenantId },
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : String(error ?? "");
+    const normalized = message.toLowerCase();
+    if (
+      normalized.includes("not found") ||
+      normalized.includes("no fleets") ||
+      normalized.includes("no records")
+    ) {
+      return [];
+    }
+    throw error;
+  }
   const items = Array.isArray(response)
     ? response
     : typeof response === "object" &&

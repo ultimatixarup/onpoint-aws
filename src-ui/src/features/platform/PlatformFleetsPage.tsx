@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import {
-  createFleet,
-  fetchCustomers,
-  fetchFleets,
-  fetchTenants,
-  updateFleet,
+    createFleet,
+    fetchCustomers,
+    fetchFleets,
+    fetchTenants,
+    updateFleet,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { Card } from "../../ui/Card";
@@ -185,6 +185,8 @@ export function PlatformFleetsPage() {
               <p>Loading fleets...</p>
             ) : error ? (
               <p>Unable to load fleets.</p>
+            ) : filteredFleets.length === 0 ? (
+              <p>No fleets found.</p>
             ) : (
               <table className="table">
                 <thead>
