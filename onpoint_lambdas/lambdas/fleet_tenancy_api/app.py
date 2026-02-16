@@ -1638,12 +1638,14 @@ def _create_fleet(body: dict, headers: Dict[str, str], role: str, caller_tenant:
         fleet_id = hashlib.sha1(utc_now_iso().encode("utf-8")).hexdigest()[:12]
 
     now = utc_now_iso()
+    fleet_name = body.get("name") or body.get("fleetName")
     item = {
         "PK": f"FLEET#{fleet_id}",
         "SK": "META",
         "fleetId": fleet_id,
         "tenantId": tenant_id,
         "customerId": body.get("customerId"),
+        "name": fleet_name,
         "policies": body.get("policies"),
         "status": "ACTIVE",
         "createdAt": now,
@@ -1745,8 +1747,13 @@ def _patch_fleet(fleet_id: str, body: dict, headers: Dict[str, str], role: str, 
     updated = _ddb_update(
         FLEETS_TABLE,
         {"PK": f"FLEET#{fleet_id}", "SK": "META"},
-        "SET policies=:p, updatedAt=:u",
-        {":p": body.get("policies", existing.get("policies")), ":u": now},
+        "SET policies=:p, #nm=:n, updatedAt=:u",
+        {
+            ":p": body.get("policies", existing.get("policies")),
+            ":n": body.get("name", existing.get("name")),
+            ":u": now,
+        },
+        expr_names={"#nm": "name"},
     )
     _audit(
         entity_type="fleet",

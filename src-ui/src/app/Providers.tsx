@@ -29,11 +29,19 @@ if (import.meta.env.VITE_COGNITO_IDENTITY_POOL_ID) {
   cognitoConfig.identityPoolId = import.meta.env.VITE_COGNITO_IDENTITY_POOL_ID;
 }
 
-Amplify.configure({
-  Auth: {
-    Cognito: cognitoConfig as any,
-  },
-});
+let amplifyConfigured = false;
+
+function configureAmplify() {
+  if (amplifyConfigured) {
+    return;
+  }
+  Amplify.configure({
+    Auth: {
+      Cognito: cognitoConfig as any,
+    },
+  });
+  amplifyConfigured = true;
+}
 
 export function Providers({ children }: PropsWithChildren) {
   const missingAuthConfig =
@@ -51,6 +59,8 @@ export function Providers({ children }: PropsWithChildren) {
       </div>
     );
   }
+
+  configureAmplify();
 
   return (
     <QueryClientProvider client={queryClient}>
