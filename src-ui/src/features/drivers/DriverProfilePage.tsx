@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -12,6 +12,7 @@ import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
 import { PageHeader } from "../../ui/PageHeader";
+import { useToast } from "../../ui/Toast";
 import { formatDate } from "../../utils/date";
 
 function assignmentStatus(assignment: DriverAssignment) {
@@ -68,10 +69,29 @@ function displayValue(value?: string | null, fallback = "--") {
   return value && String(value).trim() ? value : fallback;
 }
 
+type DriverProfileForm = {
+  displayName: string;
+  email: string;
+  phone: string;
+  employeeId: string;
+  externalRef: string;
+  medicalCertExpiresAt: string;
+  dqStatus: string;
+  riskCategory: string;
+  fleetId: string;
+  customerId: string;
+};
+
+type FormFieldName = keyof DriverProfileForm;
+
+type FormErrors = Partial<Record<FormFieldName, string>>;
+
 export function DriverProfilePage() {
   const { driverId } = useParams();
   const { tenant } = useTenant();
   const { fleet } = useFleet();
+  const { addToast } = useToast();
+  const queryClient = useQueryClient();
   const tenantId = tenant?.id;
   const fleetId = fleet?.id;
 
@@ -116,7 +136,7 @@ export function DriverProfilePage() {
     return summary;
   }, [assignments]);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<DriverProfileForm>({
     displayName: "",
     email: "",
     phone: "",
@@ -128,11 +148,13 @@ export function DriverProfilePage() {
     fleetId: "",
     customerId: "",
   });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<
+    Partial<Record<FormFieldName, boolean>>
+  >({});
   const [isSaving, setIsSaving] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const buildFormState = (driverData = driver) => ({
+  const buildFormState = (driverData = driver): DriverProfileForm => ({
     displayName: driverData?.displayName ?? driverData?.name ?? "",
     email: driverData?.email ?? "",
     phone: driverData?.phone ?? "",
@@ -145,9 +167,43 @@ export function DriverProfilePage() {
     customerId: driverData?.customerId ?? "",
   });
 
+  const validateField = (
+    field: FormFieldName,
+    value: string,
+  ): string | undefined => {
+    const trimmed = value.trim();
+    if (field === "displayName" && !trimmed) {
+      return "Display name is required.";
+    }
+    if (field === "email" && trimmed) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmed)) {
+        return "Enter a valid email address.";
+      }
+    }
+    if (field === "medicalCertExpiresAt" && trimmed) {
+      const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!isoDateRegex.test(trimmed)) {
+        return "Use YYYY-MM-DD format.";
+      }
+    }
+    return undefined;
+  };
+
+  const validateForm = (value: DriverProfileForm): FormErrors => {
+    const nextErrors: FormErrors = {};
+    (Object.keys(value) as FormFieldName[]).forEach((field) => {
+      const error = validateField(field, value[field]);
+      if (error) nextErrors[field] = error;
+    });
+    return nextErrors;
+  };
+
   useEffect(() => {
     if (!driver) return;
     setForm(buildFormState(driver));
+    setErrors({});
+    setTouched({});
   }, [driver, fleetId]);
 
   const isDirty = useMemo(() => {
@@ -170,14 +226,44 @@ export function DriverProfilePage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleBlur = (field: FormFieldName) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    setErrors((prev) => ({
+      ...prev,
+      [field]: validateField(field, form[field]),
+    }));
+  };
+
+  const isFormValid = useMemo(
+    () => Object.keys(validateForm(form)).length === 0,
+    [form],
+  );
+
   const handleSave = async () => {
     if (!tenantId || !driverId) {
-      setErrorMessage("Select a tenant and driver to continue.");
+      addToast({
+        type: "error",
+        message: "Select a tenant and driver to continue.",
+      });
       return;
     }
+
+    const nextErrors = validateForm(form);
+    setErrors(nextErrors);
+    setTouched({
+      displayName: true,
+      email: true,
+      medicalCertExpiresAt: true,
+    });
+    if (Object.keys(nextErrors).length > 0) {
+      addToast({
+        type: "error",
+        message: "Fix validation errors before saving.",
+      });
+      return;
+    }
+
     setIsSaving(true);
-    setErrorMessage(null);
-    setSuccessMessage(null);
     try {
       await updateDriver(tenantId, driverId, {
         displayName: form.displayName.trim() || undefined,
@@ -192,11 +278,17 @@ export function DriverProfilePage() {
         customerId: form.customerId.trim() || undefined,
         reason: "Update driver profile",
       });
-      setSuccessMessage("Driver updated.");
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.driverDetail(tenantId, driverId),
+      });
+      await queryClient.invalidateQueries({ queryKey: ["drivers", tenantId] });
+      addToast({ type: "success", message: "Driver updated successfully." });
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Failed to update driver.",
-      );
+      addToast({
+        type: "error",
+        message:
+          error instanceof Error ? error.message : "Failed to update driver.",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -204,8 +296,8 @@ export function DriverProfilePage() {
 
   const handleReset = () => {
     setForm(buildFormState(driver));
-    setErrorMessage(null);
-    setSuccessMessage(null);
+    setErrors({});
+    setTouched({});
   };
 
   if (!driverId) {
@@ -301,7 +393,7 @@ export function DriverProfilePage() {
               </div>
               <div>
                 <span className="text-muted">Fleet</span>
-                <strong className="mono">
+                <strong className="driver-profile__value">
                   {driver.fleetId ?? fleetId ?? "--"}
                 </strong>
               </div>
@@ -319,7 +411,9 @@ export function DriverProfilePage() {
               </div>
               <div>
                 <span className="text-muted">Created</span>
-                <strong>{formatDate(driver.createdAt)}</strong>
+                <strong className="driver-profile__value">
+                  {formatDate(driver.createdAt)}
+                </strong>
               </div>
               <div>
                 <span className="text-muted">Updated</span>
@@ -348,29 +442,47 @@ export function DriverProfilePage() {
         </Card>
 
         <Card title="Edit driver">
-          {errorMessage ? (
-            <div className="form-error">{errorMessage}</div>
-          ) : null}
-          {successMessage ? (
-            <div className="form-success">{successMessage}</div>
-          ) : null}
           <div className="form-grid">
             <div className="section form__field--full">
               <div className="section__title">Identity</div>
             </div>
-            <label className="form__field">
-              <span className="text-muted">Display name</span>
+            <label
+              className="form__field"
+              htmlFor="driver-profile-display-name"
+            >
+              <span className="text-muted">
+                Display name <span className="required">*</span>
+              </span>
               <input
-                className="input"
+                id="driver-profile-display-name"
+                className="input driver-profile__input-value"
                 value={form.displayName}
                 onChange={(event) =>
                   handleChange("displayName", event.target.value)
                 }
+                onBlur={() => handleBlur("displayName")}
+                aria-invalid={Boolean(
+                  touched.displayName && errors.displayName,
+                )}
+                aria-describedby={
+                  touched.displayName && errors.displayName
+                    ? "driver-profile-display-name-error"
+                    : undefined
+                }
               />
+              {touched.displayName && errors.displayName ? (
+                <span
+                  id="driver-profile-display-name-error"
+                  className="form__error"
+                >
+                  {errors.displayName}
+                </span>
+              ) : null}
             </label>
-            <label className="form__field">
+            <label className="form__field" htmlFor="driver-profile-employee-id">
               <span className="text-muted">Employee ID</span>
               <input
+                id="driver-profile-employee-id"
                 className="input"
                 value={form.employeeId}
                 onChange={(event) =>
@@ -378,9 +490,13 @@ export function DriverProfilePage() {
                 }
               />
             </label>
-            <label className="form__field">
+            <label
+              className="form__field"
+              htmlFor="driver-profile-external-ref"
+            >
               <span className="text-muted">External ref</span>
               <input
+                id="driver-profile-external-ref"
                 className="input"
                 value={form.externalRef}
                 onChange={(event) =>
@@ -391,17 +507,31 @@ export function DriverProfilePage() {
             <div className="section form__field--full">
               <div className="section__title">Contact</div>
             </div>
-            <label className="form__field">
+            <label className="form__field" htmlFor="driver-profile-email">
               <span className="text-muted">Email</span>
               <input
+                id="driver-profile-email"
                 className="input"
                 value={form.email}
                 onChange={(event) => handleChange("email", event.target.value)}
+                onBlur={() => handleBlur("email")}
+                aria-invalid={Boolean(touched.email && errors.email)}
+                aria-describedby={
+                  touched.email && errors.email
+                    ? "driver-profile-email-error"
+                    : undefined
+                }
               />
+              {touched.email && errors.email ? (
+                <span id="driver-profile-email-error" className="form__error">
+                  {errors.email}
+                </span>
+              ) : null}
             </label>
-            <label className="form__field">
+            <label className="form__field" htmlFor="driver-profile-phone">
               <span className="text-muted">Phone</span>
               <input
+                id="driver-profile-phone"
                 className="input"
                 value={form.phone}
                 onChange={(event) => handleChange("phone", event.target.value)}
@@ -410,9 +540,10 @@ export function DriverProfilePage() {
             <div className="section form__field--full">
               <div className="section__title">Organization</div>
             </div>
-            <label className="form__field">
+            <label className="form__field" htmlFor="driver-profile-fleet-id">
               <span className="text-muted">Fleet ID</span>
               <input
+                id="driver-profile-fleet-id"
                 className="input"
                 value={form.fleetId}
                 onChange={(event) =>
@@ -420,9 +551,10 @@ export function DriverProfilePage() {
                 }
               />
             </label>
-            <label className="form__field">
+            <label className="form__field" htmlFor="driver-profile-customer-id">
               <span className="text-muted">Customer ID</span>
               <input
+                id="driver-profile-customer-id"
                 className="input"
                 value={form.customerId}
                 onChange={(event) =>
@@ -433,20 +565,42 @@ export function DriverProfilePage() {
             <div className="section form__field--full">
               <div className="section__title">Compliance</div>
             </div>
-            <label className="form__field">
+            <label
+              className="form__field"
+              htmlFor="driver-profile-medical-cert-expires"
+            >
               <span className="text-muted">Medical cert expires</span>
               <input
+                id="driver-profile-medical-cert-expires"
                 className="input"
                 value={form.medicalCertExpiresAt}
                 onChange={(event) =>
                   handleChange("medicalCertExpiresAt", event.target.value)
                 }
+                onBlur={() => handleBlur("medicalCertExpiresAt")}
+                aria-invalid={Boolean(
+                  touched.medicalCertExpiresAt && errors.medicalCertExpiresAt,
+                )}
+                aria-describedby={
+                  touched.medicalCertExpiresAt && errors.medicalCertExpiresAt
+                    ? "driver-profile-medical-cert-expires-error"
+                    : undefined
+                }
                 placeholder="YYYY-MM-DD"
               />
+              {touched.medicalCertExpiresAt && errors.medicalCertExpiresAt ? (
+                <span
+                  id="driver-profile-medical-cert-expires-error"
+                  className="form__error"
+                >
+                  {errors.medicalCertExpiresAt}
+                </span>
+              ) : null}
             </label>
-            <label className="form__field">
+            <label className="form__field" htmlFor="driver-profile-dq-status">
               <span className="text-muted">DQ status</span>
               <input
+                id="driver-profile-dq-status"
                 className="input"
                 value={form.dqStatus}
                 onChange={(event) =>
@@ -454,9 +608,13 @@ export function DriverProfilePage() {
                 }
               />
             </label>
-            <label className="form__field">
+            <label
+              className="form__field"
+              htmlFor="driver-profile-risk-category"
+            >
               <span className="text-muted">Risk category</span>
               <input
+                id="driver-profile-risk-category"
                 className="input"
                 value={form.riskCategory}
                 onChange={(event) =>
@@ -482,8 +640,11 @@ export function DriverProfilePage() {
                 className="btn"
                 type="button"
                 onClick={handleSave}
-                disabled={!isDirty || isSaving}
+                disabled={!isDirty || isSaving || !isFormValid}
               >
+                {isSaving ? (
+                  <span className="btn__spinner" aria-hidden="true" />
+                ) : null}
                 {isSaving ? "Saving..." : "Update driver"}
               </button>
             </div>

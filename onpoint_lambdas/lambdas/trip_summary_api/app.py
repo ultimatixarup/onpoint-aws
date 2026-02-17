@@ -194,6 +194,21 @@ def _safe_parse_summary_json(summary_s: Optional[str]) -> Optional[dict]:
         return None
 
 
+def _extract_summary_obj(item: dict) -> Optional[dict]:
+    summary_s = _ddb_str(item, "summary")
+    summary_obj = _safe_parse_summary_json(summary_s)
+    if summary_obj is not None:
+        return summary_obj
+
+    summary_attr = item.get("summary")
+    if isinstance(summary_attr, dict) and "M" in summary_attr:
+        unmarshaled = _ddb_unmarshal_value(summary_attr)
+        if isinstance(unmarshaled, dict):
+            return unmarshaled
+
+    return None
+
+
 def _as_float(value: Any) -> Optional[float]:
     if isinstance(value, (int, float)):
         return float(value)
@@ -494,8 +509,7 @@ def _summarize_item(it: dict) -> dict:
             vin = pk.split("#", 1)[1]
 
     if miles is None:
-        summary_s = _ddb_str(it, "summary")
-        summary_obj = _safe_parse_summary_json(summary_s)
+        summary_obj = _extract_summary_obj(it)
         miles = _fallback_miles_from_summary(summary_obj)
 
     out = {
@@ -584,9 +598,11 @@ def _get_trip_detail(vin: str, trip_id: str, include: str) -> Optional[dict]:
     out["tripId"] = trip_id
 
     if include == INCLUDE_SUMMARY:
-        summary_s = _ddb_str(item, "summary")
-        summary_obj = _safe_parse_summary_json(summary_s)
-        out["summary"] = summary_obj if summary_obj is not None else summary_s
+        summary_obj = _extract_summary_obj(item)
+        if summary_obj is not None:
+            out["summary"] = summary_obj
+        else:
+            out["summary"] = _ddb_str(item, "summary")
 
     return out
 
