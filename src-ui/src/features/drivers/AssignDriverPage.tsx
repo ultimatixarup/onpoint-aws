@@ -8,6 +8,7 @@ import {
   fetchDrivers,
   fetchVehicleAssignments,
   fetchVehicles,
+  updateDriverAssignment,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useAuth } from "../../context/AuthContext";
@@ -20,6 +21,7 @@ type AssignmentRecord = {
   assignmentId?: string;
   vin?: string;
   driverId?: string;
+  tenantId?: string;
   effectiveFrom?: string;
   effectiveTo?: string;
   assignmentType?: string;
@@ -57,6 +59,13 @@ function formatDateTimeLocal(value: string) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+function formatDateOnly(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (num: number) => String(num).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
 function addSeconds(value: string, seconds: number) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -83,6 +92,8 @@ export function AssignDriverPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingAssignment, setEditingAssignment] =
+    useState<AssignmentRecord | null>(null);
 
   const canDeleteAssignment = useMemo(
     () =>
@@ -91,6 +102,8 @@ export function AssignDriverPage() {
       roles.includes("fleet_manager"),
     [roles],
   );
+
+  const canEditAssignment = canDeleteAssignment;
 
   const roleHeader = useMemo(() => {
     if (roles.includes("platform_admin")) return "admin";
@@ -226,6 +239,55 @@ export function AssignDriverPage() {
     setIsSubmitting(true);
     setError(null);
     try {
+      if (editingAssignment) {
+        if (
+          !editingAssignment.driverId ||
+          !editingAssignment.vin ||
+          !editingAssignment.effectiveFrom
+        ) {
+          throw new Error("Missing original assignment details.");
+        }
+        const assignmentTenantId = editingAssignment.tenantId ?? tenantId;
+        if (!assignmentTenantId) {
+          throw new Error("Select a tenant to continue.");
+        }
+        const newFromIso = new Date(effectiveFrom).toISOString();
+        const originalFromMs = parseIsoToMs(editingAssignment.effectiveFrom);
+        const newFromMs = parseIsoToMs(newFromIso);
+        const newEffectiveFrom =
+          originalFromMs !== undefined && newFromMs !== undefined
+            ? originalFromMs !== newFromMs
+              ? newFromIso
+              : undefined
+            : newFromIso !== editingAssignment.effectiveFrom
+              ? newFromIso
+              : undefined;
+        await updateDriverAssignment(
+          assignmentTenantId,
+          editingAssignment.driverId,
+          {
+            vin: editingAssignment.vin,
+            effectiveFrom: editingAssignment.effectiveFrom,
+            newEffectiveFrom,
+            effectiveTo: effectiveTo
+              ? new Date(effectiveTo).toISOString()
+              : undefined,
+            assignmentType,
+            reason,
+          },
+          createIdempotencyKey(),
+          { roleOverride: roleHeader, fleetId },
+        );
+        setStatus("Assignment updated.");
+        setEditingAssignment(null);
+        queryClient.invalidateQueries({
+          queryKey: ["driverAssignments", assignmentTenantId, driverId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["vehicleAssignments", assignmentTenantId, vin],
+        });
+        return;
+      }
       await createDriverAssignment(
         driverId,
         {
@@ -239,6 +301,7 @@ export function AssignDriverPage() {
           reason,
         },
         createIdempotencyKey(),
+        { roleOverride: roleHeader, fleetId },
       );
       setStatus("Assignment created.");
       queryClient.invalidateQueries({
@@ -259,7 +322,7 @@ export function AssignDriverPage() {
           `Overlaps existing assignment. Next available start: ${formatDateTime(overlapHint.nextStart)}.`,
         );
         if (nextValue) {
-          setEffectiveFrom(nextValue);
+          setEffectiveFrom(formatDateOnly(overlapHint.nextStart));
         }
         return;
       }
@@ -276,15 +339,39 @@ export function AssignDriverPage() {
     }
   };
 
+  const handleEditAssignment = (assignment: AssignmentRecord) => {
+    if (!canEditAssignment) return;
+    setEditingAssignment(assignment);
+    setDriverId(assignment.driverId ?? "");
+    setVin(assignment.vin ?? "");
+    setEffectiveFrom(
+      assignment.effectiveFrom ? formatDateOnly(assignment.effectiveFrom) : "",
+    );
+    setEffectiveTo(
+      assignment.effectiveTo ? formatDateOnly(assignment.effectiveTo) : "",
+    );
+    setAssignmentType(assignment.assignmentType ?? "PRIMARY");
+    setReason("Assignment update");
+    setStatus(null);
+    setError(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingAssignment(null);
+    setStatus(null);
+    setError(null);
+  };
+
   const handleDeleteAssignment = async (assignment: AssignmentRecord) => {
     if (
-      !tenantId ||
+      !(assignment.tenantId ?? tenantId) ||
       !assignment.driverId ||
       !assignment.vin ||
       !assignment.effectiveFrom
     ) {
       return;
     }
+    const assignmentTenantId = assignment.tenantId ?? tenantId;
     const confirmation = window.prompt(
       `Type ${assignment.vin} to delete this assignment starting ${formatDateTime(assignment.effectiveFrom)}.`,
     );
@@ -293,18 +380,22 @@ export function AssignDriverPage() {
     setStatus(null);
     try {
       await deleteDriverAssignment(
-        tenantId,
+        assignmentTenantId,
         assignment.driverId,
         assignment.vin,
         assignment.effectiveFrom,
-        roleHeader,
+        { roleOverride: roleHeader, fleetId },
       );
       setStatus("Assignment deleted.");
       queryClient.invalidateQueries({
-        queryKey: ["driverAssignments", tenantId, assignment.driverId],
+        queryKey: [
+          "driverAssignments",
+          assignmentTenantId,
+          assignment.driverId,
+        ],
       });
       queryClient.invalidateQueries({
-        queryKey: ["vehicleAssignments", tenantId, assignment.vin],
+        queryKey: ["vehicleAssignments", assignmentTenantId, assignment.vin],
       });
     } catch (err) {
       setError(
@@ -352,6 +443,11 @@ export function AssignDriverPage() {
           <Card title="Assignment details">
             {status ? <div className="form-success">{status}</div> : null}
             {error ? <div className="form-error">{error}</div> : null}
+            {editingAssignment ? (
+              <div className="form-hint">
+                Editing dates only. Driver and VIN cannot be changed.
+              </div>
+            ) : null}
             <div className="form-grid">
               <label className="form__field">
                 <span className="text-muted">Driver</span>
@@ -359,6 +455,7 @@ export function AssignDriverPage() {
                   className="select"
                   value={driverId}
                   onChange={(event) => setDriverId(event.target.value)}
+                  disabled={Boolean(editingAssignment)}
                 >
                   <option value="">Choose driver</option>
                   {drivers.map((driver) => (
@@ -374,6 +471,7 @@ export function AssignDriverPage() {
                   className="select"
                   value={vin}
                   onChange={(event) => setVin(event.target.value)}
+                  disabled={Boolean(editingAssignment)}
                 >
                   <option value="">Choose vehicle</option>
                   {vehicleOptions.map((vehicleVin) => (
@@ -387,7 +485,7 @@ export function AssignDriverPage() {
                 <span className="text-muted">Effective from</span>
                 <input
                   className="input"
-                  type="datetime-local"
+                  type="date"
                   value={effectiveFrom}
                   onChange={(event) => setEffectiveFrom(event.target.value)}
                 />
@@ -405,7 +503,7 @@ export function AssignDriverPage() {
                 <span className="text-muted">Effective to</span>
                 <input
                   className="input"
-                  type="datetime-local"
+                  type="date"
                   value={effectiveTo}
                   onChange={(event) => setEffectiveTo(event.target.value)}
                 />
@@ -432,13 +530,27 @@ export function AssignDriverPage() {
               </label>
             </div>
             <div className="form__actions">
+              {editingAssignment ? (
+                <button
+                  className="btn btn--ghost"
+                  type="button"
+                  onClick={handleCancelEdit}
+                  disabled={isSubmitting}
+                >
+                  Cancel edit
+                </button>
+              ) : null}
               <button
                 className="btn"
                 type="button"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Saving..." : "Assign driver"}
+                {isSubmitting
+                  ? "Saving..."
+                  : editingAssignment
+                    ? "Update assignment"
+                    : "Assign driver"}
               </button>
             </div>
           </Card>
@@ -479,9 +591,20 @@ export function AssignDriverPage() {
                               <td>{formatDateTime(assignment.effectiveTo)}</td>
                               <td>{assignment.assignmentType ?? "—"}</td>
                               <td>
+                                {canEditAssignment ? (
+                                  <button
+                                    className="btn btn--ghost btn--action"
+                                    type="button"
+                                    onClick={() =>
+                                      handleEditAssignment(assignment)
+                                    }
+                                  >
+                                    Edit
+                                  </button>
+                                ) : null}
                                 {canDeleteAssignment ? (
                                   <button
-                                    className="btn btn--danger-ghost"
+                                    className="btn btn--danger-ghost btn--action"
                                     type="button"
                                     onClick={() =>
                                       handleDeleteAssignment(assignment)
@@ -489,7 +612,7 @@ export function AssignDriverPage() {
                                   >
                                     Delete
                                   </button>
-                                ) : (
+                                ) : canEditAssignment ? null : (
                                   "—"
                                 )}
                               </td>
@@ -530,9 +653,20 @@ export function AssignDriverPage() {
                               <td>{formatDateTime(assignment.effectiveTo)}</td>
                               <td>{assignment.assignmentType ?? "—"}</td>
                               <td>
+                                {canEditAssignment ? (
+                                  <button
+                                    className="btn btn--ghost btn--action"
+                                    type="button"
+                                    onClick={() =>
+                                      handleEditAssignment(assignment)
+                                    }
+                                  >
+                                    Edit
+                                  </button>
+                                ) : null}
                                 {canDeleteAssignment ? (
                                   <button
-                                    className="btn btn--danger-ghost"
+                                    className="btn btn--danger-ghost btn--action"
                                     type="button"
                                     onClick={() =>
                                       handleDeleteAssignment(assignment)
@@ -540,7 +674,7 @@ export function AssignDriverPage() {
                                   >
                                     Delete
                                   </button>
-                                ) : (
+                                ) : canEditAssignment ? null : (
                                   "—"
                                 )}
                               </td>

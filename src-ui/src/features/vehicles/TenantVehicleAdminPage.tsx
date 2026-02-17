@@ -14,11 +14,30 @@ import {
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useAuth } from "../../context/AuthContext";
+import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
 import { createIdempotencyKey } from "../../utils/id";
 
 const STATUS_OPTIONS = ["ACTIVE", "INACTIVE", "SUSPENDED"] as const;
+const VEHICLE_TYPE_OPTIONS = [
+  "LIGHT_DUTY",
+  "HEAVY_DUTY",
+  "EV",
+  "TRAILER",
+] as const;
+const BODY_TYPE_OPTIONS = ["SEDAN", "SUV", "BOX_TRUCK", "TRACTOR"] as const;
+const FUEL_TYPE_OPTIONS = ["GAS", "DIESEL", "EV", "HYBRID"] as const;
+const ENGINE_TYPE_OPTIONS = ["V6", "V8", "ELECTRIC"] as const;
+const TRANSMISSION_OPTIONS = ["AUTOMATIC", "MANUAL"] as const;
+const VEHICLE_MAKE_OPTIONS = [
+  "Toyota",
+  "Ford",
+  "Stellantis",
+  "GMC",
+  "Tesla",
+  "Dongle",
+] as const;
 
 function normalizeStatus(value?: string) {
   return (value ?? "unknown").toLowerCase();
@@ -40,6 +59,16 @@ function parseYear(value: string) {
   if (!value.trim()) return undefined;
   const year = Number(value);
   return Number.isNaN(year) ? undefined : year;
+}
+
+function parseNumber(value: string) {
+  if (!value.trim()) return undefined;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+function getMakeOptions(_currentMake: string) {
+  return VEHICLE_MAKE_OPTIONS;
 }
 
 function toIso(value: string) {
@@ -127,6 +156,7 @@ export function TenantVehicleAdminPage() {
   const queryClient = useQueryClient();
   const { roles } = useAuth();
   const { tenant } = useTenant();
+  const { fleet } = useFleet();
   const tenantId = tenant?.id ?? "";
 
   const [search, setSearch] = useState("");
@@ -136,6 +166,16 @@ export function TenantVehicleAdminPage() {
     model: "",
     year: "",
     status: "ACTIVE",
+    vehicleType: "",
+    bodyType: "",
+    fuelType: "",
+    engineType: "",
+    transmission: "",
+    fuelTankCapacity: "",
+    cityMileage: "",
+    highwayMileage: "",
+    frontTirePressure: "",
+    rearTirePressure: "",
   });
   const [assignForm, setAssignForm] = useState({
     fleetId: "",
@@ -151,6 +191,16 @@ export function TenantVehicleAdminPage() {
     model: "",
     year: "",
     status: "ACTIVE",
+    vehicleType: "",
+    bodyType: "",
+    fuelType: "",
+    engineType: "",
+    transmission: "",
+    fuelTankCapacity: "",
+    cityMileage: "",
+    highwayMileage: "",
+    frontTirePressure: "",
+    rearTirePressure: "",
     fleetId: "",
     effectiveFrom: "",
     reason: "Tenant onboarding",
@@ -260,8 +310,29 @@ export function TenantVehicleAdminPage() {
   }, [vinHistoryResponse]);
 
   useEffect(() => {
+    if (fleet?.id && !createForm.fleetId) {
+      setCreateForm((prev) => ({ ...prev, fleetId: fleet.id }));
+    }
+  }, [createForm.fleetId, fleet?.id]);
+
+  useEffect(() => {
     if (!selectedVehicle) {
-      setEditForm({ make: "", model: "", year: "", status: "ACTIVE" });
+      setEditForm({
+        make: "",
+        model: "",
+        year: "",
+        status: "ACTIVE",
+        vehicleType: "",
+        bodyType: "",
+        fuelType: "",
+        engineType: "",
+        transmission: "",
+        fuelTankCapacity: "",
+        cityMileage: "",
+        highwayMileage: "",
+        frontTirePressure: "",
+        rearTirePressure: "",
+      });
       setAssignForm({
         fleetId: "",
         effectiveFrom: "",
@@ -276,6 +347,31 @@ export function TenantVehicleAdminPage() {
       model: selectedVehicle.model ?? "",
       year: selectedVehicle.year ? String(selectedVehicle.year) : "",
       status: selectedVehicle.status ?? "ACTIVE",
+      vehicleType: selectedVehicle.vehicleType ?? "",
+      bodyType: selectedVehicle.bodyType ?? "",
+      fuelType: selectedVehicle.fuelType ?? "",
+      engineType: selectedVehicle.engineType ?? "",
+      transmission: selectedVehicle.transmission ?? "",
+      fuelTankCapacity:
+        selectedVehicle.fuelTankCapacity !== undefined
+          ? String(selectedVehicle.fuelTankCapacity)
+          : "",
+      cityMileage:
+        selectedVehicle.cityMileage !== undefined
+          ? String(selectedVehicle.cityMileage)
+          : "",
+      highwayMileage:
+        selectedVehicle.highwayMileage !== undefined
+          ? String(selectedVehicle.highwayMileage)
+          : "",
+      frontTirePressure:
+        selectedVehicle.frontTirePressure !== undefined
+          ? String(selectedVehicle.frontTirePressure)
+          : "",
+      rearTirePressure:
+        selectedVehicle.rearTirePressure !== undefined
+          ? String(selectedVehicle.rearTirePressure)
+          : "",
     });
     setAssignForm({
       fleetId: selectedVehicle.fleetId ?? "",
@@ -316,7 +412,25 @@ export function TenantVehicleAdminPage() {
       sanitize(editForm.make) !== sanitize(selectedVehicle.make ?? "") ||
       sanitize(editForm.model) !== sanitize(selectedVehicle.model ?? "") ||
       parseYear(editForm.year) !== selectedVehicle.year ||
-      sanitize(editForm.status) !== sanitize(selectedVehicle.status ?? "")
+      sanitize(editForm.status) !== sanitize(selectedVehicle.status ?? "") ||
+      sanitize(editForm.vehicleType) !==
+        sanitize(selectedVehicle.vehicleType ?? "") ||
+      sanitize(editForm.bodyType) !==
+        sanitize(selectedVehicle.bodyType ?? "") ||
+      sanitize(editForm.fuelType) !==
+        sanitize(selectedVehicle.fuelType ?? "") ||
+      sanitize(editForm.engineType) !==
+        sanitize(selectedVehicle.engineType ?? "") ||
+      sanitize(editForm.transmission) !==
+        sanitize(selectedVehicle.transmission ?? "") ||
+      parseNumber(editForm.fuelTankCapacity) !==
+        selectedVehicle.fuelTankCapacity ||
+      parseNumber(editForm.cityMileage) !== selectedVehicle.cityMileage ||
+      parseNumber(editForm.highwayMileage) !== selectedVehicle.highwayMileage ||
+      parseNumber(editForm.frontTirePressure) !==
+        selectedVehicle.frontTirePressure ||
+      parseNumber(editForm.rearTirePressure) !==
+        selectedVehicle.rearTirePressure
     );
   }, [editForm, selectedVehicle]);
 
@@ -332,6 +446,16 @@ export function TenantVehicleAdminPage() {
           model: sanitize(editForm.model) || undefined,
           year: parseYear(editForm.year),
           status: sanitize(editForm.status) || undefined,
+          vehicleType: sanitize(editForm.vehicleType) || undefined,
+          bodyType: sanitize(editForm.bodyType) || undefined,
+          fuelType: sanitize(editForm.fuelType) || undefined,
+          engineType: sanitize(editForm.engineType) || undefined,
+          transmission: sanitize(editForm.transmission) || undefined,
+          fuelTankCapacity: parseNumber(editForm.fuelTankCapacity),
+          cityMileage: parseNumber(editForm.cityMileage),
+          highwayMileage: parseNumber(editForm.highwayMileage),
+          frontTirePressure: parseNumber(editForm.frontTirePressure),
+          rearTirePressure: parseNumber(editForm.rearTirePressure),
         },
         { tenantId, roleOverride: resolvedRoleHeader },
       );
@@ -410,6 +534,15 @@ export function TenantVehicleAdminPage() {
       if (message.toLowerCase().includes("overlaps existing record")) {
         try {
           const currentAssignment = currentVinAssignment;
+          if (
+            currentAssignment?.tenantId &&
+            currentAssignment.tenantId !== tenantId
+          ) {
+            setEditError(
+              "VIN belongs to another tenant at the selected effective date. Use a platform transfer or pick a later effective date.",
+            );
+            return;
+          }
           const transferEffectiveFrom =
             maxIso(effectiveFrom, currentAssignment?.effectiveFrom) ??
             effectiveFrom;
@@ -444,11 +577,13 @@ export function TenantVehicleAdminPage() {
   };
 
   const handleCreate = async () => {
-    if (!tenantId || !sanitize(createForm.vin)) {
+    const vinValue = sanitize(createForm.vin);
+    if (!tenantId || !vinValue) {
       setCreateError("VIN is required.");
       return;
     }
-    if (!sanitize(createForm.reason)) {
+    const reasonValue = sanitize(createForm.reason);
+    if (!reasonValue) {
       setCreateError("Assignment reason is required.");
       return;
     }
@@ -457,46 +592,150 @@ export function TenantVehicleAdminPage() {
 
     const effectiveFrom =
       toIso(createForm.effectiveFrom) ?? new Date().toISOString();
+    const fleetIdValue = sanitize(createForm.fleetId) || undefined;
 
     try {
+      let alreadyExists = false;
+      let assignmentSkipped = false;
       try {
         await assignVin(
           {
-            vin: sanitize(createForm.vin),
+            vin: vinValue,
             tenantId,
-            fleetId: sanitize(createForm.fleetId) || undefined,
+            fleetId: fleetIdValue,
             effectiveFrom,
-            reason: sanitize(createForm.reason),
+            reason: reasonValue,
           },
           createIdempotencyKey(),
           { roleOverride: resolvedRoleHeader },
         );
       } catch (err) {
         const message = err instanceof Error ? err.message : "";
-        if (!message.toLowerCase().includes("already exists")) {
+        const normalized = message.toLowerCase();
+        if (normalized.includes("overlaps existing record")) {
+          if (!fleetIdValue) {
+            assignmentSkipped = true;
+            return;
+          }
+          let transferEffectiveFrom = effectiveFrom;
+          try {
+            const historyResponse = await fetchVinRegistryHistory(
+              vinValue,
+              tenantId,
+              { roleOverride: resolvedRoleHeader },
+            );
+            const history = normalizeVinHistory(historyResponse);
+            const now = Date.now();
+            const active = history.find((record) => {
+              const from = parseIsoToMs(record.effectiveFrom);
+              const to = parseIsoToMs(record.effectiveTo);
+              if (from === undefined) return false;
+              if (to === undefined) return from <= now;
+              return from <= now && now <= to;
+            });
+            const latest =
+              active ??
+              history
+                .slice()
+                .sort((a, b) =>
+                  String(b.effectiveFrom ?? "").localeCompare(
+                    String(a.effectiveFrom ?? ""),
+                  ),
+                )[0];
+            const ownerTenant = active?.tenantId ?? latest?.tenantId;
+            if (ownerTenant && ownerTenant !== tenantId) {
+              setCreateError(
+                "VIN belongs to another tenant at the selected effective date. Use a platform transfer or pick a later effective date.",
+              );
+              return;
+            }
+            transferEffectiveFrom =
+              maxIso(effectiveFrom, latest?.effectiveFrom) ?? effectiveFrom;
+          } catch (historyErr) {
+            const historyMessage =
+              historyErr instanceof Error ? historyErr.message : "";
+            if (!historyMessage.toLowerCase().includes("forbidden")) {
+              throw historyErr;
+            }
+            setCreateError(
+              "VIN belongs to another tenant at the selected effective date. Use a platform transfer or pick a later effective date.",
+            );
+            return;
+          }
+          await transferVin(
+            {
+              vin: vinValue,
+              fromTenantId: tenantId,
+              toTenantId: tenantId,
+              toFleetId: fleetIdValue,
+              effectiveFrom: transferEffectiveFrom,
+              reason: reasonValue,
+            },
+            createIdempotencyKey(),
+            { roleOverride: resolvedRoleHeader },
+          );
+        } else if (normalized.includes("already exists")) {
+          alreadyExists = true;
+        } else {
           throw err;
         }
       }
 
-      await createVehicle(
-        {
-          vin: sanitize(createForm.vin),
-          make: sanitize(createForm.make) || undefined,
-          model: sanitize(createForm.model) || undefined,
-          year: parseYear(createForm.year),
-          status: sanitize(createForm.status) || undefined,
-          reason: "Tenant admin create",
-        },
-        { tenantId, roleOverride: resolvedRoleHeader },
-      );
+      try {
+        await createVehicle(
+          {
+            vin: vinValue,
+            make: sanitize(createForm.make) || undefined,
+            model: sanitize(createForm.model) || undefined,
+            year: parseYear(createForm.year),
+            status: sanitize(createForm.status) || undefined,
+            vehicleType: sanitize(createForm.vehicleType) || undefined,
+            bodyType: sanitize(createForm.bodyType) || undefined,
+            fuelType: sanitize(createForm.fuelType) || undefined,
+            engineType: sanitize(createForm.engineType) || undefined,
+            transmission: sanitize(createForm.transmission) || undefined,
+            fuelTankCapacity: parseNumber(createForm.fuelTankCapacity),
+            cityMileage: parseNumber(createForm.cityMileage),
+            highwayMileage: parseNumber(createForm.highwayMileage),
+            frontTirePressure: parseNumber(createForm.frontTirePressure),
+            rearTirePressure: parseNumber(createForm.rearTirePressure),
+            reason: "Tenant admin create",
+          },
+          { tenantId, roleOverride: resolvedRoleHeader },
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "";
+        if (!message.toLowerCase().includes("already exists")) {
+          throw err;
+        }
+        alreadyExists = true;
+      }
 
-      setCreateStatus("Vehicle added.");
+      if (assignmentSkipped) {
+        setCreateStatus("Vehicle added; assignment already exists.");
+      } else {
+        setCreateStatus(
+          alreadyExists
+            ? "Vehicle already exists; assignment updated."
+            : "Vehicle added.",
+        );
+      }
       setCreateForm({
         vin: "",
         make: "",
         model: "",
         year: "",
         status: "ACTIVE",
+        vehicleType: "",
+        bodyType: "",
+        fuelType: "",
+        engineType: "",
+        transmission: "",
+        fuelTankCapacity: "",
+        cityMileage: "",
+        highwayMileage: "",
+        frontTirePressure: "",
+        rearTirePressure: "",
         fleetId: "",
         effectiveFrom: "",
         reason: "Tenant onboarding",
@@ -646,8 +885,8 @@ export function TenantVehicleAdminPage() {
               <div className="form-grid">
                 <label className="form__field">
                   <span className="text-muted">Make</span>
-                  <input
-                    className="input"
+                  <select
+                    className="select"
                     value={editForm.make}
                     onChange={(event) =>
                       setEditForm((prev) => ({
@@ -655,7 +894,14 @@ export function TenantVehicleAdminPage() {
                         make: event.target.value,
                       }))
                     }
-                  />
+                  >
+                    <option value="">Select</option>
+                    {getMakeOptions(editForm.make).map((makeOption) => (
+                      <option key={makeOption} value={makeOption}>
+                        {makeOption}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="form__field">
                   <span className="text-muted">Model</span>
@@ -701,6 +947,186 @@ export function TenantVehicleAdminPage() {
                       </option>
                     ))}
                   </select>
+                </label>
+                <label className="form__field">
+                  <span className="text-muted">Vehicle type</span>
+                  <select
+                    className="select"
+                    value={editForm.vehicleType}
+                    onChange={(event) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        vehicleType: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value="">Select</option>
+                    {VEHICLE_TYPE_OPTIONS.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="form__field">
+                  <span className="text-muted">Body type</span>
+                  <select
+                    className="select"
+                    value={editForm.bodyType}
+                    onChange={(event) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        bodyType: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value="">Select</option>
+                    {BODY_TYPE_OPTIONS.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="form__field">
+                  <span className="text-muted">Fuel type</span>
+                  <select
+                    className="select"
+                    value={editForm.fuelType}
+                    onChange={(event) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        fuelType: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value="">Select</option>
+                    {FUEL_TYPE_OPTIONS.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="form__field">
+                  <span className="text-muted">Engine type</span>
+                  <select
+                    className="select"
+                    value={editForm.engineType}
+                    onChange={(event) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        engineType: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value="">Select</option>
+                    {ENGINE_TYPE_OPTIONS.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="form__field">
+                  <span className="text-muted">Transmission</span>
+                  <select
+                    className="select"
+                    value={editForm.transmission}
+                    onChange={(event) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        transmission: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value="">Select</option>
+                    {TRANSMISSION_OPTIONS.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="form__field">
+                  <span className="text-muted">Fuel tank capacity</span>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={editForm.fuelTankCapacity}
+                    onChange={(event) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        fuelTankCapacity: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="form__field">
+                  <span className="text-muted">City mileage</span>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={editForm.cityMileage}
+                    onChange={(event) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        cityMileage: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="form__field">
+                  <span className="text-muted">Highway mileage</span>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={editForm.highwayMileage}
+                    onChange={(event) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        highwayMileage: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="form__field">
+                  <span className="text-muted">Front tire pressure</span>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={editForm.frontTirePressure}
+                    onChange={(event) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        frontTirePressure: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="form__field">
+                  <span className="text-muted">Rear tire pressure</span>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={editForm.rearTirePressure}
+                    onChange={(event) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        rearTirePressure: event.target.value,
+                      }))
+                    }
+                  />
                 </label>
               </div>
 
@@ -852,8 +1278,8 @@ export function TenantVehicleAdminPage() {
           </label>
           <label className="form__field">
             <span className="text-muted">Make</span>
-            <input
-              className="input"
+            <select
+              className="select"
               value={createForm.make}
               onChange={(event) =>
                 setCreateForm((prev) => ({
@@ -861,7 +1287,14 @@ export function TenantVehicleAdminPage() {
                   make: event.target.value,
                 }))
               }
-            />
+            >
+              <option value="">Select</option>
+              {VEHICLE_MAKE_OPTIONS.map((makeOption) => (
+                <option key={makeOption} value={makeOption}>
+                  {makeOption}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="form__field">
             <span className="text-muted">Model</span>
@@ -907,6 +1340,186 @@ export function TenantVehicleAdminPage() {
                 </option>
               ))}
             </select>
+          </label>
+          <label className="form__field">
+            <span className="text-muted">Vehicle type</span>
+            <select
+              className="select"
+              value={createForm.vehicleType}
+              onChange={(event) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  vehicleType: event.target.value,
+                }))
+              }
+            >
+              <option value="">Select</option>
+              {VEHICLE_TYPE_OPTIONS.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="form__field">
+            <span className="text-muted">Body type</span>
+            <select
+              className="select"
+              value={createForm.bodyType}
+              onChange={(event) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  bodyType: event.target.value,
+                }))
+              }
+            >
+              <option value="">Select</option>
+              {BODY_TYPE_OPTIONS.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="form__field">
+            <span className="text-muted">Fuel type</span>
+            <select
+              className="select"
+              value={createForm.fuelType}
+              onChange={(event) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  fuelType: event.target.value,
+                }))
+              }
+            >
+              <option value="">Select</option>
+              {FUEL_TYPE_OPTIONS.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="form__field">
+            <span className="text-muted">Engine type</span>
+            <select
+              className="select"
+              value={createForm.engineType}
+              onChange={(event) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  engineType: event.target.value,
+                }))
+              }
+            >
+              <option value="">Select</option>
+              {ENGINE_TYPE_OPTIONS.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="form__field">
+            <span className="text-muted">Transmission</span>
+            <select
+              className="select"
+              value={createForm.transmission}
+              onChange={(event) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  transmission: event.target.value,
+                }))
+              }
+            >
+              <option value="">Select</option>
+              {TRANSMISSION_OPTIONS.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="form__field">
+            <span className="text-muted">Fuel tank capacity</span>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              step="any"
+              value={createForm.fuelTankCapacity}
+              onChange={(event) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  fuelTankCapacity: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <label className="form__field">
+            <span className="text-muted">City mileage</span>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              step="any"
+              value={createForm.cityMileage}
+              onChange={(event) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  cityMileage: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <label className="form__field">
+            <span className="text-muted">Highway mileage</span>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              step="any"
+              value={createForm.highwayMileage}
+              onChange={(event) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  highwayMileage: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <label className="form__field">
+            <span className="text-muted">Front tire pressure</span>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              step="any"
+              value={createForm.frontTirePressure}
+              onChange={(event) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  frontTirePressure: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <label className="form__field">
+            <span className="text-muted">Rear tire pressure</span>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              step="any"
+              value={createForm.rearTirePressure}
+              onChange={(event) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  rearTirePressure: event.target.value,
+                }))
+              }
+            />
           </label>
           <label className="form__field">
             <span className="text-muted">Fleet</span>
