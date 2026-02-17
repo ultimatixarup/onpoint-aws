@@ -2,12 +2,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
-    assignVin,
-    createVehicle,
-    fetchFleets,
-    fetchTenants,
-    fetchVehicles,
-    updateVehicle,
+  assignVin,
+  createVehicle,
+  fetchFleets,
+  fetchTenants,
+  fetchVehicles,
+  updateVehicle,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { Card } from "../../ui/Card";
@@ -24,6 +24,15 @@ function parseJson(value: string) {
     return undefined;
   }
 }
+
+const VEHICLE_MAKE_OPTIONS = [
+  "Toyota",
+  "Ford",
+  "Stellantis",
+  "GMC",
+  "Tesla",
+  "Dongle",
+] as const;
 
 export function PlatformVehiclesPage() {
   const queryClient = useQueryClient();
@@ -610,7 +619,11 @@ export function PlatformVehiclesPage() {
             <button
               className={`btn ${isCreating ? "btn--loading" : ""}`}
               onClick={handleCreate}
-              disabled={!vin || isCreating || (assignAfterCreate && !assignmentReason.trim())}
+              disabled={
+                !vin ||
+                isCreating ||
+                (assignAfterCreate && !assignmentReason.trim())
+              }
             >
               {isCreating ? (
                 <span className="btn__spinner" aria-hidden="true" />
@@ -636,13 +649,19 @@ export function PlatformVehiclesPage() {
           </label>
           <label className="form__field" htmlFor="create-make">
             <span>Make</span>
-            <input
+            <select
               id="create-make"
-              className="input"
-              placeholder="Optional"
+              className="select"
               value={make}
               onChange={(event) => setMake(event.target.value)}
-            />
+            >
+              <option value="">Select</option>
+              {VEHICLE_MAKE_OPTIONS.map((makeOption) => (
+                <option key={makeOption} value={makeOption}>
+                  {makeOption}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="form__field" htmlFor="create-model">
             <span>Model</span>
@@ -682,9 +701,7 @@ export function PlatformVehiclesPage() {
               <input
                 type="checkbox"
                 checked={assignAfterCreate}
-                onChange={(event) =>
-                  setAssignAfterCreate(event.target.checked)
-                }
+                onChange={(event) => setAssignAfterCreate(event.target.checked)}
               />
               <span className="text-muted">
                 {fleetId
@@ -703,14 +720,14 @@ export function PlatformVehiclesPage() {
                 className="input"
                 placeholder="Required"
                 value={assignmentReason}
-                onChange={(event) =>
-                  setAssignmentReason(event.target.value)
-                }
+                onChange={(event) => setAssignmentReason(event.target.value)}
                 aria-invalid={Boolean(!assignmentReason.trim())}
               />
             </label>
           ) : null}
-          {createError ? <span className="form__error">{createError}</span> : null}
+          {createError ? (
+            <span className="form__error">{createError}</span>
+          ) : null}
         </div>
       </Modal>
     </div>

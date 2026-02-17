@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   createTenantUser,
   fetchUsers,
+  setUserPassword,
   setUserStatus,
   updateUserRoles,
 } from "../../api/onpointApi";
@@ -22,8 +23,10 @@ export function ManageUsersPage() {
   const [selectedUserId, setSelectedUserId] = useState("");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [tempPassword, setTempPassword] = useState("");
   const [roles, setRoles] = useState<string[]>([]);
   const [roleUpdate, setRoleUpdate] = useState("");
+  const [passwordUpdate, setPasswordUpdate] = useState("");
 
   const {
     data: users = [],
@@ -55,6 +58,7 @@ export function ManageUsersPage() {
   useEffect(() => {
     if (!selectedUser) return;
     setRoleUpdate(selectedUser.roles?.join(", ") ?? "");
+    setPasswordUpdate("");
   }, [selectedUser]);
 
   const stats = useMemo(() => {
@@ -82,15 +86,17 @@ export function ManageUsersPage() {
     Boolean(selectedUser) && normalizedRoleUpdate !== selectedRoles;
 
   const handleCreateUser = async () => {
-    if (!tenantId || !email) return;
+    if (!tenantId || !email || !tempPassword.trim()) return;
     const roleList = roles.filter(Boolean);
     await createTenantUser(tenantId, {
       email,
       name: name || undefined,
       roles: roleList.length ? roleList : undefined,
+      tempPassword: tempPassword.trim(),
     });
     setEmail("");
     setName("");
+    setTempPassword("");
     setRoles([]);
     queryClient.invalidateQueries({
       queryKey: queryKeys.users(tenantId, fleetId),
@@ -122,6 +128,17 @@ export function ManageUsersPage() {
     queryClient.invalidateQueries({
       queryKey: queryKeys.users(tenantId, fleetId),
     });
+  };
+
+  const handleSetPassword = async () => {
+    if (!tenantId || !selectedUserId) return;
+    const password = passwordUpdate.trim();
+    if (!password) return;
+    await setUserPassword(tenantId, selectedUserId, {
+      password,
+      permanent: true,
+    });
+    setPasswordUpdate("");
   };
 
   return (
@@ -200,13 +217,20 @@ export function ManageUsersPage() {
                         <td>{user.name ?? "—"}</td>
                         <td>{user.roles?.join(", ") ?? "—"}</td>
                         <td>
-                          <span
-                            className={`badge badge--${
-                              user.enabled ? "active" : "inactive"
-                            }`}
-                          >
-                            {user.enabled ? "ENABLED" : "DISABLED"}
-                          </span>
+                          <div className="inline">
+                            <span
+                              className={`badge badge--${
+                                user.enabled ? "active" : "inactive"
+                              }`}
+                            >
+                              {user.enabled ? "ENABLED" : "DISABLED"}
+                            </span>
+                            {user.cognitoStatus === "FORCE_CHANGE_PASSWORD" ? (
+                              <span className="badge badge--attention">
+                                FORCE CHANGE
+                              </span>
+                            ) : null}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -247,6 +271,16 @@ export function ManageUsersPage() {
                     </span>
                   </div>
                 </div>
+                <div>
+                  <div className="text-muted">Password</div>
+                  {selectedUser.cognitoStatus === "FORCE_CHANGE_PASSWORD" ? (
+                    <span className="badge badge--attention">
+                      FORCE CHANGE REQUIRED
+                    </span>
+                  ) : (
+                    <span className="text-muted">Normal</span>
+                  )}
+                </div>
               </div>
 
               <label className="form__field">
@@ -257,6 +291,17 @@ export function ManageUsersPage() {
                   onChange={(event) => setRoleUpdate(event.target.value)}
                 />
               </label>
+              <label className="form__field">
+                <span className="text-muted">Set permanent password</span>
+                <input
+                  className="input"
+                  type="password"
+                  value={passwordUpdate}
+                  onChange={(event) => setPasswordUpdate(event.target.value)}
+                  autoComplete="new-password"
+                  placeholder="Enter new password"
+                />
+              </label>
               <div className="inline">
                 <button
                   className="btn btn--secondary"
@@ -264,6 +309,13 @@ export function ManageUsersPage() {
                   disabled={!hasRoleChanges}
                 >
                   Update roles
+                </button>
+                <button
+                  className="btn btn--secondary"
+                  onClick={handleSetPassword}
+                  disabled={!passwordUpdate.trim()}
+                >
+                  Set password
                 </button>
                 <button
                   className="btn btn--secondary"
@@ -308,6 +360,16 @@ export function ManageUsersPage() {
             />
           </label>
           <label className="form__field">
+            <span className="text-muted">Temporary password *</span>
+            <input
+              className="input"
+              type="password"
+              value={tempPassword}
+              onChange={(event) => setTempPassword(event.target.value)}
+              autoComplete="new-password"
+            />
+          </label>
+          <label className="form__field">
             <span className="text-muted">Roles</span>
             <select
               className="select"
@@ -331,7 +393,11 @@ export function ManageUsersPage() {
           </label>
         </div>
         <div className="form__actions">
-          <button className="btn" onClick={handleCreateUser}>
+          <button
+            className="btn"
+            onClick={handleCreateUser}
+            disabled={!email || !tempPassword.trim()}
+          >
             Invite user
           </button>
         </div>

@@ -834,6 +834,7 @@ def _put_user_record(
     username: str,
     email: str,
     groups: List[str],
+    name: Optional[str] = None,
 ) -> Optional[str]:
     table = _get_users_table()
     if not table:
@@ -850,6 +851,8 @@ def _put_user_record(
         "updatedAt": now,
         "entityType": "USER",
     }
+    if isinstance(name, str) and name.strip():
+        item["name"] = name.strip()
     try:
         _ddb_put(table, item, condition="attribute_not_exists(SK)")
     except Exception as exc:
@@ -863,6 +866,7 @@ def _upsert_user_record(
     username: str,
     email: str,
     groups: List[str],
+    name: Optional[str] = None,
 ) -> Optional[str]:
     table = _get_users_table()
     if not table:
@@ -879,6 +883,8 @@ def _upsert_user_record(
         "updatedAt": now,
         "entityType": "USER",
     }
+    if isinstance(name, str) and name.strip():
+        item["name"] = name.strip()
     try:
         _ddb_put(table, item)
     except Exception as exc:
@@ -929,12 +935,20 @@ def _assign_existing_user_to_tenant(
         return _resp(502, {"error": f"Failed to fetch user: {exc}"})
 
     email = None
+    name = None
+    attributes = {attr.get("Name"): attr.get("Value") for attr in cognito_user.get("UserAttributes") or []}
     for attr in cognito_user.get("UserAttributes") or []:
         if attr.get("Name") == "email":
             email = attr.get("Value")
             break
     if not email:
         email = user_id
+    name = body.get("name") or body.get("fullName") or attributes.get("name")
+    if not name:
+        given = attributes.get("given_name")
+        family = attributes.get("family_name")
+        if given or family:
+            name = " ".join([part for part in [given, family] if part])
 
     try:
         _cognito.admin_update_user_attributes(
@@ -967,7 +981,13 @@ def _assign_existing_user_to_tenant(
     except Exception as exc:
         return _resp(502, {"error": f"Failed to update groups: {exc}"})
 
-    persist_err = _upsert_user_record(tenant_id=tenant_id, username=user_id, email=email, groups=groups)
+    persist_err = _upsert_user_record(
+        tenant_id=tenant_id,
+        username=user_id,
+        email=email,
+        groups=groups,
+        name=name,
+    )
     if persist_err:
         return _resp(502, {"error": persist_err})
 
@@ -1093,18 +1113,29 @@ def _create_cognito_user(tenant_id: str, body: dict, headers: Dict[str, str], ro
     if not isinstance(email, str) or not email.strip():
         return _resp(400, {"error": "email is required"})
     username = body.get("userId") or email
+    name = body.get("name") or body.get("fullName") or body.get("displayName")
     attrs = [
         {"Name": "email", "Value": email},
         {"Name": "email_verified", "Value": "true"},
         {"Name": "custom:tenantId", "Value": tenant_id},
     ]
+    if isinstance(name, str) and name.strip():
+        attrs.append({"Name": "name", "Value": name.strip()})
+    temp_password = body.get("tempPassword") or body.get("temporaryPassword")
+    if isinstance(temp_password, str) and not temp_password.strip():
+        temp_password = None
+
     try:
-        _cognito.admin_create_user(
-            UserPoolId=USER_POOL_ID,
-            Username=username,
-            UserAttributes=attrs,
-            DesiredDeliveryMediums=["EMAIL"],
-        )
+        create_args = {
+            "UserPoolId": USER_POOL_ID,
+            "Username": username,
+            "UserAttributes": attrs,
+            "DesiredDeliveryMediums": ["EMAIL"],
+        }
+        if temp_password:
+            create_args["TemporaryPassword"] = temp_password
+
+        _cognito.admin_create_user(**create_args)
         for group in groups:
             _cognito.admin_add_user_to_group(UserPoolId=USER_POOL_ID, Username=username, GroupName=group)
     except ClientError as exc:
@@ -1117,7 +1148,13 @@ def _create_cognito_user(tenant_id: str, body: dict, headers: Dict[str, str], ro
     except Exception as exc:
         return _resp(502, {"error": f"Failed to create user: {exc}"})
 
-    persist_err = _put_user_record(tenant_id=tenant_id, username=username, email=email, groups=groups)
+    persist_err = _put_user_record(
+        tenant_id=tenant_id,
+        username=username,
+        email=email,
+        groups=groups,
+        name=name if isinstance(name, str) else None,
+    )
     if persist_err:
         return _resp(502, {"error": persist_err})
 
@@ -1132,7 +1169,16 @@ def _create_cognito_user(tenant_id: str, body: dict, headers: Dict[str, str], ro
         tenant_id=tenant_id,
         correlation_id=headers.get("x-correlation-id"),
     )
-    return _resp(201, {"userId": username, "email": email, "tenantId": tenant_id, "groups": groups})
+    return _resp(
+        201,
+        {
+            "userId": username,
+            "email": email,
+            "tenantId": tenant_id,
+            "groups": groups,
+            "name": name if isinstance(name, str) and name.strip() else None,
+        },
+    )
 
 
 def _list_cognito_users(tenant_id: str, role: str, caller_tenant: Optional[str]) -> dict:
@@ -1172,18 +1218,138 @@ def _list_cognito_users(tenant_id: str, role: str, caller_tenant: Optional[str])
         username = it.get("userId") or it.get("email")
         status = None
         enabled = None
+        name = it.get("name")
         if isinstance(username, str):
             cognito_user = _safe_admin_get_user(username)
             if cognito_user:
                 status = cognito_user.get("UserStatus")
                 enabled = cognito_user.get("Enabled")
+                attributes = {attr.get("Name"): attr.get("Value") for attr in cognito_user.get("UserAttributes") or []}
+                if not name:
+                    name = attributes.get("name")
+                if not name:
+                    given = attributes.get("given_name")
+                    family = attributes.get("family_name")
+                    if given or family:
+                        name = " ".join([part for part in [given, family] if part])
         if status:
             it = {**it, "cognitoStatus": status}
         if isinstance(enabled, bool):
             it = {**it, "enabled": enabled}
+        if isinstance(name, str) and name.strip():
+            it = {**it, "name": name.strip()}
         enriched.append(it)
 
     return _resp(200, {"items": enriched})
+
+
+def _update_cognito_user_name(
+    tenant_id: str,
+    user_id: str,
+    body: dict,
+    headers: Dict[str, str],
+    role: str,
+    caller_tenant: Optional[str],
+) -> dict:
+    if not isinstance(tenant_id, str) or not tenant_id.strip():
+        return _resp(400, {"error": "tenantId is required"})
+    if not isinstance(user_id, str) or not user_id.strip():
+        return _resp(400, {"error": "userId is required"})
+    err = _require_role(role, [ROLE_ADMIN, ROLE_TENANT_ADMIN])
+    if err:
+        return _resp(403, {"error": err})
+    err = _require_tenant_access(role, caller_tenant, tenant_id)
+    if err:
+        return _resp(403, {"error": err})
+    err = _require_user_pool()
+    if err:
+        return _resp(502, {"error": err})
+
+    name = body.get("name") or body.get("fullName") or body.get("displayName")
+    if not isinstance(name, str) or not name.strip():
+        return _resp(400, {"error": "name is required"})
+    name = name.strip()
+
+    try:
+        _cognito.admin_update_user_attributes(
+            UserPoolId=USER_POOL_ID,
+            Username=user_id,
+            UserAttributes=[{"Name": "name", "Value": name}],
+        )
+    except ClientError as exc:
+        code = (exc.response.get("Error") or {}).get("Code", "")
+        if code == "UserNotFoundException":
+            return _resp(404, {"error": "User not found"})
+        if code == "InvalidParameterException":
+            return _resp(400, {"error": "Invalid name"})
+        return _resp(502, {"error": f"Failed to update user: {code}"})
+    except Exception as exc:
+        return _resp(502, {"error": f"Failed to update user: {exc}"})
+
+    table = _get_users_table()
+    if not table:
+        return _resp(502, {"error": "USERS_TABLE not configured"})
+
+    try:
+        existing = _ddb_get(table, {"PK": f"TENANT#{tenant_id}", "SK": f"USER#{user_id}"})
+    except Exception:
+        existing = None
+
+    if existing:
+        try:
+            _ddb_update(
+                table,
+                {"PK": f"TENANT#{tenant_id}", "SK": f"USER#{user_id}"},
+                "SET #name = :name, updatedAt = :updatedAt",
+                {":name": name, ":updatedAt": utc_now_iso()},
+                expr_names={"#name": "name"},
+            )
+        except Exception as exc:
+            return _resp(502, {"error": f"Failed to update user record: {exc}"})
+    else:
+        email = user_id
+        groups: List[str] = []
+        cognito_user = _safe_admin_get_user(user_id)
+        if cognito_user:
+            for attr in cognito_user.get("UserAttributes") or []:
+                if attr.get("Name") == "email":
+                    email = attr.get("Value") or email
+                    break
+            try:
+                group_resp = _cognito.admin_list_groups_for_user(
+                    UserPoolId=USER_POOL_ID,
+                    Username=user_id,
+                )
+                groups = [
+                    g.get("GroupName")
+                    for g in group_resp.get("Groups") or []
+                    if g.get("GroupName")
+                ]
+            except Exception:
+                groups = []
+
+        persist_err = _upsert_user_record(
+            tenant_id=tenant_id,
+            username=user_id,
+            email=email or user_id,
+            groups=groups,
+            name=name,
+        )
+        if persist_err:
+            return _resp(502, {"error": persist_err})
+
+    _audit(
+        entity_type="user",
+        entity_id=str(user_id),
+        action="update-name",
+        actor=_get_actor(headers, caller_tenant),
+        reason=body.get("reason"),
+        before=None,
+        after={"tenantId": tenant_id, "name": name},
+        tenant_id=tenant_id,
+        correlation_id=headers.get("x-correlation-id"),
+    )
+    return _resp(200, {"userId": user_id, "tenantId": tenant_id, "name": name})
 
 
 def _set_cognito_user_roles(tenant_id: str, user_id: str, body: dict, headers: Dict[str, str], role: str, caller_tenant: Optional[str]) -> dict:
@@ -1280,6 +1446,78 @@ def _set_cognito_user_status(tenant_id: str, user_id: str, enabled: bool, header
         correlation_id=headers.get("x-correlation-id"),
     )
     return _resp(200, {"userId": user_id, "tenantId": tenant_id, "enabled": enabled})
+
+
+def _set_cognito_user_password(
+    tenant_id: str,
+    user_id: str,
+    body: dict,
+    headers: Dict[str, str],
+    role: str,
+    caller_tenant: Optional[str],
+) -> dict:
+    if not isinstance(tenant_id, str) or not tenant_id.strip():
+        return _resp(400, {"error": "tenantId is required"})
+    if not isinstance(user_id, str) or not user_id.strip():
+        return _resp(400, {"error": "userId is required"})
+    err = _require_role(role, [ROLE_ADMIN, ROLE_TENANT_ADMIN])
+    if err:
+        return _resp(403, {"error": err})
+    err = _require_tenant_access(role, caller_tenant, tenant_id)
+    if err:
+        return _resp(403, {"error": err})
+    err = _require_user_pool()
+    if err:
+        return _resp(502, {"error": err})
+
+    password = (
+        body.get("password")
+        or body.get("tempPassword")
+        or body.get("temporaryPassword")
+        or body.get("permanentPassword")
+    )
+    if not isinstance(password, str) or not password.strip():
+        return _resp(400, {"error": "password is required"})
+
+    permanent = bool(body.get("permanent")) or bool(body.get("permanentPassword"))
+
+    try:
+        _cognito.admin_set_user_password(
+            UserPoolId=USER_POOL_ID,
+            Username=user_id,
+            Password=password,
+            Permanent=permanent,
+        )
+    except ClientError as exc:
+        code = (exc.response.get("Error") or {}).get("Code", "")
+        if code == "UserNotFoundException":
+            return _resp(404, {"error": "User not found"})
+        if code in ("InvalidPasswordException", "InvalidParameterException"):
+            return _resp(400, {"error": f"Invalid request: {code}"})
+        return _resp(502, {"error": f"Failed to set password: {code}"})
+    except Exception as exc:
+        return _resp(502, {"error": f"Failed to set password: {exc}"})
+
+    _audit(
+        entity_type="user",
+        entity_id=str(user_id),
+        action="set-password",
+        actor=_get_actor(headers, caller_tenant),
+        reason=body.get("reason"),
+        before=None,
+        after={"tenantId": tenant_id, "permanent": permanent},
+        tenant_id=tenant_id,
+        correlation_id=headers.get("x-correlation-id"),
+    )
+
+    return _resp(
+        200,
+        {
+            "userId": user_id,
+            "tenantId": tenant_id,
+            "permanent": permanent,
+        },
+    )
 
 
 # -----------------------------
@@ -2806,6 +3044,166 @@ def _delete_driver_assignment(
     return _resp(200, {"driverId": driver_id, "vin": vin, "effectiveFrom": normalized_from})
 
 
+def _update_driver_assignment(
+    driver_id: str,
+    body: dict,
+    headers: Dict[str, str],
+    role: str,
+    caller_tenant: Optional[str],
+    expected_tenant_id: Optional[str] = None,
+) -> dict:
+    err = _require_driver_write_role(role)
+    if err:
+        return _resp(403, {"error": err})
+
+    vin = body.get("vin")
+    original_from = _normalize_iso(body.get("effectiveFrom"))
+    if not vin or not original_from:
+        return _resp(400, {"error": "vin and effectiveFrom are required"})
+
+    if role != ROLE_ADMIN and not caller_tenant:
+        return _resp(403, {"error": "Tenant identity required"})
+
+    if expected_tenant_id:
+        err = _require_tenant_access(role, caller_tenant, expected_tenant_id)
+        if err:
+            return _resp(403, {"error": err})
+        driver = _ddb_get(DRIVERS_TABLE, {"PK": f"DRIVER#{driver_id}", "SK": "META"})
+        if not driver or driver.get("tenantId") != expected_tenant_id:
+            return _resp(404, {"error": "Driver not found"})
+
+    if not DRIVER_ASSIGNMENTS_TABLE:
+        return _resp(500, {"error": "Driver assignments table not configured"})
+
+    key = {"PK": f"DRIVER#{driver_id}", "SK": f"EFFECTIVE_FROM#{original_from}#VIN#{vin}"}
+    existing = _ddb_get(DRIVER_ASSIGNMENTS_TABLE, key)
+    if not existing:
+        return _resp(404, {"error": "Assignment not found"})
+
+    tenant_id = existing.get("tenantId")
+    if role != ROLE_ADMIN:
+        if expected_tenant_id and tenant_id != expected_tenant_id:
+            return _resp(404, {"error": "Assignment not found"})
+        if caller_tenant != tenant_id:
+            return _resp(403, {"error": "Forbidden"})
+
+    if tenant_id and not _vin_active_for_tenant(vin, tenant_id, original_from):
+        return _resp(403, {"error": "Forbidden"})
+
+    if role == ROLE_FLEET_MANAGER:
+        scoped, scope_err = _apply_fleet_scope(role, headers, headers.get("x-fleet-id"))
+        if scope_err:
+            return _resp(403, {"error": scope_err})
+        vins = _list_vins_for_tenant(tenant_id, scoped, active_only=True)
+        if vin not in vins:
+            return _resp(403, {"error": "Forbidden"})
+
+    idempotency_key = _get_idempotency_key(headers)
+    if not idempotency_key:
+        return _resp(400, {"error": "Idempotency-Key is required for driver assignments"})
+
+    new_from = _normalize_iso(body.get("newEffectiveFrom")) or original_from
+    if new_from != original_from and tenant_id and not _vin_active_for_tenant(vin, tenant_id, new_from):
+        return _resp(403, {"error": "Forbidden"})
+
+    effective_to = (
+        _normalize_iso(body.get("effectiveTo"))
+        if "effectiveTo" in body
+        else existing.get("effectiveTo")
+    )
+    assignment_type = body.get("assignmentType") or existing.get("assignmentType")
+
+    existing_assignments = _ddb_query(
+        {
+            "TableName": DRIVER_ASSIGNMENTS_TABLE,
+            "KeyConditionExpression": "PK = :pk",
+            "ExpressionAttributeValues": {":pk": {"S": f"DRIVER#{driver_id}"}},
+            "ScanIndexForward": True,
+        }
+    )
+    for item in existing_assignments:
+        if item.get("tenantId") != tenant_id:
+            continue
+        if item.get("vin") == vin and item.get("effectiveFrom") == original_from:
+            continue
+        if _range_overlaps(
+            new_from,
+            effective_to,
+            item.get("effectiveFrom"),
+            item.get("effectiveTo"),
+        ):
+            return _resp(409, {"error": "Driver assignment overlaps existing record"})
+
+    route_key = f"PATCH:/drivers/{driver_id}/assignments"
+    path = f"/drivers/{driver_id}/assignments"
+    if expected_tenant_id:
+        route_key = f"PATCH:/tenants/{tenant_id}/drivers/{driver_id}/assignments"
+        path = f"/tenants/{tenant_id}/drivers/{driver_id}/assignments"
+    request_hash = _hash_request("PATCH", path, body)
+
+    def _do():
+        now = utc_now_iso()
+        if new_from == original_from:
+            update_parts = ["#t=:t", "updatedAt=:u"]
+            expr_vals = {":t": assignment_type, ":u": now}
+            expr_names = {"#t": "assignmentType"}
+            remove_parts = []
+            if "effectiveTo" in body:
+                if effective_to is None:
+                    remove_parts.append("effectiveTo")
+                else:
+                    update_parts.append("effectiveTo=:e")
+                    expr_vals[":e"] = effective_to
+            update_expr = "SET " + ", ".join(update_parts)
+            if remove_parts:
+                update_expr = update_expr + " REMOVE " + ", ".join(remove_parts)
+            updated = _ddb_update(
+                DRIVER_ASSIGNMENTS_TABLE,
+                key,
+                update_expr,
+                expr_vals,
+                expr_names=expr_names,
+            )
+            after = updated or {}
+        else:
+            new_item = dict(existing)
+            new_item.update(
+                {
+                    "vin": vin,
+                    "effectiveFrom": new_from,
+                    "effectiveTo": effective_to,
+                    "assignmentType": assignment_type,
+                    "updatedAt": now,
+                    "PK": f"DRIVER#{driver_id}",
+                    "SK": f"EFFECTIVE_FROM#{new_from}#VIN#{vin}",
+                    "GSI1PK": f"VIN#{vin}",
+                    "GSI1SK": f"EFFECTIVE_FROM#{new_from}#DRIVER#{driver_id}",
+                }
+            )
+            _ddb_put(
+                DRIVER_ASSIGNMENTS_TABLE,
+                new_item,
+                condition="attribute_not_exists(PK) AND attribute_not_exists(SK)",
+            )
+            _ddb_delete(DRIVER_ASSIGNMENTS_TABLE, key)
+            after = new_item
+
+        _audit(
+            entity_type="driver-assignment",
+            entity_id=f"{driver_id}:{vin}:{original_from}",
+            action="update",
+            actor=_get_actor(headers, caller_tenant),
+            reason=body.get("reason"),
+            before=existing,
+            after=after,
+            tenant_id=tenant_id,
+            correlation_id=headers.get("x-correlation-id"),
+        )
+        return _resp(200, {"driverId": driver_id, "vin": vin, "effectiveFrom": new_from})
+
+    return _with_idempotency(idempotency_key, route_key, request_hash, caller_tenant, _do)
+
+
 def _driver_dashboard_access(
     tenant_id: str,
     driver_id: str,
@@ -3272,10 +3670,26 @@ def lambda_handler(event, context):
                 return _create_cognito_user(tenant_id, body, headers, role, caller_tenant, groups)
             if method == "GET":
                 return _list_cognito_users(tenant_id, role, caller_tenant)
+        if len(segments) == 4 and method == "PATCH":
+            user_id = segments[3]
+            err = _require_body(body)
+            return (
+                _resp(400, {"error": err})
+                if err
+                else _update_cognito_user_name(tenant_id, user_id, body, headers, role, caller_tenant)
+            )
         if len(segments) == 5 and method == "PUT" and segments[4] == "roles":
             user_id = segments[3]
             err = _require_body(body)
             return _resp(400, {"error": err}) if err else _set_cognito_user_roles(tenant_id, user_id, body, headers, role, caller_tenant)
+        if len(segments) == 5 and method == "POST" and segments[4] == "password":
+            user_id = segments[3]
+            err = _require_body(body)
+            return (
+                _resp(400, {"error": err})
+                if err
+                else _set_cognito_user_password(tenant_id, user_id, body, headers, role, caller_tenant)
+            )
         if len(segments) == 5 and method == "POST" and segments[4] == "disable":
             user_id = segments[3]
             return _set_cognito_user_status(tenant_id, user_id, False, headers, role, caller_tenant)
@@ -3354,6 +3768,13 @@ def lambda_handler(event, context):
                     )
                 if method == "GET":
                     return _list_driver_assignments(driver_id, role, caller_tenant, tenant_id)
+                if method == "PATCH":
+                    err = _require_body(body)
+                    return (
+                        _resp(400, {"error": err})
+                        if err
+                        else _update_driver_assignment(driver_id, body, headers, role, caller_tenant, tenant_id)
+                    )
                 if method == "DELETE":
                     vin = query.get("vin") or ""
                     effective_from = query.get("effectiveFrom") or query.get("effective_from") or ""

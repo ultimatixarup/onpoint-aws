@@ -1,12 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import {
-    createTenantAdmin,
-    createTenantUser,
-    fetchTenants,
-    fetchUsers,
-    setUserStatus,
-    updateUserRoles,
+  createTenantAdmin,
+  createTenantUser,
+  fetchTenants,
+  fetchUsers,
+  setUserPassword,
+  setUserStatus,
+  updateUserName,
+  updateUserRoles,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useEnterpriseForm } from "../../hooks/useEnterpriseForm";
@@ -31,7 +33,7 @@ export function PlatformUsersPage() {
   );
 
   const createForm = useEnterpriseForm(
-    { email: "", name: "", roles: "" },
+    { email: "", name: "", roles: "", tempPassword: "" },
     {
       email: (value) => {
         const text = String(value ?? "").trim();
@@ -40,6 +42,8 @@ export function PlatformUsersPage() {
           ? null
           : "Enter a valid email address.";
       },
+      tempPassword: (value) =>
+        String(value ?? "").trim() ? null : "Temporary password is required.",
     },
   );
   const [isCreateSubmitting, setIsCreateSubmitting] = useState(false);
@@ -64,15 +68,24 @@ export function PlatformUsersPage() {
     [users, selectedUserId],
   );
   const [roleUpdate, setRoleUpdate] = useState("");
+  const [nameUpdate, setNameUpdate] = useState("");
+  const [resetPassword, setResetPassword] = useState("");
 
   useEffect(() => {
     if (!selectedUser) return;
     setRoleUpdate(selectedUser.roles?.join(", ") ?? "");
+    setNameUpdate(selectedUser.name ?? "");
+    setResetPassword("");
   }, [selectedUser]);
 
   useEffect(() => {
     if (!isCreateOpen) {
-      createForm.resetForm({ email: "", name: "", roles: "" });
+      createForm.resetForm({
+        email: "",
+        name: "",
+        roles: "",
+        tempPassword: "",
+      });
       setCreateAdmin(false);
     }
   }, [createForm.resetForm, isCreateOpen]);
@@ -99,12 +112,40 @@ export function PlatformUsersPage() {
     );
   }, [users, search]);
 
+  const normalizedRoleUpdate = useMemo(
+    () =>
+      roleUpdate
+        .split(",")
+        .map((role) => role.trim())
+        .filter(Boolean)
+        .join(", "),
+    [roleUpdate],
+  );
+  const selectedRoles = useMemo(
+    () => (selectedUser?.roles ?? []).join(", "),
+    [selectedUser],
+  );
+  const selectedRoleList = useMemo(
+    () => selectedUser?.roles ?? [],
+    [selectedUser],
+  );
+  const hasRoleChanges =
+    Boolean(selectedUser) && normalizedRoleUpdate !== selectedRoles;
+  const normalizedNameUpdate = useMemo(() => nameUpdate.trim(), [nameUpdate]);
+  const selectedName = useMemo(
+    () => (selectedUser?.name ?? "").trim(),
+    [selectedUser],
+  );
+  const hasNameChanges =
+    Boolean(selectedUser) && normalizedNameUpdate !== selectedName;
+  const hasChanges = hasRoleChanges || hasNameChanges;
+
   const handleCreateUser = async () => {
     if (!tenantId || isCreateSubmitting) return;
     const errors = createForm.validateAll();
     if (Object.values(errors).some(Boolean)) {
       createForm.focusFirstInvalid({
-        order: ["email", "name", "roles"],
+        order: ["email", "tempPassword", "name", "roles"],
         getId: (field) => `create-${String(field)}`,
       });
       return;
@@ -114,8 +155,13 @@ export function PlatformUsersPage() {
       setIsCreateSubmitting(true);
       const email = String(createForm.values.email).trim();
       const name = String(createForm.values.name ?? "").trim();
+      const tempPassword = String(createForm.values.tempPassword ?? "").trim();
       if (createAdmin) {
-        await createTenantAdmin(tenantId, { email, name: name || undefined });
+        await createTenantAdmin(tenantId, {
+          email,
+          name: name || undefined,
+          tempPassword,
+        });
       } else {
         const roleList = String(createForm.values.roles ?? "")
           .split(",")
@@ -125,9 +171,15 @@ export function PlatformUsersPage() {
           email,
           name: name || undefined,
           roles: roleList,
+          tempPassword,
         });
       }
-      createForm.resetForm({ email: "", name: "", roles: "" });
+      createForm.resetForm({
+        email: "",
+        name: "",
+        roles: "",
+        tempPassword: "",
+      });
       setIsCreateOpen(false);
       setRecentUserKey(email.toLowerCase());
       queryClient.invalidateQueries({ queryKey: queryKeys.users(tenantId) });
@@ -155,6 +207,66 @@ export function PlatformUsersPage() {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unable to update roles.";
+      addToast({ type: "error", message });
+    } finally {
+      setIsAccessSubmitting(false);
+    }
+  };
+
+  const handleUpdateName = async () => {
+    if (!tenantId || !selectedUserId || isAccessSubmitting) return;
+    const name = normalizedNameUpdate;
+    if (!name) {
+      addToast({ type: "error", message: "Name is required." });
+      return;
+    }
+    try {
+      setIsAccessSubmitting(true);
+      await updateUserName(tenantId, selectedUserId, name);
+      queryClient.invalidateQueries({ queryKey: queryKeys.users(tenantId) });
+      addToast({ type: "success", message: "User name updated." });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to update name.";
+      addToast({ type: "error", message });
+    } finally {
+      setIsAccessSubmitting(false);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    if (!hasChanges || isAccessSubmitting) return;
+    if (hasNameChanges) {
+      await handleUpdateName();
+    }
+    if (hasRoleChanges) {
+      await handleUpdateRoles();
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!tenantId || !selectedUserId || isAccessSubmitting) return;
+    const password = resetPassword.trim();
+    if (!password) {
+      addToast({ type: "error", message: "Temporary password is required." });
+      return;
+    }
+    try {
+      setIsAccessSubmitting(true);
+      await setUserPassword(
+        tenantId,
+        selectedUserId,
+        {
+          password,
+          permanent: false,
+        },
+        "admin",
+      );
+      setResetPassword("");
+      addToast({ type: "success", message: "Temporary password set." });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to reset password.";
       addToast({ type: "error", message });
     } finally {
       setIsAccessSubmitting(false);
@@ -270,13 +382,20 @@ export function PlatformUsersPage() {
                       <td>{user.name ?? "—"}</td>
                       <td>{user.roles?.join(", ") ?? "—"}</td>
                       <td>
-                        <span
-                          className={`badge badge--${
-                            user.enabled ? "active" : "inactive"
-                          }`}
-                        >
-                          {user.enabled ? "ENABLED" : "DISABLED"}
-                        </span>
+                        <div className="inline">
+                          <span
+                            className={`badge badge--${
+                              user.enabled ? "active" : "inactive"
+                            }`}
+                          >
+                            {user.enabled ? "ENABLED" : "DISABLED"}
+                          </span>
+                          {user.cognitoStatus === "FORCE_CHANGE_PASSWORD" ? (
+                            <span className="badge badge--attention">
+                              FORCE CHANGE
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -326,11 +445,48 @@ export function PlatformUsersPage() {
                     </div>
                     <div>
                       <div className="text-muted">Name</div>
-                      <div>{selectedUser.name ?? "—"}</div>
+                      <input
+                        className="input"
+                        value={nameUpdate}
+                        onChange={(event) => setNameUpdate(event.target.value)}
+                        placeholder="Required"
+                      />
                     </div>
                     <div>
                       <div className="text-muted">Status</div>
                       <div>{selectedUser.enabled ? "ENABLED" : "DISABLED"}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted">Password</div>
+                      {selectedUser.cognitoStatus ===
+                      "FORCE_CHANGE_PASSWORD" ? (
+                        <span className="badge badge--attention">
+                          FORCE CHANGE REQUIRED
+                        </span>
+                      ) : (
+                        <span className="text-muted">Normal</span>
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-muted">Roles</div>
+                      {selectedRoleList.length ? (
+                        <div className="assignment-summary">
+                          {selectedRoleList.map((role) => (
+                            <span key={role} className="assignment-chip">
+                              {role}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted">No roles assigned</span>
+                      )}
+                      <button
+                        className="btn btn--secondary"
+                        type="button"
+                        onClick={() => setActiveTab("access")}
+                      >
+                        Edit roles
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -362,6 +518,25 @@ export function PlatformUsersPage() {
                       Disable
                     </button>
                   </div>
+                  <div className="divider" />
+                  <label className="form__field">
+                    <span>Temporary password (forces change)</span>
+                    <input
+                      className="input"
+                      type="password"
+                      value={resetPassword}
+                      onChange={(event) => setResetPassword(event.target.value)}
+                      autoComplete="new-password"
+                      placeholder="Enter temporary password"
+                    />
+                  </label>
+                  <button
+                    className="btn btn--secondary"
+                    onClick={handleResetPassword}
+                    disabled={isAccessSubmitting || !resetPassword.trim()}
+                  >
+                    Reset password
+                  </button>
                 </div>
               ) : null}
 
@@ -377,17 +552,18 @@ export function PlatformUsersPage() {
               <div className="form__actions">
                 <button
                   className="btn btn--secondary"
-                  onClick={() =>
-                    setRoleUpdate(selectedUser.roles?.join(", ") ?? "")
-                  }
+                  onClick={() => {
+                    setRoleUpdate(selectedUser.roles?.join(", ") ?? "");
+                    setNameUpdate(selectedUser.name ?? "");
+                  }}
                   disabled={isAccessSubmitting}
                 >
                   Cancel
                 </button>
                 <button
                   className={`btn ${isAccessSubmitting ? "btn--loading" : ""}`}
-                  onClick={handleUpdateRoles}
-                  disabled={isAccessSubmitting}
+                  onClick={handleSaveChanges}
+                  disabled={isAccessSubmitting || !hasChanges}
                 >
                   {isAccessSubmitting ? (
                     <span className="btn__spinner" aria-hidden="true" />
@@ -467,6 +643,38 @@ export function PlatformUsersPage() {
               onChange={createForm.handleChange}
               onBlur={createForm.handleBlur}
             />
+          </label>
+          <label className="form__field" htmlFor="create-tempPassword">
+            <span>
+              Temporary password<span className="required">*</span>
+            </span>
+            <input
+              id="create-tempPassword"
+              name="tempPassword"
+              className="input"
+              type="password"
+              placeholder="Required"
+              value={String(createForm.values.tempPassword)}
+              onChange={createForm.handleChange}
+              onBlur={createForm.handleBlur}
+              autoComplete="new-password"
+              aria-invalid={Boolean(
+                createForm.touched.tempPassword &&
+                createForm.errors.tempPassword,
+              )}
+              aria-describedby={
+                createForm.touched.tempPassword &&
+                createForm.errors.tempPassword
+                  ? "create-tempPassword-error"
+                  : undefined
+              }
+            />
+            {createForm.touched.tempPassword &&
+            createForm.errors.tempPassword ? (
+              <span id="create-tempPassword-error" className="form__error">
+                {createForm.errors.tempPassword}
+              </span>
+            ) : null}
           </label>
           <label className="form__field" htmlFor="create-roles">
             <span>Roles (comma-separated)</span>

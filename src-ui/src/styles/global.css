@@ -1862,6 +1862,11 @@ a {
   color: #c92a2a;
 }
 
+.badge--attention {
+  background: #fff9db;
+  color: #f08c00;
+}
+
 .tabs {
   display: flex;
   gap: var(--space-2);
@@ -2542,6 +2547,19 @@ a {
   background: rgba(248, 113, 113, 0.18);
   border-color: rgba(185, 28, 28, 0.7);
   color: #991b1b;
+}
+
+.btn--action {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  border-radius: 999px;
+  letter-spacing: 0.01em;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn--action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
 }
 
 @keyframes spin {

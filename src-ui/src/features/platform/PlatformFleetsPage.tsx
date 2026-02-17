@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import {
-    createFleet,
-    fetchCustomers,
-    fetchFleets,
-    fetchTenants,
-    updateFleet,
+  createFleet,
+  fetchCustomers,
+  fetchFleets,
+  fetchTenants,
+  updateFleet,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useEnterpriseForm } from "../../hooks/useEnterpriseForm";
@@ -72,12 +72,20 @@ export function PlatformFleetsPage() {
     {},
   );
 
-  const createForm = useEnterpriseForm({
-    fleetId: "",
-    customerId: "",
-    name: "",
-    reason: "",
-  });
+  const createForm = useEnterpriseForm(
+    {
+      fleetId: "",
+      customerId: "",
+      name: "",
+      reason: "",
+    },
+    {
+      fleetId: (value) =>
+        String(value ?? "").trim() ? null : "Fleet ID is required.",
+      name: (value) =>
+        String(value ?? "").trim() ? null : "Fleet name is required.",
+    },
+  );
 
   const [selectedFleetId, setSelectedFleetId] = useState("");
   const selectedTenantName = useMemo(
@@ -143,16 +151,31 @@ export function PlatformFleetsPage() {
     const name = String(createForm.values.name ?? "").trim();
     const reason = String(createForm.values.reason ?? "").trim();
 
+    const errors = createForm.validateAll();
+    if (errors.fleetId || errors.name) {
+      createForm.focusFirstInvalid({
+        order: ["fleetId", "name"],
+        getId: (field) =>
+          field === "fleetId" ? "create-fleet-id" : "create-fleet-name",
+      });
+      return;
+    }
+
     try {
       setIsCreateSubmitting(true);
       await createFleet({
-        fleetId: fleetId || undefined,
+        fleetId,
         tenantId,
         customerId: customerId || undefined,
-        name: name || undefined,
+        name,
         reason: reason || undefined,
       });
-      createForm.resetForm({ fleetId: "", customerId: "", name: "", reason: "" });
+      createForm.resetForm({
+        fleetId: "",
+        customerId: "",
+        name: "",
+        reason: "",
+      });
       setIsCreateOpen(false);
       setRecentFleetKey((fleetId || name).toLowerCase());
       queryClient.invalidateQueries({ queryKey: queryKeys.fleets(tenantId) });
@@ -446,7 +469,7 @@ export function PlatformFleetsPage() {
             <button
               className={`btn ${isCreateSubmitting ? "btn--loading" : ""}`}
               onClick={handleCreate}
-              disabled={!tenantId || isCreateSubmitting}
+              disabled={!tenantId || !createForm.isValid || isCreateSubmitting}
             >
               {isCreateSubmitting ? (
                 <span className="btn__spinner" aria-hidden="true" />
@@ -458,16 +481,31 @@ export function PlatformFleetsPage() {
       >
         <div className="stack">
           <label className="form__field" htmlFor="create-fleet-id">
-            <span>Fleet ID</span>
+            <span>
+              Fleet ID<span className="required">*</span>
+            </span>
             <input
               id="create-fleet-id"
               name="fleetId"
               className="input"
-              placeholder="Optional"
+              placeholder="Required"
               value={String(createForm.values.fleetId)}
               onChange={createForm.handleChange}
               onBlur={createForm.handleBlur}
+              aria-invalid={Boolean(
+                createForm.touched.fleetId && createForm.errors.fleetId,
+              )}
+              aria-describedby={
+                createForm.touched.fleetId && createForm.errors.fleetId
+                  ? "create-fleet-id-error"
+                  : undefined
+              }
             />
+            {createForm.touched.fleetId && createForm.errors.fleetId ? (
+              <span id="create-fleet-id-error" className="form__error">
+                {createForm.errors.fleetId}
+              </span>
+            ) : null}
           </label>
           <label className="form__field" htmlFor="create-customer-id">
             <span>Customer ID</span>
@@ -482,16 +520,31 @@ export function PlatformFleetsPage() {
             />
           </label>
           <label className="form__field" htmlFor="create-fleet-name">
-            <span>Name</span>
+            <span>
+              Name<span className="required">*</span>
+            </span>
             <input
               id="create-fleet-name"
               name="name"
               className="input"
-              placeholder="Optional"
+              placeholder="Required"
               value={String(createForm.values.name)}
               onChange={createForm.handleChange}
               onBlur={createForm.handleBlur}
+              aria-invalid={Boolean(
+                createForm.touched.name && createForm.errors.name,
+              )}
+              aria-describedby={
+                createForm.touched.name && createForm.errors.name
+                  ? "create-fleet-name-error"
+                  : undefined
+              }
             />
+            {createForm.touched.name && createForm.errors.name ? (
+              <span id="create-fleet-name-error" className="form__error">
+                {createForm.errors.name}
+              </span>
+            ) : null}
           </label>
           <label className="form__field" htmlFor="create-fleet-reason">
             <span>Reason</span>

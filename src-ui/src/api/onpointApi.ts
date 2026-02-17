@@ -36,6 +36,16 @@ export type VehicleSummary = {
   make?: string;
   model?: string;
   year?: number;
+  vehicleType?: string;
+  bodyType?: string;
+  fuelType?: string;
+  engineType?: string;
+  transmission?: string;
+  fuelTankCapacity?: number;
+  cityMileage?: number;
+  highwayMileage?: number;
+  frontTirePressure?: number;
+  rearTirePressure?: number;
 };
 
 export type DriverSummary = {
@@ -156,6 +166,7 @@ export type UserSummary = {
   groups?: string[];
   roles?: string[];
   name?: string;
+  cognitoStatus?: string;
   status?: string;
   enabled?: boolean;
 };
@@ -421,6 +432,10 @@ export async function fetchVehicles(tenantId: string, fleetId?: string) {
 
   const vehicles = items.map((item): VehicleSummary | undefined => {
     const record = item as Record<string, unknown>;
+    const metadata =
+      typeof record.metadata === "object" && record.metadata !== null
+        ? (record.metadata as Record<string, unknown>)
+        : undefined;
     const pkValue = record.PK;
     const vinFromPk =
       typeof pkValue === "string" && pkValue.startsWith("VEHICLE#")
@@ -430,6 +445,21 @@ export async function fetchVehicles(tenantId: string, fleetId?: string) {
     if (!vin) return undefined;
     const yearValue = record.year ?? record.modelYear;
     const year = yearValue ? Number(yearValue) : undefined;
+    const fuelTankCapacity = Number(
+      record.fuelTankCapacity ?? metadata?.fuelTankCapacity ?? "",
+    );
+    const cityMileage = Number(
+      record.cityMileage ?? metadata?.cityMileage ?? "",
+    );
+    const highwayMileage = Number(
+      record.highwayMileage ?? metadata?.highwayMileage ?? "",
+    );
+    const frontTirePressure = Number(
+      record.frontTirePressure ?? metadata?.frontTirePressure ?? "",
+    );
+    const rearTirePressure = Number(
+      record.rearTirePressure ?? metadata?.rearTirePressure ?? "",
+    );
     return {
       vin: String(vin),
       status: record.status ? String(record.status) : undefined,
@@ -437,6 +467,42 @@ export async function fetchVehicles(tenantId: string, fleetId?: string) {
       make: record.make ? String(record.make) : undefined,
       model: record.model ? String(record.model) : undefined,
       year: Number.isNaN(year) ? undefined : year,
+      vehicleType: record.vehicleType
+        ? String(record.vehicleType)
+        : metadata?.vehicleType
+          ? String(metadata.vehicleType)
+          : undefined,
+      bodyType: record.bodyType
+        ? String(record.bodyType)
+        : metadata?.bodyType
+          ? String(metadata.bodyType)
+          : undefined,
+      fuelType: record.fuelType
+        ? String(record.fuelType)
+        : metadata?.fuelType
+          ? String(metadata.fuelType)
+          : undefined,
+      engineType: record.engineType
+        ? String(record.engineType)
+        : metadata?.engineType
+          ? String(metadata.engineType)
+          : undefined,
+      transmission: record.transmission
+        ? String(record.transmission)
+        : metadata?.transmission
+          ? String(metadata.transmission)
+          : undefined,
+      fuelTankCapacity: Number.isNaN(fuelTankCapacity)
+        ? undefined
+        : fuelTankCapacity,
+      cityMileage: Number.isNaN(cityMileage) ? undefined : cityMileage,
+      highwayMileage: Number.isNaN(highwayMileage) ? undefined : highwayMileage,
+      frontTirePressure: Number.isNaN(frontTirePressure)
+        ? undefined
+        : frontTirePressure,
+      rearTirePressure: Number.isNaN(rearTirePressure)
+        ? undefined
+        : rearTirePressure,
     };
   });
   return vehicles.filter(Boolean) as VehicleSummary[];
@@ -450,6 +516,17 @@ export async function createVehicle(
     year?: number | string;
     status?: string;
     reason?: string;
+    vehicleType?: string;
+    bodyType?: string;
+    fuelType?: string;
+    engineType?: string;
+    transmission?: string;
+    fuelTankCapacity?: number;
+    cityMileage?: number;
+    highwayMileage?: number;
+    frontTirePressure?: number;
+    rearTirePressure?: number;
+    metadata?: Record<string, unknown>;
   },
   options?: { tenantId?: string; roleOverride?: string },
 ) {
@@ -472,6 +549,16 @@ export async function updateVehicle(
     make?: string;
     model?: string;
     year?: number | string;
+    vehicleType?: string;
+    bodyType?: string;
+    fuelType?: string;
+    engineType?: string;
+    transmission?: string;
+    fuelTankCapacity?: number;
+    cityMileage?: number;
+    highwayMileage?: number;
+    frontTirePressure?: number;
+    rearTirePressure?: number;
   },
   options?: { tenantId?: string; roleOverride?: string },
 ) {
@@ -837,7 +924,10 @@ export async function fetchUsers(tenantId: string, fleetId?: string) {
     const roles = Array.isArray(record.roles)
       ? record.roles.map((role) => String(role))
       : groups;
-    const statusValue = record.status ? String(record.status) : undefined;
+    const statusValue =
+      (record.cognitoStatus ?? record.status)
+        ? String(record.cognitoStatus ?? record.status)
+        : undefined;
     const enabledValue =
       typeof record.enabled === "boolean"
         ? record.enabled
@@ -886,6 +976,9 @@ export async function fetchUsers(tenantId: string, fleetId?: string) {
       groups,
       roles,
       name: nameValue ? String(nameValue) : fallbackName,
+      cognitoStatus: record.cognitoStatus
+        ? String(record.cognitoStatus)
+        : undefined,
       status: statusValue,
       enabled: enabledValue,
     };
@@ -973,6 +1066,7 @@ export async function createTenantUser(
     email: string;
     roles?: string[];
     name?: string;
+    tempPassword?: string;
   },
 ) {
   return httpRequest<unknown>(`/tenants/${tenantId}/users`, {
@@ -987,6 +1081,7 @@ export async function createTenantAdmin(
   payload: {
     email: string;
     name?: string;
+    tempPassword?: string;
   },
 ) {
   return httpRequest<unknown>(`/platform/tenants/${tenantId}/admins`, {
@@ -1005,6 +1100,37 @@ export async function updateUserRoles(
     method: "PUT",
     body: { roles },
     headers: { "x-tenant-id": tenantId },
+  });
+}
+
+export async function updateUserName(
+  tenantId: string,
+  userId: string,
+  name: string,
+) {
+  return httpRequest<unknown>(`/tenants/${tenantId}/users/${userId}`, {
+    method: "PATCH",
+    body: { name },
+    headers: { "x-tenant-id": tenantId },
+  });
+}
+
+export async function setUserPassword(
+  tenantId: string,
+  userId: string,
+  payload: { password: string; permanent: boolean },
+  roleOverride?: string,
+) {
+  return httpRequest<unknown>(`/tenants/${tenantId}/users/${userId}/password`, {
+    method: "POST",
+    body: {
+      password: payload.password,
+      permanent: payload.permanent,
+    },
+    headers: {
+      "x-tenant-id": tenantId,
+      ...(roleOverride ? { "x-role": roleOverride } : {}),
+    },
   });
 }
 
@@ -1082,6 +1208,7 @@ export async function createDriverAssignment(
     reason?: string;
   },
   idempotencyKey: string,
+  options?: { roleOverride?: string; fleetId?: string },
 ) {
   return httpRequest<unknown>(
     `/tenants/${payload.tenantId}/drivers/${driverId}/assignments`,
@@ -1091,6 +1218,8 @@ export async function createDriverAssignment(
       headers: {
         "x-tenant-id": payload.tenantId,
         "idempotency-key": idempotencyKey,
+        ...(options?.roleOverride ? { "x-role": options.roleOverride } : {}),
+        ...(options?.fleetId ? { "x-fleet-id": options.fleetId } : {}),
       },
     },
   );
@@ -1101,7 +1230,7 @@ export async function deleteDriverAssignment(
   driverId: string,
   vin: string,
   effectiveFrom: string,
-  roleOverride?: string,
+  options?: { roleOverride?: string; fleetId?: string },
 ) {
   const query = new URLSearchParams({ vin, effectiveFrom });
   return httpRequest<unknown>(
@@ -1110,7 +1239,37 @@ export async function deleteDriverAssignment(
       method: "DELETE",
       headers: {
         "x-tenant-id": tenantId,
-        ...(roleOverride ? { "x-role": roleOverride } : {}),
+        ...(options?.roleOverride ? { "x-role": options.roleOverride } : {}),
+        ...(options?.fleetId ? { "x-fleet-id": options.fleetId } : {}),
+      },
+    },
+  );
+}
+
+export async function updateDriverAssignment(
+  tenantId: string,
+  driverId: string,
+  payload: {
+    vin: string;
+    effectiveFrom: string;
+    newEffectiveFrom?: string;
+    effectiveTo?: string;
+    assignmentType?: string;
+    reason?: string;
+  },
+  idempotencyKey: string,
+  options?: { roleOverride?: string; fleetId?: string },
+) {
+  return httpRequest<unknown>(
+    `/tenants/${tenantId}/drivers/${driverId}/assignments`,
+    {
+      method: "PATCH",
+      body: payload,
+      headers: {
+        "x-tenant-id": tenantId,
+        "idempotency-key": idempotencyKey,
+        ...(options?.roleOverride ? { "x-role": options.roleOverride } : {}),
+        ...(options?.fleetId ? { "x-fleet-id": options.fleetId } : {}),
       },
     },
   );

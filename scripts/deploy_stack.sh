@@ -39,6 +39,9 @@ trip_summary_builder_zip=$($LAMBDA_BUILD_SCRIPT trip_summary_builder)
 trip_summary_api_zip=$($LAMBDA_BUILD_SCRIPT trip_summary_api)
 vehicle_state_api_zip=$($LAMBDA_BUILD_SCRIPT vehicle_state_api)
 fleet_tenancy_api_zip=$($LAMBDA_BUILD_SCRIPT fleet_tenancy_api)
+geofence_processor_zip=$($LAMBDA_BUILD_SCRIPT geofence_processor)
+geofence_api_zip=$($LAMBDA_BUILD_SCRIPT geofence_api)
+geofence_admin_api_zip=$($LAMBDA_BUILD_SCRIPT geofence_admin_api)
 
 echo "Building Lambda layers..."
 $LAYER_BUILD_SCRIPT
@@ -52,6 +55,9 @@ aws s3 cp "$trip_summary_builder_zip" "s3://${ARTIFACT_BUCKET}/lambda/trip_summa
 aws s3 cp "$trip_summary_api_zip" "s3://${ARTIFACT_BUCKET}/lambda/trip_summary_api.zip" --region "$REGION"
 aws s3 cp "$vehicle_state_api_zip" "s3://${ARTIFACT_BUCKET}/lambda/vehicle_state_api.zip" --region "$REGION"
 aws s3 cp "$fleet_tenancy_api_zip" "s3://${ARTIFACT_BUCKET}/lambda/fleet_tenancy_api.zip" --region "$REGION"
+aws s3 cp "$geofence_processor_zip" "s3://${ARTIFACT_BUCKET}/lambda/geofence_processor.zip" --region "$REGION"
+aws s3 cp "$geofence_api_zip" "s3://${ARTIFACT_BUCKET}/lambda/geofence_api.zip" --region "$REGION"
+aws s3 cp "$geofence_admin_api_zip" "s3://${ARTIFACT_BUCKET}/lambda/geofence_admin_api.zip" --region "$REGION"
 
 echo "Uploading Lambda layers to S3..."
 common_layer_zip="$LAMBDA_OUT_DIR/onpoint_common_layer.zip"
@@ -79,6 +85,9 @@ PARAMS=(
   "ParameterKey=TripSummaryApiCodeS3Key,ParameterValue=lambda/trip_summary_api.zip"
   "ParameterKey=VehicleStateApiCodeS3Key,ParameterValue=lambda/vehicle_state_api.zip"
   "ParameterKey=FleetTenancyApiCodeS3Key,ParameterValue=lambda/fleet_tenancy_api.zip"
+  "ParameterKey=GeofenceProcessorCodeS3Key,ParameterValue=lambda/geofence_processor.zip"
+  "ParameterKey=GeofenceApiCodeS3Key,ParameterValue=lambda/geofence_api.zip"
+  "ParameterKey=GeofenceAdminApiCodeS3Key,ParameterValue=lambda/geofence_admin_api.zip"
   "ParameterKey=CommonLayerS3Key,ParameterValue=lambda/onpoint_common_layer.zip"
 )
 

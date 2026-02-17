@@ -40,9 +40,9 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-role", "value": "{{roleAdmin}}" },
-              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
               { "key": "x-correlation-id", "value": "{{correlationId}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
@@ -58,7 +58,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}"
@@ -69,10 +69,10 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" },
-              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}",
@@ -87,7 +87,7 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
@@ -99,7 +99,7 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
@@ -111,7 +111,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-role", "value": "{{roleAdmin}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/tenants"
@@ -127,10 +127,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" },
-              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/customers",
@@ -145,7 +145,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/customers/{{customerId}}"
@@ -156,10 +156,10 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" },
-              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/customers/{{customerId}}",
@@ -174,7 +174,7 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" }
             ],
@@ -186,7 +186,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/customers?tenantId={{tenantId}}"
@@ -202,10 +202,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" },
-              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/fleets",
@@ -220,7 +220,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/fleets/{{fleetId}}"
@@ -231,10 +231,10 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" },
-              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/fleets/{{fleetId}}",
@@ -245,11 +245,29 @@
           }
         },
         {
+          "name": "Patch fleet name",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-role", "value": "{{roleTenantAdmin}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/fleets/{{fleetId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{fleetName}}\",\n  \"reason\": \"rename\"\n}"
+            }
+          }
+        },
+        {
           "name": "Archive fleet",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" }
             ],
@@ -261,7 +279,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/fleets?tenantId={{tenantId}}&customerId={{customerId}}"
@@ -277,10 +295,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" },
-              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/vehicles",
@@ -295,7 +313,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/vehicles/{{vin}}"
@@ -306,10 +324,10 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" },
-              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/vehicles/{{vin}}",
@@ -324,7 +342,7 @@
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" }
             ],
@@ -336,7 +354,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/vehicles?tenantId={{tenantId}}&fleetId={{fleetId}}"
@@ -347,9 +365,9 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-role", "value": "{{roleAdmin}}" },
-              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/vin-registry/assign",
@@ -364,9 +382,9 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-role", "value": "{{roleAdmin}}" },
-              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/vin-registry/transfer",
@@ -381,7 +399,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/vin-registry/{{vin}}"
@@ -392,7 +410,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/vin-registry?tenantId={{tenantId}}&active=true"
@@ -408,10 +426,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" },
-              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers",
@@ -426,7 +444,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}"
@@ -437,10 +455,10 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" },
-              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}",
@@ -455,7 +473,7 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" }
             ],
@@ -467,7 +485,7 @@
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" }
             ],
@@ -479,7 +497,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers?fleetId={{fleetId}}&limit=50"
@@ -495,10 +513,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" },
-              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers",
@@ -513,7 +531,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers?fleetId={{fleetId}}&limit=50"
@@ -524,7 +542,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}"
@@ -535,7 +553,7 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" },
               { "key": "Content-Type", "value": "application/json" }
@@ -552,7 +570,7 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" }
             ],
@@ -564,7 +582,7 @@
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" }
             ],
@@ -576,10 +594,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" },
-              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}/assignments",
@@ -594,7 +612,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}/assignments"
@@ -605,7 +623,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}/dashboard?from={{metricsFrom}}&to={{metricsTo}}&fleetId={{fleetId}}"
@@ -616,7 +634,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}/dashboard/trips?from={{metricsFrom}}&to={{metricsTo}}&limit=25"
@@ -627,7 +645,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}/dashboard/events?from={{metricsFrom}}&to={{metricsTo}}&type=harsh_braking&limit=25"
@@ -643,10 +661,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" },
               { "key": "x-role", "value": "{{roleTenantAdmin}}" },
-              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}/assignments",
@@ -661,7 +679,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/tenants/{{tenantId}}/drivers/{{driverId}}/assignments"
@@ -672,7 +690,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-api-key", "value": "{{apiKey}}" },
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
               { "key": "x-tenant-id", "value": "{{tenantId}}" }
             ],
             "url": "{{fleetTenancyBaseUrl}}/vehicles/{{vin}}/driver-assignments"

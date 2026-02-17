@@ -1,5 +1,7 @@
 import {
+  confirmSignIn,
   fetchAuthSession,
+  fetchUserAttributes,
   getCurrentUser,
   signIn,
   signOut,
@@ -29,10 +31,16 @@ type AuthState = {
   email?: string;
   tenantId?: string;
   roles: AuthRole[];
+  challenge?: "new-password";
+  challengeUsername?: string;
 };
 
 type AuthContextValue = AuthState & {
-  login: (username: string, password: string) => Promise<void>;
+  login: (
+    username: string,
+    password: string,
+  ) => Promise<{ requiresNewPassword: boolean }>;
+  completeNewPassword: (newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -94,6 +102,13 @@ function getTenantIdFromSession(
   return tenantId;
 }
 
+function getTenantIdFromAttributes(
+  attributes?: Record<string, string>,
+): string | undefined {
+  if (!attributes) return undefined;
+  return attributes["custom:tenantId"] ?? attributes.tenantId;
+}
+
 function getUserProfileFromSession(
   session: Awaited<ReturnType<typeof fetchAuthSession>>,
   fallbackUsername?: string,
@@ -113,14 +128,15 @@ function getUserProfileFromSession(
   if (name && name.trim()) {
     return { displayName: name, email };
   }
-  if (email && email.includes("@")) {
-    const derived = email
+  const labelSource = email ?? fallbackUsername;
+  if (labelSource && labelSource.includes("@")) {
+    const derived = labelSource
       .split("@")[0]
       .replace(/[._-]+/g, " ")
       .replace(/\b\w/g, (char) => char.toUpperCase());
-    return { displayName: derived || email, email };
+    return { displayName: derived || labelSource, email };
   }
-  return { displayName: fallbackUsername, email };
+  return { displayName: labelSource, email };
 }
 
 export function AuthProvider({ children }: PropsWithChildren) {
@@ -134,18 +150,29 @@ export function AuthProvider({ children }: PropsWithChildren) {
       try {
         const user = await getCurrentUser();
         const session = await fetchAuthSession();
+        const attributes = await fetchUserAttributes();
         const groups = getGroupsFromSession(session);
         const profile = getUserProfileFromSession(session, user.username);
+        const tenantId =
+          getTenantIdFromSession(session) ??
+          getTenantIdFromAttributes(attributes);
         setState({
           status: "authenticated",
           username: user.username,
           displayName: profile.displayName,
           email: profile.email,
-          tenantId: getTenantIdFromSession(session),
+          tenantId,
           roles: mapGroupsToRoles(groups),
+          challenge: undefined,
+          challengeUsername: undefined,
         });
       } catch {
-        setState({ status: "unauthenticated", roles: [] });
+        setState({
+          status: "unauthenticated",
+          roles: [],
+          challenge: undefined,
+          challengeUsername: undefined,
+        });
       }
     };
     load();
@@ -156,26 +183,73 @@ export function AuthProvider({ children }: PropsWithChildren) {
       ...state,
       login: async (username, password) => {
         try {
-          await signIn({ username, password });
+          const signInResult = await signIn({ username, password });
+          if (signInResult && !signInResult.isSignedIn) {
+            const step = signInResult.nextStep?.signInStep;
+            if (step === "CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED") {
+              setState((prev) => ({
+                ...prev,
+                status: "unauthenticated",
+                roles: [],
+                challenge: "new-password",
+                challengeUsername: username,
+              }));
+              return { requiresNewPassword: true };
+            }
+            throw new Error("Additional authentication is required.");
+          }
           const session = await fetchAuthSession();
+          const attributes = await fetchUserAttributes();
           const groups = getGroupsFromSession(session);
           const profile = getUserProfileFromSession(session, username);
+          const tenantId =
+            getTenantIdFromSession(session) ??
+            getTenantIdFromAttributes(attributes);
           setState({
             status: "authenticated",
             username,
             displayName: profile.displayName,
             email: profile.email,
-            tenantId: getTenantIdFromSession(session),
+            tenantId,
             roles: mapGroupsToRoles(groups),
+            challenge: undefined,
+            challengeUsername: undefined,
           });
+          return { requiresNewPassword: false };
         } catch (error) {
           console.error("Cognito sign-in failed", error);
           throw error;
         }
       },
+      completeNewPassword: async (newPassword) => {
+        await confirmSignIn({ challengeResponse: newPassword });
+        const user = await getCurrentUser();
+        const session = await fetchAuthSession();
+        const attributes = await fetchUserAttributes();
+        const groups = getGroupsFromSession(session);
+        const profile = getUserProfileFromSession(session, user.username);
+        const tenantId =
+          getTenantIdFromSession(session) ??
+          getTenantIdFromAttributes(attributes);
+        setState({
+          status: "authenticated",
+          username: user.username,
+          displayName: profile.displayName,
+          email: profile.email,
+          tenantId,
+          roles: mapGroupsToRoles(groups),
+          challenge: undefined,
+          challengeUsername: undefined,
+        });
+      },
       logout: async () => {
         await signOut();
-        setState({ status: "unauthenticated", roles: [] });
+        setState({
+          status: "unauthenticated",
+          roles: [],
+          challenge: undefined,
+          challengeUsername: undefined,
+        });
       },
     }),
     [state],
