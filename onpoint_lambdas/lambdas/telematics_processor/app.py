@@ -102,6 +102,23 @@ def _num(v) -> Optional[float]:
         return None
     return None
 
+def _get_path(raw: dict, path: str) -> Any:
+    """
+    Read nested or flattened dotted keys.
+    Example: "cx_geolocation.cx_latitude" works for
+    raw["cx_geolocation"]["cx_latitude"] or raw["cx_geolocation.cx_latitude"].
+    """
+    cur: Any = raw
+    for part in path.split("."):
+        if isinstance(cur, dict) and part in cur:
+            cur = cur[part]
+        else:
+            cur = None
+            break
+    if cur is not None:
+        return cur
+    return raw.get(path)
+
 def _parse_event_time(raw: dict) -> str:
     """
     Prefer cx_readable_timestamp; fallback to epoch; else now.
@@ -117,49 +134,45 @@ def _parse_event_time(raw: dict) -> str:
     return utc_now_iso()
 
 def _get_location(raw: dict) -> Tuple[Optional[float], Optional[float], Optional[float], Optional[float]]:
-    geo = raw.get("cx_geolocation") or {}
-    lat = _num(geo.get("cx_latitude"))
-    lon = _num(geo.get("cx_longitude"))
-    heading = _num(geo.get("cx_heading"))
-    altitude_m = _num(geo.get("cx_altitude"))
+    lat = _num(_get_path(raw, "cx_geolocation.cx_latitude"))
+    lon = _num(_get_path(raw, "cx_geolocation.cx_longitude"))
+    heading = _num(_get_path(raw, "cx_geolocation.cx_heading"))
+    altitude_m = _num(_get_path(raw, "cx_geolocation.cx_altitude"))
     return lat, lon, heading, altitude_m
 
 def _get_speed_mph(raw: dict) -> Optional[float]:
-    sp = raw.get("cx_vehicle_speed") or {}
-    if isinstance(sp, dict):
-        kph = _num(sp.get("value"))
-        if kph is not None:
-            return kph * KPH_TO_MPH
+    kph = _num(_get_path(raw, "cx_vehicle_speed.value"))
+    if kph is None:
+        kph = _num(_get_path(raw, "cx_vehicle_speed_inf.value"))
+    if kph is not None:
+        return kph * KPH_TO_MPH
     return None
 
 def _get_odometer_miles(raw: dict) -> Optional[float]:
-    odo = raw.get("cx_odometer") or {}
-    if isinstance(odo, dict):
-        km = _num(odo.get("value"))
-        if km is not None:
-            return km * KM_TO_MILES
+    km = _num(_get_path(raw, "cx_odometer.value"))
+    if km is None:
+        km = _num(_get_path(raw, "cx_odometer_inf.value"))
+    if km is not None:
+        return km * KM_TO_MILES
     return None
 
 def _get_engine_speed_rpm(raw: dict) -> Optional[float]:
-    eng = raw.get("cx_engine") or {}
-    es = eng.get("cx_engine_speed")
-    if isinstance(es, dict):
-        return _num(es.get("value"))
-    return None
+    return _num(_get_path(raw, "cx_engine.cx_engine_speed.value"))
 
 def _get_trip_distance_miles(raw: dict) -> Optional[float]:
-    dist = raw.get("cx_trip_distance") or raw.get("cx_trip_distance_inf")
-    if isinstance(dist, dict):
-        val = _num(dist.get("value"))
-        unit = (dist.get("unit") or "").lower()
-        if val is None:
-            return None
-        if unit in ("km", "kilometer", "kilometers"):
-            return val * KM_TO_MILES
-        if unit in ("mi", "mile", "miles"):
-            return val
+    val = _num(_get_path(raw, "cx_trip_distance.value"))
+    unit = _get_path(raw, "cx_trip_distance.unit")
+    if val is None:
+        val = _num(_get_path(raw, "cx_trip_distance_inf.value"))
+        unit = _get_path(raw, "cx_trip_distance_inf.unit")
+    if val is None:
+        return _num(raw.get("trip_distance_miles"))
+    unit_text = str(unit or "").lower()
+    if unit_text in ("km", "kilometer", "kilometers"):
+        return val * KM_TO_MILES
+    if unit_text in ("mi", "mile", "miles"):
         return val
-    return _num(raw.get("trip_distance_miles"))
+    return val
 
 def _get_duration_since_trip_start(raw: dict) -> Optional[float]:
     return _num(raw.get("cx_duration"))
@@ -174,32 +187,21 @@ def _get_gear_position(raw: dict) -> Optional[str]:
     return None
 
 def _get_coolant_temp_c(raw: dict) -> Optional[float]:
-    eng = raw.get("cx_engine") or {}
-    ct = eng.get("cx_coolant_temp")
-    if isinstance(ct, dict):
-        return _num(ct.get("value"))
-    return None
+    return _num(_get_path(raw, "cx_engine.cx_coolant_temp.value"))
 
 def _get_battery_volts(raw: dict) -> Optional[float]:
-    batt = (raw.get("cx_battery") or {}).get("cx_battery_level")
-    if isinstance(batt, dict):
-        return _num(batt.get("value"))
-    return None
+    return _num(_get_path(raw, "cx_battery.cx_battery_level.value"))
 
 def _get_fuel_percent(raw: dict) -> Optional[float]:
     """
     cx_fuel.cx_fuel_level.value with unit 'perc' or '%'
     If unit is liters, do NOT coerce -> leave percent null.
     """
-    fuel = raw.get("cx_fuel") or {}
-    fl = fuel.get("cx_fuel_level")
-    if not isinstance(fl, dict):
-        return None
-    unit = (fl.get("unit") or "").lower()
-    val = _num(fl.get("value"))
+    unit = _get_path(raw, "cx_fuel.cx_fuel_level.unit")
+    val = _num(_get_path(raw, "cx_fuel.cx_fuel_level.value"))
     if val is None:
         return None
-    if unit in ("%", "perc"):
+    if str(unit or "").lower() in ("%", "perc"):
         return val
     return None
 
@@ -207,11 +209,7 @@ def _get_fuel_level_gallons(raw: dict) -> Optional[float]:
     """
     Authoritative absolute fuel: cx_fuel.cx_abs_fuel_level.value (gallons)
     """
-    fuel = raw.get("cx_fuel") or {}
-    absf = fuel.get("cx_abs_fuel_level")
-    if isinstance(absf, dict):
-        return _num(absf.get("value"))
-    return None
+    return _num(_get_path(raw, "cx_fuel.cx_abs_fuel_level.value"))
 
 def _get_ignition_status(raw: dict) -> Optional[str]:
     ign = raw.get("cx_ignition_state")
@@ -219,8 +217,7 @@ def _get_ignition_status(raw: dict) -> Optional[str]:
         return "ON"
     if ign in (0, 0.0, False):
         return "OFF"
-    eng = raw.get("cx_engine") or {}
-    ign2 = eng.get("cx_ign_status")
+    ign2 = _get_path(raw, "cx_engine.cx_ign_status")
     if ign2 in (1, 1.0):
         return "ON"
     if ign2 in (0, 0.0):

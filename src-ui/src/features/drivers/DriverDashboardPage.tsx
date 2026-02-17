@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   fetchDriverDashboard,
   fetchDriverDashboardEvents,
   fetchDriverDashboardTrips,
+  fetchDriverDetail,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useFleet } from "../../context/FleetContext";
@@ -56,6 +57,7 @@ export function DriverDashboardPage() {
   const [to, setTo] = useState(dateToInput(now));
   const [eventType, setEventType] = useState("harsh_braking");
   const [view, setView] = useState<"trips" | "events">("trips");
+  const [isAutoRange, setIsAutoRange] = useState(true);
 
   const handleKpiView = (
     nextView: "trips" | "events",
@@ -107,6 +109,15 @@ export function DriverDashboardPage() {
     enabled: Boolean(tenantId && driverId),
   });
 
+  const { data: driverDetail } = useQuery({
+    queryKey:
+      tenantId && driverId
+        ? queryKeys.driverDetail(tenantId, driverId)
+        : ["driver-detail", "none"],
+    queryFn: () => fetchDriverDetail(tenantId ?? "", driverId ?? ""),
+    enabled: Boolean(tenantId && driverId),
+  });
+
   const { data: trips = [] } = useQuery({
     queryKey:
       tenantId && driverId
@@ -119,6 +130,22 @@ export function DriverDashboardPage() {
         { from: fromIso, to: toIso, limit: 10 },
       );
       return response.items ?? [];
+    },
+    enabled: Boolean(tenantId && driverId),
+  });
+
+  const { data: latestTrip } = useQuery({
+    queryKey:
+      tenantId && driverId
+        ? ["driver-trips-latest", tenantId, driverId]
+        : ["driver-trips-latest", "none"],
+    queryFn: async () => {
+      const response = await fetchDriverDashboardTrips(
+        tenantId ?? "",
+        driverId ?? "",
+        { limit: 1 },
+      );
+      return response.items?.[0];
     },
     enabled: Boolean(tenantId && driverId),
   });
@@ -138,6 +165,25 @@ export function DriverDashboardPage() {
     },
     enabled: Boolean(tenantId && driverId),
   });
+
+  useEffect(() => {
+    if (!driverId) return;
+    setIsAutoRange(true);
+    setFrom(dateToInput(lastWeek));
+    setTo(dateToInput(now));
+  }, [driverId, lastWeek, now]);
+
+  useEffect(() => {
+    if (!isAutoRange || !latestTrip) return;
+    const latestTimestamp = latestTrip.endTime ?? latestTrip.startTime;
+    if (!latestTimestamp) return;
+    const latestDate = new Date(latestTimestamp);
+    if (Number.isNaN(latestDate.getTime())) return;
+    const fromDate = new Date(latestDate);
+    fromDate.setDate(fromDate.getDate() - 7);
+    setFrom(dateToInput(fromDate));
+    setTo(dateToInput(latestDate));
+  }, [isAutoRange, latestTrip]);
 
   if (!driverId) {
     return (
@@ -178,7 +224,11 @@ export function DriverDashboardPage() {
             <h1>Driver dashboard</h1>
             <p className="insight-hero__subtitle">
               {dashboard?.driverId
-                ? `Driver ${dashboard.driverId}`
+                ? `${
+                    driverDetail?.name ??
+                    driverDetail?.displayName ??
+                    dashboard.driverId
+                  }`
                 : "Loading driver insights."}
             </p>
           </div>
@@ -195,6 +245,9 @@ export function DriverDashboardPage() {
             <div className="insight-chip">Events loaded: {events.length}</div>
             <div className="insight-chip">View: {view}</div>
             <div className="insight-chip">Event type: {eventType}</div>
+            <Link className="btn btn--secondary" to="/adlp/drivers/dashboard">
+              Change driver
+            </Link>
             <Link
               className="btn btn--secondary"
               to={`/adlp/drivers/${driverId}`}
@@ -217,7 +270,10 @@ export function DriverDashboardPage() {
                 className="input"
                 type="date"
                 value={from}
-                onChange={(event) => setFrom(event.target.value)}
+                onChange={(event) => {
+                  setIsAutoRange(false);
+                  setFrom(event.target.value);
+                }}
               />
             </label>
             <label className="form__field">
@@ -226,7 +282,10 @@ export function DriverDashboardPage() {
                 className="input"
                 type="date"
                 value={to}
-                onChange={(event) => setTo(event.target.value)}
+                onChange={(event) => {
+                  setIsAutoRange(false);
+                  setTo(event.target.value);
+                }}
               />
             </label>
           </div>

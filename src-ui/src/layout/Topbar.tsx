@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { fetchFleets } from "../api/onpointApi";
 import { queryKeys } from "../api/queryKeys";
@@ -8,10 +9,11 @@ import { useTenant } from "../context/TenantContext";
 
 export function Topbar() {
   const { pathname } = useLocation();
-  const { displayName, username, logout } = useAuth();
+  const { displayName, username, logout, roles } = useAuth();
   const { tenant, setTenant, tenants, isLoadingTenants, tenantsError } =
     useTenant();
   const { fleet, setFleet } = useFleet();
+  const isPlatformAdmin = roles.includes("platform_admin");
   const userLabel = displayName ?? username ?? "User";
   const initials = userLabel
     .split("@")[0]
@@ -32,6 +34,14 @@ export function Topbar() {
     enabled: Boolean(tenant?.id) && !hideContextSelectors,
     staleTime: 5 * 60 * 1000,
   });
+
+  useEffect(() => {
+    if (isPlatformAdmin) return;
+    if (!tenant || fleet) return;
+    if (fleetOptions.length !== 1) return;
+    const onlyFleet = fleetOptions[0];
+    setFleet({ id: onlyFleet.fleetId, name: onlyFleet.name });
+  }, [fleet, fleetOptions, isPlatformAdmin, setFleet, tenant]);
 
   return (
     <header className="topbar">

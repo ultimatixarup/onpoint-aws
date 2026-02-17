@@ -1,12 +1,12 @@
 {
-    "Variables": {
-        "TRIP_SUMMARY_TABLE": "onpoint-dev-trip-summary",
-        "TELEMETRY_EVENTS_TABLE": "onpoint-dev-telemetry-events",
-        "VIN_REGISTRY_TABLE": "onpoint-dev-vin-registry",
-        "VEHICLE_STATE_TABLE": "onpoint-dev-vehicle-state",
-        "DEFAULT_LIMIT": 50,
-        "MAX_LIMIT": 200,
-        "PAGE_SIZE": "100",
-        "MAX_PAGES_PER_VIN": "3"
-    }
+  "Variables": {
+    "TRIP_SUMMARY_TABLE": "onpoint-dev-trip-summary",
+    "TELEMETRY_EVENTS_TABLE": "onpoint-dev-telemetry-events",
+    "VIN_REGISTRY_TABLE": "onpoint-dev-vin-registry",
+    "VEHICLE_STATE_TABLE": "onpoint-dev-vehicle-state",
+    "DEFAULT_LIMIT": "50",
+    "MAX_LIMIT": "200",
+    "PAGE_SIZE": "100",
+    "MAX_PAGES_PER_VIN": "3"
+  }
 }

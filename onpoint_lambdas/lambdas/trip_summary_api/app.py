@@ -194,6 +194,52 @@ def _safe_parse_summary_json(summary_s: Optional[str]) -> Optional[dict]:
         return None
 
 
+def _as_float(value: Any) -> Optional[float]:
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except Exception:
+            return None
+    return None
+
+
+def _fallback_miles_from_summary(summary: Optional[dict]) -> Optional[float]:
+    if not summary or not isinstance(summary, dict):
+        return None
+
+    direct = _as_float(summary.get("milesDriven"))
+    if direct is not None:
+        return direct
+
+    odometer = summary.get("odometer") or {}
+    odometer_miles = _as_float(odometer.get("milesDriven"))
+    if odometer_miles is not None:
+        return odometer_miles
+
+    distance = summary.get("distance") or {}
+    distance_total = _as_float(distance.get("totalMiles"))
+    if distance_total is None:
+        distance_total = _as_float(distance.get("distanceMiles"))
+    if distance_total is None:
+        distance_total = _as_float(distance.get("distance_miles"))
+    if distance_total is None:
+        distance_total = _as_float(distance.get("tripMiles"))
+    if distance_total is not None:
+        return distance_total
+
+    components = [
+        _as_float(distance.get("cityMiles")),
+        _as_float(distance.get("highwayMiles")),
+        _as_float(distance.get("nightMiles")),
+    ]
+    if any(value is not None for value in components):
+        return sum(value or 0.0 for value in components)
+
+    return None
+
+
 def _in_range(start_s: Optional[str], end_s: Optional[str], frm: Optional[datetime], to: Optional[datetime]) -> bool:
     # Trip overlaps [from,to] if start <= to AND end >= from
     if not frm and not to:
@@ -446,6 +492,11 @@ def _summarize_item(it: dict) -> dict:
         pk = _ddb_str(it, "PK") or ""
         if pk.startswith("VEHICLE#"):
             vin = pk.split("#", 1)[1]
+
+    if miles is None:
+        summary_s = _ddb_str(it, "summary")
+        summary_obj = _safe_parse_summary_json(summary_s)
+        miles = _fallback_miles_from_summary(summary_obj)
 
     out = {
         "vin": vin,

@@ -35,6 +35,39 @@ def test_trip_summary_api_helpers(monkeypatch):
     assert mod._normalize_include(None, mod.INCLUDE_NONE) == mod.INCLUDE_NONE
 
 
+def test_summarize_item_falls_back_to_summary_distance(monkeypatch):
+    add_common_to_path()
+
+    def fake_client(service_name):
+        return DummyClient()
+
+    monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
+    monkeypatch.setattr(boto3, "client", fake_client)
+
+    module_path = Path(__file__).resolve().parents[1] / "lambdas" / "trip_summary_api" / "app.py"
+    mod = load_lambda_module("trip_summary_api_app", module_path)
+
+    summary = {
+        "distance": {
+            "cityMiles": 5.0,
+            "highwayMiles": 62.6,
+            "nightMiles": 0.0,
+        }
+    }
+    item = {
+        "PK": {"S": "VEHICLE#V1"},
+        "SK": {"S": "TRIP_SUMMARY#T1"},
+        "vin": {"S": "V1"},
+        "tripId": {"S": "T1"},
+        "startTime": {"S": "2026-01-01T00:00:00Z"},
+        "endTime": {"S": "2026-01-01T00:10:00Z"},
+        "summary": {"S": json.dumps(summary)},
+    }
+
+    out = mod._summarize_item(item)
+    assert out["milesDriven"] == 67.6
+
+
 def test_trip_detail_routes_with_path_params(monkeypatch):
     add_common_to_path()
 

@@ -227,7 +227,9 @@ export async function fetchTenants(
   // For non-admin users, try to fetch tenant details, but if it fails,
   // fall back to creating a minimal tenant object from the tenantId
   try {
-    const response = await httpRequest<unknown>(`/tenants/${params.tenantId}`);
+    const response = await httpRequest<unknown>(`/tenants/${params.tenantId}`, {
+      headers: { "x-tenant-id": params.tenantId },
+    });
     const tenant =
       typeof response === "object" && response !== null
         ? mapTenant(response as Record<string, unknown>)
