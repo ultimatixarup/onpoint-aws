@@ -2168,7 +2168,10 @@ def _patch_vehicle(vin: str, body: dict, headers: Dict[str, str], role: str, cal
     updated = _ddb_update(
         VEHICLES_TABLE,
         {"PK": f"VIN#{vin}", "SK": "META"},
-        "SET make=:mk, model=:md, #yr=:yr, assetTags=:at, metadata=:m, status=:s, updatedAt=:u",
+        "SET make=:mk, model=:md, #yr=:yr, assetTags=:at, metadata=:m, #st=:s, "
+        "vehicleType=:vt, bodyType=:bt, fuelType=:ft, engineType=:et, transmission=:tr, "
+        "fuelTankCapacity=:ftc, cityMileage=:cm, highwayMileage=:hm, "
+        "frontTirePressure=:ftp, rearTirePressure=:rtp, updatedAt=:u",
         {
             ":mk": body.get("make", existing.get("make")),
             ":md": body.get("model", existing.get("model")),
@@ -2176,9 +2179,19 @@ def _patch_vehicle(vin: str, body: dict, headers: Dict[str, str], role: str, cal
             ":at": body.get("assetTags", existing.get("assetTags")),
             ":m": body.get("metadata", existing.get("metadata")),
             ":s": body.get("status", existing.get("status")),
+            ":vt": body.get("vehicleType", existing.get("vehicleType")),
+            ":bt": body.get("bodyType", existing.get("bodyType")),
+            ":ft": body.get("fuelType", existing.get("fuelType")),
+            ":et": body.get("engineType", existing.get("engineType")),
+            ":tr": body.get("transmission", existing.get("transmission")),
+            ":ftc": body.get("fuelTankCapacity", existing.get("fuelTankCapacity")),
+            ":cm": body.get("cityMileage", existing.get("cityMileage")),
+            ":hm": body.get("highwayMileage", existing.get("highwayMileage")),
+            ":ftp": body.get("frontTirePressure", existing.get("frontTirePressure")),
+            ":rtp": body.get("rearTirePressure", existing.get("rearTirePressure")),
             ":u": now,
         },
-        expr_names={"#yr": "year"},
+        expr_names={"#yr": "year", "#st": "status"},
     )
     _audit(
         entity_type="vehicle",

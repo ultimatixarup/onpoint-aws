@@ -1,16 +1,16 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import {
-  assignVin,
-  createVehicle,
-  deleteVehicle,
-  fetchFleets,
-  fetchVinRegistryHistory,
-  fetchVehicleAssignments,
-  fetchVehicles,
-  transferVin,
-  updateVehicle,
-  VinRegistryRecord,
+    assignVin,
+    createVehicle,
+    deleteVehicle,
+    fetchFleets,
+    fetchVehicleAssignments,
+    fetchVehicles,
+    fetchVinRegistryHistory,
+    transferVin,
+    updateVehicle,
+    VinRegistryRecord,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useAuth } from "../../context/AuthContext";
@@ -460,7 +460,10 @@ export function TenantVehicleAdminPage() {
         { tenantId, roleOverride: resolvedRoleHeader },
       );
       setEditStatus("Vehicle updated.");
-      queryClient.invalidateQueries({
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.vehicles(tenantId),
+      });
+      await queryClient.refetchQueries({
         queryKey: queryKeys.vehicles(tenantId),
       });
     } catch (err) {
