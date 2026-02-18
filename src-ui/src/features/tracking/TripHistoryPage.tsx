@@ -2,26 +2,29 @@ import { useQuery } from "@tanstack/react-query";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import {
-  MapContainer,
-  Marker,
-  Polyline,
-  Popup,
-  TileLayer,
-  useMap,
+    MapContainer,
+    Marker,
+    Polyline,
+    Popup,
+    TileLayer,
+    useMap,
 } from "react-leaflet";
+import { useSearchParams } from "react-router-dom";
 import { fetchFleets, fetchVehicles } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import {
-  fetchTripEvents,
-  fetchTripSummaryTrips,
+    fetchTripEvents,
+    fetchTripSummaryTrips,
 } from "../../api/tripSummaryApi";
 import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
 import { formatDate } from "../../utils/date";
+
+const ROUTING_BASE_URL =
+  import.meta.env.VITE_ROUTING_BASE_URL ?? "https://router.project-osrm.org";
 
 export function TripHistoryPage() {
   const [searchParams] = useSearchParams();
@@ -305,10 +308,66 @@ export function TripHistoryPage() {
       .filter((pos): pos is [number, number] => Boolean(pos));
   }, [tripEventsResponse]);
 
-  const tripBounds = useMemo(() => {
-    if (tripPath.length === 0) return null;
-    return L.latLngBounds(tripPath);
+  const [snappedPath, setSnappedPath] = useState<Array<[number, number]>>([]);
+  const [isRouting, setIsRouting] = useState(false);
+  const [routingError, setRoutingError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (tripPath.length < 2) {
+      setSnappedPath([]);
+      setRoutingError(null);
+      setIsRouting(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const fetchRoute = async () => {
+      setIsRouting(true);
+      setRoutingError(null);
+      try {
+        const sampled = reduceRoutePoints(tripPath, 100);
+        const coords = sampled
+          .map(([lat, lon]) => `${lon},${lat}`)
+          .join(";");
+        const url = `${ROUTING_BASE_URL}/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=false`;
+        const response = await fetch(url, { signal: controller.signal });
+        if (!response.ok) {
+          throw new Error(`Routing failed (${response.status})`);
+        }
+        const data = (await response.json()) as {
+          routes?: Array<{
+            geometry?: { coordinates?: Array<[number, number]> };
+          }>;
+        };
+        const coordinates = data.routes?.[0]?.geometry?.coordinates ?? [];
+        const snapped = coordinates
+          .map(([lon, lat]) => [lat, lon] as [number, number])
+          .filter((pos) => pos.every((value) => Number.isFinite(value)));
+        setSnappedPath(snapped.length > 1 ? snapped : []);
+      } catch (err) {
+        if ((err as { name?: string }).name === "AbortError") return;
+        setSnappedPath([]);
+        setRoutingError(
+          err instanceof Error ? err.message : "Unable to load route.",
+        );
+      } finally {
+        setIsRouting(false);
+      }
+    };
+
+    void fetchRoute();
+    return () => controller.abort();
   }, [tripPath]);
+
+  const displayPath = useMemo(
+    () => (snappedPath.length > 1 ? snappedPath : tripPath),
+    [snappedPath, tripPath],
+  );
+
+  const tripBounds = useMemo(() => {
+    if (displayPath.length === 0) return null;
+    return L.latLngBounds(displayPath);
+  }, [displayPath]);
 
   return (
     <div className="page trip-history-page">
@@ -575,8 +634,16 @@ export function TripHistoryPage() {
           </div>
         ) : (
           <div className="map-container">
+            {isRouting ? (
+              <p className="text-muted">Snapping route to roads...</p>
+            ) : null}
+            {routingError ? (
+              <p className="text-muted">
+                Unable to load road route. Showing raw GPS track instead.
+              </p>
+            ) : null}
             <MapContainer
-              center={tripPath[0]}
+              center={displayPath[0]}
               zoom={12}
               style={{ height: "100%", width: "100%" }}
             >
@@ -585,9 +652,9 @@ export function TripHistoryPage() {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               {tripBounds ? <FitBounds bounds={tripBounds} /> : null}
-              <Polyline positions={tripPath} color="#1d4ed8" weight={4} />
-              {tripPath.length > 0 ? (
-                <Marker position={tripPath[0]}>
+              <Polyline positions={displayPath} color="#1d4ed8" weight={4} />
+              {displayPath.length > 0 ? (
+                <Marker position={displayPath[0]}>
                   <Popup>
                     Start
                     <br />
@@ -595,8 +662,8 @@ export function TripHistoryPage() {
                   </Popup>
                 </Marker>
               ) : null}
-              {tripPath.length > 1 ? (
-                <Marker position={tripPath[tripPath.length - 1]}>
+              {displayPath.length > 1 ? (
+                <Marker position={displayPath[displayPath.length - 1]}>
                   <Popup>
                     End
                     <br />
@@ -654,6 +721,37 @@ function asNumber(value: unknown) {
     return Number.isFinite(parsed) ? parsed : null;
   }
   return null;
+}
+
+function reduceRoutePoints(
+  points: Array<[number, number]>,
+  maxPoints: number,
+) {
+  if (points.length <= maxPoints) return points;
+  if (maxPoints < 2) return points.slice(0, 1);
+  const trimmed = dedupeConsecutive(points);
+  if (trimmed.length <= maxPoints) return trimmed;
+  const start = trimmed[0];
+  const end = trimmed[trimmed.length - 1];
+  const middle = trimmed.slice(1, -1);
+  const step = Math.ceil(middle.length / (maxPoints - 2));
+  const sampled: Array<[number, number]> = [];
+  for (let i = 0; i < middle.length; i += step) {
+    sampled.push(middle[i]);
+  }
+  return [start, ...sampled, end];
+}
+
+function dedupeConsecutive(points: Array<[number, number]>) {
+  const result: Array<[number, number]> = [];
+  let prev: [number, number] | null = null;
+  for (const point of points) {
+    if (!prev || prev[0] !== point[0] || prev[1] !== point[1]) {
+      result.push(point);
+      prev = point;
+    }
+  }
+  return result;
 }
 
 function formatDuration(startTime: string, endTime: string) {
