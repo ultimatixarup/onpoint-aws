@@ -3,23 +3,24 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Circle,
-  MapContainer,
-  Marker,
-  Polygon,
-  Popup,
-  TileLayer,
-  useMap,
+    Circle,
+    MapContainer,
+    Marker,
+    Polygon,
+    Popup,
+    TileLayer,
+    useMap,
 } from "react-leaflet";
 import { fetchFleets } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
+import { formatDate } from "../../utils/date";
 import {
-  GeofenceRecord,
-  GeofenceType,
-  useGeofenceStore,
+    GeofenceRecord,
+    GeofenceType,
+    useGeofenceStore,
 } from "./geofenceStore";
 
 const defaultIcon = L.icon({
@@ -278,9 +279,7 @@ export function ManageGeofencePage() {
                           </td>
                           <td>{item.fleetId ?? "All fleets"}</td>
                           <td>
-                            {item.updatedAt
-                              ? new Date(item.updatedAt).toLocaleString()
-                              : "--"}
+                            {formatDate(item.updatedAt, "--")}
                           </td>
                           <td>
                             <div className="inline">

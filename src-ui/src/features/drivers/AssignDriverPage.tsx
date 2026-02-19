@@ -15,6 +15,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
+import { formatDateTime as formatAppDateTime } from "../../utils/date";
 import { createIdempotencyKey } from "../../utils/id";
 
 type AssignmentRecord = {
@@ -73,10 +74,7 @@ function parseIsoToMs(value?: string) {
 }
 
 function formatDateTime(value?: string) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
+  return formatAppDateTime(value, "—");
 }
 
 function formatDateTimeLocal(value: string) {

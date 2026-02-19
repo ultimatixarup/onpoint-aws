@@ -17,6 +17,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
+import { formatDate as formatAppDate } from "../../utils/date";
 import { createIdempotencyKey } from "../../utils/id";
 
 const STATUS_OPTIONS = ["ACTIVE", "INACTIVE", "SUSPENDED"] as const;
@@ -116,10 +117,7 @@ function maxIso(...values: Array<string | undefined>) {
 }
 
 function formatDate(value?: string) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString();
+  return formatAppDate(value, "—");
 }
 
 function normalizeAssignments(response: unknown) {

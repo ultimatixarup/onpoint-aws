@@ -4,14 +4,15 @@ import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import {
-  fetchFleets,
-  fetchFleetVehicleStates,
-  fetchVehicles,
+    fetchFleets,
+    fetchFleetVehicleStates,
+    fetchVehicles,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
+import { formatDate } from "../../utils/date";
 
 const defaultIcon = L.icon({
   iconRetinaUrl:
@@ -235,7 +236,9 @@ export function LiveTrackingPage() {
                     <Popup>
                       <div>
                         <strong>{marker.vin}</strong>
-                        <div>Last event: {marker.lastEventTime ?? "--"}</div>
+                        <div>
+                          Last event: {formatDate(marker.lastEventTime, "--")}
+                        </div>
                         <div>Speed: {marker.speed_mph ?? "--"} mph</div>
                         <div>Status: {marker.vehicleState ?? "--"}</div>
                       </div>
@@ -250,12 +253,12 @@ export function LiveTrackingPage() {
           {filteredMarkers.length === 0 ? (
             <p>No vehicle state data available.</p>
           ) : (
-            <div className="table-responsive">
-              <table className="table">
+            <div className="table-responsive tracking-feed-table">
+              <table className="table table--tracking-feed">
                 <thead>
                   <tr>
                     <th>VIN</th>
-                    <th>Last Event</th>
+                    <th>Last Event Date</th>
                     <th>Latitude</th>
                     <th>Longitude</th>
                     <th>Speed (mph)</th>
@@ -284,7 +287,7 @@ export function LiveTrackingPage() {
                       }}
                     >
                       <td>{marker.vin}</td>
-                      <td>{marker.lastEventTime ?? "--"}</td>
+                      <td>{formatDate(marker.lastEventTime, "--")}</td>
                       <td>{marker.position[0].toFixed(5)}</td>
                       <td>{marker.position[1].toFixed(5)}</td>
                       <td>{marker.speed_mph ?? "--"}</td>

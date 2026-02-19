@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createTenant, fetchTenants, updateTenant } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { Card } from "../../ui/Card";
+import { formatDateTime as formatAppDateTime } from "../../utils/date";
 
 function parseJson(value: string) {
   if (!value.trim()) return undefined;
@@ -26,10 +27,7 @@ const DEFAULT_RETENTION_DAYS = 90;
 const DEFAULT_CONFIG = { retentionDays: String(DEFAULT_RETENTION_DAYS) };
 
 function formatDateTime(value?: string) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
+  return formatAppDateTime(value, "—");
 }
 
 function formatUpdatedBy(tenant: Record<string, unknown>) {

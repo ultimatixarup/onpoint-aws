@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
+import { formatDate } from "../../utils/date";
 import { useGeofenceStore } from "./geofenceStore";
 
 export function GeofenceReportPage() {
@@ -99,9 +100,7 @@ export function GeofenceReportPage() {
                         <td>{item.status}</td>
                         <td>{item.fleetId ?? "All fleets"}</td>
                         <td>
-                          {item.updatedAt
-                            ? new Date(item.updatedAt).toLocaleString()
-                            : "--"}
+                          {formatDate(item.updatedAt, "--")}
                         </td>
                       </tr>
                     ))}

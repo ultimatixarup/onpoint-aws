@@ -26,7 +26,7 @@ import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
-import { formatDate } from "../../utils/date";
+import { formatDateTime as formatAppDateTime, formatDate } from "../../utils/date";
 
 const ROUTING_BASE_URL =
   import.meta.env.VITE_ROUTING_BASE_URL ?? "https://router.project-osrm.org";
@@ -1665,17 +1665,7 @@ function formatMinutes(totalMinutes: number) {
 }
 
 function formatDateTime(value?: string) {
-  if (!value) return "--";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "--";
-  return date.toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  });
+  return formatAppDateTime(value, "--");
 }
 
 function formatLatLon(lat: number, lon: number) {

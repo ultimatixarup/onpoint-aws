@@ -2,13 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  fetchTripEvents,
-  fetchTripSummaryTrips,
+    fetchTripEvents,
+    fetchTripSummaryTrips,
 } from "../../api/tripSummaryApi";
 import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
 import { PageHeader } from "../../ui/PageHeader";
+import { formatDateTime } from "../../utils/date";
 
 type TelemetryEvent = {
   id: string;
@@ -52,7 +53,7 @@ function normalizeStatus(value?: string): TelemetryEvent["status"] {
 }
 
 function formatTimestamp(value: string) {
-  return new Date(value).toLocaleString();
+  return formatDateTime(value, "--");
 }
 
 export function TelemetryRawPage() {

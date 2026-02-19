@@ -416,6 +416,48 @@ a {
   grid-template-columns: minmax(280px, 1.4fr) minmax(260px, 1fr);
 }
 
+.tracking-layout .card {
+  min-width: 0;
+}
+
+.tracking-feed-table {
+  overflow-x: hidden;
+}
+
+.table--tracking-feed {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.table--tracking-feed th,
+.table--tracking-feed td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table--tracking-feed th:nth-child(1),
+.table--tracking-feed td:nth-child(1) {
+  width: 34%;
+}
+
+.table--tracking-feed th:nth-child(2),
+.table--tracking-feed td:nth-child(2) {
+  width: 22%;
+}
+
+.table--tracking-feed th:nth-child(3),
+.table--tracking-feed td:nth-child(3),
+.table--tracking-feed th:nth-child(4),
+.table--tracking-feed td:nth-child(4) {
+  width: 16%;
+}
+
+.table--tracking-feed th:nth-child(5),
+.table--tracking-feed td:nth-child(5) {
+  width: 12%;
+}
+
 .tracking-map {
   min-height: 420px;
 }
