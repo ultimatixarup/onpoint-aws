@@ -126,6 +126,17 @@ Notes → Optional
 -   Clickable row navigation (where appropriate)
 -   Newly created item highlight (soft background)
 
+## 7.1 Table Overflow & Clipping Prevention (Mandatory)
+
+-   No critical cell content may be clipped (especially Actions column).
+-   Wide tables MUST render in a horizontal scroll container.
+-   Tables with many columns MUST define a minimum width to prevent
+  compressed/truncated actions.
+-   Actions column MUST remain fully visible and operable at all supported
+  breakpoints.
+-   If viewport width is constrained, prefer horizontal scroll over hiding
+  controls.
+
 ------------------------------------------------------------------------
 
 # 8. Global Toast Provider Pattern
