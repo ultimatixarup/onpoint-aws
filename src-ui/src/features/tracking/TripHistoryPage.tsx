@@ -264,6 +264,19 @@ export function TripHistoryPage() {
     [vehicles],
   );
 
+  const selectedVehicle = useMemo(
+    () =>
+      selectedTripVin
+        ? vehicles.find((vehicle) => vehicle.vin === selectedTripVin)
+        : undefined,
+    [selectedTripVin, vehicles],
+  );
+
+  const isSelectedVehicleEv = useMemo(
+    () => isVehicleEv(selectedVehicle),
+    [selectedVehicle],
+  );
+
   useEffect(() => {
     if (paramsApplied.current) return;
     if (queryTripId) setSearch(queryTripId);
@@ -707,8 +720,8 @@ export function TripHistoryPage() {
     ],
   );
 
-  const metricItems = useMemo(
-    () => [
+  const metricItems = useMemo(() => {
+    const items = [
       {
         label: "Average Speed",
         value: formatOptionalNumber(avgSpeed, 2, " mph"),
@@ -742,38 +755,46 @@ export function TripHistoryPage() {
               : "NA",
         icon: "⛽",
       },
-      {
-        label: "EV Battery Consumed",
-        value:
-          typeof evBatteryConsumed === "number"
-            ? `${evBatteryConsumed.toFixed(1)}%`
-            : "NA",
-        icon: "🔋",
-      },
-      {
-        label: "EV Battery Level",
-        value:
-          typeof evBatteryEnd === "number"
-            ? `${evBatteryEnd.toFixed(1)}%`
-            : "NA",
-        icon: "🔋",
-      },
-      {
-        label: "EV Battery Remaining",
-        value:
-          typeof evBatteryEnd === "number"
-            ? `${evBatteryEnd.toFixed(1)}%`
-            : "NA",
-        icon: "🔋",
-      },
-      {
-        label: "EV Range",
-        value:
-          typeof evRangeEnd === "number"
-            ? `${evRangeEnd.toFixed(2)} miles`
-            : "NA",
-        icon: "🧮",
-      },
+    ];
+
+    if (isSelectedVehicleEv) {
+      items.push(
+        {
+          label: "EV Battery Consumed",
+          value:
+            typeof evBatteryConsumed === "number"
+              ? `${evBatteryConsumed.toFixed(1)}%`
+              : "NA",
+          icon: "🔋",
+        },
+        {
+          label: "EV Battery Level",
+          value:
+            typeof evBatteryEnd === "number"
+              ? `${evBatteryEnd.toFixed(1)}%`
+              : "NA",
+          icon: "🔋",
+        },
+        {
+          label: "EV Battery Remaining",
+          value:
+            typeof evBatteryEnd === "number"
+              ? `${evBatteryEnd.toFixed(1)}%`
+              : "NA",
+          icon: "🔋",
+        },
+        {
+          label: "EV Range",
+          value:
+            typeof evRangeEnd === "number"
+              ? `${evRangeEnd.toFixed(2)} miles`
+              : "NA",
+          icon: "🧮",
+        },
+      );
+    }
+
+    items.push(
       {
         label: "Trip Distance",
         value:
@@ -798,22 +819,24 @@ export function TripHistoryPage() {
             : "NA",
         icon: "🕒",
       },
-    ],
-    [
-      avgSpeed,
-      distanceMiles,
-      evBatteryConsumed,
-      evBatteryEnd,
-      evRangeEnd,
-      fuelConsumed,
-      fuelLevelGallons,
-      fuelLevelPercent,
-      idlingSeconds,
-      mpg,
-      odometerEnd,
-      selectedTrip,
-    ],
-  );
+    );
+
+    return items;
+  }, [
+    avgSpeed,
+    distanceMiles,
+    evBatteryConsumed,
+    evBatteryEnd,
+    evRangeEnd,
+    fuelConsumed,
+    fuelLevelGallons,
+    fuelLevelPercent,
+    idlingSeconds,
+    isSelectedVehicleEv,
+    mpg,
+    odometerEnd,
+    selectedTrip,
+  ]);
 
   return (
     <div className="page trip-history-page">
@@ -1443,6 +1466,27 @@ function rangeLabel(value: string) {
   if (value === "last90") return "last 90d";
   if (value === "custom") return "custom";
   return value;
+}
+
+function isVehicleEv(
+  vehicle?: {
+    fuelType?: string;
+    engineType?: string;
+    vehicleType?: string;
+  } | null,
+) {
+  if (!vehicle) return false;
+  const values = [vehicle.fuelType, vehicle.engineType, vehicle.vehicleType]
+    .filter((value): value is string => Boolean(value))
+    .map((value) => value.trim().toLowerCase());
+
+  return values.some(
+    (value) =>
+      value === "ev" ||
+      value === "bev" ||
+      value === "electric" ||
+      value.includes("electric"),
+  );
 }
 
 function parseUsDate(value: string, mode: "start" | "end") {

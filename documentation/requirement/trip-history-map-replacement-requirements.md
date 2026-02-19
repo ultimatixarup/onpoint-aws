@@ -57,6 +57,14 @@ Each metric shows:
 - Label
 - Value
 
+Powertrain display rule:
+- If vehicle is **EV**, show EV metrics:
+	- EV Battery Consumed (%)
+	- EV Battery Level (%)
+	- EV Battery Remaining (%)
+	- EV Range (miles)
+- If vehicle is **non-EV**, hide all EV metrics from the Metrics Grid.
+
 ## 4) Right Column: Route Map Card
 
 ### 4.1 Safety Summary Ribbon (Header)
@@ -99,10 +107,10 @@ Each item includes:
 | Mileage (mpg) | Derived | $mpg = \frac{distance}{fuel\_consumed}$ |
 | Fuel Consumed | Telemetry | Sum if available; otherwise "NA" |
 | Fuel Level | Telemetry | End-of-trip value |
-| EV Battery Consumed | Telemetry | % drop over trip |
-| EV Battery Level | Telemetry | End-of-trip % |
-| EV Battery Remaining | Same as EV Battery Level | If separate field exists, use it |
-| EV Range | Telemetry | End-of-trip estimate |
+| EV Battery Consumed | Telemetry | % drop over trip; render only for EV vehicles |
+| EV Battery Level | Telemetry | End-of-trip %; render only for EV vehicles |
+| EV Battery Remaining | Same as EV Battery Level | If separate field exists, use it; render only for EV vehicles |
+| EV Range | Telemetry | End-of-trip estimate; render only for EV vehicles |
 | Trip Distance | Trip summary | Miles with 2 decimals |
 | Trip Duration | Trip summary | hh:mm:ss |
 | Idling Duration | Trip analytics | If missing, "NA" |
@@ -128,6 +136,12 @@ Each item includes:
 ### 6.3 No Data
 - If no GPS points: show **"No GPS points available"** and hide map
 - If trip not selected: show **"Select a trip"** state
+
+### 6.4 Conditional Metric Visibility by Vehicle Type
+- Determine vehicle type from existing vehicle metadata/powertrain field.
+- If vehicle type is EV, display EV metrics in the grid.
+- If vehicle type is non-EV (ICE/Hybrid without EV telemetry), EV metrics must be hidden (not shown as "NA").
+- If vehicle type is unknown, default to non-EV behavior and hide EV metrics.
 
 ## 7) Styling & Visual Requirements
 - Card styling must remain consistent with the current design system
