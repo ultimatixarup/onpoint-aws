@@ -25,6 +25,9 @@ import { formatDate } from "../../utils/date";
 
 const ROUTING_BASE_URL =
   import.meta.env.VITE_ROUTING_BASE_URL ?? "https://router.project-osrm.org";
+const GEOCODE_BASE_URL =
+  import.meta.env.VITE_GEOCODE_BASE_URL ??
+  "https://nominatim.openstreetmap.org/reverse";
 
 export function TripHistoryPage() {
   const [searchParams] = useSearchParams();
@@ -247,6 +250,15 @@ export function TripHistoryPage() {
     return normalized.filter((trip) => trip.id.toLowerCase().includes(term));
   }, [search, tripResponse]);
 
+  const selectedTrip = useMemo(() => {
+    if (!selectedTripId || !selectedTripVin) return null;
+    return (
+      tripResponse?.items ?? []
+    ).find(
+      (item) => item.tripId === selectedTripId && item.vin === selectedTripVin,
+    );
+  }, [selectedTripId, selectedTripVin, tripResponse]);
+
   const vehicleOptions = useMemo(
     () => vehicles.map((vehicle) => vehicle.vin).filter(Boolean),
     [vehicles],
@@ -308,6 +320,11 @@ export function TripHistoryPage() {
       .filter((pos): pos is [number, number] => Boolean(pos));
   }, [tripEventsResponse]);
 
+  const [startAddress, setStartAddress] = useState<string | null>(null);
+  const [endAddress, setEndAddress] = useState<string | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const geocodeCache = useRef(new Map<string, string>());
+
   const [snappedPath, setSnappedPath] = useState<Array<[number, number]>>([]);
   const [isRouting, setIsRouting] = useState(false);
   const [routingError, setRoutingError] = useState<string | null>(null);
@@ -359,6 +376,58 @@ export function TripHistoryPage() {
     return () => controller.abort();
   }, [tripPath]);
 
+  useEffect(() => {
+    if (tripPath.length < 2) {
+      setStartAddress(null);
+      setEndAddress(null);
+      setIsGeocoding(false);
+      return;
+    }
+
+    const [startLat, startLon] = tripPath[0];
+    const [endLat, endLon] = tripPath[tripPath.length - 1];
+    const startKey = `${startLat.toFixed(6)},${startLon.toFixed(6)}`;
+    const endKey = `${endLat.toFixed(6)},${endLon.toFixed(6)}`;
+
+    const fetchAddress = async (lat: number, lon: number) => {
+      const cacheKey = `${lat.toFixed(6)},${lon.toFixed(6)}`;
+      const cached = geocodeCache.current.get(cacheKey);
+      if (cached) return cached;
+      const url = `${GEOCODE_BASE_URL}?format=jsonv2&lat=${lat}&lon=${lon}`;
+      const response = await fetch(url);
+      if (!response.ok) return null;
+      const data = (await response.json()) as { display_name?: string };
+      const value = data.display_name?.trim();
+      if (value) geocodeCache.current.set(cacheKey, value);
+      return value ?? null;
+    };
+
+    let isActive = true;
+    setIsGeocoding(true);
+    Promise.all([
+      fetchAddress(startLat, startLon),
+      fetchAddress(endLat, endLon),
+    ])
+      .then(([startValue, endValue]) => {
+        if (!isActive) return;
+        setStartAddress(startValue);
+        setEndAddress(endValue);
+      })
+      .catch(() => {
+        if (!isActive) return;
+        setStartAddress(null);
+        setEndAddress(null);
+      })
+      .finally(() => {
+        if (!isActive) return;
+        setIsGeocoding(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [tripPath]);
+
   const displayPath = useMemo(
     () => (snappedPath.length > 1 ? snappedPath : tripPath),
     [snappedPath, tripPath],
@@ -368,6 +437,383 @@ export function TripHistoryPage() {
     if (displayPath.length === 0) return null;
     return L.latLngBounds(displayPath);
   }, [displayPath]);
+
+  const selectedTripRecord = useMemo(
+    () => (selectedTrip ? (selectedTrip as Record<string, unknown>) : null),
+    [selectedTrip],
+  );
+  const summaryRecord = useMemo(
+    () =>
+      parseSummary(
+        selectedTripRecord?.summary ??
+          selectedTripRecord?.summaryJson ??
+          selectedTripRecord?.tripSummary,
+      ),
+    [selectedTripRecord],
+  );
+
+  const eventStats = useMemo(() => {
+    const items = tripEventsResponse?.items ?? [];
+    let odometerEnd: number | undefined;
+    let fuelGallons: number | undefined;
+    let fuelPercent: number | undefined;
+    let batteryPercent: number | undefined;
+    let evRangeMiles: number | undefined;
+    let maxSpeed: number | undefined;
+    let harshBraking = 0;
+    let harshAcceleration = 0;
+    let harshCornering = 0;
+
+    for (const item of items) {
+      const odometer = readNumberFromRecord(item as Record<string, unknown>, [
+        "odometer_miles",
+        "odometerMiles",
+        "odometer",
+      ]);
+      if (odometer !== undefined) odometerEnd = odometer;
+
+      const fuelAbs = readNumberFromRecord(item as Record<string, unknown>, [
+        "fuelIndicatorAbsoluteGallons",
+        "fuelLevelGallons",
+        "fuelGallons",
+      ]);
+      if (fuelAbs !== undefined) fuelGallons = fuelAbs;
+
+      const fuelPct = readNumberFromRecord(item as Record<string, unknown>, [
+        "fuelPercent",
+        "fuel_percent",
+      ]);
+      if (fuelPct !== undefined) fuelPercent = fuelPct;
+
+      const batteryPct = readNumberFromRecord(item as Record<string, unknown>, [
+        "batteryLevelPercent",
+        "batteryPercent",
+        "evBatteryPercent",
+      ]);
+      if (batteryPct !== undefined) batteryPercent = batteryPct;
+
+      const rangeMiles = readNumberFromRecord(item as Record<string, unknown>, [
+        "rangeMiles",
+        "evRangeMiles",
+      ]);
+      if (rangeMiles !== undefined) evRangeMiles = rangeMiles;
+
+      const speed = readNumberFromRecord(item as Record<string, unknown>, [
+        "speed_mph",
+        "speedMph",
+        "speed",
+      ]);
+      if (speed !== undefined) {
+        maxSpeed = maxSpeed === undefined ? speed : Math.max(maxSpeed, speed);
+      }
+
+      const eventType = String((item as Record<string, unknown>).eventType ?? "");
+      if (eventType === "harsh_braking") harshBraking += 1;
+      if (eventType === "harsh_acceleration") harshAcceleration += 1;
+      if (eventType === "harsh_cornering") harshCornering += 1;
+    }
+
+    return {
+      odometerEnd,
+      fuelGallons,
+      fuelPercent,
+      batteryPercent,
+      evRangeMiles,
+      maxSpeed,
+      harshBraking,
+      harshAcceleration,
+      harshCornering,
+    };
+  }, [tripEventsResponse]);
+
+  const distanceMiles = selectedTrip?.milesDriven;
+  const durationMinutes = minutesBetween(
+    selectedTrip?.startTime,
+    selectedTrip?.endTime,
+  );
+  const durationHours =
+    typeof durationMinutes === "number" ? durationMinutes / 60 : undefined;
+  const avgSpeedFromSummary = readNumberFromTrip(selectedTripRecord, summaryRecord, [
+    "averageSpeedMph",
+    "speed.averageMph",
+  ]);
+  const avgSpeed =
+    avgSpeedFromSummary ??
+    (typeof distanceMiles === "number" && durationHours && durationHours > 0
+      ? distanceMiles / durationHours
+      : undefined);
+  const fuelConsumed =
+    selectedTrip?.fuelConsumed ??
+    readNumberFromTrip(selectedTripRecord, summaryRecord, [
+      "fuel.fuelConsumed",
+      "fuelConsumedGallons",
+    ]);
+  const mpg =
+    readNumberFromTrip(selectedTripRecord, summaryRecord, [
+      "mpg.actualMpg",
+      "fuelEfficiencyMpg",
+    ]) ??
+    (typeof distanceMiles === "number" &&
+    typeof fuelConsumed === "number" &&
+    fuelConsumed > 0
+      ? distanceMiles / fuelConsumed
+      : undefined);
+
+  const odometerEnd =
+    readNumberFromTrip(selectedTripRecord, summaryRecord, [
+      "odometerEnd",
+      "odometer.endMiles",
+      "odometer_end_miles",
+    ]) ?? eventStats.odometerEnd;
+
+  const fuelLevelGallons =
+    readNumberFromTrip(selectedTripRecord, summaryRecord, [
+      "fuel.fuelIndicatorAbsoluteGallons",
+      "fuelIndicatorAbsoluteGallons",
+      "fuelIndicatorGallons",
+      "fuel.endGallons",
+    ]) ?? eventStats.fuelGallons;
+
+  const fuelLevelPercent =
+    readNumberFromTrip(selectedTripRecord, summaryRecord, [
+      "fuel.fuelIndicatorPercent",
+      "fuelIndicatorPercent",
+      "fuelPercent",
+    ]) ?? eventStats.fuelPercent;
+
+  const evBatteryStart = readNumberFromTrip(selectedTripRecord, summaryRecord, [
+    "evData.batteryLevelStartPercent",
+    "batteryLevelStartPercent",
+  ]);
+  const evBatteryEnd =
+    readNumberFromTrip(selectedTripRecord, summaryRecord, [
+      "evData.batteryLevelEndPercent",
+      "batteryLevelEndPercent",
+    ]) ?? eventStats.batteryPercent;
+  const evBatteryConsumed =
+    evBatteryStart !== undefined && evBatteryEnd !== undefined
+      ? Math.max(0, evBatteryStart - evBatteryEnd)
+      : undefined;
+  const evRangeEnd =
+    readNumberFromTrip(selectedTripRecord, summaryRecord, [
+      "evData.rangeEndMiles",
+      "rangeEndMiles",
+    ]) ?? eventStats.evRangeMiles;
+
+  const idlingSeconds =
+    readNumberFromTrip(selectedTripRecord, summaryRecord, [
+      "idlingTimeSeconds",
+      "idling_seconds",
+    ]) ??
+    parseHmsToSeconds(
+      readStringFromTrip(selectedTripRecord, summaryRecord, [
+        "idlingTime",
+      ]),
+    );
+
+  const nightMiles = readNumberFromTrip(selectedTripRecord, summaryRecord, [
+    "distance.nightMiles",
+    "nightMiles",
+  ]);
+
+  const overspeedMilesTotal =
+    readNumberFromTrip(selectedTripRecord, summaryRecord, [
+      "overspeedMilesTotal",
+      "overspeed.milesTotal",
+    ]) ??
+    sumOptional(
+      readNumberFromTrip(selectedTripRecord, summaryRecord, [
+        "overspeedMilesStandard",
+        "overspeed.milesStandard",
+      ]),
+      readNumberFromTrip(selectedTripRecord, summaryRecord, [
+        "overspeedMilesSevere",
+        "overspeed.milesSevere",
+      ]),
+    );
+
+  const harshAcceleration =
+    readNumberFromTrip(selectedTripRecord, summaryRecord, [
+      "events.harshAccelerationCount",
+      "harshAccelerationCount",
+    ]) ?? eventStats.harshAcceleration;
+  const harshBraking =
+    readNumberFromTrip(selectedTripRecord, summaryRecord, [
+      "events.harshBrakingCount",
+      "harshBrakingCount",
+    ]) ?? eventStats.harshBraking;
+  const harshCornering =
+    readNumberFromTrip(selectedTripRecord, summaryRecord, [
+      "events.harshCorneringCount",
+      "harshCorneringCount",
+    ]) ?? eventStats.harshCornering;
+
+  const tripStartLabel = formatDateTime(selectedTrip?.startTime);
+  const tripEndLabel = formatDateTime(selectedTrip?.endTime);
+  const startLocationLabel =
+    startAddress ??
+    (tripPath[0]
+      ? formatLatLon(tripPath[0][0], tripPath[0][1])
+      : "Location unavailable");
+  const endLocationLabel =
+    endAddress ??
+    (tripPath.length > 0
+      ? formatLatLon(
+          tripPath[tripPath.length - 1][0],
+          tripPath[tripPath.length - 1][1],
+        )
+      : "Location unavailable");
+  const startLocationDisplay =
+    isGeocoding && !startAddress
+      ? "Resolving address..."
+      : startLocationLabel;
+  const endLocationDisplay =
+    isGeocoding && !endAddress ? "Resolving address..." : endLocationLabel;
+
+  const summaryItems = useMemo(
+    () => [
+      {
+        label: "Harsh Acceleration",
+        value: formatOptionalNumber(harshAcceleration ?? 0, 0),
+        icon: "⚡",
+      },
+      {
+        label: "Harsh Braking",
+        value: formatOptionalNumber(harshBraking ?? 0, 0),
+        icon: "🛑",
+      },
+      {
+        label: "Harsh Cornering",
+        value: formatOptionalNumber(harshCornering ?? 0, 0),
+        icon: "↪️",
+      },
+      {
+        label: "Over Speeding (miles)",
+        value: formatOptionalNumber(overspeedMilesTotal, 2),
+        icon: "🚗",
+      },
+      {
+        label: "Night Driving (miles)",
+        value: formatOptionalNumber(nightMiles, 2),
+        icon: "🌙",
+      },
+    ],
+    [
+      harshAcceleration,
+      harshBraking,
+      harshCornering,
+      nightMiles,
+      overspeedMilesTotal,
+    ],
+  );
+
+  const metricItems = useMemo(
+    () => [
+      {
+        label: "Average Speed",
+        value: formatOptionalNumber(avgSpeed, 2, " mph"),
+        icon: "🏎️",
+      },
+      {
+        label: "Odometer",
+        value:
+          typeof odometerEnd === "number"
+            ? `${odometerEnd.toFixed(2)} miles`
+            : "NA",
+        icon: "🧭",
+      },
+      {
+        label: "Mileage",
+        value: mpg !== undefined ? `${mpg.toFixed(2)} mpg` : "NA",
+        icon: "⛽",
+      },
+      {
+        label: "Fuel Consumed",
+        value: formatOptionalNumber(fuelConsumed, 2, " gal"),
+        icon: "🛢️",
+      },
+      {
+        label: "Fuel Level",
+        value:
+          typeof fuelLevelGallons === "number"
+            ? `${fuelLevelGallons.toFixed(2)} gal`
+            : typeof fuelLevelPercent === "number"
+              ? `${fuelLevelPercent.toFixed(1)}%`
+              : "NA",
+        icon: "⛽",
+      },
+      {
+        label: "EV Battery Consumed",
+        value:
+          typeof evBatteryConsumed === "number"
+            ? `${evBatteryConsumed.toFixed(1)}%`
+            : "NA",
+        icon: "🔋",
+      },
+      {
+        label: "EV Battery Level",
+        value:
+          typeof evBatteryEnd === "number"
+            ? `${evBatteryEnd.toFixed(1)}%`
+            : "NA",
+        icon: "🔋",
+      },
+      {
+        label: "EV Battery Remaining",
+        value:
+          typeof evBatteryEnd === "number"
+            ? `${evBatteryEnd.toFixed(1)}%`
+            : "NA",
+        icon: "🔋",
+      },
+      {
+        label: "EV Range",
+        value:
+          typeof evRangeEnd === "number"
+            ? `${evRangeEnd.toFixed(2)} miles`
+            : "NA",
+        icon: "🧮",
+      },
+      {
+        label: "Trip Distance",
+        value:
+          typeof distanceMiles === "number"
+            ? `${distanceMiles.toFixed(2)} miles`
+            : "NA",
+        icon: "📍",
+      },
+      {
+        label: "Trip Duration",
+        value: formatDurationDetailed(
+          selectedTrip?.startTime,
+          selectedTrip?.endTime,
+        ),
+        icon: "⏱️",
+      },
+      {
+        label: "Idling Duration",
+        value:
+          typeof idlingSeconds === "number"
+            ? formatSecondsAsDuration(idlingSeconds)
+            : "NA",
+        icon: "🕒",
+      },
+    ],
+    [
+      avgSpeed,
+      distanceMiles,
+      evBatteryConsumed,
+      evBatteryEnd,
+      evRangeEnd,
+      fuelConsumed,
+      fuelLevelGallons,
+      fuelLevelPercent,
+      idlingSeconds,
+      mpg,
+      odometerEnd,
+      selectedTrip,
+    ],
+  );
 
   return (
     <div className="page trip-history-page">
@@ -601,8 +1047,8 @@ export function TripHistoryPage() {
         )}
       </Card>
 
-      <Card title="Trip Map">
-        {!selectedTripId || !selectedTripVin ? (
+      {!selectedTripId || !selectedTripVin ? (
+        <Card>
           <div className="empty-state">
             <div className="empty-state__icon">🗺️</div>
             <h3>Select a trip</h3>
@@ -610,7 +1056,9 @@ export function TripHistoryPage() {
               Click a trip to view its route on the map.
             </p>
           </div>
-        ) : isLoadingTripEvents ? (
+        </Card>
+      ) : isLoadingTripEvents ? (
+        <Card>
           <div className="empty-state">
             <div className="empty-state__icon">⏳</div>
             <h3>Loading trip route</h3>
@@ -618,13 +1066,17 @@ export function TripHistoryPage() {
               Fetching telemetry events for this trip.
             </p>
           </div>
-        ) : tripEventsError ? (
+        </Card>
+      ) : tripEventsError ? (
+        <Card>
           <div className="empty-state">
             <div className="empty-state__icon">⚠️</div>
             <h3>Unable to load route</h3>
             <p className="text-muted">Verify your API access and try again.</p>
           </div>
-        ) : tripPath.length === 0 ? (
+        </Card>
+      ) : tripPath.length === 0 ? (
+        <Card>
           <div className="empty-state">
             <div className="empty-state__icon">📍</div>
             <h3>No GPS points available</h3>
@@ -632,49 +1084,105 @@ export function TripHistoryPage() {
               This trip has no location data to display.
             </p>
           </div>
-        ) : (
-          <div className="map-container">
-            {isRouting ? (
-              <p className="text-muted">Snapping route to roads...</p>
-            ) : null}
-            {routingError ? (
-              <p className="text-muted">
-                Unable to load road route. Showing raw GPS track instead.
-              </p>
-            ) : null}
-            <MapContainer
-              center={displayPath[0]}
-              zoom={12}
-              style={{ height: "100%", width: "100%" }}
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              {tripBounds ? <FitBounds bounds={tripBounds} /> : null}
-              <Polyline positions={displayPath} color="#1d4ed8" weight={4} />
-              {displayPath.length > 0 ? (
-                <Marker position={displayPath[0]}>
-                  <Popup>
-                    Start
-                    <br />
-                    {selectedTripVin}
-                  </Popup>
-                </Marker>
-              ) : null}
-              {displayPath.length > 1 ? (
-                <Marker position={displayPath[displayPath.length - 1]}>
-                  <Popup>
-                    End
-                    <br />
-                    {selectedTripVin}
-                  </Popup>
-                </Marker>
-              ) : null}
-            </MapContainer>
-          </div>
-        )}
-      </Card>
+        </Card>
+      ) : (
+        <div className="trip-map-layout">
+          <Card>
+            <div className="trip-details">
+              <div className="trip-locations">
+                <div className="trip-location">
+                  <div className="trip-location__icon trip-location__icon--start" />
+                  <div>
+                    <p className="trip-location__label">Start</p>
+                    <p className="trip-location__value">
+                      {startLocationDisplay}
+                    </p>
+                  </div>
+                  <div className="trip-location__time">{tripStartLabel}</div>
+                </div>
+                <div className="trip-location">
+                  <div className="trip-location__icon trip-location__icon--end" />
+                  <div>
+                    <p className="trip-location__label">End</p>
+                    <p className="trip-location__value">
+                      {endLocationDisplay}
+                    </p>
+                  </div>
+                  <div className="trip-location__time">{tripEndLabel}</div>
+                </div>
+              </div>
+
+              <div className="trip-metrics">
+                {metricItems.map((metric) => (
+                  <div key={metric.label} className="trip-metric">
+                    <span className="trip-metric__icon">{metric.icon}</span>
+                    <div>
+                      <p className="trip-metric__label">{metric.label}</p>
+                      <p className="trip-metric__value">{metric.value}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <div className="trip-map-card">
+              <div className="trip-summary">
+                {summaryItems.map((summary) => (
+                  <div key={summary.label} className="trip-summary__item">
+                    <span className="trip-summary__icon">{summary.icon}</span>
+                    <div>
+                      <p className="trip-summary__label">{summary.label}</p>
+                      <p className="trip-summary__value">{summary.value}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="map-container">
+                {isRouting ? (
+                  <p className="text-muted">Snapping route to roads...</p>
+                ) : null}
+                {routingError ? (
+                  <p className="text-muted">
+                    Unable to load road route. Showing raw GPS track instead.
+                  </p>
+                ) : null}
+                <MapContainer
+                  center={displayPath[0]}
+                  zoom={12}
+                  style={{ height: "100%", width: "100%" }}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  {tripBounds ? <FitBounds bounds={tripBounds} /> : null}
+                  <Polyline positions={displayPath} color="#1d4ed8" weight={4} />
+                  {displayPath.length > 0 ? (
+                    <Marker position={displayPath[0]}>
+                      <Popup>
+                        Start
+                        <br />
+                        {selectedTripVin}
+                      </Popup>
+                    </Marker>
+                  ) : null}
+                  {displayPath.length > 1 ? (
+                    <Marker position={displayPath[displayPath.length - 1]}>
+                      <Popup>
+                        End
+                        <br />
+                        {selectedTripVin}
+                      </Popup>
+                    </Marker>
+                  ) : null}
+                </MapContainer>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
@@ -712,6 +1220,109 @@ function extractEventPosition(event: Record<string, unknown>) {
   }
 
   return null;
+}
+
+function parseSummary(value: unknown): Record<string, unknown> | null {
+  if (!value) return null;
+  if (typeof value === "object") return value as Record<string, unknown>;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value) as Record<string, unknown>;
+      return typeof parsed === "object" && parsed ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function getPath(record: Record<string, unknown>, path: string) {
+  const parts = path.split(".");
+  let current: unknown = record;
+  for (const part of parts) {
+    if (!current || typeof current !== "object") return undefined;
+    current = (current as Record<string, unknown>)[part];
+  }
+  return current;
+}
+
+function readNumberFromRecord(
+  record: Record<string, unknown>,
+  paths: string[],
+) {
+  for (const path of paths) {
+    const value = getPath(record, path);
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim()) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+  }
+  return undefined;
+}
+
+function readNumberFromTrip(
+  record: Record<string, unknown> | null,
+  summary: Record<string, unknown> | null,
+  paths: string[],
+) {
+  if (record) {
+    const value = readNumberFromRecord(record, paths);
+    if (value !== undefined) return value;
+  }
+  if (summary) {
+    const value = readNumberFromRecord(summary, paths);
+    if (value !== undefined) return value;
+  }
+  return undefined;
+}
+
+function readStringFromTrip(
+  record: Record<string, unknown> | null,
+  summary: Record<string, unknown> | null,
+  paths: string[],
+) {
+  if (record) {
+    for (const path of paths) {
+      const value = getPath(record, path);
+      if (typeof value === "string" && value.trim()) return value;
+    }
+  }
+  if (summary) {
+    for (const path of paths) {
+      const value = getPath(summary, path);
+      if (typeof value === "string" && value.trim()) return value;
+    }
+  }
+  return undefined;
+}
+
+function parseHmsToSeconds(value?: string) {
+  if (!value) return undefined;
+  const parts = value.split(":").map((part) => Number(part));
+  if (parts.some((part) => Number.isNaN(part))) return undefined;
+  if (parts.length === 3) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  }
+  if (parts.length === 2) {
+    return parts[0] * 60 + parts[1];
+  }
+  return undefined;
+}
+
+function formatSecondsAsDuration(totalSeconds: number) {
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return "NA";
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+  if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
+}
+
+function sumOptional(a?: number, b?: number) {
+  if (a === undefined && b === undefined) return undefined;
+  return (a ?? 0) + (b ?? 0);
 }
 
 function asNumber(value: unknown) {
@@ -765,6 +1376,23 @@ function formatDuration(startTime: string, endTime: string) {
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
 
+function formatDurationDetailed(
+  startTime?: string,
+  endTime?: string,
+) {
+  if (!startTime || !endTime) return "NA";
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+  const ms = end.getTime() - start.getTime();
+  if (Number.isNaN(ms) || ms <= 0) return "NA";
+  const totalSeconds = Math.round(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+  return `${minutes}m ${seconds}s`;
+}
+
 function minutesBetween(startTime?: string, endTime?: string) {
   if (!startTime || !endTime) return undefined;
   const start = new Date(startTime);
@@ -779,6 +1407,33 @@ function formatMinutes(totalMinutes: number) {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
+
+function formatDateTime(value?: string) {
+  if (!value) return "--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--";
+  return date.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+}
+
+function formatLatLon(lat: number, lon: number) {
+  return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+}
+
+function formatOptionalNumber(
+  value: number | null | undefined,
+  decimals: number,
+  suffix = "",
+) {
+  if (value === null || value === undefined || Number.isNaN(value)) return "NA";
+  return `${value.toFixed(decimals)}${suffix}`;
 }
 
 function rangeLabel(value: string) {
