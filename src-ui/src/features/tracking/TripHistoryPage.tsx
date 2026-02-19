@@ -564,8 +564,6 @@ export function TripHistoryPage() {
 
     const [startLat, startLon] = tripPath[0];
     const [endLat, endLon] = tripPath[tripPath.length - 1];
-    const startKey = `${startLat.toFixed(6)},${startLon.toFixed(6)}`;
-    const endKey = `${endLat.toFixed(6)},${endLon.toFixed(6)}`;
 
     const fetchAddress = async (lat: number, lon: number) => {
       const cacheKey = `${lat.toFixed(6)},${lon.toFixed(6)}`;
