@@ -11,7 +11,12 @@ import {
     useMap,
 } from "react-leaflet";
 import { useSearchParams } from "react-router-dom";
-import { fetchFleets, fetchVehicles } from "../../api/onpointApi";
+import {
+    fetchDrivers,
+    fetchFleets,
+    fetchVehicleAssignments,
+    fetchVehicles,
+} from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import {
     fetchTripEvents,
@@ -28,6 +33,30 @@ const ROUTING_BASE_URL =
 const GEOCODE_BASE_URL =
   import.meta.env.VITE_GEOCODE_BASE_URL ??
   "https://nominatim.openstreetmap.org/reverse";
+
+type AssignmentRecord = {
+  assignmentId?: string;
+  vin?: string;
+  driverId?: string;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+};
+
+const startMarkerIcon = L.divIcon({
+  className: "trip-map-marker trip-map-marker--start",
+  html: '<span class="trip-map-marker__dot" aria-hidden="true"></span>',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+  popupAnchor: [0, -10],
+});
+
+const endMarkerIcon = L.divIcon({
+  className: "trip-map-marker trip-map-marker--end",
+  html: '<span class="trip-map-marker__dot" aria-hidden="true"></span>',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+  popupAnchor: [0, -10],
+});
 
 export function TripHistoryPage() {
   const [searchParams] = useSearchParams();
@@ -59,6 +88,13 @@ export function TripHistoryPage() {
       ? queryKeys.vehicles(tenantId, fleetId)
       : ["vehicles", "none"],
     queryFn: () => fetchVehicles(tenantId, fleetId),
+    enabled: Boolean(tenantId),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: drivers = [] } = useQuery({
+    queryKey: tenantId ? queryKeys.drivers(tenantId) : ["drivers", "none"],
+    queryFn: () => fetchDrivers(tenantId),
     enabled: Boolean(tenantId),
     staleTime: 5 * 60 * 1000,
   });
@@ -125,6 +161,7 @@ export function TripHistoryPage() {
           from,
           to,
           limit: 50,
+          include: "summary",
         });
       }
 
@@ -135,6 +172,7 @@ export function TripHistoryPage() {
           from,
           to,
           limit: 50,
+          include: "summary",
         });
       }
 
@@ -150,6 +188,7 @@ export function TripHistoryPage() {
             from,
             to,
             limit: 50,
+            include: "summary",
           }),
         ),
       );
@@ -212,43 +251,169 @@ export function TripHistoryPage() {
     ];
   }, [dateRange, tripResponse]);
 
+  const driverNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const driver of drivers) {
+      if (!driver.driverId) continue;
+      map.set(
+        driver.driverId,
+        driver.name ?? driver.displayName ?? driver.driverId,
+      );
+    }
+    return map;
+  }, [drivers]);
+
+  const tripVins = useMemo(() => {
+    const vins = (tripResponse?.items ?? [])
+      .map((item) => item.vin)
+      .filter((value): value is string => Boolean(value));
+    return Array.from(new Set(vins));
+  }, [tripResponse]);
+
+  const { data: assignmentsByVinResponse = [] } = useQuery({
+    queryKey: ["trip-history-vin-assignments", tenantId, ...tripVins],
+    queryFn: async () => {
+      const responses = await Promise.all(
+        tripVins.map((vin) =>
+          fetchVehicleAssignments(vin, tenantId).catch(() => ({ items: [] })),
+        ),
+      );
+      return responses.map((response, index) => ({
+        vin: tripVins[index],
+        items: normalizeAssignmentRecords(response, tripVins[index]),
+      }));
+    },
+    enabled: Boolean(tenantId && tripVins.length > 0),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const assignmentsByVin = useMemo(() => {
+    const map = new Map<string, AssignmentRecord[]>();
+    for (const group of assignmentsByVinResponse) {
+      const sorted = [...group.items].sort(
+        (a, b) =>
+          (parseIsoToMs(b.effectiveFrom) ?? 0) -
+          (parseIsoToMs(a.effectiveFrom) ?? 0),
+      );
+      map.set(group.vin, sorted);
+    }
+    return map;
+  }, [assignmentsByVinResponse]);
+
   const trips = useMemo(() => {
     const items = tripResponse?.items ?? [];
     const normalized = items.map((item) => {
-      const start = formatDate(item.startTime, "--");
-      const end = formatDate(item.endTime, "--");
+      const record = item as Record<string, unknown>;
+      const summary = parseSummary(
+        record.summary ?? record.summaryJson ?? record.tripSummary,
+      );
+      const startTimeRaw =
+        readStringFromRecord(record, [
+          "startTime",
+          "start_time",
+          "tripStartTime",
+        ]) ??
+        readStringFromRecord(summary ?? {}, [
+          "startTime",
+          "start_time",
+          "tripStartTime",
+        ]) ??
+        item.startTime;
+      const endTimeRaw =
+        readStringFromRecord(record, ["endTime", "end_time", "tripEndTime"]) ??
+        readStringFromRecord(summary ?? {}, [
+          "endTime",
+          "end_time",
+          "tripEndTime",
+        ]) ??
+        item.endTime;
+      const start = formatDate(startTimeRaw, "--");
+      const end = formatDate(endTimeRaw, "--");
+      const startTimestamp = formatDateTime(startTimeRaw);
+      const endTimestamp = formatDateTime(endTimeRaw);
       const miles =
         typeof item.milesDriven === "number"
           ? item.milesDriven.toFixed(1)
           : "--";
       const duration =
-        item.startTime && item.endTime
-          ? formatDuration(item.startTime, item.endTime)
+        startTimeRaw && endTimeRaw
+          ? formatDuration(startTimeRaw, endTimeRaw)
           : "--";
-      const status =
-        item.tripStatus?.toLowerCase() === "completed"
-          ? "Completed"
-          : item.tripStatus?.toLowerCase() === "canceled"
-            ? "Canceled"
-            : item.tripStatus?.toLowerCase() === "in_progress"
-              ? "In Progress"
-              : "Completed";
+      const endOdometer =
+        readNumberFromRecord(record, [
+          "odometerEnd",
+          "odometer_end",
+          "odometerEndMiles",
+          "odometer_end_miles",
+          "odometer.endMiles",
+          "telemetry.odometerEnd",
+          "telemetry.odometerEndMiles",
+        ]) ??
+        readNumberFromRecord(summary ?? {}, [
+          "odometerEnd",
+          "odometer_end",
+          "odometerEndMiles",
+          "odometer_end_miles",
+          "odometer.endMiles",
+        ]);
+      const driverName =
+        readStringFromRecord(record, [
+          "driverName",
+          "driver.name",
+          "driverDisplayName",
+          "driver.displayName",
+          "operatorName",
+          "operator.name",
+          "assignedDriverName",
+          "driverId",
+        ]) ??
+        readStringFromRecord(summary ?? {}, [
+          "driverName",
+          "driver.name",
+          "driverDisplayName",
+          "driver.displayName",
+          "operatorName",
+          "operator.name",
+          "assignedDriverName",
+          "driverId",
+        ]) ??
+        "--";
+      const resolvedAssignment = resolveAssignmentForTrip(
+        assignmentsByVin.get(item.vin ?? "") ?? [],
+        startTimeRaw,
+        endTimeRaw,
+      );
+      const resolvedDriverId = resolvedAssignment?.driverId;
+      const resolvedDriverName =
+        (resolvedDriverId ? driverNameById.get(resolvedDriverId) : undefined) ??
+        resolvedDriverId;
       return {
         id: item.tripId,
+        driverName:
+          driverName !== "--" ? driverName : (resolvedDriverName ?? "--"),
         vin: item.vin,
         start,
         end,
+        startTimestamp,
+        endTimestamp,
+        endOdometer:
+          typeof endOdometer === "number"
+            ? `${endOdometer.toFixed(2)} mi`
+            : "--",
         miles,
         duration,
-        status,
         alerts: item.overspeedEventCountTotal ?? 0,
       };
     });
 
     if (!search.trim()) return normalized;
     const term = search.trim().toLowerCase();
-    return normalized.filter((trip) => trip.id.toLowerCase().includes(term));
-  }, [search, tripResponse]);
+    return normalized.filter(
+      (trip) =>
+        trip.id.toLowerCase().includes(term) ||
+        trip.driverName.toLowerCase().includes(term),
+    );
+  }, [assignmentsByVin, driverNameById, search, tripResponse]);
 
   const selectedTrip = useMemo(() => {
     if (!selectedTripId || !selectedTripVin) return null;
@@ -1018,14 +1183,15 @@ export function TripHistoryPage() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Trip ID</th>
+                  <th>Driver Name</th>
                   <th>VIN</th>
-                  <th>Start</th>
-                  <th>End</th>
+                  <th>Start Timestamp</th>
+                  <th>End Timestamp</th>
+                  <th>End Odometer</th>
                   <th>Miles</th>
                   <th>Duration</th>
-                  <th>Status</th>
                   <th>Alerts</th>
+                  <th>Trip ID</th>
                 </tr>
               </thead>
               <tbody>
@@ -1042,26 +1208,15 @@ export function TripHistoryPage() {
                       setSelectedTripVin(trip.vin);
                     }}
                   >
-                    <td className="mono">{trip.id}</td>
+                    <td>{trip.driverName}</td>
                     <td className="mono">{trip.vin}</td>
-                    <td>{trip.start}</td>
-                    <td>{trip.end}</td>
+                    <td>{trip.startTimestamp}</td>
+                    <td>{trip.endTimestamp}</td>
+                    <td>{trip.endOdometer}</td>
                     <td>{trip.miles}</td>
                     <td>{trip.duration}</td>
-                    <td>
-                      <span
-                        className={`badge ${
-                          trip.status === "Completed"
-                            ? "badge--active"
-                            : trip.status === "In Progress"
-                              ? "badge--suspended"
-                              : "badge--inactive"
-                        }`}
-                      >
-                        {trip.status}
-                      </span>
-                    </td>
                     <td>{trip.alerts}</td>
+                    <td className="mono">{trip.id}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1183,7 +1338,7 @@ export function TripHistoryPage() {
                   {tripBounds ? <FitBounds bounds={tripBounds} /> : null}
                   <Polyline positions={displayPath} color="#1d4ed8" weight={4} />
                   {displayPath.length > 0 ? (
-                    <Marker position={displayPath[0]}>
+                    <Marker position={displayPath[0]} icon={startMarkerIcon}>
                       <Popup>
                         Start
                         <br />
@@ -1192,7 +1347,10 @@ export function TripHistoryPage() {
                     </Marker>
                   ) : null}
                   {displayPath.length > 1 ? (
-                    <Marker position={displayPath[displayPath.length - 1]}>
+                    <Marker
+                      position={displayPath[displayPath.length - 1]}
+                      icon={endMarkerIcon}
+                    >
                       <Popup>
                         End
                         <br />
@@ -1259,6 +1417,67 @@ function parseSummary(value: unknown): Record<string, unknown> | null {
   return null;
 }
 
+function parseIsoToMs(value?: string) {
+  if (!value) return undefined;
+  const date = new Date(value);
+  const time = date.getTime();
+  return Number.isNaN(time) ? undefined : time;
+}
+
+function normalizeAssignmentRecords(response: unknown, vin: string) {
+  const items = Array.isArray(response)
+    ? response
+    : typeof response === "object" &&
+        response !== null &&
+        Array.isArray((response as { items?: unknown[] }).items)
+      ? (response as { items: unknown[] }).items
+      : [];
+
+  return items.map((item) => {
+    const record = item as Record<string, unknown>;
+    return {
+      assignmentId: record.assignmentId ? String(record.assignmentId) : undefined,
+      vin: record.vin ? String(record.vin) : vin,
+      driverId: record.driverId ? String(record.driverId) : undefined,
+      effectiveFrom: record.effectiveFrom
+        ? String(record.effectiveFrom)
+        : undefined,
+      effectiveTo: record.effectiveTo ? String(record.effectiveTo) : undefined,
+    } satisfies AssignmentRecord;
+  });
+}
+
+function resolveAssignmentForTrip(
+  assignments: AssignmentRecord[],
+  startTime?: string,
+  endTime?: string,
+) {
+  if (!assignments.length) return undefined;
+  const tripTime = parseIsoToMs(startTime) ?? parseIsoToMs(endTime);
+
+  if (tripTime === undefined) {
+    return assignments[0];
+  }
+
+  const matching = assignments.filter((assignment) => {
+    const from = parseIsoToMs(assignment.effectiveFrom);
+    const to = parseIsoToMs(assignment.effectiveTo);
+    if (from !== undefined && tripTime < from) return false;
+    if (to !== undefined && tripTime > to) return false;
+    return true;
+  });
+
+  if (matching.length > 0) {
+    return matching.sort(
+      (a, b) =>
+        (parseIsoToMs(b.effectiveFrom) ?? 0) -
+        (parseIsoToMs(a.effectiveFrom) ?? 0),
+    )[0];
+  }
+
+  return assignments[0];
+}
+
 function getPath(record: Record<string, unknown>, path: string) {
   const parts = path.split(".");
   let current: unknown = record;
@@ -1279,6 +1498,19 @@ function readNumberFromRecord(
     if (typeof value === "string" && value.trim()) {
       const parsed = Number(value);
       if (Number.isFinite(parsed)) return parsed;
+    }
+  }
+  return undefined;
+}
+
+function readStringFromRecord(
+  record: Record<string, unknown>,
+  paths: string[],
+) {
+  for (const path of paths) {
+    const value = getPath(record, path);
+    if (typeof value === "string" && value.trim()) {
+      return value;
     }
   }
   return undefined;

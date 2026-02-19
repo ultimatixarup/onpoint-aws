@@ -54,6 +54,7 @@ type TripSummaryQuery = {
   from?: string;
   to?: string;
   limit?: number;
+  include?: "none" | "summary";
 };
 
 const tripSummaryBaseUrl =
@@ -71,6 +72,7 @@ export async function fetchTripSummaryTrips({
   from,
   to,
   limit = 50,
+  include,
 }: TripSummaryQuery): Promise<TripSummaryResponse> {
   const coerceNumber = (value: unknown): number | undefined => {
     if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -242,6 +244,7 @@ export async function fetchTripSummaryTrips({
   if (from) params.set("from", from);
   if (to) params.set("to", to);
   if (limit) params.set("limit", String(limit));
+  if (include) params.set("include", include);
   if (vehicleIds && vehicleIds.length > 0) {
     params.set("vehicleIds", vehicleIds.join(","));
   }

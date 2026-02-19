@@ -532,6 +532,29 @@ a {
   box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.15);
 }
 
+.trip-map-marker {
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+}
+
+.trip-map-marker__dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.18);
+}
+
+.trip-map-marker--start .trip-map-marker__dot {
+  background: #16a34a;
+}
+
+.trip-map-marker--end .trip-map-marker__dot {
+  background: #dc2626;
+}
+
 .trip-location__label {
   margin: 0;
   font-size: 12px;
