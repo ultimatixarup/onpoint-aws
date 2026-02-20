@@ -62,6 +62,8 @@ export function TripHistoryPage() {
   const [searchParams] = useSearchParams();
   const paramsApplied = useRef(false);
   const tripDetailsRef = useRef<HTMLDivElement | null>(null);
+  const fromDatePickerRef = useRef<HTMLInputElement | null>(null);
+  const toDatePickerRef = useRef<HTMLInputElement | null>(null);
   const queryTripId = searchParams.get("tripId") ?? "";
   const queryVin = searchParams.get("vin") ?? "";
   const [dateRange, setDateRange] = useState("last90");
@@ -71,6 +73,16 @@ export function TripHistoryPage() {
   const [selectedVin, setSelectedVin] = useState("all");
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [selectedTripVin, setSelectedTripVin] = useState<string | null>(null);
+
+  const openDatePicker = (field: "from" | "to") => {
+    const node = field === "from" ? fromDatePickerRef.current : toDatePickerRef.current;
+    if (!node) return;
+    if ("showPicker" in node) {
+      (node as HTMLInputElement & { showPicker?: () => void }).showPicker?.();
+      return;
+    }
+    node.click();
+  };
 
   const focusTripDetails = () => {
     requestAnimationFrame(() => {
@@ -141,6 +153,9 @@ export function TripHistoryPage() {
     if (dateRange === "custom") {
       const start = parseUsDate(customFrom, "start");
       const end = parseUsDate(customTo, "end");
+      if (start && end && start.getTime() > end.getTime()) {
+        return { from: undefined, to: undefined };
+      }
       return {
         from: start ? start.toISOString() : undefined,
         to: end ? end.toISOString() : undefined,
@@ -212,7 +227,7 @@ export function TripHistoryPage() {
 
       return { items: merged, nextToken: null };
     },
-    enabled: canFetchTrips,
+    enabled: canFetchTrips && (dateRange !== "custom" || Boolean(from && to)),
   });
 
   const stats = useMemo(() => {
@@ -1055,27 +1070,77 @@ export function TripHistoryPage() {
           </label>
           <label className="form__field">
             <span className="text-muted">From</span>
-            <input
-              className="input"
-              type="text"
-              inputMode="numeric"
-              placeholder="MM/DD/YYYY"
-              value={customFrom}
-              onChange={(event) => setCustomFrom(event.target.value)}
-              disabled={dateRange !== "custom"}
-            />
+            <div className="inline" style={{ alignItems: "center", gap: "0.5rem" }}>
+              <input
+                className="input"
+                type="text"
+                inputMode="numeric"
+                placeholder="MM/DD/YYYY"
+                value={customFrom}
+                onChange={(event) =>
+                  setCustomFrom(normalizeUsDateInput(event.target.value))
+                }
+                onBlur={() => setCustomFrom(normalizeUsDateFinal(customFrom))}
+                disabled={dateRange !== "custom"}
+              />
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Open From date picker"
+                onClick={() => openDatePicker("from")}
+                disabled={dateRange !== "custom"}
+              >
+                📅
+              </button>
+              <input
+                ref={fromDatePickerRef}
+                type="date"
+                value={toIsoDate(customFrom)}
+                max={toIsoDate(customTo) || undefined}
+                onChange={(event) => setCustomFrom(fromIsoDateToUs(event.target.value))}
+                disabled={dateRange !== "custom"}
+                tabIndex={-1}
+                aria-hidden="true"
+                style={{ position: "absolute", opacity: 0, width: 1, height: 1, pointerEvents: "none" }}
+              />
+            </div>
           </label>
           <label className="form__field">
             <span className="text-muted">To</span>
-            <input
-              className="input"
-              type="text"
-              inputMode="numeric"
-              placeholder="MM/DD/YYYY"
-              value={customTo}
-              onChange={(event) => setCustomTo(event.target.value)}
-              disabled={dateRange !== "custom"}
-            />
+            <div className="inline" style={{ alignItems: "center", gap: "0.5rem" }}>
+              <input
+                className="input"
+                type="text"
+                inputMode="numeric"
+                placeholder="MM/DD/YYYY"
+                value={customTo}
+                onChange={(event) =>
+                  setCustomTo(normalizeUsDateInput(event.target.value))
+                }
+                onBlur={() => setCustomTo(normalizeUsDateFinal(customTo))}
+                disabled={dateRange !== "custom"}
+              />
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Open To date picker"
+                onClick={() => openDatePicker("to")}
+                disabled={dateRange !== "custom"}
+              >
+                📅
+              </button>
+              <input
+                ref={toDatePickerRef}
+                type="date"
+                value={toIsoDate(customTo)}
+                min={toIsoDate(customFrom) || undefined}
+                onChange={(event) => setCustomTo(fromIsoDateToUs(event.target.value))}
+                disabled={dateRange !== "custom"}
+                tabIndex={-1}
+                aria-hidden="true"
+                style={{ position: "absolute", opacity: 0, width: 1, height: 1, pointerEvents: "none" }}
+              />
+            </div>
           </label>
           <label className="form__field">
             <span className="text-muted">Vehicle (VIN)</span>
@@ -1720,9 +1785,56 @@ function isVehicleEv(
   );
 }
 
+function normalizeUsDateInput(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+function normalizeUsDateFinal(value: string) {
+  const trimmed = value.trim();
+  const match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(trimmed);
+  if (!match) return trimmed;
+  const month = match[1].padStart(2, "0");
+  const day = match[2].padStart(2, "0");
+  return `${month}/${day}/${match[3]}`;
+}
+
+function toIsoDate(value: string) {
+  const match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(value.trim());
+  if (!match) return "";
+  const month = match[1].padStart(2, "0");
+  const day = match[2].padStart(2, "0");
+  const year = match[3];
+  return `${year}-${month}-${day}`;
+}
+
+function fromIsoDateToUs(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  if (!match) return "";
+  return `${match[2]}/${match[3]}/${match[1]}`;
+}
+
 function parseUsDate(value: string, mode: "start" | "end") {
   if (!value) return undefined;
   const trimmed = value.trim();
+
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+  if (isoMatch) {
+    const year = Number(isoMatch[1]);
+    const month = Number(isoMatch[2]);
+    const day = Number(isoMatch[3]);
+    const date = new Date(year, month - 1, day);
+    if (Number.isNaN(date.getTime())) return undefined;
+    if (mode === "end") {
+      date.setHours(23, 59, 59, 999);
+    } else {
+      date.setHours(0, 0, 0, 0);
+    }
+    return date;
+  }
+
   const match = /^\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s*$/.exec(trimmed);
   if (!match) return undefined;
   const month = Number(match[1]);
