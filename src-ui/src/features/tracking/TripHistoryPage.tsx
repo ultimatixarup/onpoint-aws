@@ -61,6 +61,7 @@ const endMarkerIcon = L.divIcon({
 export function TripHistoryPage() {
   const [searchParams] = useSearchParams();
   const paramsApplied = useRef(false);
+  const tripDetailsRef = useRef<HTMLDivElement | null>(null);
   const queryTripId = searchParams.get("tripId") ?? "";
   const queryVin = searchParams.get("vin") ?? "";
   const [dateRange, setDateRange] = useState("last90");
@@ -70,6 +71,15 @@ export function TripHistoryPage() {
   const [selectedVin, setSelectedVin] = useState("all");
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [selectedTripVin, setSelectedTripVin] = useState<string | null>(null);
+
+  const focusTripDetails = () => {
+    requestAnimationFrame(() => {
+      const node = tripDetailsRef.current;
+      if (!node) return;
+      node.scrollIntoView({ behavior: "smooth", block: "start" });
+      node.focus({ preventScroll: true });
+    });
+  };
 
   const { tenant } = useTenant();
   const { fleet } = useFleet();
@@ -224,12 +234,10 @@ export function TripHistoryPage() {
     const durations = items
       .map((item) => minutesBetween(item.startTime, item.endTime))
       .filter((value): value is number => typeof value === "number");
-    const avgMinutes =
-      durations.length > 0
-        ? Math.round(
-            durations.reduce((sum, value) => sum + value, 0) / durations.length,
-          )
-        : undefined;
+    const totalEngineMinutes = durations.reduce(
+      (sum, value) => sum + value,
+      0,
+    );
 
     return [
       {
@@ -244,8 +252,8 @@ export function TripHistoryPage() {
             : "0",
       },
       {
-        label: "Avg. trip duration",
-        value: avgMinutes ? formatMinutes(avgMinutes) : "--",
+        label: "Total engine hours",
+        value: totalEngineMinutes > 0 ? formatMinutes(totalEngineMinutes) : "0m",
       },
       { label: "Alerts", value: totalAlerts.toLocaleString() },
     ];
@@ -1204,6 +1212,7 @@ export function TripHistoryPage() {
                     onClick={() => {
                       setSelectedTripId(trip.id);
                       setSelectedTripVin(trip.vin);
+                      focusTripDetails();
                     }}
                   >
                     <td>{trip.driverName}</td>
@@ -1223,48 +1232,49 @@ export function TripHistoryPage() {
         )}
       </Card>
 
-      {!selectedTripId || !selectedTripVin ? (
-        <Card>
-          <div className="empty-state">
-            <div className="empty-state__icon">🗺️</div>
-            <h3>Select a trip</h3>
-            <p className="text-muted">
-              Click a trip to view its route on the map.
-            </p>
-          </div>
-        </Card>
-      ) : isLoadingTripEvents ? (
-        <Card>
-          <div className="empty-state">
-            <div className="empty-state__icon">⏳</div>
-            <h3>Loading trip route</h3>
-            <p className="text-muted">
-              Fetching telemetry events for this trip.
-            </p>
-          </div>
-        </Card>
-      ) : tripEventsError ? (
-        <Card>
-          <div className="empty-state">
-            <div className="empty-state__icon">⚠️</div>
-            <h3>Unable to load route</h3>
-            <p className="text-muted">Verify your API access and try again.</p>
-          </div>
-        </Card>
-      ) : tripPath.length === 0 ? (
-        <Card>
-          <div className="empty-state">
-            <div className="empty-state__icon">📍</div>
-            <h3>No GPS points available</h3>
-            <p className="text-muted">
-              This trip has no location data to display.
-            </p>
-          </div>
-        </Card>
-      ) : (
-        <div className="trip-map-layout">
+      <div ref={tripDetailsRef} tabIndex={-1}>
+        {!selectedTripId || !selectedTripVin ? (
           <Card>
-            <div className="trip-details">
+            <div className="empty-state">
+              <div className="empty-state__icon">🗺️</div>
+              <h3>Select a trip</h3>
+              <p className="text-muted">
+                Click a trip to view its route on the map.
+              </p>
+            </div>
+          </Card>
+        ) : isLoadingTripEvents ? (
+          <Card>
+            <div className="empty-state">
+              <div className="empty-state__icon">⏳</div>
+              <h3>Loading trip route</h3>
+              <p className="text-muted">
+                Fetching telemetry events for this trip.
+              </p>
+            </div>
+          </Card>
+        ) : tripEventsError ? (
+          <Card>
+            <div className="empty-state">
+              <div className="empty-state__icon">⚠️</div>
+              <h3>Unable to load route</h3>
+              <p className="text-muted">Verify your API access and try again.</p>
+            </div>
+          </Card>
+        ) : tripPath.length === 0 ? (
+          <Card>
+            <div className="empty-state">
+              <div className="empty-state__icon">📍</div>
+              <h3>No GPS points available</h3>
+              <p className="text-muted">
+                This trip has no location data to display.
+              </p>
+            </div>
+          </Card>
+        ) : (
+          <div className="trip-map-layout">
+            <Card>
+              <div className="trip-details">
               <div className="trip-locations">
                 <div className="trip-location">
                   <div className="trip-location__icon trip-location__icon--start" />
@@ -1300,10 +1310,10 @@ export function TripHistoryPage() {
                 ))}
               </div>
             </div>
-          </Card>
+            </Card>
 
-          <Card>
-            <div className="trip-map-card">
+            <Card>
+              <div className="trip-map-card">
               <div className="trip-summary">
                 {summaryItems.map((summary) => (
                   <div key={summary.label} className="trip-summary__item">
@@ -1358,10 +1368,11 @@ export function TripHistoryPage() {
                   ) : null}
                 </MapContainer>
               </div>
-            </div>
-          </Card>
-        </div>
-      )}
+              </div>
+            </Card>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
