@@ -55,6 +55,41 @@ export type TripEventsResponse = {
   nextToken?: string | null;
 };
 
+export type TripMapEventMarker = {
+  type:
+    | "overspeed"
+    | "harsh_accel"
+    | "harsh_brake"
+    | "harsh_corner"
+    | "collision";
+  lat: number;
+  lon: number;
+  timestamp: string;
+  severity?: "STANDARD" | "SEVERE";
+  details?: Record<string, unknown>;
+};
+
+export type TripMapData = {
+  sampledPath: Array<[number, number]>;
+  snappedPath: Array<[number, number]> | null;
+  startCoords: [number, number] | null;
+  endCoords: [number, number] | null;
+  bounds: {
+    minLat: number;
+    maxLat: number;
+    minLon: number;
+    maxLon: number;
+  } | null;
+  eventMarkers: TripMapEventMarker[];
+  generatedAt: string | null;
+};
+
+export type TripMapResponse = {
+  vin: string;
+  tripId: string;
+  map: TripMapData;
+};
+
 export type TripHistoryStatItem = {
   label: string;
   value: string;
@@ -349,6 +384,48 @@ export async function fetchTripEvents(params: {
   });
 }
 
+export async function fetchTripEventsRaw(params: {
+  tenantId: string;
+  vin: string;
+  tripId: string;
+  limit?: number;
+  nextToken?: string;
+}): Promise<TripEventsResponse> {
+  const query = new URLSearchParams();
+  if (params.limit) query.set("limit", String(params.limit));
+  if (params.nextToken) query.set("nextToken", params.nextToken);
+  const suffix = query.toString();
+  const path = `/trips/${encodeURIComponent(params.vin)}/${encodeURIComponent(
+    params.tripId,
+  )}/events/raw${suffix ? `?${suffix}` : ""}`;
+
+  return httpRequest<TripEventsResponse>(path, {
+    baseUrl: tripSummaryBaseUrl,
+    headers: {
+      ...(tripSummaryApiKey ? { "x-api-key": tripSummaryApiKey } : {}),
+      "x-tenant-id": params.tenantId,
+    },
+  });
+}
+
+export async function fetchTripMapData(params: {
+  tenantId: string;
+  vin: string;
+  tripId: string;
+}): Promise<TripMapResponse> {
+  const path = `/trips/${encodeURIComponent(params.vin)}/${encodeURIComponent(
+    params.tripId,
+  )}/map`;
+
+  return httpRequest<TripMapResponse>(path, {
+    baseUrl: tripSummaryBaseUrl,
+    headers: {
+      ...(tripSummaryApiKey ? { "x-api-key": tripSummaryApiKey } : {}),
+      "x-tenant-id": params.tenantId,
+    },
+  });
+}
+
 export async function fetchTripSummaryTripDetail(params: {
   tenantId: string;
   vin: string;
@@ -526,7 +603,11 @@ export function buildTripHistoryRows(params: {
       record.summary ?? record.summaryJson ?? record.tripSummary,
     );
     const startTimeRaw =
-      readStringFromRecord(record, ["startTime", "start_time", "tripStartTime"]) ??
+      readStringFromRecord(record, [
+        "startTime",
+        "start_time",
+        "tripStartTime",
+      ]) ??
       readStringFromRecord(summary ?? {}, [
         "startTime",
         "start_time",
@@ -535,7 +616,11 @@ export function buildTripHistoryRows(params: {
       item.startTime;
     const endTimeRaw =
       readStringFromRecord(record, ["endTime", "end_time", "tripEndTime"]) ??
-      readStringFromRecord(summary ?? {}, ["endTime", "end_time", "tripEndTime"]) ??
+      readStringFromRecord(summary ?? {}, [
+        "endTime",
+        "end_time",
+        "tripEndTime",
+      ]) ??
       item.endTime;
     const endOdometer =
       readNumberFromRecord(record, [
@@ -589,7 +674,8 @@ export function buildTripHistoryRows(params: {
 
     return {
       id: item.tripId,
-      driverName: driverName !== "--" ? driverName : (resolvedDriverName ?? "--"),
+      driverName:
+        driverName !== "--" ? driverName : (resolvedDriverName ?? "--"),
       vin: item.vin,
       start: formatDate(startTimeRaw, "--"),
       end: formatDate(endTimeRaw, "--"),
@@ -598,9 +684,13 @@ export function buildTripHistoryRows(params: {
       endOdometer:
         typeof endOdometer === "number" ? `${endOdometer.toFixed(2)} mi` : "--",
       miles:
-        typeof item.milesDriven === "number" ? item.milesDriven.toFixed(1) : "--",
+        typeof item.milesDriven === "number"
+          ? item.milesDriven.toFixed(1)
+          : "--",
       duration:
-        startTimeRaw && endTimeRaw ? formatDuration(startTimeRaw, endTimeRaw) : "--",
+        startTimeRaw && endTimeRaw
+          ? formatDuration(startTimeRaw, endTimeRaw)
+          : "--",
       alerts: item.overspeedEventCountTotal ?? 0,
     };
   });
@@ -643,30 +733,35 @@ export function buildTripDetailPresentation(params: {
   const durationHours =
     typeof durationMinutes === "number" ? durationMinutes / 60 : undefined;
 
-  const avgSpeedFromSummary = readNumberFromTrip(selectedTripRecord, summaryRecord, [
-    "averageSpeedMph",
-    "speed.averageMph",
-  ]);
+  const avgSpeedFromSummary = readNumberFromTrip(
+    selectedTripRecord,
+    summaryRecord,
+    ["averageSpeedMph", "speed.averageMph"],
+  );
   const avgSpeed =
     avgSpeedFromSummary ??
     (typeof distanceMiles === "number" && durationHours && durationHours > 0
       ? distanceMiles / durationHours
       : undefined);
 
-  const fuelConsumed = readFuelGallonsFromTrip(selectedTripRecord, summaryRecord, {
-    gallons: [
-      "fuelConsumedGallons",
-      "fuel.fuelConsumedGallons",
-      "fuel.consumedGallons",
-    ],
-    liters: [
-      "fuel.fuelConsumed",
-      "fuel.fuelConsumedLiters",
-      "fuelConsumed",
-      "fuelConsumedLiters",
-      "fuel.consumedLiters",
-    ],
-  });
+  const fuelConsumed = readFuelGallonsFromTrip(
+    selectedTripRecord,
+    summaryRecord,
+    {
+      gallons: [
+        "fuelConsumedGallons",
+        "fuel.fuelConsumedGallons",
+        "fuel.consumedGallons",
+      ],
+      liters: [
+        "fuel.fuelConsumed",
+        "fuel.fuelConsumedLiters",
+        "fuelConsumed",
+        "fuelConsumedLiters",
+        "fuel.consumedLiters",
+      ],
+    },
+  );
 
   const mpg =
     readNumberFromTrip(selectedTripRecord, summaryRecord, [
@@ -685,25 +780,29 @@ export function buildTripDetailPresentation(params: {
     "odometer_end_miles",
   ]);
 
-  const fuelLevelGallons = readFuelGallonsFromTrip(selectedTripRecord, summaryRecord, {
-    gallons: [
-      "fuel.fuelIndicatorAbsoluteGallons",
-      "fuelIndicatorAbsoluteGallons",
-      "fuelIndicatorGallons",
-      "fuel.endGallons",
-    ],
-    liters: [
-      "fuel.fuelIndicatorAbsoluteLiters",
-      "fuelIndicatorAbsoluteLiters",
-      "fuelIndicatorLiters",
-      "fuel.endLiters",
-    ],
-  });
-  const fuelLevelPercent = readNumberFromTrip(selectedTripRecord, summaryRecord, [
-    "fuel.fuelIndicatorPercent",
-    "fuelIndicatorPercent",
-    "fuelPercent",
-  ]);
+  const fuelLevelGallons = readFuelGallonsFromTrip(
+    selectedTripRecord,
+    summaryRecord,
+    {
+      gallons: [
+        "fuel.fuelIndicatorAbsoluteGallons",
+        "fuelIndicatorAbsoluteGallons",
+        "fuelIndicatorGallons",
+        "fuel.endGallons",
+      ],
+      liters: [
+        "fuel.fuelIndicatorAbsoluteLiters",
+        "fuelIndicatorAbsoluteLiters",
+        "fuelIndicatorLiters",
+        "fuel.endLiters",
+      ],
+    },
+  );
+  const fuelLevelPercent = readNumberFromTrip(
+    selectedTripRecord,
+    summaryRecord,
+    ["fuel.fuelIndicatorPercent", "fuelIndicatorPercent", "fuelPercent"],
+  );
 
   const evBatteryStart = readNumberFromTrip(selectedTripRecord, summaryRecord, [
     "evData.batteryLevelStartPercent",
@@ -727,7 +826,9 @@ export function buildTripDetailPresentation(params: {
       "idlingTimeSeconds",
       "idling_seconds",
     ]) ??
-    parseHmsToSeconds(readStringFromTrip(selectedTripRecord, summaryRecord, ["idlingTime"]));
+    parseHmsToSeconds(
+      readStringFromTrip(selectedTripRecord, summaryRecord, ["idlingTime"]),
+    );
 
   const nightMiles = readNumberFromTrip(selectedTripRecord, summaryRecord, [
     "distance.nightMiles",
@@ -750,10 +851,11 @@ export function buildTripDetailPresentation(params: {
       ]),
     );
 
-  const harshAcceleration = readNumberFromTrip(selectedTripRecord, summaryRecord, [
-    "events.harshAccelerationCount",
-    "harshAccelerationCount",
-  ]);
+  const harshAcceleration = readNumberFromTrip(
+    selectedTripRecord,
+    summaryRecord,
+    ["events.harshAccelerationCount", "harshAccelerationCount"],
+  );
   const harshBraking = readNumberFromTrip(selectedTripRecord, summaryRecord, [
     "events.harshBrakingCount",
     "harshBrakingCount",
@@ -799,7 +901,10 @@ export function buildTripDetailPresentation(params: {
     },
     {
       label: "Odometer",
-      value: typeof odometerEnd === "number" ? `${odometerEnd.toFixed(2)} miles` : "NA",
+      value:
+        typeof odometerEnd === "number"
+          ? `${odometerEnd.toFixed(2)} miles`
+          : "NA",
       icon: "🧭",
     },
     {
@@ -837,18 +942,25 @@ export function buildTripDetailPresentation(params: {
       {
         label: "EV Battery Level",
         value:
-          typeof evBatteryEnd === "number" ? `${evBatteryEnd.toFixed(1)}%` : "NA",
+          typeof evBatteryEnd === "number"
+            ? `${evBatteryEnd.toFixed(1)}%`
+            : "NA",
         icon: "🔋",
       },
       {
         label: "EV Battery Remaining",
         value:
-          typeof evBatteryEnd === "number" ? `${evBatteryEnd.toFixed(1)}%` : "NA",
+          typeof evBatteryEnd === "number"
+            ? `${evBatteryEnd.toFixed(1)}%`
+            : "NA",
         icon: "🔋",
       },
       {
         label: "EV Range",
-        value: typeof evRangeEnd === "number" ? `${evRangeEnd.toFixed(2)} miles` : "NA",
+        value:
+          typeof evRangeEnd === "number"
+            ? `${evRangeEnd.toFixed(2)} miles`
+            : "NA",
         icon: "🧮",
       },
     );
@@ -857,7 +969,10 @@ export function buildTripDetailPresentation(params: {
   metricItems.push(
     {
       label: "Trip Distance",
-      value: typeof distanceMiles === "number" ? `${distanceMiles.toFixed(2)} miles` : "NA",
+      value:
+        typeof distanceMiles === "number"
+          ? `${distanceMiles.toFixed(2)} miles`
+          : "NA",
       icon: "📍",
     },
     {
@@ -867,7 +982,10 @@ export function buildTripDetailPresentation(params: {
     },
     {
       label: "Idling Duration",
-      value: typeof idlingSeconds === "number" ? formatSecondsAsDuration(idlingSeconds) : "NA",
+      value:
+        typeof idlingSeconds === "number"
+          ? formatSecondsAsDuration(idlingSeconds)
+          : "NA",
       icon: "🕒",
     },
   );
@@ -1068,10 +1186,7 @@ function formatDuration(startTime: string, endTime: string) {
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
 
-function formatDurationDetailed(
-  startTime?: string,
-  endTime?: string,
-) {
+function formatDurationDetailed(startTime?: string, endTime?: string) {
   if (!startTime || !endTime) return "NA";
   const start = new Date(startTime);
   const end = new Date(endTime);

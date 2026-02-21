@@ -63,6 +63,115 @@ TOKEN_VERSION = 1
 
 
 # -----------------------------
+# Numeric Rounding for UI
+# -----------------------------
+def _round_number(value: Any, decimals: int) -> Any:
+    """Round a numeric value to specified decimal places"""
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        try:
+            return round(float(value), decimals)
+        except (ValueError, TypeError):
+            return value
+    return value
+
+
+def _round_numeric_fields(data: Any, parent_key: str = "") -> Any:
+    """
+    Recursively round numeric fields in response data to appropriate precision.
+    Reduces UI formatting burden and improves response readability.
+    """
+    # Field-specific rounding rules (field_name -> decimal_places)
+    rounding_rules = {
+        # Distance (miles) - 2 decimals
+        'milesDriven': 2,
+        'startMiles': 2,
+        'endMiles': 2,
+        'cityMiles': 2,
+        'highwayMiles': 2,
+        'nightMiles': 2,
+        'overspeedMilesStandard': 2,
+        'overspeedMilesSevere': 2,
+        'overspeedMilesTotal': 2,
+        'os1Miles': 2,
+        'os2Miles': 2,
+        'seatbeltViolationMilesDriven': 2,
+        'lowPressureMiles': 2,
+        'distanceMiles': 2,
+        'totalMiles': 2,
+        'tripMiles': 2,
+        'rangeStartMiles': 2,
+        'rangeEndMiles': 2,
+        
+        # Fuel (gallons) - 2 decimals
+        'fuelConsumed': 2,
+        'refueledGallons': 2,
+        'startGallons': 2,
+        'endGallons': 2,
+        'fuelIdling': 2,
+        'fuelIndicatorAbsoluteGallons': 2,
+        'cityFuelGallons': 2,
+        'highwayFuelGallons': 2,
+        'lowPressureFuelGallons': 2,
+        'fuelCostUsd': 2,
+        
+        # MPG & Speed - 1 decimal
+        'averageMpg': 1,
+        'actualMpg': 1,
+        'cityMpg': 1,
+        'highwayMpg': 1,
+        'maxMph': 1,
+        'averageMphExcludingIdle': 1,
+        'speedThresholdMph': 1,
+        
+        # Battery (volts) - 2 decimals
+        'startVolts': 2,
+        'maxVolts': 2,
+        'endVolts': 2,
+        'minVolts': 2,
+        
+        # Temperature (Celsius/Fahrenheit) - 1 decimal
+        'startCelsius': 1,
+        'maxCelsius': 1,
+        'endCelsius': 1,
+        'minCelsius': 1,
+        
+        # Percentages - 1 decimal (though often 0)
+        'fuelIndicatorPercent': 1,
+        'batteryLevelStartPercent': 1,
+        'batteryLevelMaxPercent': 1,
+        'batteryLevelEndPercent': 1,
+        'endPercent': 1,
+        
+        # GPS coordinates - 6 decimals (standard GPS precision)
+        'startLat': 6,
+        'startLon': 6,
+        'endLat': 6,
+        'endLon': 6,
+        'lat': 6,
+        'lon': 6,
+    }
+    
+    if isinstance(data, dict):
+        return {
+            key: _round_numeric_fields(value, key)
+            for key, value in data.items()
+        }
+    elif isinstance(data, list):
+        return [_round_numeric_fields(item, parent_key) for item in data]
+    elif isinstance(data, float):
+        # Apply rounding rule if field name matches
+        decimals = rounding_rules.get(parent_key)
+        if decimals is not None:
+            return _round_number(data, decimals)
+        # Default: round to 2 decimals for unspecified numeric fields
+        return _round_number(data, 2)
+    
+    return data
+
+
+# -----------------------------
 # Response / parsing helpers
 # -----------------------------
 def _resp(status: int, body: dict):
@@ -428,9 +537,26 @@ def _authorize_vin(vin: str, tenant_id: Optional[str], as_of: Optional[str], rol
 
 
 def _is_events_route(resource: str, path: str) -> bool:
+    """Check if this is a normalized events route (ends with /events, not /events/raw)"""
     if resource == "/trips/{vin}/{tripId}/events":
         return True
-    return bool(path and path.startswith("/trips/") and path.endswith("/events"))
+    if path and path.startswith("/trips/") and "/events" in path:
+        # Must end with /events (not /events/raw)
+        return path.endswith("/events")
+    return False
+
+
+def _is_events_raw_route(resource: str, path: str) -> bool:
+    """Check if this is a raw events route (ends with /events/raw)"""
+    if resource == "/trips/{vin}/{tripId}/events/raw":
+        return True
+    return bool(path and path.startswith("/trips/") and path.endswith("/events/raw"))
+
+
+def _is_map_route(resource: str, path: str) -> bool:
+    if resource == "/trips/{vin}/{tripId}/map":
+        return True
+    return bool(path and path.startswith("/trips/") and path.endswith("/map"))
 
 
 def _is_fleet_trips_route(resource: str, path: str) -> bool:
@@ -536,7 +662,43 @@ def _summarize_item(it: dict) -> dict:
         out["overspeedEventCountSevere"] = os_cnt_sev
         out["overspeedEventCountTotal"] = os_cnt_total
 
-    return out
+    # Round numeric fields for clean UI display
+    return _round_numeric_fields(out)
+
+
+# -----------------------------------------------------------
+# Event normalization (lightweight schema for normalized endpoint)
+# -----------------------------------------------------------
+def _normalize_event(raw_item: dict) -> dict:
+    """
+    Convert raw telemetry event to normalized schema (excludes the 5-10KB raw JSON).
+    Returns only the key fields needed for map/analysis.
+    raw_item should already be unmarshalled (regular dict, not DynamoDB format)
+    """
+    def _get_val(key, default=None):
+        """Get value from unmarshalled dict"""
+        v = raw_item.get(key, default)
+        if isinstance(v, (int, float)):
+            return v
+        return default
+    
+    return {
+        "timestamp": raw_item.get("eventTime") or raw_item.get("timestamp"),
+        "lat": _get_val("lat"),
+        "lon": _get_val("lon"),
+        "speed_mph": _get_val("speed_mph") or _get_val("speed"),
+        "heading": _get_val("heading"),
+        "altitude_m": _get_val("altitudeM"),
+        "rpm": _get_val("engine_rpm") or _get_val("engine_speed_rpm"),
+        "coolant_temp_c": _get_val("coolantTempC"),
+        "fuel_level_gallons": _get_val("fuelLevelGallons"),
+        "fuel_percent": _get_val("fuelPercent"),
+        "odometer_miles": _get_val("odometer_miles") or _get_val("odometer_Miles"),
+        "satellite_count": _get_val("satelliteCount"),
+        "vehicle_state": raw_item.get("vehicleState"),
+        "event_type": raw_item.get("eventType"),
+        "message_id": raw_item.get("messageId"),
+    }
 
 
 def _query_trip_events_raw(
@@ -600,11 +762,49 @@ def _get_trip_detail(vin: str, trip_id: str, include: str) -> Optional[dict]:
     if include == INCLUDE_SUMMARY:
         summary_obj = _extract_summary_obj(item)
         if summary_obj is not None:
-            out["summary"] = summary_obj
+            # Round numeric fields in summary for clean UI display
+            out["summary"] = _round_numeric_fields(summary_obj)
         else:
             out["summary"] = _ddb_str(item, "summary")
 
     return out
+
+
+def _get_trip_map_data(vin: str, trip_id: str) -> Optional[dict]:
+    """
+    Retrieve only the map data from a trip summary.
+    Returns the map object from the summary JSON.
+    """
+    pk = f"VEHICLE#{vin}"
+    sk = f"TRIP_SUMMARY#{trip_id}"
+
+    resp = ddb.get_item(
+        TableName=TABLE,
+        Key={"PK": {"S": pk}, "SK": {"S": sk}},
+        ProjectionExpression="summary",
+    )
+    item = resp.get("Item")
+    if not item:
+        return None
+
+    summary_obj = _extract_summary_obj(item)
+    if summary_obj is None:
+        return None
+
+    map_data = summary_obj.get("map")
+    if map_data is None:
+        # Return empty map data structure if not present
+        return {
+            "sampledPath": [],
+            "snappedPath": None,
+            "startCoords": None,
+            "endCoords": None,
+            "bounds": None,
+            "eventMarkers": [],
+            "generatedAt": None
+        }
+
+    return map_data
 
 
 def _record_active(record: dict, as_of: datetime) -> bool:
@@ -707,8 +907,12 @@ def lambda_handler(event, context):
     path = event.get("path") or event.get("rawPath") or ""
 
     # Detect route type based on resource path first (most specific)
-    if _is_events_route(resource, path):
+    if _is_events_raw_route(resource, path):
+        route_type = "TRIP_EVENTS_RAW"
+    elif _is_events_route(resource, path):
         route_type = "TRIP_EVENTS"
+    elif _is_map_route(resource, path):
+        route_type = "TRIP_MAP"
     elif _is_fleet_trips_route(resource, path):
         route_type = "FLEET_TRIPS"
     # /trips/{vin}/{tripId} detail route
@@ -741,7 +945,7 @@ def lambda_handler(event, context):
         if len(parts) >= 3 and parts[0] == "fleets" and parts[2] == "trips":
             fleet_id_path = parts[1]
 
-    # TRIP EVENTS ROUTE: GET /trips/{tripId}/events
+    # TRIP EVENTS ROUTE: GET /trips/{vin}/{tripId}/events (normalized only, lightweight)
     if route_type == "TRIP_EVENTS":
         if not vin_path or not trip_id_path:
             return _resp(400, {"error": "vin and tripId are required"})
@@ -784,6 +988,66 @@ def lambda_handler(event, context):
             logger.error(f"Query telemetry events failed: {e}")
             return _resp(500, {"error": "Failed to query telemetry events", "requestId": request_id})
 
+        # Normalize events (remove raw JSON, keep key fields only)
+        next_token = _encode_token(lek) if lek else None
+        raw_items = [_ddb_unmarshal_item(item) for item in items]
+        normalized_items = [_normalize_event(item) for item in raw_items]
+
+        return _resp(
+            200,
+            {
+                "vin": vin_path,
+                "tripId": trip_id_path,
+                "count": len(normalized_items),
+                "items": normalized_items,
+                "nextToken": next_token,
+            },
+        )
+
+    # TRIP EVENTS RAW ROUTE: GET /trips/{vin}/{tripId}/events/raw (full raw events with device JSON)
+    if route_type == "TRIP_EVENTS_RAW":
+        if not vin_path or not trip_id_path:
+            return _resp(400, {"error": "vin and tripId are required"})
+
+        start_time, end_time = _get_trip_summary_times(vin_path, trip_id_path)
+        as_of = start_time or end_time
+        if not _authorize_vin(vin_path, tenant_id, as_of, role):
+            return _resp(403, {"error": "Forbidden"})
+
+        try:
+            limit = int(qs.get("limit") or EVENTS_DEFAULT_LIMIT)
+        except Exception:
+            limit = EVENTS_DEFAULT_LIMIT
+        limit = max(1, min(limit, EVENTS_MAX_LIMIT))
+
+        token = qs.get("nextToken")
+        esk, token_error = _decode_lek_token(token)
+        if token_error:
+            return _resp(400, {"error": token_error})
+
+        logger.info(
+            json.dumps(
+                {
+                    "routeType": "TRIP_EVENTS_RAW",
+                    "tripId": trip_id_path,
+                    "vin": vin_path,
+                    "limit": limit,
+                }
+            )
+        )
+
+        try:
+            items, lek = _query_trip_events_raw(
+                vin_path,
+                trip_id_path,
+                limit=limit,
+                exclusive_start_key=esk,
+            )
+        except Exception as e:
+            logger.error(f"Query telemetry events failed: {e}")
+            return _resp(500, {"error": "Failed to query telemetry events", "requestId": request_id})
+
+        # Return full raw items (including device JSON)
         next_token = _encode_token(lek) if lek else None
         raw_items = [_ddb_unmarshal_item(item) for item in items]
 
@@ -795,6 +1059,44 @@ def lambda_handler(event, context):
                 "count": len(raw_items),
                 "items": raw_items,
                 "nextToken": next_token,
+            },
+        )
+
+    # TRIP MAP ROUTE: GET /trips/{vin}/{tripId}/map
+    if route_type == "TRIP_MAP":
+        if not vin_path or not trip_id_path:
+            return _resp(400, {"error": "vin and tripId are required"})
+
+        start_time, end_time = _get_trip_summary_times(vin_path, trip_id_path)
+        as_of = start_time or end_time
+        if not _authorize_vin(vin_path, tenant_id, as_of, role):
+            return _resp(403, {"error": "Forbidden"})
+
+        logger.info(
+            json.dumps(
+                {
+                    "routeType": "TRIP_MAP",
+                    "tripId": trip_id_path,
+                    "vin": vin_path,
+                }
+            )
+        )
+
+        try:
+            map_data = _get_trip_map_data(vin_path, trip_id_path)
+        except Exception as e:
+            logger.error(f"Failed to get trip map data: {e}")
+            return _resp(500, {"error": "Failed to get trip map data", "requestId": request_id})
+
+        if map_data is None:
+            return _resp(404, {"error": "Trip not found"})
+
+        return _resp(
+            200,
+            {
+                "vin": vin_path,
+                "tripId": trip_id_path,
+                "map": map_data,
             },
         )
 

@@ -76,11 +76,261 @@ def _sec_to_hms(sec: float) -> str:
 
 
 def _iso_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    """Return current UTC time in clean ISO 8601 format (YYYY-MM-DDTHH:MM:SSZ)"""
+    return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+def _normalize_timestamp(ts: Optional[str]) -> Optional[str]:
+    """
+    Normalize timestamp to clean ISO 8601 format (YYYY-MM-DDTHH:MM:SSZ).
+    Removes microseconds and converts +00:00 to Z suffix.
+    """
+    if not ts or not isinstance(ts, str):
+        return ts
+    try:
+        # Parse the timestamp
+        dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        # Format without microseconds, with Z suffix
+        return dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+    except Exception:
+        # Return original if parsing fails
+        return ts
 
 
 def _clamp(v: float, lo: float, hi: float) -> float:
     return max(lo, min(v, hi))
+
+
+# -----------------------------------------------------------
+# Map data generation helpers
+# -----------------------------------------------------------
+
+def _sample_coordinates(events: List[Dict[str, Any]], max_points: int = 150) -> List[List[float]]:
+    """
+    Extract and downsample GPS coordinates from events.
+    Returns list of [lat, lon] pairs.
+    """
+    coords = []
+    for e in events:
+        lat = e.get("lat")
+        lon = e.get("lon")
+        if lat is not None and lon is not None:
+            try:
+                lat_f = float(lat)
+                lon_f = float(lon)
+                if -90 <= lat_f <= 90 and -180 <= lon_f <= 180:
+                    coords.append([lat_f, lon_f])
+            except (ValueError, TypeError):
+                continue
+    
+    if not coords:
+        return []
+    
+    # Downsample if too many points
+    if len(coords) <= max_points:
+        return coords
+    
+    # Simple downsampling: take evenly spaced points
+    step = len(coords) / max_points
+    sampled = []
+    for i in range(max_points):
+        idx = int(i * step)
+        if idx < len(coords):
+            sampled.append(coords[idx])
+    
+    # Always include last point
+    if sampled and coords[-1] != sampled[-1]:
+        sampled.append(coords[-1])
+    
+    return sampled
+
+
+def _call_osrm_route(coords: List[List[float]], timeout: int = 5) -> Optional[List[List[float]]]:
+    """
+    Call OSRM routing service to snap coordinates to roads.
+    Returns list of [lat, lon] pairs for snapped route, or None on failure.
+    """
+    if len(coords) < 2:
+        return None
+    
+    try:
+        import urllib.request
+        import urllib.error
+        
+        # OSRM expects lon,lat format
+        coords_str = ";".join([f"{lon},{lat}" for lat, lon in coords])
+        url = f"https://router.project-osrm.org/route/v1/driving/{coords_str}?overview=full&geometries=geojson&steps=false"
+        
+        req = urllib.request.Request(url)
+        req.add_header("User-Agent", "OnPoint-TripSummary/1.0")
+        
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            data = json.loads(response.read().decode())
+            
+            if data.get("code") != "Ok":
+                logger.warning(f"OSRM routing failed: {data.get('code')}")
+                return None
+            
+            routes = data.get("routes", [])
+            if not routes:
+                return None
+            
+            geometry = routes[0].get("geometry", {})
+            coordinates = geometry.get("coordinates", [])
+            
+            # Convert from [lon, lat] to [lat, lon]
+            snapped = [[lat, lon] for lon, lat in coordinates]
+            return snapped if snapped else None
+            
+    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError) as e:
+        logger.warning(f"OSRM request failed: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error calling OSRM: {e}")
+        return None
+
+
+def _extract_event_markers(events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Extract significant events with location for map markers.
+    Returns list of event markers with type, location, timestamp, etc.
+    """
+    markers = []
+    
+    for e in events:
+        lat = e.get("lat")
+        lon = e.get("lon")
+        timestamp = e.get("time")
+        
+        if lat is None or lon is None or timestamp is None:
+            continue
+        
+        try:
+            lat_f = float(lat)
+            lon_f = float(lon)
+        except (ValueError, TypeError):
+            continue
+        
+        # Overspeed events
+        if e.get("overspeed") == 1:
+            severity = e.get("overspeedSeverity", "STANDARD")
+            markers.append({
+                "type": "overspeed",
+                "lat": lat_f,
+                "lon": lon_f,
+                "timestamp": _normalize_timestamp(timestamp),
+                "severity": severity,
+                "details": {
+                    "speedMph": e.get("speedMph"),
+                    "psl": e.get("psl")
+                }
+            })
+        
+        # Harsh acceleration
+        if e.get("harshAcceleration") == 1:
+            markers.append({
+                "type": "harsh_accel",
+                "lat": lat_f,
+                "lon": lon_f,
+                "timestamp": _normalize_timestamp(timestamp),
+                "details": {}
+            })
+        
+        # Harsh braking
+        if e.get("harshBraking") == 1:
+            markers.append({
+                "type": "harsh_brake",
+                "lat": lat_f,
+                "lon": lon_f,
+                "timestamp": _normalize_timestamp(timestamp),
+                "details": {}
+            })
+        
+        # Harsh cornering
+        if e.get("harshCornering") == 1:
+            markers.append({
+                "type": "harsh_corner",
+                "lat": lat_f,
+                "lon": lon_f,
+                "timestamp": _normalize_timestamp(timestamp),
+                "details": {}
+            })
+        
+        # Collision
+        if e.get("collision"):
+            markers.append({
+                "type": "collision",
+                "lat": lat_f,
+                "lon": lon_f,
+                "timestamp": _normalize_timestamp(timestamp),
+                "details": {}
+            })
+    
+    return markers
+
+
+def _generate_map_data(events: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Generate complete map data from events including sampled path,
+    snapped route, event markers, and bounds.
+    """
+    if not events:
+        return {
+            "sampledPath": [],
+            "snappedPath": None,
+            "startCoords": None,
+            "endCoords": None,
+            "bounds": None,
+            "eventMarkers": [],
+            "generatedAt": _iso_now()
+        }
+    
+    # Sample coordinates
+    sampled = _sample_coordinates(events, max_points=150)
+    
+    # Get start and end coordinates
+    start_coords = sampled[0] if sampled else None
+    end_coords = sampled[-1] if sampled else None
+    
+    # Calculate bounds
+    bounds = None
+    if sampled:
+        lats = [coord[0] for coord in sampled]
+        lons = [coord[1] for coord in sampled]
+        bounds = {
+            "minLat": min(lats),
+            "maxLat": max(lats),
+            "minLon": min(lons),
+            "maxLon": max(lons)
+        }
+    
+    # Call OSRM to get snapped route (with timeout)
+    snapped = None
+    if len(sampled) >= 2:
+        # Further reduce points for OSRM (max 100 to avoid URL length issues)
+        osrm_coords = sampled
+        if len(sampled) > 100:
+            step = len(sampled) / 100
+            osrm_coords = [sampled[int(i * step)] for i in range(100)]
+            if sampled[-1] != osrm_coords[-1]:
+                osrm_coords.append(sampled[-1])
+        
+        snapped = _call_osrm_route(osrm_coords)
+        if snapped is None:
+            logger.info("OSRM routing unavailable, using sampled path only")
+    
+    # Extract event markers
+    markers = _extract_event_markers(events)
+    
+    return {
+        "sampledPath": sampled,
+        "snappedPath": snapped,
+        "startCoords": start_coords,
+        "endCoords": end_coords,
+        "bounds": bounds,
+        "eventMarkers": markers,
+        "generatedAt": _iso_now()
+    }
 
 
 # -----------------------------------------------------------
@@ -209,7 +459,7 @@ def _extract_alerts_and_harsh(evt: Dict[str, Any]) -> Tuple[List[Dict[str, Any]]
 
     alerts_out.append({
         "type": "cx_alerts",
-        "timestamp": evt.get("time"),
+        "timestamp": _normalize_timestamp(evt.get("time")),
         "message": cx_alerts
     })
 
@@ -477,7 +727,7 @@ def _build_summary(events: List[Dict[str, Any]], vin: str, trip_id: str, provide
         cx_dtc = c.get("cx_dtc")
         if isinstance(cx_dtc, list):
             for code in cx_dtc:
-                dtc.append({"code": str(code), "timestamp": c.get("time")})
+                dtc.append({"code": str(code), "timestamp": _normalize_timestamp(c.get("time"))})
 
     # MPG
     avg_mpg = _safe_div(miles, fuel_consumed)
@@ -498,8 +748,8 @@ def _build_summary(events: List[Dict[str, Any]], vin: str, trip_id: str, provide
         "tripId": trip_id,
         "fleetId": None,
 
-        "startTime": first.get("time"),
-        "endTime": last.get("time"),
+        "startTime": _normalize_timestamp(first.get("time")),
+        "endTime": _normalize_timestamp(last.get("time")),
         "engineHours": _sec_to_hms(duration_sec),
         "idlingTime": _sec_to_hms(idling_sec),
         "drivingTime": _sec_to_hms(driving_sec),
@@ -618,6 +868,14 @@ def _build_summary(events: List[Dict[str, Any]], vin: str, trip_id: str, provide
             "missingDataFields": []
         }
     }
+    
+    # Generate map data for visualization
+    logger.info(f"Generating map data for trip {trip_id}")
+    map_data = _generate_map_data(events)
+    summary["map"] = map_data
+    logger.info(f"Map data generated: {len(map_data.get('sampledPath', []))} sampled points, "
+                f"{len(map_data.get('snappedPath') or [])} snapped points, "
+                f"{len(map_data.get('eventMarkers', []))} event markers")
 
     return summary
 

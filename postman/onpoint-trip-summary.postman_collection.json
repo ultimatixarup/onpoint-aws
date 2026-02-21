@@ -44,7 +44,7 @@
         "header": [
           {
             "key": "x-api-key",
-            "value": "{{apiKey}}",
+            "value": "{{tripSummaryApiKey}}",
             "type": "text"
           },
           {
@@ -141,7 +141,7 @@
         "header": [
           {
             "key": "x-api-key",
-            "value": "{{apiKey}}",
+            "value": "{{tripSummaryApiKey}}",
             "type": "text"
           }
         ],
@@ -208,7 +208,7 @@
         "header": [
           {
             "key": "x-api-key",
-            "value": "{{apiKey}}",
+            "value": "{{tripSummaryApiKey}}",
             "type": "text"
           }
         ],
@@ -254,7 +254,7 @@
         "header": [
           {
             "key": "x-api-key",
-            "value": "{{apiKey}}",
+            "value": "{{tripSummaryApiKey}}",
             "type": "text"
           }
         ],
@@ -306,7 +306,7 @@
         "header": [
           {
             "key": "x-api-key",
-            "value": "{{apiKey}}",
+            "value": "{{tripSummaryApiKey}}",
             "type": "text"
           }
         ],
@@ -352,14 +352,14 @@
         "header": [
           {
             "key": "x-api-key",
-            "value": "{{apiKey}}",
+            "value": "{{tripSummaryApiKey}}",
             "type": "text"
           }
         ],
         "url": {
-          "raw": "{{tripSummaryBaseUrl}}/trips/{{testVin}}/{{testTripId}}",
+          "raw": "{{tripSummaryBaseUrl}}/trips/{{testVin}}/{{tripId}}",
           "host": ["{{tripSummaryBaseUrl}}"],
-          "path": ["trips", "{{testVin}}", "{{testTripId}}"],
+          "path": ["trips", "{{testVin}}", "{{tripId}}"],
           "query": [
             {
               "key": "include",
@@ -416,14 +416,14 @@
         "header": [
           {
             "key": "x-api-key",
-            "value": "{{apiKey}}",
+            "value": "{{tripSummaryApiKey}}",
             "type": "text"
           }
         ],
         "url": {
-          "raw": "{{tripSummaryBaseUrl}}/trips/{{testVin}}/{{testTripId}}?include=none",
+          "raw": "{{tripSummaryBaseUrl}}/trips/{{testVin}}/{{tripId}}?include=none",
           "host": ["{{tripSummaryBaseUrl}}"],
-          "path": ["trips", "{{testVin}}", "{{testTripId}}"],
+          "path": ["trips", "{{testVin}}", "{{tripId}}"],
           "query": [
             {
               "key": "include",
@@ -462,7 +462,7 @@
         "header": [
           {
             "key": "x-api-key",
-            "value": "{{apiKey}}",
+            "value": "{{tripSummaryApiKey}}",
             "type": "text"
           }
         ],
@@ -519,7 +519,7 @@
         "header": [
           {
             "key": "x-api-key",
-            "value": "{{apiKey}}",
+            "value": "{{tripSummaryApiKey}}",
             "type": "text"
           }
         ],
@@ -608,7 +608,7 @@
         "header": [
           {
             "key": "x-api-key",
-            "value": "{{apiKey}}",
+            "value": "{{tripSummaryApiKey}}",
             "type": "text"
           }
         ],
@@ -646,13 +646,13 @@
       ]
     },
     {
-      "name": "Get Trip Events (Normalized + Raw)",
+      "name": "Get Trip Events (Normalized)",
       "request": {
         "method": "GET",
         "header": [
           {
             "key": "x-api-key",
-            "value": "{{apiKey}}",
+            "value": "{{tripSummaryApiKey}}",
             "type": "text"
           },
           {
@@ -667,7 +667,7 @@
           "path": ["trips", "{{vin}}", "{{tripId}}", "events"],
           "query": [{ "key": "limit", "value": "{{limit}}" }]
         },
-        "description": "Get telemetry events for a trip, returning normalized and raw event payloads. Automatically appends nextToken when present."
+        "description": "Get telemetry events for a trip with normalized event payloads (14 key fields, no raw JSON). Optimized for map rendering and UI display. Returns ~500 bytes per event."
       },
       "event": [
         {
@@ -711,8 +711,15 @@
               "pm.test('Items is an array', () => { pm.expect(json.items).to.be.an('array'); });",
               "",
               "if (Array.isArray(json.items) && json.items.length > 0) {",
-              "  pm.test('Event items contain eventTime', () => {",
-              "    json.items.forEach(it => pm.expect(it).to.have.property('eventTime'));",
+              "  pm.test('Event items contain normalized fields', () => {",
+              "    const requiredFields = ['timestamp', 'lat', 'lon', 'speed_mph', 'heading'];",
+              "    json.items.forEach(it => {",
+              "      requiredFields.forEach(field => {",
+              "        pm.expect(it).to.have.property(field);",
+              "      });",
+              "      // Ensure raw field is NOT present in normalized response",
+              "      pm.expect(it).to.not.have.property('raw');",
+              "    });",
               "  });",
               "}",
               "",
@@ -723,6 +730,191 @@
               "} else {",
               "  pm.collectionVariables.set('nextToken', '');",
               "  console.log('Cleared nextToken (no more pages)');",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Trip Events (Raw)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{tripSummaryApiKey}}",
+            "type": "text"
+          },
+          {
+            "key": "x-tenant-id",
+            "value": "{{tenantId}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{tripSummaryBaseUrl}}/trips/{{vin}}/{{tripId}}/events/raw?limit={{limit}}",
+          "host": ["{{tripSummaryBaseUrl}}"],
+          "path": ["trips", "{{vin}}", "{{tripId}}", "events", "raw"],
+          "query": [{ "key": "limit", "value": "{{limit}}" }]
+        },
+        "description": "Get complete telemetry events for a trip with full raw event payloads including device JSON. For debugging and detailed analysis. Returns ~5-10KB per event."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Append nextToken only when set",
+              "const token = (pm.collectionVariables.get('nextTokenRaw') || pm.variables.get('nextTokenRaw') || '').trim();",
+              "if (token) {",
+              "  pm.request.url.addQueryParams({ nextToken: token });",
+              "  console.log('Added nextToken to request:', token);",
+              "} else {",
+              "  console.log('No nextToken set; requesting first page');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => { pm.response.to.have.status(200); });",
+              "",
+              "// Assert response is JSON",
+              "let json = null;",
+              "pm.test('Response is JSON', () => {",
+              "  try { json = pm.response.json(); pm.expect(json).to.be.an('object'); }",
+              "  catch (e) { pm.expect.fail('Response is not valid JSON'); }",
+              "});",
+              "",
+              "// Shape checks",
+              "pm.test('Body has tripId and vin', () => {",
+              "  pm.expect(json).to.have.property('tripId');",
+              "  pm.expect(json).to.have.property('vin');",
+              "  pm.expect(json.tripId).to.eql(pm.variables.get('tripId'));",
+              "  pm.expect(json.vin).to.eql(pm.variables.get('vin'));",
+              "});",
+              "pm.test('Count is a number', () => { pm.expect(json.count).to.satisfy(n => typeof n === 'number'); });",
+              "pm.test('Items is an array', () => { pm.expect(json.items).to.be.an('array'); });",
+              "",
+              "if (Array.isArray(json.items) && json.items.length > 0) {",
+              "  pm.test('Event items contain raw field with device JSON', () => {",
+              "    json.items.forEach(it => {",
+              "      pm.expect(it).to.have.property('raw');",
+              "      pm.expect(it.raw).to.be.a('string');",
+              "    });",
+              "  });",
+              "}",
+              "",
+              "// Save/clear nextToken at collection scope (separately from normalized events)",
+              "if (json.nextToken) {",
+              "  pm.collectionVariables.set('nextTokenRaw', json.nextToken);",
+              "  console.log('Saved nextTokenRaw to collection:', json.nextToken);",
+              "} else {",
+              "  pm.collectionVariables.set('nextTokenRaw', '');",
+              "  console.log('Cleared nextTokenRaw (no more pages)');",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Trip Map Data",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{tripSummaryApiKey}}",
+            "type": "text"
+          },
+          {
+            "key": "x-tenant-id",
+            "value": "{{tenantId}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{tripSummaryBaseUrl}}/trips/{{vin}}/{{tripId}}/map",
+          "host": ["{{tripSummaryBaseUrl}}"],
+          "path": ["trips", "{{vin}}", "{{tripId}}", "map"]
+        },
+        "description": "Get pre-computed map data for a trip including sampled GPS path, road-snapped route, event markers, and bounds. Map data is generated when trip summary is created."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => { pm.response.to.have.status(200); });",
+              "",
+              "// Assert response is JSON",
+              "let json = null;",
+              "pm.test('Response is JSON', () => {",
+              "  try { json = pm.response.json(); pm.expect(json).to.be.an('object'); }",
+              "  catch (e) { pm.expect.fail('Response is not valid JSON'); }",
+              "});",
+              "",
+              "// Shape checks",
+              "pm.test('Body has tripId and vin', () => {",
+              "  pm.expect(json).to.have.property('tripId');",
+              "  pm.expect(json).to.have.property('vin');",
+              "  pm.expect(json.tripId).to.eql(pm.variables.get('tripId'));",
+              "  pm.expect(json.vin).to.eql(pm.variables.get('vin'));",
+              "});",
+              "",
+              "pm.test('Map object exists', () => { pm.expect(json).to.have.property('map'); });",
+              "",
+              "if (json.map) {",
+              "  pm.test('Map has required fields', () => {",
+              "    pm.expect(json.map).to.have.property('sampledPath');",
+              "    pm.expect(json.map).to.have.property('snappedPath');",
+              "    pm.expect(json.map).to.have.property('startCoords');",
+              "    pm.expect(json.map).to.have.property('endCoords');",
+              "    pm.expect(json.map).to.have.property('bounds');",
+              "    pm.expect(json.map).to.have.property('eventMarkers');",
+              "    pm.expect(json.map).to.have.property('generatedAt');",
+              "  });",
+              "  ",
+              "  pm.test('SampledPath is an array', () => {",
+              "    pm.expect(json.map.sampledPath).to.be.an('array');",
+              "  });",
+              "  ",
+              "  pm.test('EventMarkers is an array', () => {",
+              "    pm.expect(json.map.eventMarkers).to.be.an('array');",
+              "  });",
+              "  ",
+              "  if (json.map.sampledPath.length > 0) {",
+              "    pm.test('SampledPath contains coordinate pairs', () => {",
+              "      const firstPoint = json.map.sampledPath[0];",
+              "      pm.expect(firstPoint).to.be.an('array').with.lengthOf(2);",
+              "      pm.expect(firstPoint[0]).to.be.a('number'); // lat",
+              "      pm.expect(firstPoint[1]).to.be.a('number'); // lon",
+              "    });",
+              "  }",
+              "  ",
+              "  if (json.map.bounds) {",
+              "    pm.test('Bounds has valid coordinates', () => {",
+              "      pm.expect(json.map.bounds).to.have.property('minLat');",
+              "      pm.expect(json.map.bounds).to.have.property('maxLat');",
+              "      pm.expect(json.map.bounds).to.have.property('minLon');",
+              "      pm.expect(json.map.bounds).to.have.property('maxLon');",
+              "    });",
+              "  }",
+              "}",
+              "",
+              "console.log('Map data retrieved:');",
+              "if (json.map) {",
+              "  console.log('- Sampled path points:', json.map.sampledPath?.length || 0);",
+              "  console.log('- Snapped path points:', json.map.snappedPath?.length || 0);",
+              "  console.log('- Event markers:', json.map.eventMarkers?.length || 0);",
+              "  console.log('- Generated at:', json.map.generatedAt);",
               "}"
             ]
           }

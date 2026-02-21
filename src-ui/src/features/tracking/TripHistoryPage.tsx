@@ -3,49 +3,46 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-    MapContainer,
-    Marker,
-    Polyline,
-    Popup,
-    TileLayer,
-    useMap,
+  MapContainer,
+  Marker,
+  Polyline,
+  Popup,
+  TileLayer,
+  useMap,
 } from "react-leaflet";
 import { useSearchParams } from "react-router-dom";
 import {
-    fetchDrivers,
-    fetchFleets,
-    fetchVehicleAssignments,
-    fetchVehicles,
+  fetchDrivers,
+  fetchFleets,
+  fetchVehicleAssignments,
+  fetchVehicles,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import {
-    buildTripDetailPresentation,
-    buildTripHistoryRows,
-    buildTripHistoryStats,
-    fetchTripEventPositions,
-    fetchTripHistoryTrips,
-    fetchTripSummaryTripDetail,
-    type TripHistoryAssignmentRecord,
+  buildTripDetailPresentation,
+  buildTripHistoryRows,
+  buildTripHistoryStats,
+  fetchTripMapData,
+  fetchTripHistoryTrips,
+  fetchTripSummaryTripDetail,
+  type TripHistoryAssignmentRecord,
 } from "../../api/tripSummaryApi";
 import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
 import {
-    formatLatLon,
-    fromIsoDateToUs,
-    isVehicleEv,
-    normalizeAssignmentRecords,
-    normalizeUsDateFinal,
-    normalizeUsDateInput,
-    parseIsoToMs,
-    parseUsDate,
-    reduceRoutePoints,
-    toIsoDate,
+  formatLatLon,
+  fromIsoDateToUs,
+  isVehicleEv,
+  normalizeAssignmentRecords,
+  normalizeUsDateFinal,
+  normalizeUsDateInput,
+  parseIsoToMs,
+  parseUsDate,
+  toIsoDate,
 } from "./tripHistoryUtils";
 
-const ROUTING_BASE_URL =
-  import.meta.env.VITE_ROUTING_BASE_URL ?? "https://router.project-osrm.org";
 const GEOCODE_BASE_URL =
   import.meta.env.VITE_GEOCODE_BASE_URL ??
   "https://nominatim.openstreetmap.org/reverse";
@@ -83,9 +80,11 @@ export function TripHistoryPage() {
   const [selectedTripVin, setSelectedTripVin] = useState<string | null>(null);
 
   const openDatePicker = (field: "from" | "to") => {
-    const node = field === "from" ? fromDatePickerRef.current : toDatePickerRef.current;
+    const node =
+      field === "from" ? fromDatePickerRef.current : toDatePickerRef.current;
     if (!node) return;
-    const showPicker = (node as HTMLInputElement & { showPicker?: () => void }).showPicker;
+    const showPicker = (node as HTMLInputElement & { showPicker?: () => void })
+      .showPicker;
     if (typeof showPicker === "function") {
       showPicker.call(node);
       return;
@@ -267,9 +266,7 @@ export function TripHistoryPage() {
 
   const selectedTrip = useMemo(() => {
     if (!selectedTripId || !selectedTripVin) return null;
-    return (
-      tripResponse?.items ?? []
-    ).find(
+    return (tripResponse?.items ?? []).find(
       (item) => item.tripId === selectedTripId && item.vin === selectedTripVin,
     );
   }, [selectedTripId, selectedTripVin, tripResponse]);
@@ -342,81 +339,40 @@ export function TripHistoryPage() {
   });
 
   const {
-    data: tripPath = [],
-    isLoading: isLoadingTripEvents,
-    error: tripEventsError,
+    data: tripMapData,
+    isLoading: isLoadingTripMap,
+    error: tripMapError,
   } = useQuery({
     queryKey: [
-      "trip-event-positions",
+      "trip-map-data",
       tenantId,
       selectedTripVin ?? "",
       selectedTripId ?? "",
     ],
-    queryFn: () =>
-      fetchTripEventPositions({
+    queryFn: async () => {
+      const response = await fetchTripMapData({
         tenantId,
         vin: selectedTripVin ?? "",
         tripId: selectedTripId ?? "",
-        limit: 250,
-      }),
+      });
+      return response.map;
+    },
     enabled: Boolean(tenantId && selectedTripId && selectedTripVin),
   });
+
+  // Extract path data from map response
+  const tripPath = tripMapData?.sampledPath ?? [];
+  const snappedPath = tripMapData?.snappedPath ?? [];
 
   const [startAddress, setStartAddress] = useState<string | null>(null);
   const [endAddress, setEndAddress] = useState<string | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const geocodeCache = useRef(new Map<string, string>());
+  const lastGeocodingTime = useRef<number>(0);
 
-  const [snappedPath, setSnappedPath] = useState<Array<[number, number]>>([]);
-  const [isRouting, setIsRouting] = useState(false);
-  const [routingError, setRoutingError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (tripPath.length < 2) {
-      setSnappedPath([]);
-      setRoutingError(null);
-      setIsRouting(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    const fetchRoute = async () => {
-      setIsRouting(true);
-      setRoutingError(null);
-      try {
-        const sampled = reduceRoutePoints(tripPath, 100);
-        const coords = sampled
-          .map(([lat, lon]) => `${lon},${lat}`)
-          .join(";");
-        const url = `${ROUTING_BASE_URL}/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=false`;
-        const response = await fetch(url, { signal: controller.signal });
-        if (!response.ok) {
-          throw new Error(`Routing failed (${response.status})`);
-        }
-        const data = (await response.json()) as {
-          routes?: Array<{
-            geometry?: { coordinates?: Array<[number, number]> };
-          }>;
-        };
-        const coordinates = data.routes?.[0]?.geometry?.coordinates ?? [];
-        const snapped = coordinates
-          .map(([lon, lat]) => [lat, lon] as [number, number])
-          .filter((pos) => pos.every((value) => Number.isFinite(value)));
-        setSnappedPath(snapped.length > 1 ? snapped : []);
-      } catch (err) {
-        if ((err as { name?: string }).name === "AbortError") return;
-        setSnappedPath([]);
-        setRoutingError(
-          err instanceof Error ? err.message : "Unable to load route.",
-        );
-      } finally {
-        setIsRouting(false);
-      }
-    };
-
-    void fetchRoute();
-    return () => controller.abort();
-  }, [tripPath]);
+  // Nominatim requires minimum 1 second between requests
+  const delay = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
 
   useEffect(() => {
     if (tripPath.length < 2) {
@@ -429,39 +385,69 @@ export function TripHistoryPage() {
     const [startLat, startLon] = tripPath[0];
     const [endLat, endLon] = tripPath[tripPath.length - 1];
 
-    const fetchAddress = async (lat: number, lon: number) => {
+    const fetchAddressWithRateLimit = async (
+      lat: number,
+      lon: number,
+      retryCount = 0,
+    ): Promise<string | null> => {
       const cacheKey = `${lat.toFixed(6)},${lon.toFixed(6)}`;
       const cached = geocodeCache.current.get(cacheKey);
       if (cached) return cached;
+
+      // Enforce 1-second minimum between requests to Nominatim
+      const timeSinceLastRequest = Date.now() - lastGeocodingTime.current;
+      if (timeSinceLastRequest < 1100) {
+        await delay(1100 - timeSinceLastRequest);
+      }
+
+      lastGeocodingTime.current = Date.now();
       const url = `${GEOCODE_BASE_URL}?format=jsonv2&lat=${lat}&lon=${lon}`;
-      const response = await fetch(url);
-      if (!response.ok) return null;
-      const data = (await response.json()) as { display_name?: string };
-      const value = data.display_name?.trim();
-      if (value) geocodeCache.current.set(cacheKey, value);
-      return value ?? null;
+
+      try {
+        const response = await fetch(url);
+
+        // Handle rate limiting (425 Too Early or 429 Too Many Requests)
+        if (response.status === 425 || response.status === 429) {
+          if (retryCount < 3) {
+            // Exponential backoff: 2s, 4s, 8s
+            const backoffMs = Math.pow(2, retryCount + 1) * 1000;
+            await delay(backoffMs);
+            return fetchAddressWithRateLimit(lat, lon, retryCount + 1);
+          }
+          return null; // Give up after 3 retries
+        }
+
+        if (!response.ok) return null;
+
+        const data = (await response.json()) as { display_name?: string };
+        const value = data.display_name?.trim();
+        if (value) geocodeCache.current.set(cacheKey, value);
+        return value ?? null;
+      } catch {
+        return null;
+      }
     };
 
     let isActive = true;
     setIsGeocoding(true);
-    Promise.all([
-      fetchAddress(startLat, startLon),
-      fetchAddress(endLat, endLon),
-    ])
-      .then(([startValue, endValue]) => {
-        if (!isActive) return;
-        setStartAddress(startValue);
-        setEndAddress(endValue);
-      })
-      .catch(() => {
-        if (!isActive) return;
-        setStartAddress(null);
-        setEndAddress(null);
-      })
-      .finally(() => {
-        if (!isActive) return;
-        setIsGeocoding(false);
-      });
+
+    // Sequential requests with rate limiting, not parallel
+    (async () => {
+      const startValue = await fetchAddressWithRateLimit(startLat, startLon);
+      if (!isActive) return;
+
+      const endValue = await fetchAddressWithRateLimit(endLat, endLon);
+      if (!isActive) return;
+
+      setStartAddress(startValue);
+      setEndAddress(endValue);
+      setIsGeocoding(false);
+    })().catch(() => {
+      if (!isActive) return;
+      setStartAddress(null);
+      setEndAddress(null);
+      setIsGeocoding(false);
+    });
 
     return () => {
       isActive = false;
@@ -505,9 +491,7 @@ export function TripHistoryPage() {
         )
       : "Location unavailable");
   const startLocationDisplay =
-    isGeocoding && !startAddress
-      ? "Resolving address..."
-      : startLocationLabel;
+    isGeocoding && !startAddress ? "Resolving address..." : startLocationLabel;
   const endLocationDisplay =
     isGeocoding && !endAddress ? "Resolving address..." : endLocationLabel;
 
@@ -557,7 +541,10 @@ export function TripHistoryPage() {
           </label>
           <label className="form__field">
             <span className="text-muted">From</span>
-            <div className="inline" style={{ alignItems: "center", gap: "0.5rem" }}>
+            <div
+              className="inline"
+              style={{ alignItems: "center", gap: "0.5rem" }}
+            >
               <input
                 className="input"
                 type="text"
@@ -584,17 +571,28 @@ export function TripHistoryPage() {
                 type="date"
                 value={toIsoDate(customFrom)}
                 max={toIsoDate(customTo) || undefined}
-                onChange={(event) => setCustomFrom(fromIsoDateToUs(event.target.value))}
+                onChange={(event) =>
+                  setCustomFrom(fromIsoDateToUs(event.target.value))
+                }
                 disabled={dateRange !== "custom"}
                 tabIndex={-1}
                 aria-hidden="true"
-                style={{ position: "absolute", opacity: 0, width: 1, height: 1, pointerEvents: "none" }}
+                style={{
+                  position: "absolute",
+                  opacity: 0,
+                  width: 1,
+                  height: 1,
+                  pointerEvents: "none",
+                }}
               />
             </div>
           </label>
           <label className="form__field">
             <span className="text-muted">To</span>
-            <div className="inline" style={{ alignItems: "center", gap: "0.5rem" }}>
+            <div
+              className="inline"
+              style={{ alignItems: "center", gap: "0.5rem" }}
+            >
               <input
                 className="input"
                 type="text"
@@ -621,11 +619,19 @@ export function TripHistoryPage() {
                 type="date"
                 value={toIsoDate(customTo)}
                 min={toIsoDate(customFrom) || undefined}
-                onChange={(event) => setCustomTo(fromIsoDateToUs(event.target.value))}
+                onChange={(event) =>
+                  setCustomTo(fromIsoDateToUs(event.target.value))
+                }
                 disabled={dateRange !== "custom"}
                 tabIndex={-1}
                 aria-hidden="true"
-                style={{ position: "absolute", opacity: 0, width: 1, height: 1, pointerEvents: "none" }}
+                style={{
+                  position: "absolute",
+                  opacity: 0,
+                  width: 1,
+                  height: 1,
+                  pointerEvents: "none",
+                }}
               />
             </div>
           </label>
@@ -795,7 +801,7 @@ export function TripHistoryPage() {
               </p>
             </div>
           </Card>
-        ) : isLoadingTripDetail || isLoadingTripEvents ? (
+        ) : isLoadingTripDetail || isLoadingTripMap ? (
           <Card>
             <div className="empty-state">
               <div className="empty-state__icon">⏳</div>
@@ -805,12 +811,14 @@ export function TripHistoryPage() {
               </p>
             </div>
           </Card>
-        ) : tripDetailError || tripEventsError ? (
+        ) : tripDetailError || tripMapError ? (
           <Card>
             <div className="empty-state">
               <div className="empty-state__icon">⚠️</div>
               <h3>Unable to load route</h3>
-              <p className="text-muted">Verify your API access and try again.</p>
+              <p className="text-muted">
+                Verify your API access and try again.
+              </p>
             </div>
           </Card>
         ) : tripPath.length === 0 ? (
@@ -827,99 +835,96 @@ export function TripHistoryPage() {
           <div className="trip-map-layout">
             <Card>
               <div className="trip-details">
-              <div className="trip-locations">
-                <div className="trip-location">
-                  <div className="trip-location__icon trip-location__icon--start" />
-                  <div>
-                    <p className="trip-location__label">Start</p>
-                    <p className="trip-location__value">
-                      {startLocationDisplay}
-                    </p>
-                  </div>
-                  <div className="trip-location__time">{tripStartLabel}</div>
-                </div>
-                <div className="trip-location">
-                  <div className="trip-location__icon trip-location__icon--end" />
-                  <div>
-                    <p className="trip-location__label">End</p>
-                    <p className="trip-location__value">
-                      {endLocationDisplay}
-                    </p>
-                  </div>
-                  <div className="trip-location__time">{tripEndLabel}</div>
-                </div>
-              </div>
-
-              <div className="trip-metrics">
-                {metricItems.map((metric) => (
-                  <div key={metric.label} className="trip-metric">
-                    <span className="trip-metric__icon">{metric.icon}</span>
+                <div className="trip-locations">
+                  <div className="trip-location">
+                    <div className="trip-location__icon trip-location__icon--start" />
                     <div>
-                      <p className="trip-metric__label">{metric.label}</p>
-                      <p className="trip-metric__value">{metric.value}</p>
+                      <p className="trip-location__label">Start</p>
+                      <p className="trip-location__value">
+                        {startLocationDisplay}
+                      </p>
                     </div>
+                    <div className="trip-location__time">{tripStartLabel}</div>
                   </div>
-                ))}
+                  <div className="trip-location">
+                    <div className="trip-location__icon trip-location__icon--end" />
+                    <div>
+                      <p className="trip-location__label">End</p>
+                      <p className="trip-location__value">
+                        {endLocationDisplay}
+                      </p>
+                    </div>
+                    <div className="trip-location__time">{tripEndLabel}</div>
+                  </div>
+                </div>
+
+                <div className="trip-metrics">
+                  {metricItems.map((metric) => (
+                    <div key={metric.label} className="trip-metric">
+                      <span className="trip-metric__icon">{metric.icon}</span>
+                      <div>
+                        <p className="trip-metric__label">{metric.label}</p>
+                        <p className="trip-metric__value">{metric.value}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
             </Card>
 
             <Card>
               <div className="trip-map-card">
-              <div className="trip-summary">
-                {summaryItems.map((summary) => (
-                  <div key={summary.label} className="trip-summary__item">
-                    <span className="trip-summary__icon">{summary.icon}</span>
-                    <div>
-                      <p className="trip-summary__label">{summary.label}</p>
-                      <p className="trip-summary__value">{summary.value}</p>
+                <div className="trip-summary">
+                  {summaryItems.map((summary) => (
+                    <div key={summary.label} className="trip-summary__item">
+                      <span className="trip-summary__icon">{summary.icon}</span>
+                      <div>
+                        <p className="trip-summary__label">{summary.label}</p>
+                        <p className="trip-summary__value">{summary.value}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-              <div className="map-container">
-                {isRouting ? (
-                  <p className="text-muted">Snapping route to roads...</p>
-                ) : null}
-                {routingError ? (
-                  <p className="text-muted">
-                    Unable to load road route. Showing raw GPS track instead.
-                  </p>
-                ) : null}
-                <MapContainer
-                  center={displayPath[0]}
-                  zoom={12}
-                  style={{ height: "100%", width: "100%" }}
-                >
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
-                  {tripBounds ? <FitBounds bounds={tripBounds} /> : null}
-                  <Polyline positions={displayPath} color="#1d4ed8" weight={4} />
-                  {displayPath.length > 0 ? (
-                    <Marker position={displayPath[0]} icon={startMarkerIcon}>
-                      <Popup>
-                        Start
-                        <br />
-                        {selectedTripVin}
-                      </Popup>
-                    </Marker>
-                  ) : null}
-                  {displayPath.length > 1 ? (
-                    <Marker
-                      position={displayPath[displayPath.length - 1]}
-                      icon={endMarkerIcon}
-                    >
-                      <Popup>
-                        End
-                        <br />
-                        {selectedTripVin}
-                      </Popup>
-                    </Marker>
-                  ) : null}
-                </MapContainer>
-              </div>
+                  ))}
+                </div>
+                <div className="map-container">
+                  {/* Route snapping now happens on backend when trip summary is generated */}
+                  <MapContainer
+                    center={displayPath[0]}
+                    zoom={12}
+                    style={{ height: "100%", width: "100%" }}
+                  >
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    {tripBounds ? <FitBounds bounds={tripBounds} /> : null}
+                    <Polyline
+                      positions={displayPath}
+                      color="#1d4ed8"
+                      weight={4}
+                    />
+                    {displayPath.length > 0 ? (
+                      <Marker position={displayPath[0]} icon={startMarkerIcon}>
+                        <Popup>
+                          Start
+                          <br />
+                          {selectedTripVin}
+                        </Popup>
+                      </Marker>
+                    ) : null}
+                    {displayPath.length > 1 ? (
+                      <Marker
+                        position={displayPath[displayPath.length - 1]}
+                        icon={endMarkerIcon}
+                      >
+                        <Popup>
+                          End
+                          <br />
+                          {selectedTripVin}
+                        </Popup>
+                      </Marker>
+                    ) : null}
+                  </MapContainer>
+                </div>
               </div>
             </Card>
           </div>
