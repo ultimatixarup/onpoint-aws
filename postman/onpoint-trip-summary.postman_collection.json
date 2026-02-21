@@ -17,7 +17,7 @@
           "  pm.variables.set('apiKey', apiKey);",
           "}",
           "const url = pm.request.url.toString();",
-          "const tenantId = pm.environment.get('tenantId');",
+          "const tenantId = pm.environment.get('tripSummaryTenantId') || pm.environment.get('tenantId');",
           "const role = pm.environment.get('role');",
           "if (tenantId) {",
           "  pm.request.headers.upsert({ key: 'x-tenant-id', value: tenantId });",
@@ -120,6 +120,18 @@
               "    pm.expect(item).to.have.property('tripId');",
               "    pm.expect(item).to.have.property('startTime');",
               "    pm.expect(item).to.have.property('endTime');",
+              "    pm.expect(item).to.have.property('startMiles');",
+              "    pm.expect(item).to.have.property('endMiles');",
+              "  }",
+              "});",
+              "",
+              "pm.test('List response includes odometer fields when items exist', () => {",
+              "  const json = pm.response.json();",
+              "  if (json.items.length > 0) {",
+              "    const item = json.items[0];",
+              "    pm.expect(item.startMiles).to.be.a('number');",
+              "    pm.expect(item.endMiles).to.be.a('number');",
+              "    pm.expect(item.endMiles).to.be.at.least(item.startMiles);",
               "  }",
               "});",
               "",
@@ -195,6 +207,17 @@
               "  const json = pm.response.json();",
               "  pm.expect(json).to.have.property('items');",
               "  pm.expect(json.items).to.be.an('array');",
+              "});",
+              "",
+              "pm.test('Fleet list includes startMiles/endMiles when items exist', () => {",
+              "  const json = pm.response.json();",
+              "  if (json.items.length > 0) {",
+              "    const item = json.items[0];",
+              "    pm.expect(item).to.have.property('startMiles');",
+              "    pm.expect(item).to.have.property('endMiles');",
+              "    pm.expect(item.startMiles).to.be.a('number');",
+              "    pm.expect(item.endMiles).to.be.a('number');",
+              "  }",
               "});"
             ]
           }
@@ -241,6 +264,77 @@
               "pm.test('Response has items', () => {",
               "  const json = pm.response.json();",
               "  pm.expect(json).to.have.property('items');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Trip History Page List (UI parity)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{tripSummaryApiKey}}",
+            "type": "text"
+          },
+          {
+            "key": "x-tenant-id",
+            "value": "{{tripSummaryTenantId}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{tripSummaryBaseUrl}}/fleets/{{fleetId}}/trips?limit=20",
+          "host": ["{{tripSummaryBaseUrl}}"],
+          "path": ["fleets", "{{fleetId}}", "trips"],
+          "query": [
+            {
+              "key": "limit",
+              "value": "20",
+              "description": "Matches UI default list page size"
+            },
+            {
+              "key": "from",
+              "value": "2026-01-01T00:00:00Z",
+              "disabled": true,
+              "description": "Optional date filter used by UI range picker"
+            },
+            {
+              "key": "to",
+              "value": "2026-01-31T23:59:59Z",
+              "disabled": true,
+              "description": "Optional date filter used by UI range picker"
+            }
+          ]
+        },
+        "description": "Mirrors Trip History list call: GET /fleets/{fleetId}/trips with x-tenant-id + x-api-key. Returns top-level startMiles/endMiles used as start/end odometer in the list."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "",
+              "pm.test('Response has items array', () => {",
+              "  pm.expect(json).to.have.property('items');",
+              "  pm.expect(json.items).to.be.an('array');",
+              "});",
+              "",
+              "pm.test('Trip list rows include odometer fields', () => {",
+              "  if (json.items.length > 0) {",
+              "    const row = json.items[0];",
+              "    pm.expect(row).to.have.property('startMiles');",
+              "    pm.expect(row).to.have.property('endMiles');",
+              "    pm.expect(row.startMiles).to.be.a('number');",
+              "    pm.expect(row.endMiles).to.be.a('number');",
+              "    pm.expect(row.endMiles).to.be.at.least(row.startMiles);",
+              "  }",
               "});"
             ]
           }

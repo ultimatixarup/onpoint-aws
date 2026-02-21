@@ -44,7 +44,7 @@
         "header": [
           {
             "key": "x-api-key",
-            "value": "{{apiKey}}",
+            "value": "{{vehicleStateApiKey}}",
             "type": "text"
           },
           {
@@ -83,7 +83,7 @@
         "header": [
           {
             "key": "x-api-key",
-            "value": "{{apiKey}}",
+            "value": "{{vehicleStateApiKey}}",
             "type": "text"
           },
           {

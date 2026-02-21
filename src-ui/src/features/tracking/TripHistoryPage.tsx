@@ -104,6 +104,15 @@ export function TripHistoryPage() {
   const { tenant } = useTenant();
   const { fleet } = useFleet();
   const tenantId = tenant?.id ?? "";
+  const tenantHeaderId = useMemo(() => {
+    const id = tenant?.id?.trim() ?? "";
+    const name = tenant?.name?.trim() ?? "";
+    const looksLikeTenantId = /^[a-z0-9-]+$/i.test(name) && name.includes("-");
+    if (looksLikeTenantId && name !== id) {
+      return name;
+    }
+    return id;
+  }, [tenant?.id, tenant?.name]);
   const fleetId = fleet?.id;
 
   const { data: fleetOptions = [], isLoading: isLoadingFleets } = useQuery({
@@ -189,6 +198,7 @@ export function TripHistoryPage() {
     queryFn: () =>
       fetchTripHistoryTrips({
         tenantId,
+        tenantHeaderId,
         selectedVin,
         fleetId,
         fleetIds: fleetOptions.map((item) => item.fleetId).filter(Boolean),
@@ -324,13 +334,14 @@ export function TripHistoryPage() {
   } = useQuery({
     queryKey: [
       "trip-detail",
-      tenantId,
+      tenantHeaderId,
       selectedTripVin ?? "",
       selectedTripId ?? "",
     ],
     queryFn: () =>
       fetchTripSummaryTripDetail({
         tenantId,
+        tenantHeaderId,
         vin: selectedTripVin ?? "",
         tripId: selectedTripId ?? "",
         include: "summary",
@@ -345,13 +356,14 @@ export function TripHistoryPage() {
   } = useQuery({
     queryKey: [
       "trip-map-data",
-      tenantId,
+      tenantHeaderId,
       selectedTripVin ?? "",
       selectedTripId ?? "",
     ],
     queryFn: async () => {
       const response = await fetchTripMapData({
         tenantId,
+        tenantHeaderId,
         vin: selectedTripVin ?? "",
         tripId: selectedTripId ?? "",
       });

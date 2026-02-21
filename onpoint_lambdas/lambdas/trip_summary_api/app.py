@@ -39,7 +39,7 @@ logger.setLevel(logging.INFO)
 
 ddb = boto3.client("dynamodb")
 
-BUILD_ID = "2026-01-23T18:45:00Z"
+BUILD_ID = "2026-02-21T23:58:00Z"
 
 TABLE = os.environ["TRIP_SUMMARY_TABLE"]
 TELEMETRY_EVENTS_TABLE = os.environ.get("TELEMETRY_EVENTS_TABLE", "onpoint-dev-telemetry-events")
@@ -639,15 +639,32 @@ def _summarize_item(it: dict) -> dict:
     if miles is None:
         summary_obj = _extract_summary_obj(it)
         miles = _fallback_miles_from_summary(summary_obj)
+    else:
+        summary_obj = None
+    
+    # Extract startMiles from summary if not a top-level field
+    if start_miles is None:
+        if summary_obj is None:
+            summary_obj = _extract_summary_obj(it)
+        if summary_obj and isinstance(summary_obj, dict):
+            if "odometer" in summary_obj:
+                odometer_obj = summary_obj.get("odometer", {})
+                if isinstance(odometer_obj, dict):
+                    start_miles = _as_float(odometer_obj.get("startMiles"))
+            if start_miles is None:
+                start_miles = _as_float(summary_obj.get("startMiles"))
     
     # Extract endMiles from summary if not a top-level field
     if end_miles is None:
-        summary_obj = _extract_summary_obj(it)
-        if summary_obj and "odometer" in summary_obj:
-            odometer_obj = summary_obj.get("odometer", {})
-            end_miles = _as_float(odometer_obj.get("endMiles"))
-        if end_miles is None and summary_obj:
-            end_miles = _as_float(summary_obj.get("endMiles"))
+        if summary_obj is None:
+            summary_obj = _extract_summary_obj(it)
+        if summary_obj and isinstance(summary_obj, dict):
+            if "odometer" in summary_obj:
+                odometer_obj = summary_obj.get("odometer", {})
+                if isinstance(odometer_obj, dict):
+                    end_miles = _as_float(odometer_obj.get("endMiles"))
+            if end_miles is None:
+                end_miles = _as_float(summary_obj.get("endMiles"))
 
     out = {
         "vin": vin,

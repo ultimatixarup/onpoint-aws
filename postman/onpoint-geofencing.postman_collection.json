@@ -33,16 +33,18 @@
       }
     }
   ],
-  "variable": [
-    { "key": "geofenceId", "value": "" }
-  ],
+  "variable": [{ "key": "geofenceId", "value": "" }],
   "item": [
     {
       "name": "List Geofences",
       "request": {
         "method": "GET",
         "header": [
-          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+          {
+            "key": "x-api-key",
+            "value": "{{geofencingApiKey}}",
+            "type": "text"
+          }
         ],
         "url": {
           "raw": "{{geofencingBaseUrl}}/geofences",
@@ -57,7 +59,11 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" },
+          {
+            "key": "x-api-key",
+            "value": "{{geofencingApiKey}}",
+            "type": "text"
+          },
           { "key": "Content-Type", "value": "application/json", "type": "text" }
         ],
         "body": {
@@ -91,7 +97,11 @@
       "request": {
         "method": "PUT",
         "header": [
-          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" },
+          {
+            "key": "x-api-key",
+            "value": "{{geofencingApiKey}}",
+            "type": "text"
+          },
           { "key": "Content-Type", "value": "application/json", "type": "text" }
         ],
         "body": {
@@ -110,7 +120,11 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+          {
+            "key": "x-api-key",
+            "value": "{{geofencingApiKey}}",
+            "type": "text"
+          }
         ],
         "url": {
           "raw": "{{geofencingBaseUrl}}/geofences/{{geofenceId}}:activate",
@@ -124,7 +138,11 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+          {
+            "key": "x-api-key",
+            "value": "{{geofencingApiKey}}",
+            "type": "text"
+          }
         ],
         "url": {
           "raw": "{{geofencingBaseUrl}}/geofences/{{geofenceId}}:deactivate",
@@ -138,7 +156,11 @@
       "request": {
         "method": "DELETE",
         "header": [
-          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+          {
+            "key": "x-api-key",
+            "value": "{{geofencingApiKey}}",
+            "type": "text"
+          }
         ],
         "url": {
           "raw": "{{geofencingBaseUrl}}/geofences/{{geofenceId}}",
@@ -152,7 +174,11 @@
       "request": {
         "method": "POST",
         "header": [
-          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" },
+          {
+            "key": "x-api-key",
+            "value": "{{geofencingApiKey}}",
+            "type": "text"
+          },
           { "key": "Content-Type", "value": "application/json", "type": "text" }
         ],
         "body": {
@@ -171,7 +197,11 @@
       "request": {
         "method": "GET",
         "header": [
-          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+          {
+            "key": "x-api-key",
+            "value": "{{geofencingApiKey}}",
+            "type": "text"
+          }
         ],
         "url": {
           "raw": "{{geofencingBaseUrl}}/geofences/{{geofenceId}}/versions",
@@ -185,14 +215,22 @@
       "request": {
         "method": "GET",
         "header": [
-          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+          {
+            "key": "x-api-key",
+            "value": "{{geofencingApiKey}}",
+            "type": "text"
+          }
         ],
         "url": {
           "raw": "{{geofencingBaseUrl}}/vehicles/{{vin}}/geofence-events?limit=10",
           "host": ["{{geofencingBaseUrl}}"],
           "path": ["vehicles", "{{vin}}", "geofence-events"],
           "query": [
-            { "key": "from", "value": "2026-02-01T00:00:00Z", "disabled": true },
+            {
+              "key": "from",
+              "value": "2026-02-01T00:00:00Z",
+              "disabled": true
+            },
             { "key": "to", "value": "2026-02-28T23:59:59Z", "disabled": true },
             { "key": "limit", "value": "10" }
           ]
@@ -204,7 +242,11 @@
       "request": {
         "method": "GET",
         "header": [
-          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+          {
+            "key": "x-api-key",
+            "value": "{{geofencingApiKey}}",
+            "type": "text"
+          }
         ],
         "url": {
           "raw": "{{geofencingBaseUrl}}/vehicles/{{vin}}/geofence-state",
@@ -218,15 +260,17 @@
       "request": {
         "method": "GET",
         "header": [
-          { "key": "x-api-key", "value": "{{apiKey}}", "type": "text" }
+          {
+            "key": "x-api-key",
+            "value": "{{geofencingApiKey}}",
+            "type": "text"
+          }
         ],
         "url": {
           "raw": "{{geofencingBaseUrl}}/trips/{{tripId}}/geofence-events?limit=10",
           "host": ["{{geofencingBaseUrl}}"],
           "path": ["trips", "{{tripId}}", "geofence-events"],
-          "query": [
-            { "key": "limit", "value": "10" }
-          ]
+          "query": [{ "key": "limit", "value": "10" }]
         }
       }
     }

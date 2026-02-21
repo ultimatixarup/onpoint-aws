@@ -37,17 +37,15 @@
       "request": {
         "method": "GET",
         "header": [
-          { "key": "x-api-key", "value": "{{apiKey}}" },
+          { "key": "x-api-key", "value": "{{tripSummaryApiKey}}" },
           { "key": "x-tenant-id", "value": "{{tenantId}}" },
           { "key": "Content-Type", "value": "application/json" }
         ],
         "url": {
-          "raw": "{{baseUrl}}/trips/{{vinAllowed}}/{{tripId}}/events?limit={{limit}}",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{tripSummaryBaseUrl}}/trips/{{vinAllowed}}/{{tripId}}/events?limit={{limit}}",
+          "host": ["{{tripSummaryBaseUrl}}"],
           "path": ["trips", "{{vinAllowed}}", "{{tripId}}", "events"],
-          "query": [
-            { "key": "limit", "value": "{{limit}}" }
-          ]
+          "query": [{ "key": "limit", "value": "{{limit}}" }]
         }
       },
       "event": [
@@ -77,16 +75,14 @@
       "request": {
         "method": "GET",
         "header": [
-          { "key": "x-api-key", "value": "{{apiKey}}" },
+          { "key": "x-api-key", "value": "{{tripSummaryApiKey}}" },
           { "key": "x-tenant-id", "value": "{{tenantIdForbidden}}" }
         ],
         "url": {
-          "raw": "{{baseUrl}}/trips/{{vinForbidden}}/{{tripId}}/events?limit={{limit}}",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{tripSummaryBaseUrl}}/trips/{{vinForbidden}}/{{tripId}}/events?limit={{limit}}",
+          "host": ["{{tripSummaryBaseUrl}}"],
           "path": ["trips", "{{vinForbidden}}", "{{tripId}}", "events"],
-          "query": [
-            { "key": "limit", "value": "{{limit}}" }
-          ]
+          "query": [{ "key": "limit", "value": "{{limit}}" }]
         }
       },
       "event": [
@@ -110,16 +106,14 @@
       "request": {
         "method": "GET",
         "header": [
-          { "key": "x-api-key", "value": "{{apiKey}}" },
+          { "key": "x-api-key", "value": "{{tripSummaryApiKey}}" },
           { "key": "x-tenant-id", "value": "{{tenantId}}" }
         ],
         "url": {
-          "raw": "{{baseUrl}}/trips/{{vinAllowed}}/{{tripId}}?include=summary",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{tripSummaryBaseUrl}}/trips/{{vinAllowed}}/{{tripId}}?include=summary",
+          "host": ["{{tripSummaryBaseUrl}}"],
           "path": ["trips", "{{vinAllowed}}", "{{tripId}}"],
-          "query": [
-            { "key": "include", "value": "summary" }
-          ]
+          "query": [{ "key": "include", "value": "summary" }]
         }
       },
       "event": [
@@ -144,12 +138,12 @@
       "request": {
         "method": "GET",
         "header": [
-          { "key": "x-api-key", "value": "{{apiKey}}" },
+          { "key": "x-api-key", "value": "{{tripSummaryApiKey}}" },
           { "key": "x-tenant-id", "value": "{{tenantIdForbidden}}" }
         ],
         "url": {
-          "raw": "{{baseUrl}}/trips/{{vinForbidden}}/{{tripId}}",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{tripSummaryBaseUrl}}/trips/{{vinForbidden}}/{{tripId}}",
+          "host": ["{{tripSummaryBaseUrl}}"],
           "path": ["trips", "{{vinForbidden}}", "{{tripId}}"]
         }
       },
@@ -174,12 +168,12 @@
       "request": {
         "method": "GET",
         "header": [
-          { "key": "x-api-key", "value": "{{apiKey}}" },
+          { "key": "x-api-key", "value": "{{tripSummaryApiKey}}" },
           { "key": "x-tenant-id", "value": "{{tenantId}}" }
         ],
         "url": {
-          "raw": "{{baseUrl}}/trips?vehicleId={{vinAllowed}}&limit=10",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{tripSummaryBaseUrl}}/trips?vehicleId={{vinAllowed}}&limit=10",
+          "host": ["{{tripSummaryBaseUrl}}"],
           "path": ["trips"],
           "query": [
             { "key": "vehicleId", "value": "{{vinAllowed}}" },
@@ -198,6 +192,14 @@
               "pm.test('Has items array', () => {",
               "  pm.expect(json).to.have.property('items');",
               "  pm.expect(json.items).to.be.an('array');",
+              "});",
+              "pm.test('Allowed list trips includes startMiles/endMiles when items exist', () => {",
+              "  if (json.items.length > 0) {",
+              "    const item = json.items[0];",
+              "    pm.expect(item).to.have.property('startMiles');",
+              "    pm.expect(item).to.have.property('endMiles');",
+              "    pm.expect(item.startMiles).to.be.a('number');",
+              "    pm.expect(item.endMiles).to.be.a('number');",
               "});"
             ]
           }
@@ -209,12 +211,12 @@
       "request": {
         "method": "GET",
         "header": [
-          { "key": "x-api-key", "value": "{{apiKey}}" },
+          { "key": "x-api-key", "value": "{{tripSummaryApiKey}}" },
           { "key": "x-tenant-id", "value": "{{tenantIdForbidden}}" }
         ],
         "url": {
-          "raw": "{{baseUrl}}/trips?vehicleId={{vinForbidden}}&limit=10",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{tripSummaryBaseUrl}}/trips?vehicleId={{vinForbidden}}&limit=10",
+          "host": ["{{tripSummaryBaseUrl}}"],
           "path": ["trips"],
           "query": [
             { "key": "vehicleId", "value": "{{vinForbidden}}" },

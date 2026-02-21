@@ -495,7 +495,7 @@ export function buildTripTableRows(params: {
       startTimeRaw && endTimeRaw
         ? formatDuration(startTimeRaw, endTimeRaw)
         : "--";
-    const endOdometer =
+    let endOdometer =
       readNumberFromRecord(record, [
         "endMiles",
         "odometerEnd",
@@ -514,6 +514,32 @@ export function buildTripTableRows(params: {
         "odometer_end_miles",
         "odometer.endMiles",
       ]);
+
+    // Extract from nested summary.odometer.endMiles if not found
+    if (endOdometer === undefined && summary) {
+      try {
+        const summaryObj =
+          typeof summary === "string" ? JSON.parse(summary) : summary;
+        if (
+          summaryObj &&
+          typeof summaryObj === "object" &&
+          summaryObj.odometer &&
+          typeof summaryObj.odometer === "object"
+        ) {
+          const val = summaryObj.odometer.endMiles;
+          if (typeof val === "number" && val > 0) {
+            endOdometer = val;
+          } else if (typeof val === "string") {
+            const parsed = parseFloat(val);
+            if (!isNaN(parsed) && parsed > 0) {
+              endOdometer = parsed;
+            }
+          }
+        }
+      } catch (e) {
+        // ignore parsing errors
+      }
+    }
     const driverName =
       readStringFromRecord(record, [
         "driverName",

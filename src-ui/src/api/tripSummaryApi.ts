@@ -138,6 +138,7 @@ export type TripHistoryAssignmentRecord = {
 
 type TripSummaryQuery = {
   tenantId: string;
+  tenantHeaderId?: string;
   fleetId?: string;
   vin?: string;
   vehicleIds?: string[];
@@ -156,6 +157,7 @@ const tripSummaryApiKey =
 
 export async function fetchTripSummaryTrips({
   tenantId,
+  tenantHeaderId,
   fleetId,
   vin,
   vehicleIds,
@@ -350,7 +352,7 @@ export async function fetchTripSummaryTrips({
     baseUrl: tripSummaryBaseUrl,
     headers: {
       ...(tripSummaryApiKey ? { "x-api-key": tripSummaryApiKey } : {}),
-      "x-tenant-id": tenantId,
+      "x-tenant-id": tenantHeaderId ?? tenantId,
     },
   });
 
@@ -362,6 +364,7 @@ export async function fetchTripSummaryTrips({
 
 export async function fetchTripEvents(params: {
   tenantId: string;
+  tenantHeaderId?: string;
   vin: string;
   tripId: string;
   limit?: number;
@@ -379,13 +382,14 @@ export async function fetchTripEvents(params: {
     baseUrl: tripSummaryBaseUrl,
     headers: {
       ...(tripSummaryApiKey ? { "x-api-key": tripSummaryApiKey } : {}),
-      "x-tenant-id": params.tenantId,
+      "x-tenant-id": params.tenantHeaderId ?? params.tenantId,
     },
   });
 }
 
 export async function fetchTripEventsRaw(params: {
   tenantId: string;
+  tenantHeaderId?: string;
   vin: string;
   tripId: string;
   limit?: number;
@@ -403,13 +407,14 @@ export async function fetchTripEventsRaw(params: {
     baseUrl: tripSummaryBaseUrl,
     headers: {
       ...(tripSummaryApiKey ? { "x-api-key": tripSummaryApiKey } : {}),
-      "x-tenant-id": params.tenantId,
+      "x-tenant-id": params.tenantHeaderId ?? params.tenantId,
     },
   });
 }
 
 export async function fetchTripMapData(params: {
   tenantId: string;
+  tenantHeaderId?: string;
   vin: string;
   tripId: string;
 }): Promise<TripMapResponse> {
@@ -421,13 +426,14 @@ export async function fetchTripMapData(params: {
     baseUrl: tripSummaryBaseUrl,
     headers: {
       ...(tripSummaryApiKey ? { "x-api-key": tripSummaryApiKey } : {}),
-      "x-tenant-id": params.tenantId,
+      "x-tenant-id": params.tenantHeaderId ?? params.tenantId,
     },
   });
 }
 
 export async function fetchTripSummaryTripDetail(params: {
   tenantId: string;
+  tenantHeaderId?: string;
   vin: string;
   tripId: string;
   include?: "none" | "summary";
@@ -443,7 +449,7 @@ export async function fetchTripSummaryTripDetail(params: {
     baseUrl: tripSummaryBaseUrl,
     headers: {
       ...(tripSummaryApiKey ? { "x-api-key": tripSummaryApiKey } : {}),
-      "x-tenant-id": params.tenantId,
+      "x-tenant-id": params.tenantHeaderId ?? params.tenantId,
     },
   });
 }
@@ -491,6 +497,7 @@ export async function fetchTripEventPositions(params: {
 
 export async function fetchTripHistoryTrips(params: {
   tenantId: string;
+  tenantHeaderId?: string;
   selectedVin?: string;
   fleetId?: string;
   fleetIds?: string[];
@@ -498,11 +505,20 @@ export async function fetchTripHistoryTrips(params: {
   to?: string;
   limit?: number;
 }): Promise<TripSummaryResponse> {
-  const { tenantId, selectedVin, fleetId, from, to, limit = 50 } = params;
+  const {
+    tenantId,
+    tenantHeaderId,
+    selectedVin,
+    fleetId,
+    from,
+    to,
+    limit = 50,
+  } = params;
 
   if (selectedVin && selectedVin !== "all") {
     return fetchTripSummaryTrips({
       tenantId,
+      tenantHeaderId,
       vin: selectedVin,
       from,
       to,
@@ -514,6 +530,7 @@ export async function fetchTripHistoryTrips(params: {
   if (fleetId) {
     return fetchTripSummaryTrips({
       tenantId,
+      tenantHeaderId,
       fleetId,
       from,
       to,
@@ -529,6 +546,7 @@ export async function fetchTripHistoryTrips(params: {
     allFleetIds.map((currentFleetId) =>
       fetchTripSummaryTrips({
         tenantId,
+        tenantHeaderId,
         fleetId: currentFleetId,
         from,
         to,
@@ -622,7 +640,7 @@ export function buildTripHistoryRows(params: {
         "tripEndTime",
       ]) ??
       item.endTime;
-    const endOdometer =
+    let endOdometer =
       readNumberFromRecord(record, [
         "endMiles",
         "odometerEnd",
@@ -641,6 +659,32 @@ export function buildTripHistoryRows(params: {
         "odometer_end_miles",
         "odometer.endMiles",
       ]);
+
+    // Extract from nested summary.odometer.endMiles if not found
+    if (endOdometer === undefined && summary) {
+      try {
+        const summaryObj =
+          typeof summary === "string" ? JSON.parse(summary) : summary;
+        if (
+          summaryObj &&
+          typeof summaryObj === "object" &&
+          summaryObj.odometer &&
+          typeof summaryObj.odometer === "object"
+        ) {
+          const val = summaryObj.odometer.endMiles;
+          if (typeof val === "number" && val > 0) {
+            endOdometer = val;
+          } else if (typeof val === "string") {
+            const parsed = parseFloat(val);
+            if (!isNaN(parsed) && parsed > 0) {
+              endOdometer = parsed;
+            }
+          }
+        }
+      } catch (e) {
+        // ignore parsing errors
+      }
+    }
     const driverName =
       readStringFromRecord(record, [
         "driverName",
