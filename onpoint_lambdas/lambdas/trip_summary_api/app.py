@@ -639,6 +639,15 @@ def _summarize_item(it: dict) -> dict:
     if miles is None:
         summary_obj = _extract_summary_obj(it)
         miles = _fallback_miles_from_summary(summary_obj)
+    
+    # Extract endMiles from summary if not a top-level field
+    if end_miles is None:
+        summary_obj = _extract_summary_obj(it)
+        if summary_obj and "odometer" in summary_obj:
+            odometer_obj = summary_obj.get("odometer", {})
+            end_miles = _as_float(odometer_obj.get("endMiles"))
+        if end_miles is None and summary_obj:
+            end_miles = _as_float(summary_obj.get("endMiles"))
 
     out = {
         "vin": vin,
