@@ -614,6 +614,8 @@ def _summarize_item(it: dict) -> dict:
     refueled = _ddb_num(it, "refueledGallons")
     updated_at = _ddb_str(it, "updatedAt")
     schema_version = _ddb_str(it, "schemaVersion")
+    start_miles = _ddb_num(it, "startMiles")
+    end_miles = _ddb_num(it, "endMiles")
 
     # Overspeed rollups (NEW standard)
     os_miles_std = _ddb_num(it, "overspeedMilesStandard")
@@ -647,6 +649,8 @@ def _summarize_item(it: dict) -> dict:
         "tripStatus": status,
         "provider": provider,
         "milesDriven": miles,
+        "startMiles": start_miles,
+        "endMiles": end_miles,
         "fuelConsumed": fuel,
         "refueledGallons": refueled,
         "safetyScore": score,

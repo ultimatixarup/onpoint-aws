@@ -624,6 +624,7 @@ export function buildTripHistoryRows(params: {
       item.endTime;
     const endOdometer =
       readNumberFromRecord(record, [
+        "endMiles",
         "odometerEnd",
         "odometer_end",
         "odometerEndMiles",
@@ -633,6 +634,7 @@ export function buildTripHistoryRows(params: {
         "telemetry.odometerEndMiles",
       ]) ??
       readNumberFromRecord(summary ?? {}, [
+        "endMiles",
         "odometerEnd",
         "odometer_end",
         "odometerEndMiles",

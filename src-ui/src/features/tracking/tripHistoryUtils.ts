@@ -1,5 +1,8 @@
 import type { TripSummaryItem } from "../../api/tripSummaryApi";
-import { formatDateTime as formatAppDateTime, formatDate } from "../../utils/date";
+import {
+  formatDateTime as formatAppDateTime,
+  formatDate,
+} from "../../utils/date";
 
 export type AssignmentRecord = {
   assignmentId?: string;
@@ -42,7 +45,9 @@ export function normalizeAssignmentRecords(response: unknown, vin: string) {
   return items.map((item) => {
     const record = item as Record<string, unknown>;
     return {
-      assignmentId: record.assignmentId ? String(record.assignmentId) : undefined,
+      assignmentId: record.assignmentId
+        ? String(record.assignmentId)
+        : undefined,
       vin: record.vin ? String(record.vin) : vin,
       driverId: record.driverId ? String(record.driverId) : undefined,
       effectiveFrom: record.effectiveFrom
@@ -244,10 +249,7 @@ export function formatDuration(startTime: string, endTime: string) {
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
 
-export function formatDurationDetailed(
-  startTime?: string,
-  endTime?: string,
-) {
+export function formatDurationDetailed(startTime?: string, endTime?: string) {
   if (!startTime || !endTime) return "NA";
   const start = new Date(startTime);
   const end = new Date(endTime);
@@ -464,7 +466,11 @@ export function buildTripTableRows(params: {
       record.summary ?? record.summaryJson ?? record.tripSummary,
     );
     const startTimeRaw =
-      readStringFromRecord(record, ["startTime", "start_time", "tripStartTime"]) ??
+      readStringFromRecord(record, [
+        "startTime",
+        "start_time",
+        "tripStartTime",
+      ]) ??
       readStringFromRecord(summary ?? {}, [
         "startTime",
         "start_time",
@@ -473,7 +479,11 @@ export function buildTripTableRows(params: {
       item.startTime;
     const endTimeRaw =
       readStringFromRecord(record, ["endTime", "end_time", "tripEndTime"]) ??
-      readStringFromRecord(summary ?? {}, ["endTime", "end_time", "tripEndTime"]) ??
+      readStringFromRecord(summary ?? {}, [
+        "endTime",
+        "end_time",
+        "tripEndTime",
+      ]) ??
       item.endTime;
     const start = formatDate(startTimeRaw, "--");
     const end = formatDate(endTimeRaw, "--");
@@ -482,9 +492,12 @@ export function buildTripTableRows(params: {
     const miles =
       typeof item.milesDriven === "number" ? item.milesDriven.toFixed(1) : "--";
     const duration =
-      startTimeRaw && endTimeRaw ? formatDuration(startTimeRaw, endTimeRaw) : "--";
+      startTimeRaw && endTimeRaw
+        ? formatDuration(startTimeRaw, endTimeRaw)
+        : "--";
     const endOdometer =
       readNumberFromRecord(record, [
+        "endMiles",
         "odometerEnd",
         "odometer_end",
         "odometerEndMiles",
@@ -494,6 +507,7 @@ export function buildTripTableRows(params: {
         "telemetry.odometerEndMiles",
       ]) ??
       readNumberFromRecord(summary ?? {}, [
+        "endMiles",
         "odometerEnd",
         "odometer_end",
         "odometerEndMiles",
@@ -534,7 +548,8 @@ export function buildTripTableRows(params: {
         : undefined) ?? resolvedDriverId;
     return {
       id: item.tripId,
-      driverName: driverName !== "--" ? driverName : (resolvedDriverName ?? "--"),
+      driverName:
+        driverName !== "--" ? driverName : (resolvedDriverName ?? "--"),
       vin: item.vin,
       start,
       end,
