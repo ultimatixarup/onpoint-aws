@@ -533,6 +533,36 @@ a {
   color: #0f172a;
 }
 
+.trip-date-field {
+  position: relative;
+}
+
+.trip-date-field .input {
+  padding-right: 2.25rem;
+}
+
+.trip-date-field__button {
+  position: absolute;
+  right: 0.375rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  padding: 2px 5px;
+}
+
+.trip-date-field__native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  border: 0;
+  padding: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 .trip-map-layout {
   display: grid;
   gap: var(--space-4);

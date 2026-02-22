@@ -1,4 +1,4 @@
-import { formatDateTime as formatAppDateTime, formatDate } from "../utils/date";
+import { formatDate } from "../utils/date";
 import { httpRequest } from "./httpClient";
 
 export type TripSummaryItem = {
@@ -1286,7 +1286,18 @@ function formatMinutes(totalMinutes: number) {
 }
 
 function formatDateTime(value?: string) {
-  return formatAppDateTime(value, "--");
+  if (!value) return "--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--";
+
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  const year = `${date.getFullYear()}`;
+  const hours = `${date.getHours()}`.padStart(2, "0");
+  const minutes = `${date.getMinutes()}`.padStart(2, "0");
+  const seconds = `${date.getSeconds()}`.padStart(2, "0");
+
+  return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
 }
 
 function formatOptionalNumber(

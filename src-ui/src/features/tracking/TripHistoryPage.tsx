@@ -83,11 +83,17 @@ export function TripHistoryPage() {
     const node =
       field === "from" ? fromDatePickerRef.current : toDatePickerRef.current;
     if (!node) return;
+    node.focus({ preventScroll: true });
     const showPicker = (node as HTMLInputElement & { showPicker?: () => void })
       .showPicker;
     if (typeof showPicker === "function") {
-      showPicker.call(node);
-      return;
+      try {
+        showPicker.call(node);
+        return;
+      } catch {
+        node.click();
+        return;
+      }
     }
     node.click();
   };
@@ -577,25 +583,29 @@ export function TripHistoryPage() {
           </label>
           <label className="form__field">
             <span className="text-muted">From</span>
-            <div
-              className="inline"
-              style={{ alignItems: "center", gap: "0.5rem" }}
-            >
+            <div className="trip-date-field">
               <input
                 className="input"
                 type="text"
                 inputMode="numeric"
-                placeholder="MM/DD/YYYY"
+                placeholder="mm/dd/yyyy"
+                maxLength={10}
+                pattern="\d{2}/\d{2}/\d{4}"
                 value={customFrom}
-                onChange={(event) =>
-                  setCustomFrom(normalizeUsDateInput(event.target.value))
-                }
+                onChange={(event) => {
+                  const normalized = normalizeUsDateInput(event.target.value);
+                  setCustomFrom(
+                    normalized.length === 10
+                      ? normalizeUsDateFinal(normalized)
+                      : normalized,
+                  );
+                }}
                 onBlur={() => setCustomFrom(normalizeUsDateFinal(customFrom))}
                 disabled={dateRange !== "custom"}
               />
               <button
                 type="button"
-                className="icon-button"
+                className="icon-button trip-date-field__button"
                 aria-label="Open From date picker"
                 onClick={() => openDatePicker("from")}
                 disabled={dateRange !== "custom"}
@@ -608,42 +618,42 @@ export function TripHistoryPage() {
                 value={toIsoDate(customFrom)}
                 max={toIsoDate(customTo) || undefined}
                 onChange={(event) =>
-                  setCustomFrom(fromIsoDateToUs(event.target.value))
+                  setCustomFrom(
+                    normalizeUsDateFinal(fromIsoDateToUs(event.target.value)),
+                  )
                 }
                 disabled={dateRange !== "custom"}
                 tabIndex={-1}
                 aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  opacity: 0,
-                  width: 1,
-                  height: 1,
-                  pointerEvents: "none",
-                }}
+                className="trip-date-field__native"
               />
             </div>
           </label>
           <label className="form__field">
             <span className="text-muted">To</span>
-            <div
-              className="inline"
-              style={{ alignItems: "center", gap: "0.5rem" }}
-            >
+            <div className="trip-date-field">
               <input
                 className="input"
                 type="text"
                 inputMode="numeric"
-                placeholder="MM/DD/YYYY"
+                placeholder="mm/dd/yyyy"
+                maxLength={10}
+                pattern="\d{2}/\d{2}/\d{4}"
                 value={customTo}
-                onChange={(event) =>
-                  setCustomTo(normalizeUsDateInput(event.target.value))
-                }
+                onChange={(event) => {
+                  const normalized = normalizeUsDateInput(event.target.value);
+                  setCustomTo(
+                    normalized.length === 10
+                      ? normalizeUsDateFinal(normalized)
+                      : normalized,
+                  );
+                }}
                 onBlur={() => setCustomTo(normalizeUsDateFinal(customTo))}
                 disabled={dateRange !== "custom"}
               />
               <button
                 type="button"
-                className="icon-button"
+                className="icon-button trip-date-field__button"
                 aria-label="Open To date picker"
                 onClick={() => openDatePicker("to")}
                 disabled={dateRange !== "custom"}
@@ -656,18 +666,14 @@ export function TripHistoryPage() {
                 value={toIsoDate(customTo)}
                 min={toIsoDate(customFrom) || undefined}
                 onChange={(event) =>
-                  setCustomTo(fromIsoDateToUs(event.target.value))
+                  setCustomTo(
+                    normalizeUsDateFinal(fromIsoDateToUs(event.target.value)),
+                  )
                 }
                 disabled={dateRange !== "custom"}
                 tabIndex={-1}
                 aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  opacity: 0,
-                  width: 1,
-                  height: 1,
-                  pointerEvents: "none",
-                }}
+                className="trip-date-field__native"
               />
             </div>
           </label>
