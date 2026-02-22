@@ -1286,12 +1286,18 @@ def lambda_handler(event, context):
                     if not _authorize_vin(vin, tenant_id, s.get("startTime") or s.get("endTime"), role):
                         continue
                     authorized_any = True
-                    if include == INCLUDE_SUMMARY:
-                        # attach summary (expensive, explicit)
-                        tid = s.get("tripId") or ""
-                        d = _get_trip_detail(vin, tid, include=INCLUDE_SUMMARY)
-                        if d and "summary" in d:
-                            s["summary"] = d["summary"]
+                    tid = s.get("tripId") or ""
+                    needs_miles_backfill = s.get("startMiles") is None or s.get("endMiles") is None
+                    if tid and (include == INCLUDE_SUMMARY or needs_miles_backfill):
+                        detail_include = INCLUDE_SUMMARY if include == INCLUDE_SUMMARY else INCLUDE_NONE
+                        d = _get_trip_detail(vin, tid, include=detail_include)
+                        if d:
+                            if s.get("startMiles") is None and d.get("startMiles") is not None:
+                                s["startMiles"] = d.get("startMiles")
+                            if s.get("endMiles") is None and d.get("endMiles") is not None:
+                                s["endMiles"] = d.get("endMiles")
+                            if include == INCLUDE_SUMMARY and "summary" in d:
+                                s["summary"] = d["summary"]
                     collected.append(s)
 
             esk = lek

@@ -139,6 +139,22 @@ def test_vehicle_get_forbidden_without_tenant(monkeypatch):
     assert resp["statusCode"] == 403
 
 
+def test_ddb_serialize_converts_float_values(monkeypatch):
+    add_common_to_path()
+
+    def fake_client(service_name):
+        return DummyClient()
+
+    _set_env(monkeypatch)
+    monkeypatch.setattr(boto3, "client", fake_client)
+
+    module_path = Path(__file__).resolve().parents[1] / "lambdas" / "fleet_tenancy_api" / "app.py"
+    mod = load_lambda_module("fleet_tenancy_api_app_float_serialize", module_path)
+
+    serialized = mod._ddb_serialize({"fuelTankCapacity": 15.5})
+    assert serialized["fuelTankCapacity"]["N"] == "15.5"
+
+
 def test_assign_vin_sets_tenant_fleet_index_keys(monkeypatch):
     add_common_to_path()
 

@@ -3,6 +3,7 @@ import os
 import logging
 import hashlib
 import base64
+from decimal import Decimal
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -230,8 +231,22 @@ def _require_tenant_access(role: str, caller_tenant: Optional[str], target_tenan
     return None
 
 
+def _ddb_normalize_value(value: Any) -> Any:
+    if isinstance(value, float):
+        return Decimal(str(value))
+    if isinstance(value, dict):
+        return {k: _ddb_normalize_value(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_ddb_normalize_value(v) for v in value]
+    if isinstance(value, tuple):
+        return tuple(_ddb_normalize_value(v) for v in value)
+    if isinstance(value, set):
+        return {_ddb_normalize_value(v) for v in value}
+    return value
+
+
 def _ddb_serialize(item: Dict[str, Any]) -> Dict[str, Any]:
-    return {k: _serializer.serialize(v) for k, v in item.items()}
+    return {k: _serializer.serialize(_ddb_normalize_value(v)) for k, v in item.items()}
 
 
 def _ddb_deserialize(item: Dict[str, Any]) -> Dict[str, Any]:

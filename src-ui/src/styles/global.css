@@ -540,6 +540,60 @@ a {
   align-items: start;
 }
 
+.trip-map-layout--inline {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: rgba(248, 250, 252, 0.9);
+  gap: var(--space-5);
+}
+
+.trip-inline-row {
+  background: rgba(30, 64, 175, 0.04);
+}
+
+.trip-inline-cell {
+  padding: var(--space-4) !important;
+  white-space: normal !important;
+}
+
+.trip-inline-panel {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.trip-inline-panel.empty-state {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: rgba(248, 250, 252, 0.9);
+  margin: 0;
+}
+
+.trip-map-layout--inline .trip-location {
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.trip-map-layout--inline .trip-location__value {
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.trip-map-layout--inline .trip-location__time {
+  padding-left: var(--space-2);
+  white-space: nowrap;
+}
+
+.trip-map-layout--inline .trip-summary {
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.trip-map-layout--inline .trip-summary__item,
+.trip-map-layout--inline .trip-metric {
+  min-width: 0;
+}
+
 .trip-details {
   display: grid;
   gap: var(--space-4);
@@ -590,11 +644,11 @@ a {
 }
 
 .trip-map-marker--start .trip-map-marker__dot {
-  background: #16a34a;
+  background: #22c55e;
 }
 
 .trip-map-marker--end .trip-map-marker__dot {
-  background: #dc2626;
+  background: #f97316;
 }
 
 .trip-location__label {
@@ -732,6 +786,24 @@ a {
     grid-column: 2 / -1;
     text-align: left;
     max-width: none;
+  }
+
+  .map-container--inline {
+    height: 300px;
+  }
+}
+
+@media (max-width: 1360px) {
+  .trip-map-layout--inline {
+    grid-template-columns: 1fr;
+  }
+
+  .trip-map-layout--inline .trip-location__time {
+    grid-column: 2 / -1;
+    padding-left: 0;
+    white-space: normal;
+    max-width: none;
+    text-align: left;
   }
 }
 
@@ -2413,6 +2485,10 @@ a {
   border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid var(--color-border);
+}
+
+.map-container--inline {
+  height: 360px;
 }
 
 .geofence-layout {

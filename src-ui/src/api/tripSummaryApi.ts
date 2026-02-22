@@ -456,12 +456,14 @@ export async function fetchTripSummaryTripDetail(params: {
 
 export async function fetchTripEventPositions(params: {
   tenantId: string;
+  tenantHeaderId?: string;
   vin: string;
   tripId: string;
   limit?: number;
 }): Promise<Array<[number, number]>> {
   const response = await fetchTripEvents({
     tenantId: params.tenantId,
+    tenantHeaderId: params.tenantHeaderId,
     vin: params.vin,
     tripId: params.tripId,
     limit: params.limit,
@@ -897,6 +899,22 @@ export function buildTripDetailPresentation(params: {
       ]),
     );
 
+  const overspeedEventCountTotal =
+    readNumberFromTrip(selectedTripRecord, summaryRecord, [
+      "overspeedEventCountTotal",
+      "overspeed.eventCountTotal",
+    ]) ??
+    sumOptional(
+      readNumberFromTrip(selectedTripRecord, summaryRecord, [
+        "overspeedEventCountStandard",
+        "overspeed.eventCountStandard",
+      ]),
+      readNumberFromTrip(selectedTripRecord, summaryRecord, [
+        "overspeedEventCountSevere",
+        "overspeed.eventCountSevere",
+      ]),
+    );
+
   const harshAcceleration = readNumberFromTrip(
     selectedTripRecord,
     summaryRecord,
@@ -931,6 +949,11 @@ export function buildTripDetailPresentation(params: {
       label: "Over Speeding (miles)",
       value: formatOptionalNumber(overspeedMilesTotal, 2),
       icon: "🚗",
+    },
+    {
+      label: "Over Speeding (events)",
+      value: formatOptionalNumber(overspeedEventCountTotal ?? 0, 0),
+      icon: "🚨",
     },
     {
       label: "Night Driving (miles)",
