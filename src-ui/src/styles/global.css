@@ -332,6 +332,24 @@ a {
   color: #0f172a;
 }
 
+.dashboard-stat--link {
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.dashboard-stat--link:hover {
+  border-color: rgba(37, 99, 235, 0.35);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.dashboard-stat--link:focus,
+.dashboard-stat--link:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.5);
+  outline-offset: 2px;
+}
+
 .dashboard-panels {
   display: grid;
   gap: var(--space-4);
@@ -3250,8 +3268,7 @@ a {
   background: var(--color-bg);
 }
 
-.telemetry-raw,
-.telemetry-normalized {
+.telemetry-raw {
   display: grid;
   gap: var(--space-4);
 }
@@ -3264,31 +3281,6 @@ a {
   flex-wrap: wrap;
 }
 
-.telemetry-switcher {
-  display: inline-flex;
-  gap: 6px;
-  background: var(--color-bg);
-  padding: 6px;
-  border-radius: 999px;
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
-}
-
-.telemetry-switcher__item {
-  padding: 6px 14px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #475569;
-  transition: all 0.2s ease;
-}
-
-.telemetry-switcher__item--active {
-  background: var(--color-primary);
-  color: #fff;
-  box-shadow: 0 8px 20px rgba(69, 80, 230, 0.25);
-}
-
 .telemetry-hero {
   position: relative;
   border-radius: var(--radius-md);
@@ -3296,10 +3288,6 @@ a {
   background: linear-gradient(135deg, #f8fafc 0%, #fef3c7 45%, #dbeafe 100%);
   border: 1px solid var(--color-border);
   overflow: hidden;
-}
-
-.telemetry-hero--normalized {
-  background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 45%, #dcfce7 100%);
 }
 
 .telemetry-hero__glow {

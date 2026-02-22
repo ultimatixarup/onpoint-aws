@@ -841,16 +841,15 @@ export function TripHistoryPage() {
                                   Fetching trip summary for this trip.
                                 </p>
                               </div>
-                            ) : tripDetailError ? (
-                              <div className="trip-inline-panel empty-state">
-                                <div className="empty-state__icon">⚠️</div>
-                                <h3>Unable to load trip details</h3>
-                                <p className="text-muted">
-                                  Verify your API access and try again.
-                                </p>
-                              </div>
                             ) : (
                               <div className="trip-inline-panel">
+                                {tripDetailError ? (
+                                  <div className="banner banner--warning">
+                                    Detailed summary is unavailable right now.
+                                    Showing trip information from the table and
+                                    map data where available.
+                                  </div>
+                                ) : null}
                                 <div className="trip-map-layout trip-map-layout--inline">
                                   <div className="trip-details">
                                     <div className="trip-locations">

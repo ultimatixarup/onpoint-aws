@@ -1,7 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { fetchDrivers } from "../../api/onpointApi";
+import { Link, useSearchParams } from "react-router-dom";
+import {
+  fetchAssignedDriverIdsByAssignments,
+  fetchDrivers,
+} from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
@@ -32,8 +35,12 @@ function toBadgeClass(status?: string) {
   return "badge";
 }
 
-function isAssigned(driver: { fleetId?: string | null }) {
-  return Boolean(driver.fleetId);
+function isAssigned(
+  driver: { driverId?: string | null; fleetId?: string | null },
+  assignedDriverIds: Set<string>,
+) {
+  if (driver.driverId && assignedDriverIds.has(driver.driverId)) return true;
+  return false;
 }
 
 const COMPLIANCE_WINDOW_DAYS = 30;
@@ -78,7 +85,10 @@ function getComplianceFlags(driver: {
 }) {
   const issues: string[] = [];
   const status = String(driver.dqStatus ?? "").toLowerCase();
-  if (status && !["compliant", "clear", "pass", "passed", "active"].includes(status)) {
+  if (
+    status &&
+    !["compliant", "clear", "pass", "passed", "active"].includes(status)
+  ) {
     issues.push("DQ status");
   }
 
@@ -119,12 +129,18 @@ function isHighRisk(driver: { riskCategory?: string | null }) {
 }
 
 export function DriverSummaryPage() {
+  const [searchParams] = useSearchParams();
   const { tenant } = useTenant();
   const { fleet } = useFleet();
   const tenantId = tenant?.id;
   const fleetId = fleet?.id;
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<DriverFilter>("all");
+  const filterFromQuery = searchParams.get("filter");
+  const initialFilter = useMemo<DriverFilter>(() => {
+    const candidate = FILTERS.find((item) => item.key === filterFromQuery)?.key;
+    return candidate ?? "all";
+  }, [filterFromQuery]);
+  const [filter, setFilter] = useState<DriverFilter>(initialFilter);
 
   const {
     data: drivers = [],
@@ -138,6 +154,17 @@ export function DriverSummaryPage() {
     queryFn: () => fetchDrivers(tenantId ?? "", fleetId),
     enabled: Boolean(tenantId),
   });
+
+  const { data: assignedDriverIds = [] } = useQuery({
+    queryKey: ["assigned-driver-ids", tenantId ?? "none", fleetId ?? "all"],
+    queryFn: () => fetchAssignedDriverIdsByAssignments(tenantId ?? "", fleetId),
+    enabled: Boolean(tenantId),
+  });
+
+  const assignedDriverSet = useMemo(
+    () => new Set(assignedDriverIds),
+    [assignedDriverIds],
+  );
 
   const stats = useMemo(() => {
     const counts = {
@@ -155,13 +182,13 @@ export function DriverSummaryPage() {
       if (status === "active") counts.active += 1;
       else if (status === "inactive") counts.inactive += 1;
       else counts.attention += 1;
-      if (isAssigned(driver)) counts.assigned += 1;
+      if (isAssigned(driver, assignedDriverSet)) counts.assigned += 1;
       if (isComplianceAlert(driver)) counts.compliance += 1;
       if (isHighRisk(driver)) counts.highRisk += 1;
     });
     counts.unassigned = counts.total - counts.assigned;
     return counts;
-  }, [drivers]);
+  }, [assignedDriverSet, drivers]);
 
   const filteredDrivers = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -169,11 +196,18 @@ export function DriverSummaryPage() {
       const status = normalizeStatus(driver.status);
       if (filter === "active" && status !== "active") return false;
       if (filter === "inactive" && status !== "inactive") return false;
-      if (filter === "attention" && (status === "active" || status === "inactive")) {
+      if (
+        filter === "attention" &&
+        (status === "active" || status === "inactive")
+      ) {
         return false;
       }
-      if (filter === "assigned" && !isAssigned(driver)) return false;
-      if (filter === "unassigned" && isAssigned(driver)) return false;
+      if (filter === "assigned" && !isAssigned(driver, assignedDriverSet)) {
+        return false;
+      }
+      if (filter === "unassigned" && isAssigned(driver, assignedDriverSet)) {
+        return false;
+      }
       if (filter === "compliance" && !isComplianceAlert(driver)) return false;
       if (filter === "highRisk" && !isHighRisk(driver)) return false;
       if (!query) return true;
@@ -190,7 +224,7 @@ export function DriverSummaryPage() {
         .toLowerCase()
         .includes(query);
     });
-  }, [drivers, search, filter]);
+  }, [assignedDriverSet, drivers, search, filter]);
 
   return (
     <div className="page drivers-page">
@@ -265,7 +299,7 @@ export function DriverSummaryPage() {
           >
             <span>Assigned</span>
             <strong>{stats.assigned}</strong>
-            <span className="text-muted">Active fleet assignments</span>
+            <span className="text-muted">Active vehicle assignments</span>
           </button>
           <button
             type="button"
@@ -275,7 +309,7 @@ export function DriverSummaryPage() {
           >
             <span>Unassigned</span>
             <strong>{stats.unassigned}</strong>
-            <span className="text-muted">No fleet assigned</span>
+            <span className="text-muted">No active assignment</span>
           </button>
           <button
             type="button"
@@ -360,63 +394,66 @@ export function DriverSummaryPage() {
             {filteredDrivers.map((driver) => {
               const compliance = getComplianceFlags(driver);
               const highRisk = isHighRisk(driver);
+              const assigned = isAssigned(driver, assignedDriverSet);
               return (
                 <article key={driver.driverId} className="driver-card">
-                <div className="driver-card__header">
-                  <div>
-                    <div className="driver-card__name">
-                      {driver.name ?? driver.displayName ?? "Unnamed driver"}
+                  <div className="driver-card__header">
+                    <div>
+                      <div className="driver-card__name">
+                        {driver.name ?? driver.displayName ?? "Unnamed driver"}
+                      </div>
+                      <div className="driver-card__id mono">
+                        {driver.driverId}
+                      </div>
                     </div>
-                    <div className="driver-card__id mono">
-                      {driver.driverId}
+                    <span className={toBadgeClass(driver.status)}>
+                      {driver.status ?? "Unknown"}
+                    </span>
+                  </div>
+                  <div className="driver-card__meta">
+                    <div>
+                      <span className="text-muted">Email</span>
+                      <strong>{driver.email ?? "--"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-muted">Phone</span>
+                      <strong>{driver.phone ?? "--"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-muted">Assignment</span>
+                      <strong>{assigned ? "Assigned" : "Unassigned"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-muted">Fleet ID</span>
+                      <strong>{driver.fleetId ?? "--"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-muted">Customer ID</span>
+                      <strong>{driver.customerId ?? "--"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-muted">Compliance</span>
+                      <strong>{compliance.hasAlert ? "Alert" : "Clear"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-muted">Risk</span>
+                      <strong>{highRisk ? "High" : "Standard"}</strong>
                     </div>
                   </div>
-                  <span className={toBadgeClass(driver.status)}>
-                    {driver.status ?? "Unknown"}
-                  </span>
-                </div>
-                <div className="driver-card__meta">
-                  <div>
-                    <span className="text-muted">Email</span>
-                    <strong>{driver.email ?? "--"}</strong>
+                  <div className="driver-card__actions">
+                    <Link
+                      className="btn btn--secondary"
+                      to={`/adlp/drivers/${driver.driverId}`}
+                    >
+                      Profile
+                    </Link>
+                    <Link
+                      className="btn"
+                      to={`/adlp/drivers/${driver.driverId}/dashboard`}
+                    >
+                      Dashboard
+                    </Link>
                   </div>
-                  <div>
-                    <span className="text-muted">Phone</span>
-                    <strong>{driver.phone ?? "--"}</strong>
-                  </div>
-                  <div>
-                    <span className="text-muted">Fleet</span>
-                    <strong>{driver.fleetId ?? "--"}</strong>
-                  </div>
-                  <div>
-                    <span className="text-muted">Customer ID</span>
-                    <strong>{driver.customerId ?? "--"}</strong>
-                  </div>
-                  <div>
-                    <span className="text-muted">Compliance</span>
-                    <strong>
-                      {compliance.hasAlert ? "Alert" : "Clear"}
-                    </strong>
-                  </div>
-                  <div>
-                    <span className="text-muted">Risk</span>
-                    <strong>{highRisk ? "High" : "Standard"}</strong>
-                  </div>
-                </div>
-                <div className="driver-card__actions">
-                  <Link
-                    className="btn btn--secondary"
-                    to={`/adlp/drivers/${driver.driverId}`}
-                  >
-                    Profile
-                  </Link>
-                  <Link
-                    className="btn"
-                    to={`/adlp/drivers/${driver.driverId}/dashboard`}
-                  >
-                    Dashboard
-                  </Link>
-                </div>
                 </article>
               );
             })}

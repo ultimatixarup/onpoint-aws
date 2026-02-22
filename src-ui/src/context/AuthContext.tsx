@@ -9,12 +9,41 @@ import {
 import {
   createContext,
   PropsWithChildren,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { Navigate } from "react-router-dom";
+
+const SESSION_STARTED_AT_KEY = "onpoint.auth.sessionStartedAt";
+const LAST_ACTIVITY_AT_KEY = "onpoint.auth.lastActivityAt";
+const DEFAULT_IDLE_TIMEOUT_MINUTES = 30;
+const DEFAULT_ABSOLUTE_TIMEOUT_HOURS = 8;
+
+function parsePositiveNumber(
+  value: string | undefined,
+  fallback: number,
+): number {
+  if (!value) return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
+}
+
+const IDLE_TIMEOUT_MINUTES = parsePositiveNumber(
+  import.meta.env.VITE_SESSION_IDLE_TIMEOUT_MINUTES,
+  DEFAULT_IDLE_TIMEOUT_MINUTES,
+);
+const ABSOLUTE_TIMEOUT_HOURS = parsePositiveNumber(
+  import.meta.env.VITE_SESSION_MAX_TIMEOUT_HOURS,
+  DEFAULT_ABSOLUTE_TIMEOUT_HOURS,
+);
+
+const IDLE_TIMEOUT_MS = IDLE_TIMEOUT_MINUTES * 60 * 1000;
+const ABSOLUTE_TIMEOUT_MS = ABSOLUTE_TIMEOUT_HOURS * 60 * 60 * 1000;
 
 export type AuthRole =
   | "platform_admin"
@@ -144,6 +173,40 @@ export function AuthProvider({ children }: PropsWithChildren) {
     status: "loading",
     roles: [],
   });
+  const isLoggingOutRef = useRef(false);
+
+  const writeSessionActivity = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const now = Date.now().toString();
+    if (!window.localStorage.getItem(SESSION_STARTED_AT_KEY)) {
+      window.localStorage.setItem(SESSION_STARTED_AT_KEY, now);
+    }
+    window.localStorage.setItem(LAST_ACTIVITY_AT_KEY, now);
+  }, []);
+
+  const clearSessionActivity = useCallback(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.removeItem(SESSION_STARTED_AT_KEY);
+    window.localStorage.removeItem(LAST_ACTIVITY_AT_KEY);
+  }, []);
+
+  const performLogout = useCallback(async () => {
+    if (isLoggingOutRef.current) return;
+    isLoggingOutRef.current = true;
+    try {
+      await signOut();
+    } catch {
+    } finally {
+      clearSessionActivity();
+      setState({
+        status: "unauthenticated",
+        roles: [],
+        challenge: undefined,
+        challengeUsername: undefined,
+      });
+      isLoggingOutRef.current = false;
+    }
+  }, [clearSessionActivity]);
 
   useEffect(() => {
     const load = async () => {
@@ -166,6 +229,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
           challenge: undefined,
           challengeUsername: undefined,
         });
+        writeSessionActivity();
       } catch {
         setState({
           status: "unauthenticated",
@@ -176,7 +240,63 @@ export function AuthProvider({ children }: PropsWithChildren) {
       }
     };
     load();
-  }, []);
+  }, [writeSessionActivity]);
+
+  useEffect(() => {
+    if (state.status !== "authenticated") return;
+
+    writeSessionActivity();
+
+    const markActivity = () => {
+      if (document.visibilityState === "hidden") return;
+      writeSessionActivity();
+    };
+
+    const events: Array<keyof WindowEventMap> = [
+      "mousemove",
+      "mousedown",
+      "keydown",
+      "scroll",
+      "touchstart",
+      "focus",
+    ];
+
+    events.forEach((eventName) =>
+      window.addEventListener(eventName, markActivity, { passive: true }),
+    );
+
+    const interval = window.setInterval(() => {
+      const now = Date.now();
+      const lastActivityRaw = window.localStorage.getItem(LAST_ACTIVITY_AT_KEY);
+      const sessionStartedRaw = window.localStorage.getItem(
+        SESSION_STARTED_AT_KEY,
+      );
+      const lastActivity = Number(lastActivityRaw ?? String(now));
+      const sessionStarted = Number(sessionStartedRaw ?? String(now));
+
+      if (
+        Number.isFinite(lastActivity) &&
+        now - lastActivity >= IDLE_TIMEOUT_MS
+      ) {
+        void performLogout();
+        return;
+      }
+
+      if (
+        Number.isFinite(sessionStarted) &&
+        now - sessionStarted >= ABSOLUTE_TIMEOUT_MS
+      ) {
+        void performLogout();
+      }
+    }, 15000);
+
+    return () => {
+      window.clearInterval(interval);
+      events.forEach((eventName) =>
+        window.removeEventListener(eventName, markActivity),
+      );
+    };
+  }, [performLogout, state.status, writeSessionActivity]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -215,6 +335,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
             challenge: undefined,
             challengeUsername: undefined,
           });
+          writeSessionActivity();
           return { requiresNewPassword: false };
         } catch (error) {
           console.error("Cognito sign-in failed", error);
@@ -241,18 +362,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
           challenge: undefined,
           challengeUsername: undefined,
         });
+        writeSessionActivity();
       },
       logout: async () => {
-        await signOut();
-        setState({
-          status: "unauthenticated",
-          roles: [],
-          challenge: undefined,
-          challengeUsername: undefined,
-        });
+        await performLogout();
       },
     }),
-    [state],
+    [performLogout, state, writeSessionActivity],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

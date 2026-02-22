@@ -41,10 +41,7 @@ const navSections = [
   {
     title: "Telemetry",
     icon: "◇",
-    links: [
-      { to: "/adlp/telemetry/raw", label: "Telemetry Raw" },
-      { to: "/adlp/telemetry/normalized", label: "Telemetry Normalized" },
-    ],
+    links: [{ to: "/adlp/telemetry/raw", label: "Telemetry Events" }],
   },
   {
     title: "Reports",

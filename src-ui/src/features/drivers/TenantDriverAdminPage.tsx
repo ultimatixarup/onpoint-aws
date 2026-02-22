@@ -427,7 +427,9 @@ export function TenantDriverAdminPage() {
 
               <div className="form-grid">
                 <label className="form__field">
-                  <span className="text-muted">Driver name</span>
+                  <span className="text-muted">
+                    Driver name <span className="required">*</span>
+                  </span>
                   <input
                     className="input"
                     value={editForm.displayName}
@@ -551,7 +553,9 @@ export function TenantDriverAdminPage() {
         {createError ? <div className="form-error">{createError}</div> : null}
         <div className="form-grid">
           <label className="form__field">
-            <span className="text-muted">Driver name</span>
+            <span className="text-muted">
+              Driver name <span className="required">*</span>
+            </span>
             <input
               className="input"
               value={createForm.displayName}

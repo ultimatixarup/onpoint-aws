@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import {
-    fetchTripEvents,
-    fetchTripSummaryTrips,
+  fetchTripEventsRaw,
+  fetchTripSummaryTrips,
 } from "../../api/tripSummaryApi";
 import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
@@ -22,12 +21,27 @@ type TelemetryEvent = {
   status: "accepted" | "rejected" | "queued";
   summary: string;
   payload: Record<string, unknown>;
+  searchIndex: string;
 };
 
 const MAX_TRIPS = 10;
 const EVENTS_PER_TRIP = 200;
 const MAX_EVENT_PAGES = 5;
 const AUTO_REFRESH_MS = 30_000;
+const RAW_SPEED_DECIMALS = 2;
+const RAW_COORD_DECIMALS = 5;
+const RAW_ODOMETER_DECIMALS = 1;
+const RAW_FUEL_PERCENT_DECIMALS = 1;
+const RAW_FUEL_LEVEL_DECIMALS = 2;
+const RAW_ALTITUDE_DECIMALS = 1;
+const RAW_BLOB_KEYS = new Set([
+  "raw",
+  "rawmessage",
+  "raw_message",
+  "originalraw",
+  "original_raw",
+  "providerpayload",
+]);
 
 function extractTimestamp(value?: string) {
   if (!value) return undefined;
@@ -56,6 +70,170 @@ function formatTimestamp(value: string) {
   return formatDateTime(value, "--");
 }
 
+function roundTo(value: number, decimals: number) {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+}
+
+function isTimestampKey(key?: string) {
+  if (!key) return false;
+  const normalized = key.toLowerCase();
+  return (
+    normalized === "timestamp" ||
+    normalized === "eventtime" ||
+    normalized === "event_time" ||
+    normalized.endsWith("_time") ||
+    normalized.endsWith("_timestamp")
+  );
+}
+
+function normalizeNumberByKey(value: number, key?: string) {
+  const normalized = (key ?? "").toLowerCase();
+  if (["heading", "rpm", "satellite_count"].includes(normalized)) {
+    return Math.round(value);
+  }
+  if (
+    ["lat", "lon", "latitude", "longitude"].includes(normalized) ||
+    normalized.endsWith("_lat") ||
+    normalized.endsWith("_lon")
+  ) {
+    return roundTo(value, RAW_COORD_DECIMALS);
+  }
+  if (normalized.includes("speed")) {
+    return roundTo(value, RAW_SPEED_DECIMALS);
+  }
+  if (normalized.includes("odometer")) {
+    return roundTo(value, RAW_ODOMETER_DECIMALS);
+  }
+  if (normalized === "fuel_percent" || normalized === "fuelpercent") {
+    return roundTo(value, RAW_FUEL_PERCENT_DECIMALS);
+  }
+  if (normalized.includes("fuel_level")) {
+    return roundTo(value, RAW_FUEL_LEVEL_DECIMALS);
+  }
+  if (normalized.includes("altitude")) {
+    return roundTo(value, RAW_ALTITUDE_DECIMALS);
+  }
+  return value;
+}
+
+function normalizePayloadValue(value: unknown, key?: string): unknown {
+  if (value === null || value === undefined) return value;
+
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return value;
+    return normalizeNumberByKey(value, key);
+  }
+
+  if (typeof value === "string") {
+    if (isTimestampKey(key)) {
+      const parsed = new Date(value);
+      if (!Number.isNaN(parsed.getTime())) {
+        return formatTimestamp(value);
+      }
+    }
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizePayloadValue(item, key));
+  }
+
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.entries(record)
+        .filter(([childKey]) => !RAW_BLOB_KEYS.has(childKey.toLowerCase()))
+        .map(([childKey, childValue]) => [
+          childKey,
+          normalizePayloadValue(childValue, childKey),
+        ]),
+    );
+  }
+
+  return value;
+}
+
+function tryParseJson(value: string): unknown {
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return value;
+  }
+}
+
+function extractIncomingRawMessage(payload: Record<string, unknown>): unknown {
+  const directRaw = payload.raw;
+  if (typeof directRaw === "string") return tryParseJson(directRaw);
+  if (directRaw && typeof directRaw === "object") return directRaw;
+
+  const candidates = [
+    payload.rawMessage,
+    payload.raw_message,
+    payload.originalRaw,
+    payload.original_raw,
+    payload.providerPayload,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string") return tryParseJson(candidate);
+    if (candidate && typeof candidate === "object") return candidate;
+  }
+
+  return payload;
+}
+
+function pruneNullish(value: unknown): unknown {
+  if (value === null || value === undefined) return undefined;
+
+  if (typeof value === "string") {
+    return value.trim() === "" ? undefined : value;
+  }
+
+  if (Array.isArray(value)) {
+    const cleaned = value
+      .map((item) => pruneNullish(item))
+      .filter((item) => item !== undefined);
+    return cleaned.length > 0 ? cleaned : undefined;
+  }
+
+  if (typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .map(([key, val]) => [key, pruneNullish(val)] as const)
+      .filter(([, val]) => val !== undefined);
+    return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+  }
+
+  return value;
+}
+
+function buildSearchIndex(input: {
+  id: string;
+  timestamp: string;
+  vin: string;
+  tripId: string;
+  provider: string;
+  level: string;
+  status: string;
+  summary: string;
+  payload: Record<string, unknown>;
+}) {
+  const payloadText = JSON.stringify(input.payload).slice(0, 6000);
+  return [
+    input.id,
+    input.timestamp,
+    input.vin,
+    input.tripId,
+    input.provider,
+    input.level,
+    input.status,
+    input.summary,
+    payloadText,
+  ]
+    .join(" ")
+    .toLowerCase();
+}
+
 export function TelemetryRawPage() {
   const { tenant } = useTenant();
   const { fleet } = useFleet();
@@ -70,6 +248,9 @@ export function TelemetryRawPage() {
   const [activeTab, setActiveTab] = useState<
     "payload" | "overview" | "headers"
   >("payload");
+  const [payloadView, setPayloadView] = useState<"normalized" | "raw">(
+    "normalized",
+  );
   const [paused, setPaused] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<string | null>(null);
 
@@ -97,7 +278,7 @@ export function TelemetryRawPage() {
             let pages = 0;
 
             do {
-              const response = await fetchTripEvents({
+              const response = await fetchTripEventsRaw({
                 tenantId,
                 vin: trip.vin,
                 tripId: trip.tripId,
@@ -162,6 +343,17 @@ export function TelemetryRawPage() {
               status,
               summary,
               payload: record,
+              searchIndex: buildSearchIndex({
+                id: eventId,
+                timestamp: rawTimestamp,
+                vin: String(record.vin ?? record.VIN ?? vin),
+                tripId,
+                provider,
+                level,
+                status,
+                summary,
+                payload: record,
+              }),
             } as TelemetryEvent;
           }),
         )
@@ -202,7 +394,7 @@ export function TelemetryRawPage() {
         if (tripIdFilter !== "all" && event.tripId !== tripIdFilter) {
           return false;
         }
-        if (searchTerm && !event.summary.toLowerCase().includes(searchTerm)) {
+        if (searchTerm && !event.searchIndex.includes(searchTerm)) {
           return false;
         }
         return true;
@@ -220,6 +412,19 @@ export function TelemetryRawPage() {
   const selectedEvent =
     filteredEvents.find((event) => event.id === selectedId) ??
     filteredEvents[0];
+
+  const normalizedPayloadForDisplay = useMemo(
+    () =>
+      selectedEvent ? normalizePayloadValue(selectedEvent.payload) : undefined,
+    [selectedEvent],
+  );
+
+  const originalRawPayloadForDisplay = useMemo(() => {
+    if (!selectedEvent) return undefined;
+    const rawMessage = extractIncomingRawMessage(selectedEvent.payload);
+    return pruneNullish(rawMessage) ?? rawMessage;
+  }, [selectedEvent]);
+
   const counts = useMemo(() => {
     const total = filteredEvents.length;
     const errors = filteredEvents.filter(
@@ -264,21 +469,10 @@ export function TelemetryRawPage() {
   return (
     <div className="page telemetry-raw">
       <div className="telemetry-header">
-        <PageHeader title="Telemetry (Raw)" subtitle="Provider payloads" />
-        <div className="telemetry-switcher">
-          <Link
-            className="telemetry-switcher__item telemetry-switcher__item--active"
-            to="/adlp/telemetry/raw"
-          >
-            Raw
-          </Link>
-          <Link
-            className="telemetry-switcher__item"
-            to="/adlp/telemetry/normalized"
-          >
-            Normalized
-          </Link>
-        </div>
+        <PageHeader
+          title="Telemetry Events"
+          subtitle="Raw + normalized views"
+        />
       </div>
       <div className="telemetry-hero">
         <div className="telemetry-hero__glow" />
@@ -402,10 +596,10 @@ export function TelemetryRawPage() {
             </select>
           </label>
           <label className="form__field form__field--full">
-            <span className="text-muted">Search payload summary</span>
+            <span className="text-muted">Search events</span>
             <input
               className="input"
-              placeholder="Filter by message description"
+              placeholder="Search summary, VIN, trip ID, provider, status, or payload"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -553,9 +747,35 @@ export function TelemetryRawPage() {
               ) : null}
 
               {activeTab === "payload" ? (
-                <pre className="code-block telemetry-code">
-                  {JSON.stringify(selectedEvent.payload, null, 2)}
-                </pre>
+                <>
+                  <div className="tabs telemetry-tabs">
+                    <button
+                      className={
+                        payloadView === "normalized" ? "tab tab--active" : "tab"
+                      }
+                      onClick={() => setPayloadView("normalized")}
+                    >
+                      Normalized View
+                    </button>
+                    <button
+                      className={
+                        payloadView === "raw" ? "tab tab--active" : "tab"
+                      }
+                      onClick={() => setPayloadView("raw")}
+                    >
+                      Original Raw
+                    </button>
+                  </div>
+                  <pre className="code-block telemetry-code">
+                    {JSON.stringify(
+                      payloadView === "normalized"
+                        ? normalizedPayloadForDisplay
+                        : originalRawPayloadForDisplay,
+                      null,
+                      2,
+                    )}
+                  </pre>
+                </>
               ) : null}
 
               {activeTab === "headers" ? (

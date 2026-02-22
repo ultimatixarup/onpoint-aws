@@ -344,7 +344,9 @@ export function ManageUsersPage() {
       <Card title="Invite User">
         <div className="form-grid">
           <label className="form__field">
-            <span className="text-muted">Email</span>
+            <span className="text-muted">
+              Email <span className="required">*</span>
+            </span>
             <input
               className="input"
               value={email}
@@ -360,7 +362,9 @@ export function ManageUsersPage() {
             />
           </label>
           <label className="form__field">
-            <span className="text-muted">Temporary password *</span>
+            <span className="text-muted">
+              Temporary password <span className="required">*</span>
+            </span>
             <input
               className="input"
               type="password"

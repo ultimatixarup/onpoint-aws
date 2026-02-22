@@ -1,10 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import {
-    createDriver,
-    fetchDrivers,
-    fetchTenants,
-    updateDriver,
+  createDriver,
+  fetchDrivers,
+  fetchTenants,
+  updateDriver,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useEnterpriseForm } from "../../hooks/useEnterpriseForm";
@@ -96,7 +96,12 @@ export function PlatformDriversPage() {
 
   useEffect(() => {
     if (!isCreateOpen) {
-      createForm.resetForm({ driverId: "", customerId: "", metadata: "", reason: "" });
+      createForm.resetForm({
+        driverId: "",
+        customerId: "",
+        metadata: "",
+        reason: "",
+      });
     }
   }, [createForm.resetForm, isCreateOpen]);
 
@@ -141,13 +146,19 @@ export function PlatformDriversPage() {
           driverId: createdDriverId || undefined,
           tenantId,
           fleetId: fleetId || undefined,
-          customerId: String(createForm.values.customerId || "").trim() || undefined,
+          customerId:
+            String(createForm.values.customerId || "").trim() || undefined,
           metadata: parseJson(String(createForm.values.metadata || "")),
           reason: String(createForm.values.reason || "").trim() || undefined,
         },
         createIdempotencyKey(),
       );
-      createForm.resetForm({ driverId: "", customerId: "", metadata: "", reason: "" });
+      createForm.resetForm({
+        driverId: "",
+        customerId: "",
+        metadata: "",
+        reason: "",
+      });
       setIsCreateOpen(false);
       setRecentDriverId(createdDriverId);
       queryClient.invalidateQueries({
@@ -202,7 +213,9 @@ export function PlatformDriversPage() {
         <Card title="Drivers">
           <div className="stack">
             <label className="form__field">
-              <span>Tenant</span>
+              <span>
+                Tenant<span className="required">*</span>
+              </span>
               <select
                 className="select"
                 value={tenantId}

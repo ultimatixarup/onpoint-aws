@@ -663,6 +663,20 @@ function normalizeAssignments(response: unknown) {
   return items.map((item) => item as DriverAssignment);
 }
 
+function parseIsoToMs(value?: string) {
+  if (!value) return undefined;
+  const parsed = new Date(value).getTime();
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+function isActiveAssignment(assignment: DriverAssignment, nowMs: number) {
+  const fromMs = parseIsoToMs(assignment.effectiveFrom);
+  const toMs = parseIsoToMs(assignment.effectiveTo);
+  if (fromMs !== undefined && fromMs > nowMs) return false;
+  if (toMs !== undefined && toMs <= nowMs) return false;
+  return true;
+}
+
 export async function fetchDrivers(tenantId: string, fleetId?: string) {
   if (!fleetId) {
     return fetchDriversFromApi(tenantId);
@@ -694,6 +708,32 @@ export async function fetchDrivers(tenantId: string, fleetId?: string) {
       (driver.fleetId && driver.fleetId === fleetId) ||
       (driver.driverId && driverIds.has(driver.driverId)),
   );
+}
+
+export async function fetchAssignedDriverIdsByAssignments(
+  tenantId: string,
+  fleetId?: string,
+) {
+  const vehicles = await fetchVehicles(tenantId, fleetId);
+  const vins = vehicles.map((vehicle) => vehicle.vin).filter(Boolean);
+  if (!vins.length) return [] as string[];
+
+  const responses = await Promise.all(
+    vins.map((vin) => fetchVehicleAssignments(vin, tenantId).catch(() => [])),
+  );
+  const nowMs = Date.now();
+  const assignedDriverIds = new Set<string>();
+
+  for (const assignment of responses.flatMap((response) =>
+    normalizeAssignments(response),
+  )) {
+    if (!assignment.driverId || !isActiveAssignment(assignment, nowMs)) {
+      continue;
+    }
+    assignedDriverIds.add(assignment.driverId);
+  }
+
+  return Array.from(assignedDriverIds);
 }
 
 export async function fetchDriverDetail(tenantId: string, driverId: string) {

@@ -1,16 +1,16 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import {
-    assignVin,
-    createVehicle,
-    deleteVehicle,
-    fetchFleets,
-    fetchVehicleAssignments,
-    fetchVehicles,
-    fetchVinRegistryHistory,
-    transferVin,
-    updateVehicle,
-    VinRegistryRecord,
+  assignVin,
+  createVehicle,
+  deleteVehicle,
+  fetchFleets,
+  fetchVehicleAssignments,
+  fetchVehicles,
+  fetchVinRegistryHistory,
+  transferVin,
+  updateVehicle,
+  VinRegistryRecord,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useAuth } from "../../context/AuthContext";
@@ -1146,7 +1146,9 @@ export function TenantVehicleAdminPage() {
 
               <div className="form-grid">
                 <label className="form__field">
-                  <span className="text-muted">Assign fleet</span>
+                  <span className="text-muted">
+                    Assign fleet <span className="required">*</span>
+                  </span>
                   <select
                     className="select"
                     value={assignForm.fleetId}
@@ -1185,7 +1187,9 @@ export function TenantVehicleAdminPage() {
                   </span>
                 </label>
                 <label className="form__field">
-                  <span className="text-muted">Reason</span>
+                  <span className="text-muted">
+                    Reason <span className="required">*</span>
+                  </span>
                   <input
                     className="input"
                     value={assignForm.reason}
@@ -1265,7 +1269,9 @@ export function TenantVehicleAdminPage() {
         {createError ? <div className="form-error">{createError}</div> : null}
         <div className="form-grid">
           <label className="form__field">
-            <span className="text-muted">VIN</span>
+            <span className="text-muted">
+              VIN <span className="required">*</span>
+            </span>
             <input
               className="input"
               value={createForm.vin}
@@ -1558,7 +1564,9 @@ export function TenantVehicleAdminPage() {
             />
           </label>
           <label className="form__field form__field--full">
-            <span className="text-muted">Assignment reason</span>
+            <span className="text-muted">
+              Assignment reason <span className="required">*</span>
+            </span>
             <input
               className="input"
               value={createForm.reason}

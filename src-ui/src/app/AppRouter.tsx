@@ -39,7 +39,6 @@ import { PlatformVehiclesPage } from "../features/platform/PlatformVehiclesPage"
 import { LiveFeedPage } from "../features/reports/LiveFeedPage";
 import { ReportsPage } from "../features/reports/ReportsPage";
 import { SafetyEventsPage } from "../features/reports/SafetyEventsPage";
-import { TelemetryNormalizedPage } from "../features/telemetry/TelemetryNormalizedPage";
 import { TelemetryRawPage } from "../features/telemetry/TelemetryRawPage";
 import { LiveTrackingPage } from "../features/tracking/LiveTrackingPage";
 import { TripHistoryPage } from "../features/tracking/TripHistoryPage";
@@ -166,7 +165,7 @@ export function AppRouter() {
           <Route path="/adlp/telemetry/raw" element={<TelemetryRawPage />} />
           <Route
             path="/adlp/telemetry/normalized"
-            element={<TelemetryNormalizedPage />}
+            element={<Navigate to="/adlp/telemetry/raw" replace />}
           />
           <Route
             path="/adlp/geofence/manage"

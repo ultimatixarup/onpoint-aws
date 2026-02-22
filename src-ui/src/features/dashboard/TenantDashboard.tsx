@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import {
+  fetchAssignedDriverIdsByAssignments,
   fetchDrivers,
   fetchFleets,
   fetchUsers,
@@ -71,6 +73,18 @@ export function TenantDashboard() {
       ? queryKeys.drivers(tenantId, primaryFleetId)
       : ["drivers", "none"],
     queryFn: () => fetchDrivers(tenantId, primaryFleetId),
+    enabled: Boolean(tenantId),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: assignedDriverIds = [] } = useQuery({
+    queryKey: [
+      "dashboard-assigned-driver-ids",
+      tenantId,
+      primaryFleetId ?? "all",
+    ],
+    queryFn: () =>
+      fetchAssignedDriverIdsByAssignments(tenantId, primaryFleetId),
     enabled: Boolean(tenantId),
     staleTime: 5 * 60 * 1000,
   });
@@ -198,6 +212,21 @@ export function TenantDashboard() {
     };
   }, [tripPreview]);
 
+  const latestTrip = tripPreview[0];
+
+  const assignedDriverSet = useMemo(
+    () => new Set(assignedDriverIds),
+    [assignedDriverIds],
+  );
+
+  const unassignedDrivers = useMemo(
+    () =>
+      drivers.filter(
+        (driver) => !driver.driverId || !assignedDriverSet.has(driver.driverId),
+      ).length,
+    [assignedDriverSet, drivers],
+  );
+
   const isLoading =
     isLoadingFleets ||
     isLoadingVehicles ||
@@ -275,100 +304,119 @@ export function TenantDashboard() {
         </div>
       ) : null}
       <div className="dashboard-stats">
-        <div className="dashboard-stat">
+        <a
+          className="dashboard-stat dashboard-stat--link"
+          href="#fleet-breakdown"
+        >
           <span>Total fleets</span>
           <strong>{fleets.length}</strong>
           <span className="text-muted">Across all customers</span>
-        </div>
-        <div className="dashboard-stat">
+        </a>
+        <Link
+          className="dashboard-stat dashboard-stat--link"
+          to="/adlp/vehicles/vin-summary"
+        >
           <span>Total vehicles</span>
           <strong>{vehicles.length}</strong>
           <span className="text-muted">
             {vehicleStats.active} active · {vehicleStats.inactive} inactive ·{" "}
             {vehicleStats.unknown} unknown
           </span>
-        </div>
-        <div className="dashboard-stat">
+        </Link>
+        <Link
+          className="dashboard-stat dashboard-stat--link"
+          to="/adlp/drivers/summary"
+        >
           <span>Total drivers</span>
           <strong>{drivers.length}</strong>
-          <span className="text-muted">Assigned and unassigned</span>
-        </div>
-        <div className="dashboard-stat">
+          <span className="text-muted">
+            With and without active assignments
+          </span>
+        </Link>
+        <Link className="dashboard-stat dashboard-stat--link" to="/adlp/users">
           <span>Tenant users</span>
           <strong>{users.length}</strong>
           <span className="text-muted">Active accounts</span>
-        </div>
-        <div className="dashboard-stat">
-          <span>
-            {tripsFallback
-              ? "Latest completed trip"
-              : `Trips (last ${TRIP_LOOKBACK_DAYS} days)`}
-          </span>
+        </Link>
+        <Link
+          className="dashboard-stat dashboard-stat--link"
+          to="/adlp/tracking/trips"
+        >
+          <span>{`Trips (last ${TRIP_LOOKBACK_DAYS} days)`}</span>
           <strong>{tripStats.trips}</strong>
           <span className="text-muted">
-            Avg. safety score {tripStats.avgSafety ?? "--"}
+            {latestTrip
+              ? `Latest ended ${formatTimestamp(latestTrip.endTime ?? latestTrip.startTime)}${tripsFallback ? " (fallback)" : ""}`
+              : "No completed trips in range"}
           </span>
-        </div>
-        <div className="dashboard-stat">
-          <span>Tenant status</span>
-          <strong>{normalizeStatus(tenant?.status)}</strong>
-          <span className="text-muted">Operational state</span>
-        </div>
+        </Link>
+        <Link
+          className="dashboard-stat dashboard-stat--link"
+          to="/adlp/drivers/summary?filter=unassigned"
+        >
+          <span>Unassigned drivers</span>
+          <strong>{unassignedDrivers}</strong>
+          <span className="text-muted">Drivers without active assignment</span>
+        </Link>
       </div>
 
       <div className="dashboard-panels">
-        <Card title="Fleet Breakdown">
-          {fleets.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state__icon">Fleet</div>
-              <h3>No fleets available</h3>
-              <p className="text-muted">Assign fleets to this tenant.</p>
-            </div>
-          ) : (
-            <div className="table-responsive">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Fleet</th>
-                    <th>Status</th>
-                    <th>Vehicles</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {fleets.map((fleet) => {
-                    const status = normalizeStatus(fleet.status);
-                    const badgeClass =
-                      status === "ACTIVE"
-                        ? "badge--active"
-                        : status === "SUSPENDED"
-                          ? "badge--suspended"
-                          : status === "DELETED"
-                            ? "badge--deleted"
-                            : "badge--inactive";
-                    return (
-                      <tr key={fleet.fleetId}>
-                        <td>
-                          <div>{fleet.name}</div>
-                          <div className="text-muted mono">{fleet.fleetId}</div>
-                        </td>
-                        <td>
-                          <span className={`badge ${badgeClass}`}>
-                            {status}
-                          </span>
-                        </td>
-                        <td>
-                          {fleetVehicleCounts[fleet.fleetId] ??
-                            fleet.vehicleCount ??
-                            0}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
+        <div id="fleet-breakdown">
+          <Card title="Fleet Breakdown">
+            {fleets.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-state__icon">Fleet</div>
+                <h3>No fleets available</h3>
+                <p className="text-muted">Assign fleets to this tenant.</p>
+              </div>
+            ) : (
+              <div className="table-responsive">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Fleet</th>
+                      <th>Status</th>
+                      <th>Vehicles</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fleets.map((fleet) => {
+                      const status = normalizeStatus(fleet.status);
+                      const badgeClass =
+                        status === "ACTIVE"
+                          ? "badge--active"
+                          : status === "SUSPENDED"
+                            ? "badge--suspended"
+                            : status === "DELETED"
+                              ? "badge--deleted"
+                              : "badge--inactive";
+                      return (
+                        <tr key={fleet.fleetId}>
+                          <td>
+                            <div>{fleet.name}</div>
+                            <div className="text-muted mono">
+                              {fleet.fleetId}
+                            </div>
+                          </td>
+                          <td>
+                            <span className={`badge ${badgeClass}`}>
+                              {status}
+                            </span>
+                          </td>
+                          <td>
+                            {fleetVehicleCounts[fleet.fleetId] ??
+                              fleet.vehicleCount ??
+                              0}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+        </div>
 
         <Card title="Recent Trips">
           {tripPreview.length === 0 ? (
@@ -410,7 +458,17 @@ export function TenantDashboard() {
                     return (
                       <tr key={trip.tripId}>
                         <td>
-                          <div>{trip.tripId}</div>
+                          <div>
+                            {trip.tripId ? (
+                              <Link
+                                to={`/adlp/tracking/trips?tripId=${encodeURIComponent(trip.tripId)}${trip.vin ? `&vin=${encodeURIComponent(trip.vin)}` : ""}`}
+                              >
+                                {trip.tripId}
+                              </Link>
+                            ) : (
+                              "--"
+                            )}
+                          </div>
                         </td>
                         <td>{trip.vin}</td>
                         <td>

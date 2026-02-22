@@ -352,7 +352,9 @@ export function PlatformTenantsPage() {
                     </div>
                   </div>
                   <label className="form__field">
-                    <span>Name</span>
+                    <span>
+                      Name<span className="required">*</span>
+                    </span>
                     <input
                       className="input"
                       value={editName}
@@ -476,7 +478,9 @@ export function PlatformTenantsPage() {
             <div className="modal__body">
               <div className="stack">
                 <label className="form__field">
-                  <span>Tenant Name</span>
+                  <span>
+                    Tenant Name<span className="required">*</span>
+                  </span>
                   <input
                     className="input"
                     placeholder="Human-readable name"
@@ -485,7 +489,9 @@ export function PlatformTenantsPage() {
                   />
                 </label>
                 <label className="form__field">
-                  <span>Tenant ID</span>
+                  <span>
+                    Tenant ID<span className="required">*</span>
+                  </span>
                   <input
                     className="input"
                     placeholder="Auto-generated"
@@ -505,7 +511,10 @@ export function PlatformTenantsPage() {
                   </label>
                 </label>
                 <label className="form__field">
-                  <span>Retention Policy (days)</span>
+                  <span>
+                    Retention Policy (days)
+                    <span className="required">*</span>
+                  </span>
                   <input
                     className="input"
                     type="number"

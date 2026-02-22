@@ -125,7 +125,9 @@ export function PlatformCustomersPage() {
         <Card title="Customers">
           <div className="stack">
             <label className="form__field">
-              <span>Tenant</span>
+              <span>
+                Tenant<span className="required">*</span>
+              </span>
               <select
                 className="select"
                 value={tenantId}
@@ -261,7 +263,9 @@ export function PlatformCustomersPage() {
                     </div>
                   </div>
                   <label className="form__field">
-                    <span>Name</span>
+                    <span>
+                      Name<span className="required">*</span>
+                    </span>
                     <input
                       className="input"
                       value={editName}
@@ -340,7 +344,9 @@ export function PlatformCustomersPage() {
             <div className="modal__body">
               <div className="stack">
                 <label className="form__field">
-                  <span>Tenant</span>
+                  <span>
+                    Tenant<span className="required">*</span>
+                  </span>
                   <select
                     className="select"
                     value={tenantId}
@@ -355,7 +361,9 @@ export function PlatformCustomersPage() {
                   </select>
                 </label>
                 <label className="form__field">
-                  <span>Customer Name</span>
+                  <span>
+                    Customer Name<span className="required">*</span>
+                  </span>
                   <input
                     className="input"
                     placeholder="Human-readable name"
