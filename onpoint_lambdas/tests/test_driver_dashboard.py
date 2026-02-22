@@ -71,6 +71,40 @@ def _trip_summary_item():
         "idlingTime": "00:05:00",
         "mpg": {"actualMpg": 15.0},
     }
+
+
+def _trip_summary_item_without_top_level_miles():
+    summary = {
+        "distance": {"totalMiles": 42.3, "nightMiles": 5.0},
+        "speed": {"maxMph": 80},
+        "events": {
+            "harshBrakingCount": 1,
+            "harshAccelerationCount": 2,
+            "harshCorneringCount": 0,
+            "collisionCount": 1,
+            "seatbeltViolationCount": 3,
+        },
+        "drivingTime": "00:30:00",
+        "idlingTime": "00:05:00",
+        "mpg": {"actualMpg": 15.0},
+    }
+    return {
+        "PK": "VEHICLE#VIN123",
+        "SK": "TRIP_SUMMARY#TRIP1",
+        "vin": "VIN123",
+        "tripId": "TRIP1",
+        "startTime": "2026-02-01T00:00:00Z",
+        "endTime": "2026-02-01T00:30:00Z",
+        "fuelConsumed": Decimal("2.0"),
+        "safetyScore": 90,
+        "overspeedMilesStandard": Decimal("1.0"),
+        "overspeedMilesSevere": Decimal("0.5"),
+        "overspeedMilesTotal": Decimal("1.5"),
+        "overspeedEventCountStandard": 2,
+        "overspeedEventCountSevere": 1,
+        "overspeedEventCountTotal": 3,
+        "summary": json.dumps(summary),
+    }
     return {
         "PK": "VEHICLE#VIN123",
         "SK": "TRIP_SUMMARY#TRIP1",
@@ -139,6 +173,44 @@ def test_driver_dashboard_totals(monkeypatch):
     assert body["trips"]["count"] == 1
 
 
+def test_driver_dashboard_totals_miles_fallback_from_summary(monkeypatch):
+    mod = _load_module(monkeypatch)
+
+    def get_item(**kwargs):
+        return {"Item": mod._ddb_serialize(_driver_item())}
+
+    def query(**kwargs):
+        table = kwargs.get("TableName")
+        if table == "driver-assignments":
+            return {"Items": [mod._ddb_serialize(_assignment_item())], "LastEvaluatedKey": None}
+        if table == "trip-summary":
+            return {
+                "Items": [mod._ddb_serialize(_trip_summary_item_without_top_level_miles())],
+                "LastEvaluatedKey": None,
+            }
+        return {"Items": [], "LastEvaluatedKey": None}
+
+    mod._ddb = DummyClient(query=query, get_item=get_item)
+
+    event = {
+        "httpMethod": "GET",
+        "headers": {"x-role": "tenant-admin", "x-tenant-id": "tenant-1"},
+        "path": "/tenants/tenant-1/drivers/driver-1/dashboard",
+        "queryStringParameters": {
+            "from": "2026-02-01T00:00:00Z",
+            "to": "2026-02-02T00:00:00Z",
+        },
+    }
+
+    resp = mod.lambda_handler(event, None)
+    assert resp["statusCode"] == 200
+    body = json.loads(resp["body"])
+    totals = body["totals"]
+    assert totals["milesDriven"] == 42.3
+    assert totals["averageSpeedMph"] == 84.6
+    assert body["trips"]["count"] == 1
+
+
 def test_driver_dashboard_trips(monkeypatch):
     mod = _load_module(monkeypatch)
 
@@ -166,8 +238,61 @@ def test_driver_dashboard_trips(monkeypatch):
     assert resp["statusCode"] == 200
     body = json.loads(resp["body"])
     assert len(body["items"]) == 1
-    assert body["items"][0]["tripId"] == "TRIP1"
-    assert body["items"][0]["topSpeedMph"] == 80
+    row = body["items"][0]
+    assert row["tripId"] == "TRIP1"
+    assert row["milesDriven"] == 30.0
+    assert row["fuelConsumed"] == 2.0
+    assert row["safetyScore"] == 90.0
+    assert row["overspeedMilesStandard"] == 1.0
+    assert row["overspeedMilesSevere"] == 0.5
+    assert row["overspeedMilesTotal"] == 1.5
+    assert row["overspeedEventCountStandard"] == 2
+    assert row["overspeedEventCountSevere"] == 1
+    assert row["overspeedEventCountTotal"] == 3
+    assert row["topSpeedMph"] == 80.0
+
+
+def test_driver_dashboard_trips_miles_fallback_from_summary(monkeypatch):
+    mod = _load_module(monkeypatch)
+
+    def get_item(**kwargs):
+        return {"Item": mod._ddb_serialize(_driver_item())}
+
+    def query(**kwargs):
+        table = kwargs.get("TableName")
+        if table == "driver-assignments":
+            return {"Items": [mod._ddb_serialize(_assignment_item())], "LastEvaluatedKey": None}
+        if table == "trip-summary":
+            return {
+                "Items": [mod._ddb_serialize(_trip_summary_item_without_top_level_miles())],
+                "LastEvaluatedKey": None,
+            }
+        return {"Items": [], "LastEvaluatedKey": None}
+
+    mod._ddb = DummyClient(query=query, get_item=get_item)
+
+    event = {
+        "httpMethod": "GET",
+        "headers": {"x-role": "tenant-admin", "x-tenant-id": "tenant-1"},
+        "path": "/tenants/tenant-1/drivers/driver-1/dashboard/trips",
+        "queryStringParameters": {"limit": "25"},
+    }
+
+    resp = mod.lambda_handler(event, None)
+    assert resp["statusCode"] == 200
+    body = json.loads(resp["body"])
+    assert len(body["items"]) == 1
+    row = body["items"][0]
+    assert row["tripId"] == "TRIP1"
+    assert row["milesDriven"] == 42.3
+    assert row["fuelConsumed"] == 2.0
+    assert row["safetyScore"] == 90.0
+    assert row["overspeedMilesStandard"] == 1.0
+    assert row["overspeedMilesSevere"] == 0.5
+    assert row["overspeedMilesTotal"] == 1.5
+    assert row["overspeedEventCountStandard"] == 2
+    assert row["overspeedEventCountSevere"] == 1
+    assert row["overspeedEventCountTotal"] == 3
 
 
 def test_driver_dashboard_events_filter(monkeypatch):

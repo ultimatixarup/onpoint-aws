@@ -594,6 +594,59 @@ def _to_float(value: Any, default: float = 0.0) -> float:
         return default
 
 
+def _to_optional_float(value: Any) -> Optional[float]:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return float(value)
+    try:
+        return float(value)
+    except Exception:
+        return None
+
+
+def _to_optional_int(value: Any) -> Optional[int]:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except Exception:
+        return None
+
+
+def _miles_from_trip_summary(summary: Optional[dict]) -> Optional[float]:
+    if not isinstance(summary, dict):
+        return None
+
+    direct = _to_optional_float(summary.get("milesDriven"))
+    if direct is not None:
+        return direct
+
+    odometer = summary.get("odometer") or {}
+    odometer_miles = _to_optional_float(odometer.get("milesDriven"))
+    if odometer_miles is not None:
+        return odometer_miles
+
+    start_miles = _to_optional_float(odometer.get("startMiles"))
+    end_miles = _to_optional_float(odometer.get("endMiles"))
+    if start_miles is not None and end_miles is not None and end_miles >= start_miles:
+        return end_miles - start_miles
+
+    distance = summary.get("distance") or {}
+    for field in ("totalMiles", "distanceMiles", "distance_miles", "tripMiles"):
+        val = _to_optional_float(distance.get(field))
+        if val is not None:
+            return val
+
+    city_miles = _to_optional_float(distance.get("cityMiles"))
+    highway_miles = _to_optional_float(distance.get("highwayMiles"))
+    night_miles = _to_optional_float(distance.get("nightMiles"))
+    if city_miles is not None or highway_miles is not None or night_miles is not None:
+        return (city_miles or 0.0) + (highway_miles or 0.0) + (night_miles or 0.0)
+
+    return None
+
+
 def _query_trip_summaries(
     vin: str,
     limit: Optional[int] = None,
@@ -628,20 +681,39 @@ def _summarize_trip_item(it: dict) -> dict:
         pk = it.get("PK") or ""
         if isinstance(pk, str) and pk.startswith("VEHICLE#"):
             vin = pk.split("#", 1)[1]
+    parsed_summary = _parse_summary_json(it.get("summary")) or {}
+    if miles is None:
+        fallback_miles = _miles_from_trip_summary(parsed_summary)
+        if fallback_miles is not None:
+            miles = fallback_miles
+    miles_value = _to_optional_float(miles)
+    if miles_value is not None:
+        miles_value = round(miles_value, 2)
+
+    fuel_value = _to_optional_float(fuel)
+    if fuel_value is not None:
+        fuel_value = round(fuel_value, 2)
+    safety_score_value = _to_optional_float(score)
+    os_miles_std = _to_optional_float(it.get("overspeedMilesStandard"))
+    os_miles_sev = _to_optional_float(it.get("overspeedMilesSevere"))
+    os_miles_total = _to_optional_float(it.get("overspeedMilesTotal"))
+    os_count_std = _to_optional_int(it.get("overspeedEventCountStandard"))
+    os_count_sev = _to_optional_int(it.get("overspeedEventCountSevere"))
+    os_count_total = _to_optional_int(it.get("overspeedEventCountTotal"))
     summary = {
         "vin": vin,
         "tripId": trip_id,
         "startTime": start_time,
         "endTime": end_time,
-        "milesDriven": miles,
-        "fuelConsumed": fuel,
-        "safetyScore": score,
-        "overspeedMilesStandard": it.get("overspeedMilesStandard"),
-        "overspeedMilesSevere": it.get("overspeedMilesSevere"),
-        "overspeedMilesTotal": it.get("overspeedMilesTotal"),
-        "overspeedEventCountStandard": it.get("overspeedEventCountStandard"),
-        "overspeedEventCountSevere": it.get("overspeedEventCountSevere"),
-        "overspeedEventCountTotal": it.get("overspeedEventCountTotal"),
+        "milesDriven": miles_value,
+        "fuelConsumed": fuel_value,
+        "safetyScore": safety_score_value,
+        "overspeedMilesStandard": os_miles_std,
+        "overspeedMilesSevere": os_miles_sev,
+        "overspeedMilesTotal": os_miles_total,
+        "overspeedEventCountStandard": os_count_std,
+        "overspeedEventCountSevere": os_count_sev,
+        "overspeedEventCountTotal": os_count_total,
     }
     return summary
 
@@ -3372,12 +3444,16 @@ def _driver_dashboard(
     mpg_weight = 0.0
 
     for it in trips:
-        miles = _to_float(it.get("milesDriven"), 0.0)
+        summary = _parse_summary_json(it.get("summary")) or {}
+        miles = _to_optional_float(it.get("milesDriven"))
+        if miles is None:
+            miles = _miles_from_trip_summary(summary)
+        miles = miles if miles is not None else 0.0
+
         fuel = _to_float(it.get("fuelConsumed"), 0.0)
         total_miles += miles
         total_fuel += fuel
 
-        summary = _parse_summary_json(it.get("summary")) or {}
         speed = summary.get("speed") or {}
         distance = summary.get("distance") or {}
         events = summary.get("events") or {}
@@ -3514,8 +3590,9 @@ def _driver_dashboard_trips(
                     row = _summarize_trip_item(it)
                     summary = _parse_summary_json(it.get("summary")) or {}
                     speed = summary.get("speed") or {}
-                    if "maxMph" in speed:
-                        row["topSpeedMph"] = speed.get("maxMph")
+                    top_speed = _to_optional_float(speed.get("maxMph"))
+                    if top_speed is not None:
+                        row["topSpeedMph"] = round(top_speed, 2)
                     collected.append(row)
 
             esk = lek

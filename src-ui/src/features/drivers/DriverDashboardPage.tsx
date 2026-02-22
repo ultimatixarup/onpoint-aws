@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { MapContainer, Polyline, TileLayer, useMap } from "react-leaflet";
 import {
   fetchDriverDashboard,
   fetchDriverDashboardEvents,
@@ -8,6 +11,13 @@ import {
   fetchDriverDetail,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
+import {
+  buildTripDetailPresentation,
+  fetchTripEventPositions,
+  fetchTripMapData,
+  fetchTripSummaryTripDetail,
+  type TripSummaryItem,
+} from "../../api/tripSummaryApi";
 import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
@@ -40,6 +50,17 @@ function inputToIso(value: string, endOfDay = false) {
   return `${value}${suffix}`;
 }
 
+function formatSecondsAsHms(value?: number | null) {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return "--";
+  }
+  const totalSeconds = Math.max(0, Math.floor(value));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 export function DriverDashboardPage() {
   const { driverId } = useParams();
   const navigate = useNavigate();
@@ -58,6 +79,8 @@ export function DriverDashboardPage() {
   const [eventType, setEventType] = useState("harsh_braking");
   const [view, setView] = useState<"trips" | "events">("trips");
   const [isAutoRange, setIsAutoRange] = useState(true);
+  const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
+  const [selectedTripVin, setSelectedTripVin] = useState<string | null>(null);
 
   const handleKpiView = (
     nextView: "trips" | "events",
@@ -67,12 +90,24 @@ export function DriverDashboardPage() {
     if (nextEventType) setEventType(nextEventType);
   };
 
-  const handleTripDrilldown = (tripId?: string | null, vin?: string | null) => {
+  const handleTripNavigate = (tripId?: string | null, vin?: string | null) => {
     if (!tripId) return;
     const params = new URLSearchParams();
     params.set("tripId", tripId);
     if (vin) params.set("vin", vin);
     navigate(`/adlp/tracking/trips?${params.toString()}`);
+  };
+
+  const handleTripRowToggle = (tripId?: string | null, vin?: string | null) => {
+    if (!tripId || !vin) return;
+    const isSelected = selectedTripId === tripId && selectedTripVin === vin;
+    if (isSelected) {
+      setSelectedTripId(null);
+      setSelectedTripVin(null);
+      return;
+    }
+    setSelectedTripId(tripId);
+    setSelectedTripVin(vin);
   };
 
   const clickableProps = (handler: () => void) => ({
@@ -166,6 +201,99 @@ export function DriverDashboardPage() {
     enabled: Boolean(tenantId && driverId),
   });
 
+  const selectedTrip = useMemo(
+    () =>
+      trips.find(
+        (trip) =>
+          trip.tripId === selectedTripId && trip.vin === selectedTripVin,
+      ) ?? null,
+    [selectedTripId, selectedTripVin, trips],
+  );
+
+  useEffect(() => {
+    if (!selectedTripId || !selectedTripVin) return;
+    const hasTrip = trips.some(
+      (trip) => trip.tripId === selectedTripId && trip.vin === selectedTripVin,
+    );
+    if (!hasTrip) {
+      setSelectedTripId(null);
+      setSelectedTripVin(null);
+    }
+  }, [selectedTripId, selectedTripVin, trips]);
+
+  const {
+    data: selectedTripDetail,
+    isLoading: isLoadingTripDetail,
+    error: tripDetailError,
+  } = useQuery({
+    queryKey: [
+      "driver-dashboard-trip-detail",
+      tenantId ?? "",
+      selectedTripVin ?? "",
+      selectedTripId ?? "",
+    ],
+    queryFn: () =>
+      fetchTripSummaryTripDetail({
+        tenantId: tenantId ?? "",
+        tenantHeaderId: tenantId ?? "",
+        vin: selectedTripVin ?? "",
+        tripId: selectedTripId ?? "",
+        include: "summary",
+      }),
+    enabled: Boolean(
+      tenantId && selectedTripId && selectedTripVin && view === "trips",
+    ),
+  });
+
+  const {
+    data: tripMapData,
+    isLoading: isLoadingTripMap,
+    error: tripMapError,
+  } = useQuery({
+    queryKey: [
+      "driver-dashboard-trip-map",
+      tenantId ?? "",
+      selectedTripVin ?? "",
+      selectedTripId ?? "",
+    ],
+    queryFn: async () => {
+      const response = await fetchTripMapData({
+        tenantId: tenantId ?? "",
+        tenantHeaderId: tenantId ?? "",
+        vin: selectedTripVin ?? "",
+        tripId: selectedTripId ?? "",
+      });
+      return response.map;
+    },
+    enabled: Boolean(
+      tenantId && selectedTripId && selectedTripVin && view === "trips",
+    ),
+  });
+
+  const {
+    data: tripEventPositions,
+    isLoading: isLoadingTripEventsPath,
+    error: tripEventsPathError,
+  } = useQuery({
+    queryKey: [
+      "driver-dashboard-trip-events-path",
+      tenantId ?? "",
+      selectedTripVin ?? "",
+      selectedTripId ?? "",
+    ],
+    queryFn: () =>
+      fetchTripEventPositions({
+        tenantId: tenantId ?? "",
+        tenantHeaderId: tenantId ?? "",
+        vin: selectedTripVin ?? "",
+        tripId: selectedTripId ?? "",
+        limit: 1000,
+      }),
+    enabled: Boolean(
+      tenantId && selectedTripId && selectedTripVin && view === "trips",
+    ),
+  });
+
   useEffect(() => {
     if (!driverId) return;
     setIsAutoRange(true);
@@ -184,6 +312,62 @@ export function DriverDashboardPage() {
     setFrom(dateToInput(fromDate));
     setTo(dateToInput(latestDate));
   }, [isAutoRange, latestTrip]);
+
+  const tripPath = tripMapData?.sampledPath ?? [];
+  const snappedPath = tripMapData?.snappedPath ?? [];
+  const displayPath = useMemo(() => {
+    const primary = snappedPath.length > 1 ? snappedPath : tripPath;
+    if (primary.length > 1) {
+      const first = primary[0];
+      const last = primary[primary.length - 1];
+      const isDegenerate = first[0] === last[0] && first[1] === last[1];
+      if (!isDegenerate) return primary;
+    }
+    if (Array.isArray(tripEventPositions) && tripEventPositions.length > 1) {
+      return tripEventPositions;
+    }
+    return primary;
+  }, [snappedPath, tripPath, tripEventPositions]);
+
+  const tripBounds = useMemo(() => {
+    if (displayPath.length === 0) return null;
+    return L.latLngBounds(displayPath);
+  }, [displayPath]);
+
+  const selectedTripForPresentation = useMemo<TripSummaryItem | null>(() => {
+    if (!selectedTrip?.vin || !selectedTrip?.tripId) return null;
+    return {
+      vin: selectedTrip.vin,
+      tripId: selectedTrip.tripId,
+      startTime: selectedTrip.startTime,
+      endTime: selectedTrip.endTime,
+      milesDriven: selectedTrip.milesDriven,
+      fuelConsumed: selectedTrip.fuelConsumed,
+      safetyScore: selectedTrip.safetyScore,
+    };
+  }, [selectedTrip]);
+
+  const tripDetailPresentation = useMemo(
+    () =>
+      buildTripDetailPresentation({
+        selectedTrip: selectedTripForPresentation,
+        selectedTripDetail,
+        isSelectedVehicleEv: false,
+      }),
+    [selectedTripDetail, selectedTripForPresentation],
+  );
+
+  const { metricItems, summaryItems, tripStartLabel, tripEndLabel } =
+    tripDetailPresentation;
+
+  const startLocationDisplay =
+    displayPath.length > 0
+      ? `${displayPath[0][0].toFixed(5)}, ${displayPath[0][1].toFixed(5)}`
+      : "Location unavailable";
+  const endLocationDisplay =
+    displayPath.length > 0
+      ? `${displayPath[displayPath.length - 1][0].toFixed(5)}, ${displayPath[displayPath.length - 1][1].toFixed(5)}`
+      : "Location unavailable";
 
   if (!driverId) {
     return (
@@ -338,14 +522,14 @@ export function DriverDashboardPage() {
               {...clickableProps(() => handleKpiView("trips"))}
             >
               <span>Driving time</span>
-              <strong>{formatNumber(totals?.drivingTimeSeconds, "s")}</strong>
+              <strong>{formatSecondsAsHms(totals?.drivingTimeSeconds)}</strong>
             </div>
             <div
               className="kpi-card"
               {...clickableProps(() => handleKpiView("events", "idling"))}
             >
               <span>Idling time</span>
-              <strong>{formatNumber(totals?.idlingTimeSeconds, "s")}</strong>
+              <strong>{formatSecondsAsHms(totals?.idlingTimeSeconds)}</strong>
             </div>
             <div
               className="kpi-card"
@@ -444,33 +628,190 @@ export function DriverDashboardPage() {
             {trips.length === 0 ? (
               <div className="empty-state">No trips in this range.</div>
             ) : (
-              trips.map((trip) => (
-                <div
-                  key={`${trip.tripId}-${trip.vin}`}
-                  className="table-row table-row--drilldown"
-                  {...clickableProps(() =>
-                    handleTripDrilldown(trip.tripId, trip.vin),
-                  )}
-                >
-                  <div className="table-row__primary">
-                    <span className="text-muted">Trip ID</span>
-                    <strong className="mono">{trip.tripId ?? "--"}</strong>
-                    <div className="text-muted">VIN: {trip.vin ?? "--"}</div>
-                  </div>
-                  <div className="table-row__metric">
-                    <span className="text-muted">Miles</span>
-                    <strong>{formatNumber(trip.milesDriven)}</strong>
-                  </div>
-                  <div className="table-row__metric">
-                    <span className="text-muted">Top speed</span>
-                    <strong>
-                      {formatNumber(trip.topSpeedMph, " mph", {
-                        maximumFractionDigits: 0,
-                      })}
-                    </strong>
-                  </div>
-                </div>
-              ))
+              trips.map((trip) => {
+                const isSelectedRow =
+                  trip.tripId === selectedTripId &&
+                  trip.vin === selectedTripVin;
+
+                return (
+                  <Fragment key={`${trip.tripId}-${trip.vin}`}>
+                    <div
+                      className={`table-row table-row--drilldown${isSelectedRow ? " is-selected" : ""}`}
+                      {...clickableProps(() =>
+                        handleTripRowToggle(trip.tripId, trip.vin),
+                      )}
+                    >
+                      <div className="table-row__primary">
+                        <span className="text-muted">Trip ID</span>
+                        <strong className="mono">{trip.tripId ?? "--"}</strong>
+                        <div className="text-muted">
+                          VIN: {trip.vin ?? "--"}
+                        </div>
+                      </div>
+                      <div className="table-row__metric">
+                        <span className="text-muted">Miles</span>
+                        <strong>{formatNumber(trip.milesDriven)}</strong>
+                      </div>
+                      <div className="table-row__metric">
+                        <span className="text-muted">Top speed</span>
+                        <strong>
+                          {formatNumber(trip.topSpeedMph, " mph", {
+                            maximumFractionDigits: 0,
+                          })}
+                        </strong>
+                      </div>
+                    </div>
+
+                    {isSelectedRow ? (
+                      <div className="trip-inline-panel">
+                        {isLoadingTripDetail ? (
+                          <div className="trip-inline-panel empty-state">
+                            <div className="empty-state__icon">⏳</div>
+                            <h3>Loading trip details</h3>
+                            <p className="text-muted">
+                              Fetching trip summary for this trip.
+                            </p>
+                          </div>
+                        ) : tripDetailError ? (
+                          <div className="trip-inline-panel empty-state">
+                            <div className="empty-state__icon">⚠️</div>
+                            <h3>Unable to load trip details</h3>
+                            <p className="text-muted">
+                              Verify your API access and try again.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="trip-map-layout trip-map-layout--inline">
+                            <div className="trip-details">
+                              <div className="trip-locations">
+                                <div className="trip-location">
+                                  <div className="trip-location__icon trip-location__icon--start" />
+                                  <div>
+                                    <p className="trip-location__label">
+                                      Start
+                                    </p>
+                                    <p className="trip-location__value">
+                                      {startLocationDisplay}
+                                    </p>
+                                  </div>
+                                  <div className="trip-location__time">
+                                    {tripStartLabel}
+                                  </div>
+                                </div>
+                                <div className="trip-location">
+                                  <div className="trip-location__icon trip-location__icon--end" />
+                                  <div>
+                                    <p className="trip-location__label">End</p>
+                                    <p className="trip-location__value">
+                                      {endLocationDisplay}
+                                    </p>
+                                  </div>
+                                  <div className="trip-location__time">
+                                    {tripEndLabel}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="trip-metrics">
+                                {metricItems.map((metric) => (
+                                  <div
+                                    key={metric.label}
+                                    className="trip-metric"
+                                  >
+                                    <span className="trip-metric__icon">
+                                      {metric.icon}
+                                    </span>
+                                    <div>
+                                      <p className="trip-metric__label">
+                                        {metric.label}
+                                      </p>
+                                      <p className="trip-metric__value">
+                                        {metric.value}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="trip-map-card">
+                              <div className="trip-summary">
+                                {summaryItems.map((summary) => (
+                                  <div
+                                    key={summary.label}
+                                    className="trip-summary__item"
+                                  >
+                                    <span className="trip-summary__icon">
+                                      {summary.icon}
+                                    </span>
+                                    <div>
+                                      <p className="trip-summary__label">
+                                        {summary.label}
+                                      </p>
+                                      <p className="trip-summary__value">
+                                        {summary.value}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="map-container map-container--inline">
+                                {isLoadingTripMap || isLoadingTripEventsPath ? (
+                                  <div className="empty-state">
+                                    <div className="empty-state__icon">⏳</div>
+                                    <h3>Loading route</h3>
+                                    <p className="text-muted">
+                                      Fetching map and event path data.
+                                    </p>
+                                  </div>
+                                ) : tripMapError || tripEventsPathError ? (
+                                  <div className="empty-state">
+                                    <div className="empty-state__icon">⚠️</div>
+                                    <h3>Unable to load route</h3>
+                                    <p className="text-muted">
+                                      Trip metrics are available, but map data
+                                      could not be loaded.
+                                    </p>
+                                  </div>
+                                ) : displayPath.length === 0 ? (
+                                  <div className="empty-state">
+                                    <div className="empty-state__icon">📍</div>
+                                    <h3>No GPS points available</h3>
+                                    <p className="text-muted">
+                                      This trip has no location data to display.
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <MapContainer
+                                    center={displayPath[0]}
+                                    zoom={12}
+                                    style={{ height: "100%", width: "100%" }}
+                                  >
+                                    <TileLayer
+                                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                    />
+                                    {tripBounds ? (
+                                      <DriverTripFitBounds
+                                        bounds={tripBounds}
+                                      />
+                                    ) : null}
+                                    <Polyline
+                                      positions={displayPath}
+                                      color="#1d4ed8"
+                                      weight={4}
+                                    />
+                                  </MapContainer>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+                  </Fragment>
+                );
+              })
             )}
           </div>
         ) : (
@@ -483,7 +824,7 @@ export function DriverDashboardPage() {
                   key={`${event.tripId}-${event.eventTime}-${index}`}
                   className="table-row table-row--drilldown"
                   {...clickableProps(() =>
-                    handleTripDrilldown(event.tripId ?? undefined),
+                    handleTripNavigate(event.tripId ?? undefined, event.vin),
                   )}
                 >
                   <div className="table-row__primary">
@@ -511,4 +852,14 @@ export function DriverDashboardPage() {
       </Card>
     </div>
   );
+}
+
+function DriverTripFitBounds({ bounds }: { bounds: L.LatLngBounds }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.fitBounds(bounds, { padding: [24, 24] });
+  }, [bounds, map]);
+
+  return null;
 }
