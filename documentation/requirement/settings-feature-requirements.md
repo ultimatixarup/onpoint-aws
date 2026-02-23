@@ -375,6 +375,137 @@ Integration contracts **MUST** define fallback behavior when resolver is unavail
 3. “Reset to inherited” **MUST** map to override delete.
 4. Policy updates **MUST** require reason text for auditable domains.
 
+### 18.3 UI Mockups (Low-Fidelity Wireframes)
+The following wireframes are normative UX references for implementation planning. Visual styling may vary, but information architecture and key controls **MUST** be preserved.
+
+#### 18.3.1 Tenant Settings — Overview and Category Navigation
+```text
++--------------------------------------------------------------------------------------------------+
+| OnPoint Admin                                                                 [Tenant: Acme]     |
++--------------------------------------------------------------------------------------------------+
+| Settings                                                                                         |
+| ------------------------------------------------------------------------------------------------ |
+| Scope: (●) Tenant   ( ) Fleet   ( ) User                                                         |
+| Search setting key/name: [ overspeed________________________ ] [Filter: Safety v] [Export]      |
+|                                                                                                  |
+| Categories                          | Selected Category: Safety                                  |
+| ----------------------------------- | ---------------------------------------------------------- |
+| > Safety                            |  Key                          Effective   Source  Lock     |
+| > Driver Scoring                    | ---------------------------------------------------------- |
+| > Geofencing                        |  safety.overspeed.standard    65 mph      Tenant  [🔒]     |
+| > Fuel/EV/Idling                    |  safety.overspeed.severe      80 mph      Tenant  [🔒]     |
+| > Maintenance                       |  safety.harsh.braking.level   medium      System  [ ]      |
+| > Notifications                     |  safety.harsh.cornering.level medium      Fleet   [ ]      |
+| > Privacy                           |                                                          ... |
+| > UX Preferences                    |                                                          ... |
+|                                                                                                  |
+| Legend: Source = System/Tenant/Fleet/User | Lock=locked at tenant                                |
++--------------------------------------------------------------------------------------------------+
+```
+
+#### 18.3.2 Settings Edit Drawer — Override with Concurrency and Audit Reason
+```text
++----------------------------------------------------------------------------------------------+
+| Edit Setting: safety.overspeed.standard                                                      |
+|----------------------------------------------------------------------------------------------|
+| Scope: Tenant (Acme)                                                                         |
+| Data type: number   Unit: mph   Allowed range: 30..100                                       |
+| Current effective value: 65 (source: Tenant, version: 14, etag: "v14-abc123")              |
+|                                                                                              |
+| New value: [ 70 ]                                                                             |
+| Lock at tenant: [x] Prevent fleet/user overrides                                              |
+| Effective from: [ immediate v ]                                                               |
+| Change reason (required): [ Annual safety policy update ________________________________ ]    |
+|                                                                                              |
+| Idempotency Key: [ auto-generated: 6f0f... ]                                                  |
+| Concurrency: If-Match "v14-abc123"                                                            |
+|                                                                                              |
+| [Cancel]                                                          [Validate] [Save Change]    |
++----------------------------------------------------------------------------------------------+
+```
+
+#### 18.3.3 Fleet Settings — Inheritance and Override Visualization
+```text
++------------------------------------------------------------------------------------------------+
+| Fleet Settings                                                                        Fleet: F-21|
++------------------------------------------------------------------------------------------------+
+| Key                               Inherited Value  Override Value  Effective  Source   Actions |
+|------------------------------------------------------------------------------------------------|
+| safety.overspeed.standard         70 mph           [ 72 ]          72 mph     Fleet    [Save]  |
+| safety.overspeed.severe           80 mph           [ -- ]          80 mph     Tenant   [Reset] |
+| fuel.idle.threshold.seconds       300              [ 240 ]         240        Fleet    [Save]  |
+| notification.quietHours.start     22:00            [ -- ]          22:00      Tenant   [Reset] |
+|                                                                                                  |
+| Notes:                                                                                           |
+| - Locked tenant keys are read-only at fleet scope.                                               |
+| - "Reset" removes fleet override and reverts to inherited value.                                |
++------------------------------------------------------------------------------------------------+
+```
+
+#### 18.3.4 User Preferences — Personalization Boundaries
+```text
++-----------------------------------------------------------------------------------------------+
+| User Preferences                                                                 User: U-9081 |
++-----------------------------------------------------------------------------------------------+
+| Key                                Tenant Policy   Fleet Policy   User Override   Effective   |
+|-----------------------------------------------------------------------------------------------|
+| ui.units                            imperial        imperial       [ metric ]      metric      |
+| ui.timezone                         UTC             UTC            [ Asia/Kolkata] Asia/Kolkata|
+| map.defaultZoom                     12              12             [ 10 ]          10          |
+| safety.overspeed.standard           70 mph          72 mph         [ disabled ]    72 mph      |
+|                                                                                               |
+| Info: User may only override whitelisted keys (UI/notification personalization).              |
+| [Discard]                                                                      [Save Changes]  |
++-----------------------------------------------------------------------------------------------+
+```
+
+#### 18.3.5 Resolver Inspector (Support / Debug View)
+```text
++--------------------------------------------------------------------------------------------------+
+| Resolver Inspector                                                                                |
++--------------------------------------------------------------------------------------------------+
+| Query Context: tenantId=T-1001 fleetId=F-21 userId=U-9081                                        |
+| Setting Key: safety.overspeed.standard                                                            |
+|--------------------------------------------------------------------------------------------------|
+| Resolution Path                                                                                   |
+| 1. User   -> no override                                                                          |
+| 2. Fleet  -> value=72 mph, version=7, updatedAt=2026-02-20T11:31:00Z                            |
+| 3. Tenant -> value=70 mph (ignored due to higher scope override)                                 |
+| 4. System -> value=65 mph (ignored)                                                               |
+|--------------------------------------------------------------------------------------------------|
+| Effective: 72 mph                                                                                 |
+| Effective Scope: fleet                                                                            |
+| Locked At Tenant: false                                                                           |
+| Cache Status: HIT (age=8s)                                                                        |
++--------------------------------------------------------------------------------------------------+
+```
+
+#### 18.3.6 Audit Timeline Page
+```text
++--------------------------------------------------------------------------------------------------+
+| Settings Audit                                                                                    |
++--------------------------------------------------------------------------------------------------+
+| Filters: [Tenant v] [Fleet v] [User v] [Setting Key __________] [Actor _______] [Date Range v] |
+|--------------------------------------------------------------------------------------------------|
+| Time (UTC)            Actor              Scope        Key                           Change       |
+|--------------------------------------------------------------------------------------------------|
+| 2026-02-22 09:14:11   tenant_admin_01    Tenant T-1   safety.overspeed.standard     65 -> 70    |
+| Reason: Annual safety policy update | RequestId: req-12ab | Idempotency: idem-77aa                |
+|--------------------------------------------------------------------------------------------------|
+| 2026-02-22 09:16:05   fleet_mgr_22       Fleet F-21    safety.overspeed.standard     70 -> 72    |
+| Reason: Regional traffic profile    | RequestId: req-98xy | If-Match: v6 -> v7                    |
+|--------------------------------------------------------------------------------------------------|
+| [Previous]                                                                       [Next]          |
++--------------------------------------------------------------------------------------------------+
+```
+
+### 18.4 UX Acceptance Criteria for Mockup Fidelity
+1. Implemented UI **MUST** expose scope context and source attribution for each effective value.
+2. Edit flows **MUST** display concurrency token context (e.g., version/etag) when conflicts occur.
+3. Locked settings **MUST** be visually read-only with explicit reason/tool-tip.
+4. Audit page **MUST** expose `who/what/when/why/requestId` for every setting mutation.
+5. Fleet/User screens **MUST** clearly differentiate inherited value vs override value.
+
 ---
 
 ## 19. Backward Compatibility and Migration Strategy
