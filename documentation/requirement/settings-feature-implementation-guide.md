@@ -43,7 +43,7 @@ Supported scopes:
 flowchart LR
     UI[Admin/API Client] --> APIGW[API Gateway]
     APIGW --> L[Settings Lambda]
-    L --> DDB[(onpoint-${Env}-settings)]
+    L --> DDB[(onpoint-ENV-settings)]
     L --> CW[CloudWatch Logs]
 
     TP[Telemetry Lambda] --> MC[In-memory Settings Cache]
