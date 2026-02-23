@@ -1,289 +1,465 @@
-# OnPoint Settings Feature — Authoritative Requirements
+# OnPoint Settings Feature — Enterprise Specification (Version 2.0)
 
 ## 1. Document Control
-- **Feature**: Hierarchical Settings Management (Tenant, Fleet, User)
+- **Feature**: Hierarchical Settings Management (`tenant`, `fleet`, `user`)
 - **Product**: OnPoint Telematics Fleet Management
-- **Status**: Authoritative baseline for implementation
-- **Version**: 1.0
+- **Status**: Authoritative enterprise baseline for engineering, QA, SRE, Security, and Product
+- **Version**: 2.0
 - **Date**: 2026-02-22
+- **Architecture Alignment**: AWS Serverless (API Gateway, Lambda, DynamoDB, EventBridge, CloudWatch)
+- **Normative Language**: Keywords **MUST**, **SHOULD**, **MAY** are normative.
 
 ---
 
-## 2. Objective
-Implement a standards-aligned settings framework for telematics operations that supports:
-- Tenant-level policy control
-- Fleet-level operational overrides
-- User-level personalization
-- Deterministic effective-value resolution
-- Auditability, security, and compliance readiness
+## 2. Architectural Review Findings (V1 Critique)
+This section records key weaknesses identified in version 1.0 and the corresponding 2.0 hardening goals.
 
-This feature must reduce hardcoded behavior across services and make policy decisions data-driven.
+### 2.1 Missing Enterprise-Grade Elements in v1
+1. No explicit idempotency contract for write APIs.
+2. No production-safe concurrency protocol (e.g., `If-Match`/ETag + optimistic locking semantics).
+3. No concrete DynamoDB partition/sort key design or hot-partition mitigation.
+4. No explicit cache invalidation topology (local cache + distributed cache + event-driven invalidation).
+5. No rate-limiting or abuse control requirements.
+6. No feature-flag rollout controls for progressive activation.
+7. No formal failure-mode behaviors (degraded mode, fallback policy, stale reads, poison events).
+
+### 2.2 Ambiguous or Weak Requirement Areas in v1
+1. Inheritance behavior lacked strict deterministic resolver algorithm details.
+2. Lock semantics did not define governance boundaries (who can lock/unlock, break-glass behavior).
+3. “Near real-time” was not measurable for propagation SLO.
+4. Role model did not define token claims mapping and cross-tenant spoofing protections.
+5. Migration plan lacked compatibility mode, rollback criteria, and data verification checkpoints.
+
+### 2.3 Scalability / Multi-Tenancy / Operational Gaps in v1
+1. No per-tenant throughput isolation strategy.
+2. No mandatory tenant-aware keys in every persistence/API contract.
+3. No statement on resolver cache cardinality limits.
+4. No explicit SRE runbooks, alarms, or synthetic checks.
+
+### 2.4 Security and Compliance Weaknesses in v1
+1. Sensitive setting handling lacked field-level redaction and encryption guidance.
+2. Audit integrity did not require append-only/immutable event chain semantics.
+3. Retention and legal hold behavior for audit artifacts was underspecified.
+
+### 2.5 Defect Risks Due to Implementation Ambiguity in v1
+1. Different services could implement divergent resolver logic.
+2. Parallel writes could silently overwrite each other.
+3. Unclear idempotency could duplicate updates during client retries.
+4. Undefined stale-cache behavior could produce policy drift.
 
 ---
 
-## 3. Scope
-### In Scope (v1)
-1. Hierarchical settings model (`tenant`, `fleet`, `user`)
-2. Inheritance with override
-3. Resolved settings read API (with source attribution)
-4. CRUD APIs for each scope
-5. Validation, RBAC, audit trail, and change history
-6. Integration with existing telematics/trip/alert pipelines
-7. UI screens for managing settings at each scope
+## 3. Objective
+Implement an enterprise-grade settings platform that provides deterministic, secure, and scalable policy control across tenant, fleet, and user scopes.
 
-### Out of Scope (v1)
-1. Third-party policy marketplace
-2. End-user scripting/rules engine
-3. Multi-region active-active writes
+The settings platform **MUST**:
+1. Centralize policy decisions now hardcoded in telematics services.
+2. Provide deterministic resolver outputs with provenance metadata.
+3. Guarantee strong tenant isolation in storage, API, and cache layers.
+4. Support safe, auditable, and idempotent configuration changes at scale.
 
 ---
 
-## 4. Hierarchy and Resolution
-### 4.1 Precedence Order
-Effective value resolution must follow:
-1. `user` override
-2. `fleet` override
-3. `tenant` default
-4. `system` default
+## 4. Scope
+### 4.1 In Scope (v2)
+1. Hierarchical model with inheritance and override.
+2. Resolver APIs for single-key and effective-profile retrieval.
+3. Management APIs with optimistic concurrency + idempotency.
+4. Lock semantics, governance controls, and auditable change history.
+5. AWS-native event-driven cache invalidation and downstream propagation.
+6. Integration across trip, telemetry, geofencing, scoring, and alerting services.
+7. UI workflows for tenant, fleet, user settings and audit explorer.
 
-### 4.2 Inheritance Behavior
-- All settings are inheritable unless marked `locked`.
-- `lockedAtTenant=true` prevents fleet/user override.
-- If a value is absent at a scope, resolver must continue upward.
+### 4.2 Out of Scope (v2)
+1. Customer-authored scripting language for arbitrary policy logic.
+2. Multi-region active-active write topology (single-region writer in v2).
+3. External policy marketplace.
 
-### 4.3 Resolver Contract
-Every resolved response must include:
+---
+
+## 5. Canonical Hierarchy, Inheritance, and Resolver Semantics
+### 5.1 Precedence and Determinism
+Effective value **MUST** resolve in this exact order:
+1. `user`
+2. `fleet`
+3. `tenant`
+4. `system`
+
+Resolver output for same inputs **MUST** be deterministic and side-effect free.
+
+### 5.2 Scope Validation Rules
+1. `user` scope resolution **MUST** include parent `tenantId`; optional `fleetId` allowed.
+2. `fleet` scope resolution **MUST** include parent `tenantId`.
+3. Any scope mismatch (e.g., user from tenant A with fleet from tenant B) **MUST** return `403`.
+
+### 5.3 Lock Semantics
+1. `lockedAtTenant=true` **MUST** block lower-scope writes.
+2. Only `tenant_admin` (or higher) **MUST** be allowed to set/unset tenant locks.
+3. Lock changes **MUST** emit audit events with reason and actor.
+
+### 5.4 Effective Profile Contract
+Every resolved setting entry **MUST** include:
+- `settingKey`
 - `effectiveValue`
 - `effectiveScope` (`system|tenant|fleet|user`)
-- `inheritedFrom` chain
-- `lastUpdatedAt`, `lastUpdatedBy`
+- `resolutionPath` (ordered scopes evaluated)
+- `sourceVersion` (version number at effective scope)
+- `resolvedAt`
+- `isLocked`
 
 ---
 
-## 5. Settings Domains (Industry-Standard Telematics)
-### 5.1 Safety and Driving Behavior
-- Overspeed thresholds (`standardMph`, `severeMph`)
-- Harsh events sensitivity (`acceleration`, `braking`, `cornering`)
-- Event debouncing/noise thresholds
+## 6. Settings Domain Catalog (Telematics Industry Baseline)
+### 6.1 Safety and Event Policies
+- Overspeed thresholds (`standard`, `severe`) by unit system
+- Harsh driving sensitivity and debounce windows
+- Event noise suppression and minimum event duration
 
-### 5.2 Driver Scoring
-- Score weights (speeding, harsh events, idling, seatbelt if available)
-- Score band definitions (`excellent/good/fair/poor`)
-- Penalty windows and normalization periods
+### 6.2 Driver Scoring and Coaching
+- Weighted scoring model
+- Grade bands and disciplinary thresholds
+- Aggregation windows (daily/weekly/monthly)
 
-### 5.3 Geofencing
-- Entry/exit notification toggles
-- Dwell-time thresholds
-- Geofence alert severity mapping
+### 6.3 Geofencing
+- Entry/exit alert toggles
+- Dwell threshold and grace windows
+- Geofence severity classification
 
-### 5.4 Fuel / EV / Idling
-- Idle threshold seconds
-- Fuel anomaly sensitivity
-- Refuel detection thresholds
-- EV SOC low threshold
-- EV range warning threshold
+### 6.4 Fuel, EV, and Idling
+- Idling threshold by vehicle class
+- Fuel anomaly and refuel detection thresholds
+- EV low-SOC and range warning thresholds
 
-### 5.5 Maintenance / Diagnostics
+### 6.5 Maintenance and Diagnostics
 - Service intervals (`miles`, `days`, `engineHours`)
-- DTC severity policy mapping
-- Maintenance alert cadence
+- DTC severity routing and escalation windows
 
-### 5.6 Notifications
-- Channel policy (`inApp`, `email`, `sms`, `webhook`)
-- Quiet hours
-- Escalation and retry policy
+### 6.6 Notifications and Escalation
+- Channel policy and fallback order
+- Quiet hours and emergency bypass policy
+- Retry/backoff model for webhook/SMS/email
 
-### 5.7 Data Privacy and Retention
-- Retention duration by dataset category
-- PII masking rules
-- Location precision for non-admin roles
+### 6.7 Privacy, Retention, and Governance
+- Dataset retention by data class
+- PII masking and role-based visibility
+- Location precision controls
 
-### 5.8 UX Preferences
-- Unit system (`imperial|metric`)
-- Timezone and date format
-- Map defaults
+### 6.8 UX and Localization
+- Units (`imperial|metric`)
+- Timezone and date display standards
+- Map defaults and route rendering preferences
 
 ---
 
-## 6. Configuration Metadata Model
-Each setting key must define metadata:
-- `key` (stable identifier)
-- `type` (`boolean|integer|number|string|enum|json`)
-- `allowedValues` or numeric `min/max`
-- `defaultValue` (system)
-- `category`
-- `description`
+## 7. Configuration Metadata Model
+Each `SettingDefinition` **MUST** include:
+- `settingKey` (immutable)
+- `category`, `displayName`, `description`
+- `dataType` (`boolean|integer|number|string|enum|json`)
+- Validation (`min|max|regex|allowedValues|jsonSchema`)
+- `systemDefaultValue`
 - `isSensitive`
-- `lockedAtTenantAllowed`
-- `requiresRestart` (if any service cache invalidation applies)
+- `supportsLock`
+- `supportsFutureEffectiveFrom`
+- `deprecationState` (`active|deprecated|removed`)
+- `introducedVersion`
 
-Validation must reject malformed or out-of-range values.
+Validation behavior:
+1. Server-side validation is authoritative.
+2. UI validation is advisory only.
+3. Unknown keys **MUST** return `404`.
 
 ---
 
-## 7. Data Model Requirements
-### 7.1 Logical Entities
+## 8. Data Model and DynamoDB Design
+### 8.1 Logical Entities
 1. `SettingDefinition`
-2. `SettingValue` (scoped value)
+2. `SettingValue`
 3. `SettingAuditEvent`
-4. `ResolvedSettingCache` (optional optimization)
+4. `IdempotencyRecord`
+5. `ResolverCache` (optional, bounded)
 
-### 7.2 SettingValue Required Fields
-- `scopeType` (`tenant|fleet|user`)
-- `scopeId`
-- `settingKey`
-- `value`
-- `valueType`
-- `locked` (for tenant scope)
-- `updatedAt`
-- `updatedBy`
-- `version`
-- `effectiveFrom` (optional)
+### 8.2 DynamoDB Tables (Recommended)
+1. `onpoint-settings-definitions`
+2. `onpoint-settings-values`
+3. `onpoint-settings-audit`
+4. `onpoint-settings-idempotency`
 
-### 7.3 Audit Event Required Fields
-- `eventId`
-- `settingKey`
-- `scopeType/scopeId`
-- `oldValue`, `newValue`
-- `changedBy`
-- `changedAt`
-- `reason`
-- `requestId`
+### 8.3 Key Design (Values Table)
+- **PK**: `TENANT#{tenantId}#SCOPE#{scopeType}#{scopeId}`
+- **SK**: `SETTING#{settingKey}`
+- Attributes: `value`, `version`, `locked`, `updatedAt`, `updatedBy`, `effectiveFrom`, `etag`
+
+Design constraints:
+1. All value rows **MUST** include `tenantId` for hard isolation.
+2. Conditional writes **MUST** enforce optimistic concurrency (`version`/`etag`).
+3. PartiQL full scans are prohibited in hot paths.
+
+### 8.4 Audit Table Key Design
+- **PK**: `TENANT#{tenantId}#SETTING#{settingKey}`
+- **SK**: `TS#{iso8601}#REQ#{requestId}`
+- Append-only; no update/delete in normal operations.
+
+### 8.5 Hot Partition and Scale Considerations
+1. High-churn global keys **SHOULD** be sharded by optional suffix when needed.
+2. Bulk updates **MUST** be chunked and rate-controlled.
+3. Large tenant exports **MUST** use async job model.
 
 ---
 
-## 8. API Requirements
-### 8.1 Management APIs
+## 9. API Specification Requirements
+### 9.1 Management APIs
 1. `GET /settings/definitions`
 2. `GET /settings/{scopeType}/{scopeId}`
 3. `PUT /settings/{scopeType}/{scopeId}/{settingKey}`
-4. `DELETE /settings/{scopeType}/{scopeId}/{settingKey}` (remove override)
-5. `POST /settings/bulk` (bulk set)
-6. `GET /settings/audit` (filterable)
+4. `DELETE /settings/{scopeType}/{scopeId}/{settingKey}`
+5. `POST /settings/bulk`
+6. `GET /settings/audit`
 
-### 8.2 Resolver APIs
-1. `GET /settings/resolved?tenantId=...&fleetId=...&userId=...`
-2. `GET /settings/resolved/{settingKey}?tenantId=...&fleetId=...&userId=...`
+### 9.2 Resolver APIs
+1. `GET /settings/resolved/{settingKey}?tenantId=...&fleetId=...&userId=...`
+2. `GET /settings/resolved/profile?tenantId=...&fleetId=...&userId=...`
 
-Resolver responses must include `effectiveScope` and provenance metadata.
+### 9.3 API Idempotency
+Write APIs (`PUT`, `DELETE`, `POST /bulk`) **MUST** support `Idempotency-Key` header:
+1. Duplicate key + same payload returns previous success response.
+2. Duplicate key + different payload returns `409`.
+3. Idempotency retention window **MUST** be at least 24 hours.
 
-### 8.3 Error Handling
-- `400` validation errors
-- `403` unauthorized scope write/read
-- `404` unknown key/scope
-- `409` optimistic concurrency/version conflict
+### 9.4 Optimistic Concurrency
+1. Writes **MUST** support `If-Match: <etag>`.
+2. Missing or stale `If-Match` on guarded resources **MUST** return `412`.
+3. Successful writes **MUST** return updated `etag` and `version`.
 
----
-
-## 9. Authorization and Access Control
-### 9.1 Role Matrix
-- **Platform Admin**: full access across tenants
-- **Tenant Admin**: manage tenant + fleets + tenant users
-- **Fleet Manager**: manage assigned fleet settings; cannot edit tenant lock flags
-- **User**: read resolved settings; update only whitelisted personal preferences
-
-### 9.2 Guardrails
-- Enforce tenant boundary on every request
-- Prevent cross-tenant scope references
-- Enforce lock semantics server-side
-
----
-
-## 10. Runtime and Consistency Requirements
-1. Writes must be strongly consistent per setting key.
-2. Effective settings reads should be near real-time.
-3. If caching is used, TTL must be short and invalidated on write.
-4. Change propagation to dependent services must occur via event notification or pull-refresh.
+### 9.5 Error Model
+- `400`: invalid payload/validation failure
+- `401`: unauthenticated
+- `403`: forbidden scope access
+- `404`: unknown key/scope
+- `409`: conflict (idempotency payload mismatch, lock conflict)
+- `412`: precondition failed (`If-Match` mismatch)
+- `429`: throttled
+- `500`: internal error with stable error code
 
 ---
 
-## 11. Integration Requirements
-The following modules must consume resolved settings, not hardcoded constants:
-1. Telematics ingestion normalization and event classification
-2. Trip summary builder and score computation
-3. Alerting and notifications
-4. Geofence processing
-5. Dashboard and trip-history UI display logic
+## 10. Authorization, Tenant Isolation, and SaaS Boundary Controls
+### 10.1 Role Matrix
+- `platform_admin`
+- `tenant_admin`
+- `fleet_manager`
+- `user`
+
+### 10.2 Hard Isolation Requirements
+1. Every request **MUST** carry authenticated tenant context from trusted identity claims.
+2. Tenant IDs provided by clients are advisory and **MUST** be validated against claims.
+3. Cross-tenant read/write attempts **MUST** be denied and audited.
+
+### 10.3 IAM and Policy Controls
+1. Lambda execution role **MUST** use least privilege, table- and key-prefix-scoped where practical.
+2. Break-glass admin operations **MUST** require elevated role + explicit audit reason.
 
 ---
 
-## 12. Security, Privacy, Compliance
-1. Encrypt data in transit and at rest
-2. Protect sensitive values in logs and API responses
-3. Audit trail must be immutable and queryable
-4. Data retention policies must be enforceable by configuration
-5. Support compliance evidence export (audit + policy snapshots)
+## 11. Runtime Consistency, Caching, and Invalidation
+### 11.1 Consistency Requirements
+1. Writes are strongly consistent per key via conditional updates.
+2. Resolver reads **SHOULD** use strongly consistent reads for write-after-read sensitive flows.
+
+### 11.2 Cache Layers
+Allowed cache layers:
+1. In-process Lambda cache (short TTL)
+2. Optional distributed cache (e.g., ElastiCache) keyed by resolver context
+
+### 11.3 Invalidation Strategy
+1. Successful write **MUST** publish `SettingsChanged` event to EventBridge.
+2. Consumers **MUST** invalidate cache by affected key/scope.
+3. Resolver cache TTL **MUST** be bounded (default 30s, max 120s).
+4. Invalidation failures **MUST** be observable and retried.
 
 ---
 
-## 13. Non-Functional Requirements
-- **Availability**: Resolver API target 99.9%
-- **Latency**: p95 resolved-read < 150ms (single-key), < 300ms (full-profile)
-- **Scalability**: support high read ratio and burst writes during policy rollout
-- **Observability**: metrics for hit/miss, override depth, validation failures, auth rejects
+## 12. Failure Modes and Degraded Operation
+### 12.1 Resolver Failure Policy
+1. If settings service is unavailable, consumers **MAY** use last-known-good cache for a bounded window.
+2. Bounded stale window default: 5 minutes; after expiry, fail closed for safety-critical settings.
+
+### 12.2 Failure Classification
+- Validation failure
+- Authorization failure
+- Concurrency conflict
+- Dependency timeout
+- Event publication failure
+- Cache invalidation lag
+
+### 12.3 Mandatory Handling
+1. Failures **MUST** return structured error codes.
+2. Retryable failures **MUST** include retry guidance.
+3. Poison invalidation events **MUST** route to DLQ with alarm.
 
 ---
 
-## 14. UI/UX Requirements
-### 14.1 Pages
+## 13. Security, Privacy, and Compliance Controls
+1. Encryption in transit (`TLS 1.2+`) and at rest (`KMS`) is mandatory.
+2. `isSensitive=true` settings values **MUST** be masked in logs and restricted in read APIs.
+3. Audit events **MUST** be append-only and tamper-evident (immutable write pattern).
+4. Retention policy **MUST** define operational retention + legal hold behavior.
+5. Compliance exports **MUST** include actor, scope, old/new values, request metadata, and trace IDs.
+
+---
+
+## 14. Rate Limiting, Abuse Protection, and Cost Guardrails
+1. API Gateway throttling **MUST** be configured per route and per API key/identity class.
+2. WAF rules **SHOULD** protect against abuse patterns and payload anomalies.
+3. Bulk operations **MUST** enforce max batch size and quota.
+4. Resolver profile API **MUST** enforce max payload size and pagination where applicable.
+
+---
+
+## 15. Observability and Operational Telemetry
+### 15.1 Required Metrics
+1. `settings_write_success_count`
+2. `settings_write_conflict_count`
+3. `settings_resolve_latency_ms` (p50/p95/p99)
+4. `settings_cache_hit_ratio`
+5. `settings_invalidation_lag_ms`
+6. `settings_authz_denied_count`
+7. `settings_idempotency_replay_count`
+
+### 15.2 Logging and Tracing
+1. Structured JSON logs with tenant-safe redaction.
+2. Correlation IDs and `requestId` propagated end-to-end.
+3. Distributed tracing across API -> Lambda -> DynamoDB -> EventBridge.
+
+### 15.3 Alarms (Minimum)
+1. p95 resolver latency breach
+2. elevated `5xx` rate
+3. DLQ message count > threshold
+4. cache invalidation lag breach
+
+---
+
+## 16. Non-Functional Requirements
+- **Availability**: 99.9% for settings APIs
+- **Latency**:
+	- single-key resolve p95 < 120ms
+	- profile resolve p95 < 300ms
+- **Write Throughput**: sustain tenant policy rollout bursts without cross-tenant starvation
+- **Durability**: audit and values persisted with DynamoDB durability guarantees
+
+---
+
+## 17. Integration Requirements
+The following services **MUST** consume resolver outputs (not hardcoded constants):
+1. telematics processor
+2. trip summary builder
+3. trip summary API
+4. geofence evaluation
+5. notification orchestration
+6. UI rendering (effective-value + provenance)
+
+Integration contracts **MUST** define fallback behavior when resolver is unavailable.
+
+---
+
+## 18. UI/UX Requirements
+### 18.1 Pages
 1. Tenant Settings
 2. Fleet Settings
 3. User Preferences
 4. Settings Audit History
 
-### 14.2 UX Rules
-- Show inherited value and source scope
-- Show override indicator and lock badge
-- Provide “reset to inherited” action
-- Require reason/comment for policy changes
+### 18.2 UX Semantics
+1. Each value display **MUST** show source scope.
+2. Lock badges **MUST** be explicit and actionable for authorized users.
+3. “Reset to inherited” **MUST** map to override delete.
+4. Policy updates **MUST** require reason text for auditable domains.
 
 ---
 
-## 15. Migration and Rollout Plan
-1. Seed `SettingDefinition` with system defaults
-2. Backfill tenant defaults from current environment constants
-3. Enable resolver in read-only shadow mode
-4. Compare old vs new behavior via telemetry counters
-5. Progressive cutover by module
-6. Finalize with hardcoded fallback removal
+## 19. Backward Compatibility and Migration Strategy
+### 19.1 Compatibility Guarantees
+1. Existing services **MUST** continue operating with system defaults if no explicit setting exists.
+2. Deprecated keys **MUST** support alias mapping for at least one release cycle.
+3. Removal of keys **MUST** follow deprecation policy with release notes.
+
+### 19.2 Migration Phases
+1. Seed definitions and defaults.
+2. Backfill tenant baseline from existing env constants.
+3. Shadow resolver mode with parity comparison metrics.
+4. Progressive consumer cutover behind feature flags.
+5. Remove legacy hardcoded paths after parity success criteria.
+
+### 19.3 Rollback
+1. Feature flags **MUST** enable rapid rollback to legacy behavior.
+2. Data schema changes **MUST** be backward-compatible (expand/contract).
 
 ---
 
-## 16. Testing Requirements
-1. Unit tests for resolver precedence and lock behavior
-2. Contract tests for all settings APIs
-3. Cross-scope authorization tests
-4. Integration tests for trip summary/safety/alerts consuming settings
-5. Backward-compatibility tests for unset values
-6. Performance tests for resolver under load
+## 20. Deployment and Release Engineering Requirements
+1. Infrastructure changes **MUST** be delivered via CloudFormation with reviewed templates.
+2. Canary deployment for settings write path **SHOULD** be used before full rollout.
+3. Production changes to critical safety settings **MUST** require change-control approval.
+4. Runbooks **MUST** include resolver outage, cache drift, and conflict storm scenarios.
 
 ---
 
-## 17. Acceptance Criteria
-1. Effective value resolution matches precedence in all tested combinations
-2. Locked tenant settings cannot be overridden below tenant scope
-3. Audit logs capture all changes with before/after and actor metadata
-4. Trip/alert pipelines consume resolver values in production path
-5. UI clearly displays inherited vs overridden values
-6. No regression in existing telematics workflows
+## 21. Feature Flag Readiness
+The implementation **MUST** support feature flags for:
+1. Resolver read path enablement by service
+2. Write API enablement by tenant cohort
+3. Cache strategy toggles
+4. Lock enforcement strict mode
+
+Flag state changes **MUST** be auditable.
 
 ---
 
-## 18. Implementation Deliverables
-1. Data model and persistence schema
-2. Settings management and resolver APIs
-3. RBAC enforcement and audit logging
-4. UI pages and workflows for all scopes
-5. Migration scripts and rollout playbook
-6. Test suites and operational dashboards
+## 22. Testing and Verification Requirements
+1. Resolver determinism tests across all scope combinations
+2. Conflict and idempotency replay tests
+3. Tenant isolation penetration tests
+4. Contract tests for all APIs including error model
+5. Load tests for high-cardinality tenant/fleet/user access patterns
+6. Chaos tests for cache invalidation and EventBridge delay/failure
 
 ---
 
-## 19. Decision Record (Fixed for v1)
-- Precedence: `user > fleet > tenant > system`
-- Inheritance and override: enabled
-- Tenant lock capability: enabled
-- Resolver API with provenance: mandatory
-- Full audit trail: mandatory
-- Domains included: safety, scoring, geofence, fuel/EV/idling, maintenance, notifications, privacy, UX
-- Delivery depth: comprehensive (product + technical requirements)
+## 23. Acceptance Criteria
+1. Deterministic resolver outputs verified by automated test suite.
+2. Idempotent writes proven under retry and duplicate delivery scenarios.
+3. Optimistic concurrency conflict handling validated (`412` and `409` paths).
+4. No cross-tenant data leakage in any API, cache, log, or audit output.
+5. Consumer services read settings from resolver in production path.
+6. SLO and alarm baseline established with operational dashboards.
+
+---
+
+## 24. Implementation Deliverables
+1. Finalized OpenAPI spec for settings management and resolver APIs
+2. DynamoDB schema and access patterns documentation
+3. Lambda service implementation with idempotency and concurrency controls
+4. EventBridge invalidation events and consumer handlers
+5. UI workflows and audit explorer
+6. Migration tooling and backfill scripts
+7. Operational dashboards, alarms, and SRE runbooks
+
+---
+
+## 25. Fixed v2 Decisions (Normative)
+1. Precedence is fixed: `user > fleet > tenant > system`.
+2. Inheritance and overrides are enabled.
+3. Tenant lock semantics are enforced server-side.
+4. Write APIs require idempotency support.
+5. Optimistic concurrency is mandatory for mutating operations.
+6. AWS serverless deployment model is the baseline architecture.
+7. Multi-tenant hard isolation is mandatory.
+
+---
+
+## 26. Glossary
+- **Effective Value**: final resolved setting after applying hierarchy.
+- **Resolution Path**: ordered scopes evaluated for a setting key.
+- **Idempotency Key**: client-generated key used to deduplicate writes.
+- **ETag**: version token for optimistic concurrency control.
+- **LKG**: last-known-good cached settings state used in bounded degraded mode.
