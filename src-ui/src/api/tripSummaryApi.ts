@@ -145,6 +145,7 @@ type TripSummaryQuery = {
   from?: string;
   to?: string;
   limit?: number;
+  nextToken?: string;
   include?: "none" | "summary";
 };
 
@@ -164,6 +165,7 @@ export async function fetchTripSummaryTrips({
   from,
   to,
   limit = 50,
+  nextToken,
   include,
 }: TripSummaryQuery): Promise<TripSummaryResponse> {
   const coerceNumber = (value: unknown): number | undefined => {
@@ -336,6 +338,7 @@ export async function fetchTripSummaryTrips({
   if (from) params.set("from", from);
   if (to) params.set("to", to);
   if (limit) params.set("limit", String(limit));
+  if (nextToken) params.set("nextToken", nextToken);
   if (include) params.set("include", include);
   if (vehicleIds && vehicleIds.length > 0) {
     params.set("vehicleIds", vehicleIds.join(","));
@@ -463,6 +466,7 @@ export async function fetchTripHistoryTrips(params: {
   from?: string;
   to?: string;
   limit?: number;
+  nextToken?: string;
 }): Promise<TripSummaryResponse> {
   const {
     tenantId,
@@ -472,6 +476,7 @@ export async function fetchTripHistoryTrips(params: {
     from,
     to,
     limit = 50,
+    nextToken,
   } = params;
 
   if (selectedVin && selectedVin !== "all") {
@@ -482,6 +487,7 @@ export async function fetchTripHistoryTrips(params: {
       from,
       to,
       limit,
+      nextToken,
       include: "none",
     });
   }
@@ -494,6 +500,7 @@ export async function fetchTripHistoryTrips(params: {
       from,
       to,
       limit,
+      nextToken,
       include: "none",
     });
   }
@@ -754,14 +761,14 @@ export function buildTripDetailPresentation(params: {
     summaryRecord,
     {
       gallons: [
+        "fuelConsumed",
         "fuelConsumedGallons",
+        "fuel.fuelConsumed",
         "fuel.fuelConsumedGallons",
         "fuel.consumedGallons",
       ],
       liters: [
-        "fuel.fuelConsumed",
         "fuel.fuelConsumedLiters",
-        "fuelConsumed",
         "fuelConsumedLiters",
         "fuel.consumedLiters",
       ],

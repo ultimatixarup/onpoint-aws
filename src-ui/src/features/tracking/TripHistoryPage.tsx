@@ -1,4 +1,8 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
@@ -211,11 +215,14 @@ export function TripHistoryPage() {
   }, [customFrom, customTo, dateRange]);
 
   const {
-    data: tripResponse,
+    data: tripPages,
     isLoading,
     error,
     refetch,
-  } = useQuery({
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: [
       "trip-summary",
       tenantId,
@@ -224,7 +231,7 @@ export function TripHistoryPage() {
       from ?? "",
       to ?? "",
     ],
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       fetchTripHistoryTrips({
         tenantId,
         tenantHeaderId,
@@ -234,13 +241,24 @@ export function TripHistoryPage() {
         from,
         to,
         limit: 50,
+        nextToken:
+          typeof pageParam === "string" && pageParam.length > 0
+            ? pageParam
+            : undefined,
       }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextToken ?? undefined,
     enabled: canFetchTrips && (dateRange !== "custom" || Boolean(from && to)),
   });
 
+  const tripItems = useMemo(
+    () => tripPages?.pages.flatMap((page) => page.items ?? []) ?? [],
+    [tripPages],
+  );
+
   const stats = useMemo(
-    () => buildTripHistoryStats(dateRange, tripResponse?.items ?? []),
-    [dateRange, tripResponse],
+    () => buildTripHistoryStats(dateRange, tripItems),
+    [dateRange, tripItems],
   );
 
   const driverNameById = useMemo(() => {
@@ -256,7 +274,7 @@ export function TripHistoryPage() {
   }, [drivers]);
 
   const requiresAssignmentLookup = useMemo(() => {
-    return (tripResponse?.items ?? []).some((item) => {
+    return tripItems.some((item) => {
       const record = item as Record<string, unknown>;
       const summary = parseSummary(
         record.summary ?? record.summaryJson ?? record.tripSummary,
@@ -284,7 +302,7 @@ export function TripHistoryPage() {
         ]);
       return !driverHint;
     });
-  }, [tripResponse]);
+  }, [tripItems]);
 
   const assignmentVinList = useMemo(() => {
     if (!requiresAssignmentLookup) return [] as string[];
@@ -292,7 +310,7 @@ export function TripHistoryPage() {
 
     const vins = Array.from(
       new Set(
-        (tripResponse?.items ?? [])
+        tripItems
           .map((item) => item.vin)
           .filter((value): value is string => Boolean(value)),
       ),
@@ -306,7 +324,7 @@ export function TripHistoryPage() {
     }
 
     return vins;
-  }, [requiresAssignmentLookup, selectedTripVin, selectedVin, tripResponse]);
+  }, [requiresAssignmentLookup, selectedTripVin, selectedVin, tripItems]);
 
   const { data: assignmentsByVinResponse = [] } = useQuery({
     queryKey: [
@@ -356,20 +374,20 @@ export function TripHistoryPage() {
   const trips = useMemo(
     () =>
       buildTripHistoryRows({
-        items: tripResponse?.items ?? [],
+        items: tripItems,
         assignmentsByVin,
         driverNameById,
         search,
       }),
-    [assignmentsByVin, driverNameById, search, tripResponse],
+    [assignmentsByVin, driverNameById, search, tripItems],
   );
 
   const selectedTrip = useMemo(() => {
     if (!selectedTripId || !selectedTripVin) return null;
-    return (tripResponse?.items ?? []).find(
+    return tripItems.find(
       (item) => item.tripId === selectedTripId && item.vin === selectedTripVin,
     );
-  }, [selectedTripId, selectedTripVin, tripResponse]);
+  }, [selectedTripId, selectedTripVin, tripItems]);
 
   const vehicleOptions = useMemo(
     () => vehicles.map((vehicle) => vehicle.vin).filter(Boolean),
@@ -760,245 +778,258 @@ export function TripHistoryPage() {
             </Button>
           </div>
         ) : (
-          <div className="table-responsive">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Driver Name</th>
-                  <th>VIN</th>
-                  <th>Start Timestamp</th>
-                  <th>End Timestamp</th>
-                  <th>End Odometer</th>
-                  <th>Miles</th>
-                  <th>Duration</th>
-                  <th>Alerts</th>
-                  <th>Trip ID</th>
-                </tr>
-              </thead>
-              <tbody>
-                {trips.map((trip) => {
-                  const isSelectedRow =
-                    trip.id === selectedTripId && trip.vin === selectedTripVin;
+          <>
+            <div className="table-responsive">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Driver Name</th>
+                    <th>VIN</th>
+                    <th>Start Timestamp</th>
+                    <th>End Timestamp</th>
+                    <th>End Odometer</th>
+                    <th>Miles</th>
+                    <th>Duration</th>
+                    <th>Alerts</th>
+                    <th>Trip ID</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trips.map((trip) => {
+                    const isSelectedRow =
+                      trip.id === selectedTripId &&
+                      trip.vin === selectedTripVin;
 
-                  return (
-                    <Fragment key={`${trip.vin}-${trip.id}`}>
-                      <tr
-                        className={isSelectedRow ? "is-selected" : undefined}
-                        onClick={() => {
-                          if (isSelectedRow) {
-                            setSelectedTripId(null);
-                            setSelectedTripVin(null);
-                            return;
-                          }
-                          setSelectedTripId(trip.id);
-                          setSelectedTripVin(trip.vin);
-                        }}
-                      >
-                        <td>{trip.driverName}</td>
-                        <td className="mono">{trip.vin}</td>
-                        <td>{trip.startTimestamp}</td>
-                        <td>{trip.endTimestamp}</td>
-                        <td>{trip.endOdometer}</td>
-                        <td>{trip.miles}</td>
-                        <td>{trip.duration}</td>
-                        <td>{trip.alerts}</td>
-                        <td className="mono">{trip.id}</td>
-                      </tr>
+                    return (
+                      <Fragment key={`${trip.vin}-${trip.id}`}>
+                        <tr
+                          className={isSelectedRow ? "is-selected" : undefined}
+                          onClick={() => {
+                            if (isSelectedRow) {
+                              setSelectedTripId(null);
+                              setSelectedTripVin(null);
+                              return;
+                            }
+                            setSelectedTripId(trip.id);
+                            setSelectedTripVin(trip.vin);
+                          }}
+                        >
+                          <td>{trip.driverName}</td>
+                          <td className="mono">{trip.vin}</td>
+                          <td>{trip.startTimestamp}</td>
+                          <td>{trip.endTimestamp}</td>
+                          <td>{trip.endOdometer}</td>
+                          <td>{trip.miles}</td>
+                          <td>{trip.duration}</td>
+                          <td>{trip.alerts}</td>
+                          <td className="mono">{trip.id}</td>
+                        </tr>
 
-                      {isSelectedRow ? (
-                        <tr className="trip-inline-row">
-                          <td className="trip-inline-cell" colSpan={9}>
-                            {isLoadingTripDetail ? (
-                              <div className="trip-inline-panel empty-state">
-                                <div className="empty-state__icon">⏳</div>
-                                <h3>Loading trip details</h3>
-                                <p className="text-muted">
-                                  Fetching trip summary for this trip.
-                                </p>
-                              </div>
-                            ) : (
-                              <div className="trip-inline-panel">
-                                {tripDetailError ? (
-                                  <div className="banner banner--warning">
-                                    Detailed summary is unavailable right now.
-                                    Showing trip information from the table and
-                                    map data where available.
-                                  </div>
-                                ) : null}
-                                <div className="trip-map-layout trip-map-layout--inline">
-                                  <div className="trip-details">
-                                    <div className="trip-locations">
-                                      <div className="trip-location">
-                                        <div className="trip-location__icon trip-location__icon--start" />
-                                        <div>
-                                          <p className="trip-location__label">
-                                            Start
-                                          </p>
-                                          <p className="trip-location__value">
-                                            {startLocationDisplay}
-                                          </p>
+                        {isSelectedRow ? (
+                          <tr className="trip-inline-row">
+                            <td className="trip-inline-cell" colSpan={9}>
+                              {isLoadingTripDetail ? (
+                                <div className="trip-inline-panel empty-state">
+                                  <div className="empty-state__icon">⏳</div>
+                                  <h3>Loading trip details</h3>
+                                  <p className="text-muted">
+                                    Fetching trip summary for this trip.
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="trip-inline-panel">
+                                  {tripDetailError ? (
+                                    <div className="banner banner--warning">
+                                      Detailed summary is unavailable right now.
+                                      Showing trip information from the table
+                                      and map data where available.
+                                    </div>
+                                  ) : null}
+                                  <div className="trip-map-layout trip-map-layout--inline">
+                                    <div className="trip-details">
+                                      <div className="trip-locations">
+                                        <div className="trip-location">
+                                          <div className="trip-location__icon trip-location__icon--start" />
+                                          <div>
+                                            <p className="trip-location__label">
+                                              Start
+                                            </p>
+                                            <p className="trip-location__value">
+                                              {startLocationDisplay}
+                                            </p>
+                                          </div>
+                                          <div className="trip-location__time">
+                                            {tripStartLabel}
+                                          </div>
                                         </div>
-                                        <div className="trip-location__time">
-                                          {tripStartLabel}
+                                        <div className="trip-location">
+                                          <div className="trip-location__icon trip-location__icon--end" />
+                                          <div>
+                                            <p className="trip-location__label">
+                                              End
+                                            </p>
+                                            <p className="trip-location__value">
+                                              {endLocationDisplay}
+                                            </p>
+                                          </div>
+                                          <div className="trip-location__time">
+                                            {tripEndLabel}
+                                          </div>
                                         </div>
                                       </div>
-                                      <div className="trip-location">
-                                        <div className="trip-location__icon trip-location__icon--end" />
-                                        <div>
-                                          <p className="trip-location__label">
-                                            End
-                                          </p>
-                                          <p className="trip-location__value">
-                                            {endLocationDisplay}
-                                          </p>
-                                        </div>
-                                        <div className="trip-location__time">
-                                          {tripEndLabel}
-                                        </div>
+
+                                      <div className="trip-metrics">
+                                        {metricItems.map((metric) => (
+                                          <div
+                                            key={metric.label}
+                                            className="trip-metric"
+                                          >
+                                            <span className="trip-metric__icon">
+                                              {metric.icon}
+                                            </span>
+                                            <div>
+                                              <p className="trip-metric__label">
+                                                {metric.label}
+                                              </p>
+                                              <p className="trip-metric__value">
+                                                {metric.value}
+                                              </p>
+                                            </div>
+                                          </div>
+                                        ))}
                                       </div>
                                     </div>
 
-                                    <div className="trip-metrics">
-                                      {metricItems.map((metric) => (
-                                        <div
-                                          key={metric.label}
-                                          className="trip-metric"
-                                        >
-                                          <span className="trip-metric__icon">
-                                            {metric.icon}
-                                          </span>
-                                          <div>
-                                            <p className="trip-metric__label">
-                                              {metric.label}
-                                            </p>
-                                            <p className="trip-metric__value">
-                                              {metric.value}
-                                            </p>
+                                    <div className="trip-map-card">
+                                      <div className="trip-summary">
+                                        {summaryItems.map((summary) => (
+                                          <div
+                                            key={summary.label}
+                                            className="trip-summary__item"
+                                          >
+                                            <span className="trip-summary__icon">
+                                              {summary.icon}
+                                            </span>
+                                            <div>
+                                              <p className="trip-summary__label">
+                                                {summary.label}
+                                              </p>
+                                              <p className="trip-summary__value">
+                                                {summary.value}
+                                              </p>
+                                            </div>
                                           </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-
-                                  <div className="trip-map-card">
-                                    <div className="trip-summary">
-                                      {summaryItems.map((summary) => (
-                                        <div
-                                          key={summary.label}
-                                          className="trip-summary__item"
-                                        >
-                                          <span className="trip-summary__icon">
-                                            {summary.icon}
-                                          </span>
-                                          <div>
-                                            <p className="trip-summary__label">
-                                              {summary.label}
-                                            </p>
-                                            <p className="trip-summary__value">
-                                              {summary.value}
+                                        ))}
+                                      </div>
+                                      <div className="map-container map-container--inline">
+                                        {isLoadingTripMap ? (
+                                          <div className="empty-state">
+                                            <div className="empty-state__icon">
+                                              ⏳
+                                            </div>
+                                            <h3>Loading route</h3>
+                                            <p className="text-muted">
+                                              Fetching map data.
                                             </p>
                                           </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                    <div className="map-container map-container--inline">
-                                      {isLoadingTripMap ? (
-                                        <div className="empty-state">
-                                          <div className="empty-state__icon">
-                                            ⏳
+                                        ) : tripMapError ? (
+                                          <div className="empty-state">
+                                            <div className="empty-state__icon">
+                                              ⚠️
+                                            </div>
+                                            <h3>Unable to load route</h3>
+                                            <p className="text-muted">
+                                              Trip metrics are available, but
+                                              map data could not be loaded.
+                                            </p>
                                           </div>
-                                          <h3>Loading route</h3>
-                                          <p className="text-muted">
-                                            Fetching map data.
-                                          </p>
-                                        </div>
-                                      ) : tripMapError ? (
-                                        <div className="empty-state">
-                                          <div className="empty-state__icon">
-                                            ⚠️
+                                        ) : displayPath.length === 0 ? (
+                                          <div className="empty-state">
+                                            <div className="empty-state__icon">
+                                              📍
+                                            </div>
+                                            <h3>No GPS points available</h3>
+                                            <p className="text-muted">
+                                              This trip has no location data to
+                                              display.
+                                            </p>
                                           </div>
-                                          <h3>Unable to load route</h3>
-                                          <p className="text-muted">
-                                            Trip metrics are available, but map
-                                            data could not be loaded.
-                                          </p>
-                                        </div>
-                                      ) : displayPath.length === 0 ? (
-                                        <div className="empty-state">
-                                          <div className="empty-state__icon">
-                                            📍
-                                          </div>
-                                          <h3>No GPS points available</h3>
-                                          <p className="text-muted">
-                                            This trip has no location data to
-                                            display.
-                                          </p>
-                                        </div>
-                                      ) : (
-                                        <MapContainer
-                                          center={displayPath[0]}
-                                          zoom={12}
-                                          style={{
-                                            height: "100%",
-                                            width: "100%",
-                                          }}
-                                        >
-                                          <TileLayer
-                                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                          />
-                                          {tripBounds ? (
-                                            <FitBounds bounds={tripBounds} />
-                                          ) : null}
-                                          <Polyline
-                                            positions={displayPath}
-                                            color="#1d4ed8"
-                                            weight={4}
-                                          />
-                                          {displayPath.length > 0 ? (
-                                            <Marker
-                                              position={displayPath[0]}
-                                              icon={startMarkerIcon}
-                                            >
-                                              <Popup>
-                                                Start
-                                                <br />
-                                                {selectedTripVin}
-                                              </Popup>
-                                            </Marker>
-                                          ) : null}
-                                          {displayPath.length > 1 ? (
-                                            <Marker
-                                              position={
-                                                displayPath[
-                                                  displayPath.length - 1
-                                                ]
-                                              }
-                                              icon={endMarkerIcon}
-                                            >
-                                              <Popup>
-                                                End
-                                                <br />
-                                                {selectedTripVin}
-                                              </Popup>
-                                            </Marker>
-                                          ) : null}
-                                        </MapContainer>
-                                      )}
+                                        ) : (
+                                          <MapContainer
+                                            center={displayPath[0]}
+                                            zoom={12}
+                                            style={{
+                                              height: "100%",
+                                              width: "100%",
+                                            }}
+                                          >
+                                            <TileLayer
+                                              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                            />
+                                            {tripBounds ? (
+                                              <FitBounds bounds={tripBounds} />
+                                            ) : null}
+                                            <Polyline
+                                              positions={displayPath}
+                                              color="#1d4ed8"
+                                              weight={4}
+                                            />
+                                            {displayPath.length > 0 ? (
+                                              <Marker
+                                                position={displayPath[0]}
+                                                icon={startMarkerIcon}
+                                              >
+                                                <Popup>
+                                                  Start
+                                                  <br />
+                                                  {selectedTripVin}
+                                                </Popup>
+                                              </Marker>
+                                            ) : null}
+                                            {displayPath.length > 1 ? (
+                                              <Marker
+                                                position={
+                                                  displayPath[
+                                                    displayPath.length - 1
+                                                  ]
+                                                }
+                                                icon={endMarkerIcon}
+                                              >
+                                                <Popup>
+                                                  End
+                                                  <br />
+                                                  {selectedTripVin}
+                                                </Popup>
+                                              </Marker>
+                                            ) : null}
+                                          </MapContainer>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ) : null}
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                              )}
+                            </td>
+                          </tr>
+                        ) : null}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {hasNextPage ? (
+              <div className="table-toolbar">
+                <Button
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                >
+                  {isFetchingNextPage ? "Loading more..." : "Load more"}
+                </Button>
+              </div>
+            ) : null}
+          </>
         )}
       </Card>
     </div>

@@ -551,15 +551,15 @@ def _fuel_stats_from_abs(events: List[Dict[str, Any]]) -> Tuple[Optional[float],
 
     start = vals[0]
     end = vals[-1]
-    consumed = None
-    if start is not None and end is not None:
-        consumed = max(0.0, start - end)
-
     refueled = 0.0
     for i in range(1, len(vals)):
         d = vals[i] - vals[i - 1]
         if d > REFUEL_NOISE_THRESHOLD_GAL:
             refueled += d
+
+    consumed = None
+    if start is not None and end is not None:
+        consumed = max(0.0, start + refueled - end)
 
     return start, end, consumed, refueled
 
