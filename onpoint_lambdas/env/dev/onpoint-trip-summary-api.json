@@ -3,6 +3,8 @@
     "TRIP_SUMMARY_TABLE": "onpoint-dev-trip-summary",
     "TELEMETRY_EVENTS_TABLE": "onpoint-dev-telemetry-events",
     "VIN_REGISTRY_TABLE": "onpoint-dev-vin-registry",
+    "DRIVERS_TABLE": "onpoint-dev-drivers",
+    "DRIVER_ASSIGNMENTS_TABLE": "onpoint-dev-driver-assignments",
     "VEHICLE_STATE_TABLE": "onpoint-dev-vehicle-state",
     "DEFAULT_LIMIT": "50",
     "MAX_LIMIT": "200",

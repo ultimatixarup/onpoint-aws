@@ -13,7 +13,6 @@ import {
 import { queryKeys } from "../../api/queryKeys";
 import {
   buildTripDetailPresentation,
-  fetchTripEventPositions,
   fetchTripMapData,
   fetchTripSummaryTripDetail,
   type TripSummaryItem,
@@ -270,30 +269,6 @@ export function DriverDashboardPage() {
     ),
   });
 
-  const {
-    data: tripEventPositions,
-    isLoading: isLoadingTripEventsPath,
-    error: tripEventsPathError,
-  } = useQuery({
-    queryKey: [
-      "driver-dashboard-trip-events-path",
-      tenantId ?? "",
-      selectedTripVin ?? "",
-      selectedTripId ?? "",
-    ],
-    queryFn: () =>
-      fetchTripEventPositions({
-        tenantId: tenantId ?? "",
-        tenantHeaderId: tenantId ?? "",
-        vin: selectedTripVin ?? "",
-        tripId: selectedTripId ?? "",
-        limit: 1000,
-      }),
-    enabled: Boolean(
-      tenantId && selectedTripId && selectedTripVin && view === "trips",
-    ),
-  });
-
   useEffect(() => {
     if (!driverId) return;
     setIsAutoRange(true);
@@ -323,11 +298,8 @@ export function DriverDashboardPage() {
       const isDegenerate = first[0] === last[0] && first[1] === last[1];
       if (!isDegenerate) return primary;
     }
-    if (Array.isArray(tripEventPositions) && tripEventPositions.length > 1) {
-      return tripEventPositions;
-    }
     return primary;
-  }, [snappedPath, tripPath, tripEventPositions]);
+  }, [snappedPath, tripPath]);
 
   const tripBounds = useMemo(() => {
     if (displayPath.length === 0) return null;
@@ -756,15 +728,15 @@ export function DriverDashboardPage() {
                                 ))}
                               </div>
                               <div className="map-container map-container--inline">
-                                {isLoadingTripMap || isLoadingTripEventsPath ? (
+                                {isLoadingTripMap ? (
                                   <div className="empty-state">
                                     <div className="empty-state__icon">⏳</div>
                                     <h3>Loading route</h3>
                                     <p className="text-muted">
-                                      Fetching map and event path data.
+                                      Fetching map data.
                                     </p>
                                   </div>
-                                ) : tripMapError || tripEventsPathError ? (
+                                ) : tripMapError ? (
                                   <div className="empty-state">
                                     <div className="empty-state__icon">⚠️</div>
                                     <h3>Unable to load route</h3>

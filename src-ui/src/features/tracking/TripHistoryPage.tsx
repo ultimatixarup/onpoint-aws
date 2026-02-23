@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
@@ -20,7 +20,6 @@ import {
 import { queryKeys } from "../../api/queryKeys";
 import {
   buildTripDetailPresentation,
-  fetchTripEventPositions,
   buildTripHistoryRows,
   buildTripHistoryStats,
   fetchTripMapData,
@@ -37,16 +36,14 @@ import {
   fromIsoDateToUs,
   isVehicleEv,
   normalizeAssignmentRecords,
+  parseSummary,
   normalizeUsDateFinal,
   normalizeUsDateInput,
   parseIsoToMs,
+  readStringFromRecord,
   parseUsDate,
   toIsoDate,
 } from "./tripHistoryUtils";
-
-const GEOCODE_BASE_URL =
-  import.meta.env.VITE_GEOCODE_BASE_URL ??
-  "https://nominatim.openstreetmap.org/reverse";
 
 const startMarkerIcon = L.divIcon({
   className: "trip-map-marker trip-map-marker--start",
@@ -64,7 +61,44 @@ const endMarkerIcon = L.divIcon({
   popupAnchor: [0, -10],
 });
 
+function normalizeCoordinatePair(
+  point: [number, number],
+): [number, number] | null {
+  const [first, second] = point;
+  const isLatLon = Math.abs(first) <= 90 && Math.abs(second) <= 180;
+  if (isLatLon) return [first, second];
+
+  const isLonLat = Math.abs(first) <= 180 && Math.abs(second) <= 90;
+  if (isLonLat) return [second, first];
+
+  return null;
+}
+
+function sanitizeMapPath(path?: Array<[number, number]> | null) {
+  if (!Array.isArray(path) || path.length === 0)
+    return [] as Array<[number, number]>;
+
+  const sanitized: Array<[number, number]> = [];
+  for (const point of path) {
+    const normalized = normalizeCoordinatePair(point);
+    if (!normalized) continue;
+
+    const previous = sanitized[sanitized.length - 1];
+    if (
+      previous &&
+      previous[0] === normalized[0] &&
+      previous[1] === normalized[1]
+    ) {
+      continue;
+    }
+    sanitized.push(normalized);
+  }
+
+  return sanitized;
+}
+
 export function TripHistoryPage() {
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const paramsApplied = useRef(false);
   const fromDatePickerRef = useRef<HTMLInputElement | null>(null);
@@ -111,8 +145,11 @@ export function TripHistoryPage() {
     return id;
   }, [tenant?.id, tenant?.name]);
   const fleetId = fleet?.id;
+  const hasActiveTripScope = Boolean(
+    tenantId && (fleetId || selectedVin !== "all"),
+  );
 
-  const { data: fleetOptions = [], isLoading: isLoadingFleets } = useQuery({
+  const { data: fleetOptions = [] } = useQuery({
     queryKey: tenantId ? queryKeys.fleets(tenantId) : ["fleets", "none"],
     queryFn: () => fetchFleets(tenantId),
     enabled: Boolean(tenantId),
@@ -124,7 +161,7 @@ export function TripHistoryPage() {
       ? queryKeys.vehicles(tenantId, fleetId)
       : ["vehicles", "none"],
     queryFn: () => fetchVehicles(tenantId, fleetId),
-    enabled: Boolean(tenantId),
+    enabled: hasActiveTripScope,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -135,12 +172,7 @@ export function TripHistoryPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const canFetchTrips = Boolean(
-    tenantId &&
-    (fleetId ||
-      selectedVin !== "all" ||
-      (fleetOptions.length > 0 && !isLoadingFleets)),
-  );
+  const canFetchTrips = hasActiveTripScope;
 
   const { from, to } = useMemo(() => {
     const now = new Date();
@@ -223,27 +255,88 @@ export function TripHistoryPage() {
     return map;
   }, [drivers]);
 
-  const tripVins = useMemo(() => {
-    const vins = (tripResponse?.items ?? [])
-      .map((item) => item.vin)
-      .filter((value): value is string => Boolean(value));
-    return Array.from(new Set(vins));
+  const requiresAssignmentLookup = useMemo(() => {
+    return (tripResponse?.items ?? []).some((item) => {
+      const record = item as Record<string, unknown>;
+      const summary = parseSummary(
+        record.summary ?? record.summaryJson ?? record.tripSummary,
+      );
+      const driverHint =
+        readStringFromRecord(record, [
+          "driverName",
+          "driver.name",
+          "driverDisplayName",
+          "driver.displayName",
+          "operatorName",
+          "operator.name",
+          "assignedDriverName",
+          "driverId",
+        ]) ??
+        readStringFromRecord(summary ?? {}, [
+          "driverName",
+          "driver.name",
+          "driverDisplayName",
+          "driver.displayName",
+          "operatorName",
+          "operator.name",
+          "assignedDriverName",
+          "driverId",
+        ]);
+      return !driverHint;
+    });
   }, [tripResponse]);
 
+  const assignmentVinList = useMemo(() => {
+    if (!requiresAssignmentLookup) return [] as string[];
+    if (selectedVin && selectedVin !== "all") return [selectedVin];
+
+    const vins = Array.from(
+      new Set(
+        (tripResponse?.items ?? [])
+          .map((item) => item.vin)
+          .filter((value): value is string => Boolean(value)),
+      ),
+    );
+
+    if (selectedTripVin && vins.includes(selectedTripVin)) {
+      return [
+        selectedTripVin,
+        ...vins.filter((vin) => vin !== selectedTripVin),
+      ];
+    }
+
+    return vins;
+  }, [requiresAssignmentLookup, selectedTripVin, selectedVin, tripResponse]);
+
   const { data: assignmentsByVinResponse = [] } = useQuery({
-    queryKey: ["trip-history-vin-assignments", tenantId, ...tripVins],
+    queryKey: [
+      "trip-history-vin-assignments",
+      tenantId,
+      assignmentVinList.join("|"),
+      requiresAssignmentLookup ? "required" : "skipped",
+    ],
     queryFn: async () => {
       const responses = await Promise.all(
-        tripVins.map((vin) =>
-          fetchVehicleAssignments(vin, tenantId).catch(() => ({ items: [] })),
-        ),
+        assignmentVinList.map(async (vin) => {
+          const response = await queryClient.fetchQuery({
+            queryKey: ["vehicleAssignments", tenantId, vin],
+            queryFn: () =>
+              fetchVehicleAssignments(vin, tenantId).catch(() => ({
+                items: [],
+              })),
+            staleTime: 5 * 60 * 1000,
+          });
+          return response;
+        }),
       );
       return responses.map((response, index) => ({
-        vin: tripVins[index],
-        items: normalizeAssignmentRecords(response, tripVins[index]),
+        vin: assignmentVinList[index],
+        items: normalizeAssignmentRecords(response, assignmentVinList[index]),
       }));
     },
-    enabled: Boolean(tenantId && tripVins.length > 0),
+    enabled: Boolean(
+      tenantId && assignmentVinList.length > 0 && requiresAssignmentLookup,
+    ),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -369,121 +462,15 @@ export function TripHistoryPage() {
     enabled: Boolean(tenantId && selectedTripId && selectedTripVin),
   });
 
-  const {
-    data: tripEventPositions,
-    isLoading: isLoadingTripEventsPath,
-    error: tripEventsPathError,
-  } = useQuery({
-    queryKey: [
-      "trip-events-path",
-      tenantHeaderId,
-      selectedTripVin ?? "",
-      selectedTripId ?? "",
-    ],
-    queryFn: () =>
-      fetchTripEventPositions({
-        tenantId,
-        tenantHeaderId,
-        vin: selectedTripVin ?? "",
-        tripId: selectedTripId ?? "",
-        limit: 1000,
-      }),
-    enabled: Boolean(tenantId && selectedTripId && selectedTripVin),
-  });
-
   // Extract path data from map response
-  const tripPath = tripMapData?.sampledPath ?? [];
-  const snappedPath = tripMapData?.snappedPath ?? [];
-
-  const [startAddress, setStartAddress] = useState<string | null>(null);
-  const [endAddress, setEndAddress] = useState<string | null>(null);
-  const [isGeocoding, setIsGeocoding] = useState(false);
-  const geocodeCache = useRef(new Map<string, string>());
-  const lastGeocodingTime = useRef<number>(0);
-
-  // Nominatim requires minimum 1 second between requests
-  const delay = (ms: number) =>
-    new Promise((resolve) => setTimeout(resolve, ms));
-
-  useEffect(() => {
-    if (tripPath.length < 2) {
-      setStartAddress(null);
-      setEndAddress(null);
-      setIsGeocoding(false);
-      return;
-    }
-
-    const [startLat, startLon] = tripPath[0];
-    const [endLat, endLon] = tripPath[tripPath.length - 1];
-
-    const fetchAddressWithRateLimit = async (
-      lat: number,
-      lon: number,
-      retryCount = 0,
-    ): Promise<string | null> => {
-      const cacheKey = `${lat.toFixed(6)},${lon.toFixed(6)}`;
-      const cached = geocodeCache.current.get(cacheKey);
-      if (cached) return cached;
-
-      // Enforce 1-second minimum between requests to Nominatim
-      const timeSinceLastRequest = Date.now() - lastGeocodingTime.current;
-      if (timeSinceLastRequest < 1100) {
-        await delay(1100 - timeSinceLastRequest);
-      }
-
-      lastGeocodingTime.current = Date.now();
-      const url = `${GEOCODE_BASE_URL}?format=jsonv2&lat=${lat}&lon=${lon}`;
-
-      try {
-        const response = await fetch(url);
-
-        // Handle rate limiting (425 Too Early or 429 Too Many Requests)
-        if (response.status === 425 || response.status === 429) {
-          if (retryCount < 3) {
-            // Exponential backoff: 2s, 4s, 8s
-            const backoffMs = Math.pow(2, retryCount + 1) * 1000;
-            await delay(backoffMs);
-            return fetchAddressWithRateLimit(lat, lon, retryCount + 1);
-          }
-          return null; // Give up after 3 retries
-        }
-
-        if (!response.ok) return null;
-
-        const data = (await response.json()) as { display_name?: string };
-        const value = data.display_name?.trim();
-        if (value) geocodeCache.current.set(cacheKey, value);
-        return value ?? null;
-      } catch {
-        return null;
-      }
-    };
-
-    let isActive = true;
-    setIsGeocoding(true);
-
-    // Sequential requests with rate limiting, not parallel
-    (async () => {
-      const startValue = await fetchAddressWithRateLimit(startLat, startLon);
-      if (!isActive) return;
-
-      const endValue = await fetchAddressWithRateLimit(endLat, endLon);
-      if (!isActive) return;
-
-      setStartAddress(startValue);
-      setEndAddress(endValue);
-      setIsGeocoding(false);
-    })().catch(() => {
-      if (!isActive) return;
-      setStartAddress(null);
-      setEndAddress(null);
-      setIsGeocoding(false);
-    });
-
-    return () => {
-      isActive = false;
-    };
-  }, [tripPath]);
+  const tripPath = useMemo(
+    () => sanitizeMapPath(tripMapData?.sampledPath),
+    [tripMapData?.sampledPath],
+  );
+  const snappedPath = useMemo(
+    () => sanitizeMapPath(tripMapData?.snappedPath),
+    [tripMapData?.snappedPath],
+  );
 
   const displayPath = useMemo(() => {
     const primary = snappedPath.length > 1 ? snappedPath : tripPath;
@@ -493,13 +480,8 @@ export function TripHistoryPage() {
       const isDegenerate = first[0] === last[0] && first[1] === last[1];
       if (!isDegenerate) return primary;
     }
-
-    if (Array.isArray(tripEventPositions) && tripEventPositions.length > 1) {
-      return tripEventPositions;
-    }
-
     return primary;
-  }, [snappedPath, tripPath, tripEventPositions]);
+  }, [snappedPath, tripPath]);
 
   const tripBounds = useMemo(() => {
     if (displayPath.length === 0) return null;
@@ -519,23 +501,16 @@ export function TripHistoryPage() {
   const { metricItems, summaryItems, tripStartLabel, tripEndLabel } =
     tripDetailPresentation;
 
-  const startLocationLabel =
-    startAddress ??
-    (tripPath[0]
-      ? formatLatLon(tripPath[0][0], tripPath[0][1])
-      : "Location unavailable");
-  const endLocationLabel =
-    endAddress ??
-    (tripPath.length > 0
-      ? formatLatLon(
-          tripPath[tripPath.length - 1][0],
-          tripPath[tripPath.length - 1][1],
-        )
-      : "Location unavailable");
-  const startLocationDisplay =
-    isGeocoding && !startAddress ? "Resolving address..." : startLocationLabel;
+  const startLocationDisplay = displayPath[0]
+    ? formatLatLon(displayPath[0][0], displayPath[0][1])
+    : "Location unavailable";
   const endLocationDisplay =
-    isGeocoding && !endAddress ? "Resolving address..." : endLocationLabel;
+    displayPath.length > 0
+      ? formatLatLon(
+          displayPath[displayPath.length - 1][0],
+          displayPath[displayPath.length - 1][1],
+        )
+      : "Location unavailable";
 
   return (
     <div className="page trip-history-page">
@@ -927,19 +902,17 @@ export function TripHistoryPage() {
                                       ))}
                                     </div>
                                     <div className="map-container map-container--inline">
-                                      {isLoadingTripMap ||
-                                      isLoadingTripEventsPath ? (
+                                      {isLoadingTripMap ? (
                                         <div className="empty-state">
                                           <div className="empty-state__icon">
                                             ⏳
                                           </div>
                                           <h3>Loading route</h3>
                                           <p className="text-muted">
-                                            Fetching map and event path data.
+                                            Fetching map data.
                                           </p>
                                         </div>
-                                      ) : tripMapError ||
-                                        tripEventsPathError ? (
+                                      ) : tripMapError ? (
                                         <div className="empty-state">
                                           <div className="empty-state__icon">
                                             ⚠️

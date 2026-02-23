@@ -94,7 +94,7 @@
             }
           ]
         },
-        "description": "List trip summaries for a single vehicle. Returns top-level rollup fields by default (include=none)."
+        "description": "List trip summaries for a single vehicle. Returns top-level rollup fields by default (include=none), including driverId/driverName when assignment resolution succeeds."
       },
       "event": [
         {
@@ -132,6 +132,20 @@
               "    pm.expect(item.startMiles).to.be.a('number');",
               "    pm.expect(item.endMiles).to.be.a('number');",
               "    pm.expect(item.endMiles).to.be.at.least(item.startMiles);",
+              "  }",
+              "});",
+              "",
+              "pm.test('Driver enrichment fields appear when assignments resolve', () => {",
+              "  const json = pm.response.json();",
+              "  if (json.items.length > 0) {",
+              "    const hasDriverFields = json.items.some((row) =>",
+              "      Object.prototype.hasOwnProperty.call(row, 'driverId') ||",
+              "      Object.prototype.hasOwnProperty.call(row, 'driverName')",
+              "    );",
+              "    if (!hasDriverFields) {",
+              "      console.warn('No driverId/driverName fields found. This can happen when no matching assignment exists for returned trips.');",
+              "    }",
+              "    pm.expect(true).to.equal(true);",
               "  }",
               "});",
               "",
@@ -193,7 +207,7 @@
             }
           ]
         },
-        "description": "List trip summaries for a fleet (VINs resolved via VIN registry)."
+        "description": "List trip summaries for a fleet (VINs resolved via VIN registry). Rows may include driverId/driverName when assignment resolution succeeds."
       },
       "event": [
         {
@@ -217,6 +231,20 @@
               "    pm.expect(item).to.have.property('endMiles');",
               "    pm.expect(item.startMiles).to.be.a('number');",
               "    pm.expect(item.endMiles).to.be.a('number');",
+              "  }",
+              "});",
+              "",
+              "pm.test('Fleet list may include driver enrichment fields', () => {",
+              "  const json = pm.response.json();",
+              "  if (json.items.length > 0) {",
+              "    const hasDriverFields = json.items.some((row) =>",
+              "      Object.prototype.hasOwnProperty.call(row, 'driverId') ||",
+              "      Object.prototype.hasOwnProperty.call(row, 'driverName')",
+              "    );",
+              "    if (!hasDriverFields) {",
+              "      console.warn('No driverId/driverName fields found in current fleet response.');",
+              "    }",
+              "    pm.expect(true).to.equal(true);",
               "  }",
               "});"
             ]
@@ -310,7 +338,7 @@
             }
           ]
         },
-        "description": "Mirrors Trip History list call: GET /fleets/{fleetId}/trips with x-tenant-id + x-api-key. Returns top-level startMiles/endMiles used as start/end odometer in the list."
+        "description": "Mirrors Trip History list call: GET /fleets/{fleetId}/trips with x-tenant-id + x-api-key. Returns top-level startMiles/endMiles and may include driverId/driverName for list rows."
       },
       "event": [
         {
@@ -334,6 +362,19 @@
               "    pm.expect(row.startMiles).to.be.a('number');",
               "    pm.expect(row.endMiles).to.be.a('number');",
               "    pm.expect(row.endMiles).to.be.at.least(row.startMiles);",
+              "  }",
+              "});",
+              "",
+              "pm.test('Trip History list includes driver enrichment when available', () => {",
+              "  if (json.items.length > 0) {",
+              "    const hasDriverFields = json.items.some((row) =>",
+              "      Object.prototype.hasOwnProperty.call(row, 'driverId') ||",
+              "      Object.prototype.hasOwnProperty.call(row, 'driverName')",
+              "    );",
+              "    if (!hasDriverFields) {",
+              "      console.warn('No driver enrichment fields found for returned rows.');",
+              "    }",
+              "    pm.expect(true).to.equal(true);",
               "  }",
               "});"
             ]

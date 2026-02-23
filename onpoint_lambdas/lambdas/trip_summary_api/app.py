@@ -44,6 +44,8 @@ BUILD_ID = "2026-02-21T23:58:00Z"
 TABLE = os.environ["TRIP_SUMMARY_TABLE"]
 TELEMETRY_EVENTS_TABLE = os.environ.get("TELEMETRY_EVENTS_TABLE", "onpoint-dev-telemetry-events")
 VIN_REGISTRY_TABLE = os.environ.get("VIN_REGISTRY_TABLE")
+DRIVERS_TABLE = os.environ.get("DRIVERS_TABLE")
+DRIVER_ASSIGNMENTS_TABLE = os.environ.get("DRIVER_ASSIGNMENTS_TABLE")
 VIN_TENANT_FLEET_INDEX = os.environ.get("VIN_TENANT_FLEET_INDEX")
 DEFAULT_LIMIT = int(os.environ.get("DEFAULT_LIMIT", "50"))
 MAX_LIMIT = int(os.environ.get("MAX_LIMIT", "200"))
@@ -916,6 +918,146 @@ def _ddb_query_all(params: Dict[str, Any]) -> List[dict]:
     return items
 
 
+def _resolve_assignment_for_trip(
+    assignments: List[dict],
+    start_time: Optional[str],
+    end_time: Optional[str],
+) -> Optional[dict]:
+    if not assignments:
+        return None
+
+    trip_start = _parse_iso(start_time) or _parse_iso(end_time)
+    trip_end = _parse_iso(end_time) or trip_start
+    if not trip_start or not trip_end:
+        return None
+
+    best: Optional[dict] = None
+    best_from = datetime.min.replace(tzinfo=timezone.utc)
+
+    for assignment in assignments:
+        if not assignment.get("driverId"):
+            continue
+        effective_from = _parse_iso(assignment.get("effectiveFrom"))
+        effective_to = _parse_iso(assignment.get("effectiveTo"))
+
+        if effective_from and effective_from > trip_end:
+            continue
+        if effective_to and effective_to < trip_start:
+            continue
+
+        rank_from = effective_from or datetime.min.replace(tzinfo=timezone.utc)
+        if best is None or rank_from > best_from:
+            best = assignment
+            best_from = rank_from
+
+    return best
+
+
+def _list_assignments_for_vin(vin: str, tenant_id: Optional[str]) -> List[dict]:
+    if not DRIVER_ASSIGNMENTS_TABLE:
+        return []
+
+    params = {
+        "TableName": DRIVER_ASSIGNMENTS_TABLE,
+        "IndexName": "VinIndex",
+        "KeyConditionExpression": "GSI1PK = :pk",
+        "ExpressionAttributeValues": {":pk": {"S": f"VIN#{vin}"}},
+        "ScanIndexForward": True,
+    }
+    try:
+        items = _ddb_query_all(params)
+    except Exception as exc:
+        logger.warning(f"Unable to query assignments for vin={vin}: {exc}")
+        return []
+
+    if tenant_id:
+        items = [it for it in items if it.get("tenantId") == tenant_id]
+
+    items.sort(
+        key=lambda it: _parse_iso(it.get("effectiveFrom"))
+        or datetime.min.replace(tzinfo=timezone.utc),
+        reverse=True,
+    )
+    return items
+
+
+def _get_driver_name(driver_id: str) -> Optional[str]:
+    if not DRIVERS_TABLE:
+        return None
+
+    try:
+        resp = ddb.get_item(
+            TableName=DRIVERS_TABLE,
+            Key={"PK": {"S": f"DRIVER#{driver_id}"}, "SK": {"S": "META"}},
+            ProjectionExpression="#n,displayName,fullName,metadata",
+            ExpressionAttributeNames={"#n": "name"},
+        )
+    except Exception as exc:
+        logger.warning(f"Unable to read driver profile for driverId={driver_id}: {exc}")
+        return None
+
+    item = resp.get("Item")
+    if not item:
+        return None
+
+    profile = _ddb_unmarshal_item(item)
+    metadata = profile.get("metadata") if isinstance(profile.get("metadata"), dict) else {}
+
+    name = profile.get("name") or profile.get("displayName") or profile.get("fullName")
+    if isinstance(name, str) and name.strip():
+        return name.strip()
+
+    metadata_name = metadata.get("name") if isinstance(metadata, dict) else None
+    if isinstance(metadata_name, str) and metadata_name.strip():
+        return metadata_name.strip()
+
+    return None
+
+
+def _enrich_trip_rows_with_driver(trips: List[dict], tenant_id: Optional[str]) -> None:
+    if not trips:
+        return
+
+    assignment_cache: Dict[str, List[dict]] = {}
+    driver_name_cache: Dict[str, Optional[str]] = {}
+
+    for trip in trips:
+        existing_driver_name = trip.get("driverName")
+        if isinstance(existing_driver_name, str) and existing_driver_name.strip():
+            continue
+
+        vin = trip.get("vin")
+        if not isinstance(vin, str) or not vin:
+            continue
+
+        assignments = assignment_cache.get(vin)
+        if assignments is None:
+            assignments = _list_assignments_for_vin(vin, tenant_id)
+            assignment_cache[vin] = assignments
+
+        match = _resolve_assignment_for_trip(
+            assignments,
+            trip.get("startTime") if isinstance(trip.get("startTime"), str) else None,
+            trip.get("endTime") if isinstance(trip.get("endTime"), str) else None,
+        )
+        if not match:
+            continue
+
+        driver_id = match.get("driverId")
+        if not isinstance(driver_id, str) or not driver_id.strip():
+            continue
+
+        driver_id = driver_id.strip()
+        trip["driverId"] = driver_id
+
+        if driver_id not in driver_name_cache:
+            driver_name_cache[driver_id] = _get_driver_name(driver_id)
+
+        resolved_name = driver_name_cache.get(driver_id)
+        if resolved_name:
+            trip["driverName"] = resolved_name
+
+
 # -----------------------------
 # Handler
 # -----------------------------
@@ -1192,6 +1334,7 @@ def lambda_handler(event, context):
 
         results.sort(key=_sort_key_endtime_desc, reverse=True)
         results = results[:limit]
+        _enrich_trip_rows_with_driver(results, tenant_id)
         next_token = None
         if any(next_state["vins"].get(v) for v in vins):
             next_token = _encode_token(next_state)
@@ -1316,6 +1459,7 @@ def lambda_handler(event, context):
 
     results.sort(key=_sort_key_endtime_desc, reverse=True)
     results = results[:limit]
+    _enrich_trip_rows_with_driver(results, tenant_id)
 
     next_token = None
     if any(next_state["vins"].get(v) for v in vins):

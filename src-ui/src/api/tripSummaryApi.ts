@@ -454,49 +454,6 @@ export async function fetchTripSummaryTripDetail(params: {
   });
 }
 
-export async function fetchTripEventPositions(params: {
-  tenantId: string;
-  tenantHeaderId?: string;
-  vin: string;
-  tripId: string;
-  limit?: number;
-}): Promise<Array<[number, number]>> {
-  const response = await fetchTripEvents({
-    tenantId: params.tenantId,
-    tenantHeaderId: params.tenantHeaderId,
-    vin: params.vin,
-    tripId: params.tripId,
-    limit: params.limit,
-  });
-
-  return (response.items ?? [])
-    .map((item) => {
-      const directLat = toNumber(item.lat ?? item.latitude);
-      const directLon = toNumber(item.lon ?? item.longitude);
-      if (directLat !== null && directLon !== null)
-        return [directLat, directLon] as [number, number];
-
-      const location = item.location;
-      if (location) {
-        const locLat = toNumber(location.lat ?? location.latitude);
-        const locLon = toNumber(location.lon ?? location.longitude);
-        if (locLat !== null && locLon !== null)
-          return [locLat, locLon] as [number, number];
-      }
-
-      const geo = item.geo;
-      if (geo) {
-        const geoLat = toNumber(geo.lat ?? geo.latitude);
-        const geoLon = toNumber(geo.lon ?? geo.longitude);
-        if (geoLat !== null && geoLon !== null)
-          return [geoLat, geoLon] as [number, number];
-      }
-
-      return null;
-    })
-    .filter((value): value is [number, number] => Boolean(value));
-}
-
 export async function fetchTripHistoryTrips(params: {
   tenantId: string;
   tenantHeaderId?: string;
@@ -1065,15 +1022,6 @@ export function buildTripDetailPresentation(params: {
     metricItems,
     summaryItems,
   };
-}
-
-function toNumber(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim()) {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return null;
 }
 
 function parseSummary(value: unknown): Record<string, unknown> | null {
