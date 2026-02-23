@@ -1,10 +1,10 @@
-# OnPoint Settings Feature — Enterprise Specification (Version 2.0)
+# OnPoint Settings Feature — Enterprise Specification (Version 2.1)
 
 ## 1. Document Control
 - **Feature**: Hierarchical Settings Management (`tenant`, `fleet`, `user`)
 - **Product**: OnPoint Telematics Fleet Management
 - **Status**: Authoritative enterprise baseline for engineering, QA, SRE, Security, and Product
-- **Version**: 2.0
+- **Version**: 2.1
 - **Date**: 2026-02-22
 - **Architecture Alignment**: AWS Serverless (API Gateway, Lambda, DynamoDB, EventBridge, CloudWatch)
 - **Normative Language**: Keywords **MUST**, **SHOULD**, **MAY** are normative.
@@ -164,10 +164,31 @@ Each `SettingDefinition` **MUST** include:
 - `deprecationState` (`active|deprecated|removed`)
 - `introducedVersion`
 
+### 7.1 Setting Dependency Graph and Default Governance
+1. Each `SettingDefinition` **MAY** declare dependencies via `dependsOn[]` and impact links via `affects[]`.
+2. The platform **MUST** maintain an acyclic dependency graph for all active setting keys.
+3. Any create/update that introduces a dependency cycle **MUST** be rejected with `400` and machine-readable cycle details.
+4. Dependent recomputation order **MUST** be topological and deterministic.
+5. System defaults **MUST** be versioned (`defaultVersion`) and immutable per version.
+6. New default versions **MUST NOT** retroactively change effective tenant/fleet/user values unless an explicit migration operation is executed.
+7. Default migration operations **MUST** support dry-run impact preview before apply.
+
 Validation behavior:
 1. Server-side validation is authoritative.
 2. UI validation is advisory only.
 3. Unknown keys **MUST** return `404`.
+
+### 7.2 Cross-Setting Validation Engine
+1. Validation **MUST** support policy constraints across keys, e.g.:
+	- `safety.overspeed.standard < safety.overspeed.severe`
+	- `fuel.refuel.threshold > fuel.noise.threshold`
+	- `notification.quietHours.start != notification.quietHours.end`
+2. Cross-setting validator **MUST** evaluate against the candidate post-change effective state, not just the submitted key.
+3. Validation failures **MUST** return `400` with structured payload:
+	- `errorCode`
+	- `message`
+	- `violations[]` with `settingKey`, `ruleId`, `actual`, `expected`, `scope`
+4. Validation rules **MUST** be versioned and auditable.
 
 ---
 
@@ -200,10 +221,17 @@ Design constraints:
 - **SK**: `TS#{iso8601}#REQ#{requestId}`
 - Append-only; no update/delete in normal operations.
 
-### 8.5 Hot Partition and Scale Considerations
+### 8.5 Audit Integrity and Immutability
+1. Audit records **MUST** be append-only; update/delete APIs for audit data are prohibited.
+2. Optional hash-chain integrity (`previousHash`, `entryHash`) **SHOULD** be supported for tamper evidence.
+3. Audit export jobs **MUST** include integrity metadata when hash chaining is enabled.
+
+### 8.6 Data Growth Controls and Scale Considerations
 1. High-churn global keys **SHOULD** be sharded by optional suffix when needed.
 2. Bulk updates **MUST** be chunked and rate-controlled.
 3. Large tenant exports **MUST** use async job model.
+4. Audit storage **MUST** support partition growth control via time-bucketing strategy (e.g., monthly `PK` suffix) when tenant volume crosses threshold.
+5. Retention and archival **MUST** be configurable by tenant policy and compliance requirements.
 
 ---
 
@@ -215,6 +243,10 @@ Design constraints:
 4. `DELETE /settings/{scopeType}/{scopeId}/{settingKey}`
 5. `POST /settings/bulk`
 6. `GET /settings/audit`
+7. `POST /settings/snapshots/export`
+8. `POST /settings/snapshots/import`
+9. `POST /settings/snapshots/restore`
+10. `POST /settings/impact-analysis`
 
 ### 9.2 Resolver APIs
 1. `GET /settings/resolved/{settingKey}?tenantId=...&fleetId=...&userId=...`
@@ -240,6 +272,20 @@ Write APIs (`PUT`, `DELETE`, `POST /bulk`) **MUST** support `Idempotency-Key` he
 - `412`: precondition failed (`If-Match` mismatch)
 - `429`: throttled
 - `500`: internal error with stable error code
+
+### 9.6 Blast-Radius Protection for Critical Safety Settings
+1. Critical safety keys (e.g., overspeed, harsh-event thresholds) **MUST** support guarded update mode:
+	- optional approval workflow flag
+	- mandatory impact preview
+	- optional scheduled `effectiveFrom`
+2. Impact preview **MUST** include estimated counts of affected fleets, users, and dependent services.
+3. For guarded keys, immediate apply **MAY** be blocked by policy requiring approval.
+
+### 9.7 Configuration Snapshot, Export/Import, and Rollback
+1. Snapshot export **MUST** produce a versioned, signed artifact containing scoped settings and metadata.
+2. Import **MUST** support dry-run validation and conflict reporting.
+3. Restore **MUST** be atomic at requested scope (tenant/fleet/user set) with rollback-on-failure behavior.
+4. Snapshot operations **MUST** be fully audited.
 
 ---
 
@@ -277,6 +323,24 @@ Allowed cache layers:
 3. Resolver cache TTL **MUST** be bounded (default 30s, max 120s).
 4. Invalidation failures **MUST** be observable and retried.
 
+### 11.4 Propagation SLO and Invalidation Semantics
+1. Settings propagation SLO **MUST** be:
+	- 95% of subscribers refreshed in < 2 seconds
+	- 99% of subscribers refreshed in < 5 seconds
+2. `SettingsChanged` event payload **MUST** include:
+	- `tenantId`, `scopeType`, `scopeId`
+	- `changedKeys[]`
+	- `newVersion`, `changedAt`, `requestId`
+3. Subscribers **MUST** treat events as at-least-once delivery and implement idempotent refresh.
+4. Stale event ordering **MUST** be handled by comparing version/timestamp and ignoring older updates.
+
+### 11.5 Settings Change Propagation Flow (EventBridge)
+```text
+Settings API Write -> DynamoDB conditional update -> Audit append ->
+EventBridge(SettingsChanged) -> Subscribers receive event ->
+Subscriber cache refresh/invalidate -> New effective values active
+```
+
 ---
 
 ## 12. Failure Modes and Degraded Operation
@@ -305,6 +369,7 @@ Allowed cache layers:
 3. Audit events **MUST** be append-only and tamper-evident (immutable write pattern).
 4. Retention policy **MUST** define operational retention + legal hold behavior.
 5. Compliance exports **MUST** include actor, scope, old/new values, request metadata, and trace IDs.
+6. Audit data retention **MUST** support legal hold overrides with deletion guardrails.
 
 ---
 
@@ -347,6 +412,33 @@ Allowed cache layers:
 - **Write Throughput**: sustain tenant policy rollout bursts without cross-tenant starvation
 - **Durability**: audit and values persisted with DynamoDB durability guarantees
 
+### 16.1 Cost & Scale Considerations
+1. Primary cost driver **MUST** be modeled as resolver read volume, not write volume.
+2. For new settings APIs, AWS HTTP API **SHOULD** be preferred over REST API where feature parity is acceptable, due to lower request cost and latency.
+3. DynamoDB billing assumption **MUST** default to on-demand mode for elastic multi-tenant traffic.
+4. DAX/Redis **MUST NOT** be required by default; use in-process cache first. External cache **MAY** be introduced later based on measured p95/p99 and cost data.
+
+### 16.2 Critical Non-Functional Constraint — No Per-Event Resolver Calls
+1. Telemetry processing services **MUST NOT** call resolver APIs per telemetry event.
+2. Telematics processors **MUST** use:
+   - in-memory micro-cache (recommended TTL: 60s)
+   - and/or tenant/fleet policy snapshot
+3. Telemetry pipelines **MUST** refresh settings on `SettingsChanged` EventBridge events and/or periodic refresh intervals.
+4. Telemetry processors **MUST NOT** block event processing on live resolver calls; they **MUST** continue with last-known effective configuration.
+
+### 16.3 Acceptable Resolver Call Paths
+Resolver APIs are acceptable for:
+1. UI and admin/API management flows
+2. Policy management services
+3. Scheduled batch jobs
+4. Cache refresh workers and warmers
+
+### 16.4 Explicit Anti-Pattern (Prohibited)
+**Do not resolve per event** examples:
+1. For each telemetry message, calling `GET /settings/resolved/profile` before classification.
+2. For each GPS point, resolving overspeed threshold via network call.
+3. For each trip-summary record, synchronous resolver lookup inside tight loops.
+
 ---
 
 ## 17. Integration Requirements
@@ -359,6 +451,17 @@ The following services **MUST** consume resolver outputs (not hardcoded constant
 6. UI rendering (effective-value + provenance)
 
 Integration contracts **MUST** define fallback behavior when resolver is unavailable.
+
+### 17.1 Telemetry Processing Integration Flow (Required)
+```text
+Telemetry Event -> Processor reads in-memory cached effective config ->
+Classify/enrich event -> Persist/output ->
+Background listener handles SettingsChanged and refreshes cache
+```
+
+### 17.2 Integration Constraint
+1. Telemetry processor integration **MUST** remain asynchronous and non-blocking with respect to settings retrieval.
+2. Resolver/network outages **MUST NOT** halt telemetry ingestion.
 
 ---
 
@@ -416,6 +519,10 @@ The following wireframes are normative UX references for implementation planning
 | Lock at tenant: [x] Prevent fleet/user overrides                                              |
 | Effective from: [ immediate v ]                                                               |
 | Change reason (required): [ Annual safety policy update ________________________________ ]    |
+|                                                                                              |
+| Impact Analysis                                                                               |
+| - Fleets affected: 214   Users affected: 6,340   Services impacted: 4                        |
+| - High-risk check: [PASS]  Threshold delta: +5 mph                                           |
 |                                                                                              |
 | Idempotency Key: [ auto-generated: 6f0f... ]                                                  |
 | Concurrency: If-Match "v14-abc123"                                                            |
@@ -499,12 +606,50 @@ The following wireframes are normative UX references for implementation planning
 +--------------------------------------------------------------------------------------------------+
 ```
 
+#### 18.3.7 Scheduled Changes View
+```text
++--------------------------------------------------------------------------------------------------+
+| Scheduled Settings Changes                                                                       |
++--------------------------------------------------------------------------------------------------+
+| Filters: [Scope v] [Category v] [Owner v] [Next 30 days v]                                      |
+|--------------------------------------------------------------------------------------------------|
+| Effective At (UTC)      Scope         Key                             New Value    Status        |
+|--------------------------------------------------------------------------------------------------|
+| 2026-03-01 00:00:00     Tenant T-1    safety.overspeed.standard       70 mph       Approved      |
+| 2026-03-05 06:00:00     Fleet F-21    fuel.idle.threshold.seconds     240          Pending       |
+| 2026-03-10 00:00:00     Tenant T-1    notification.quietHours.start   23:00        Approved      |
+|--------------------------------------------------------------------------------------------------|
+| [View Diff] [Cancel Schedule] [Export]                                                          |
++--------------------------------------------------------------------------------------------------+
+```
+
+#### 18.3.8 Cross-Setting Validation Error Rendering
+```text
++----------------------------------------------------------------------------------------------+
+| Validation Errors                                                                              |
+|----------------------------------------------------------------------------------------------|
+| Could not save changes. Resolve the following policy violations:                              |
+| 1) Rule: safety.speed.threshold.order                                                          |
+|    - safety.overspeed.standard = 82                                                            |
+|    - safety.overspeed.severe   = 80                                                            |
+|    - Requirement: standard < severe                                                            |
+| 2) Rule: notification.quietHours.validRange                                                    |
+|    - quietHours.start == quietHours.end                                                        |
+|    - Requirement: start != end                                                                 |
+|----------------------------------------------------------------------------------------------|
+| [Back to Edit]                                                                                 |
++----------------------------------------------------------------------------------------------+
+```
+
 ### 18.4 UX Acceptance Criteria for Mockup Fidelity
 1. Implemented UI **MUST** expose scope context and source attribution for each effective value.
 2. Edit flows **MUST** display concurrency token context (e.g., version/etag) when conflicts occur.
 3. Locked settings **MUST** be visually read-only with explicit reason/tool-tip.
 4. Audit page **MUST** expose `who/what/when/why/requestId` for every setting mutation.
 5. Fleet/User screens **MUST** clearly differentiate inherited value vs override value.
+6. Save flows for guarded keys **MUST** show impact analysis before submission.
+7. Scheduled changes screen **MUST** expose upcoming `effectiveFrom` updates with status.
+8. Cross-setting validation errors **MUST** render rule-level details tied to specific keys.
 
 ---
 
@@ -525,6 +670,12 @@ The following wireframes are normative UX references for implementation planning
 1. Feature flags **MUST** enable rapid rollback to legacy behavior.
 2. Data schema changes **MUST** be backward-compatible (expand/contract).
 
+### 19.4 Snapshot Restore Strategy
+1. Restore operations **MUST** support point-in-time snapshot selection.
+2. Restore **MUST** provide dry-run output listing creates/updates/deletes before execution.
+3. Restore execution **MUST** be atomic per selected scope and reversible via prior snapshot.
+4. Restore failures **MUST** emit structured audit events with failure reason and partial-work guarantees.
+
 ---
 
 ## 20. Deployment and Release Engineering Requirements
@@ -532,6 +683,7 @@ The following wireframes are normative UX references for implementation planning
 2. Canary deployment for settings write path **SHOULD** be used before full rollout.
 3. Production changes to critical safety settings **MUST** require change-control approval.
 4. Runbooks **MUST** include resolver outage, cache drift, and conflict storm scenarios.
+5. Critical safety setting rollout **SHOULD** support optional two-person approval in production environments.
 
 ---
 
