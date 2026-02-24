@@ -1556,3 +1556,121 @@ export async function fetchVinRegistryHistory(
     },
   });
 }
+
+export type SettingsScopeType = "PLATFORM" | "TENANT" | "FLEET";
+
+export type SettingsScopeSource = {
+  scopeType?: SettingsScopeType;
+  scopeId?: string;
+};
+
+export type SettingsEffectiveResponse = {
+  tenantId?: string | null;
+  fleetId?: string | null;
+  effective: Record<string, unknown>;
+  sources: Record<string, SettingsScopeSource>;
+  resolvedAt?: string;
+};
+
+export type SettingsScopeResponse = {
+  scopeType: SettingsScopeType;
+  scopeId: string;
+  settings: Record<string, unknown>;
+  items?: Array<{
+    key: string;
+    value: unknown;
+    valueType?: string;
+    updatedAt?: string;
+    updatedBy?: string;
+  }>;
+};
+
+export type SettingValueType =
+  | "null"
+  | "boolean"
+  | "number"
+  | "string"
+  | "array"
+  | "object";
+
+export async function fetchEffectiveSettings(
+  tenantId: string,
+  fleetId?: string,
+) {
+  const query = new URLSearchParams();
+  if (tenantId) query.set("tenantId", tenantId);
+  if (fleetId) query.set("fleetId", fleetId);
+
+  return httpRequest<SettingsEffectiveResponse>(
+    `/settings/effective${query.toString() ? `?${query.toString()}` : ""}`,
+    {
+      headers: {
+        ...(tenantId ? { "x-tenant-id": tenantId } : {}),
+        ...(fleetId ? { "x-fleet-id": fleetId } : {}),
+      },
+    },
+  );
+}
+
+export async function fetchScopeSettings(
+  scopeType: SettingsScopeType,
+  scopeId: string,
+  options?: { tenantId?: string; fleetId?: string; roleOverride?: string },
+) {
+  return httpRequest<SettingsScopeResponse>(
+    `/settings/scopes/${encodeURIComponent(scopeType)}/${encodeURIComponent(scopeId)}`,
+    {
+      headers: {
+        ...(options?.tenantId ? { "x-tenant-id": options.tenantId } : {}),
+        ...(options?.fleetId ? { "x-fleet-id": options.fleetId } : {}),
+        ...(options?.roleOverride ? { "x-role": options.roleOverride } : {}),
+      },
+    },
+  );
+}
+
+export async function upsertScopeSetting(
+  scopeType: SettingsScopeType,
+  scopeId: string,
+  key: string,
+  payload: {
+    value: unknown;
+    valueType?: SettingValueType;
+    reason?: string;
+  },
+  options?: { tenantId?: string; fleetId?: string; roleOverride?: string },
+) {
+  return httpRequest<unknown>(
+    `/settings/scopes/${encodeURIComponent(scopeType)}/${encodeURIComponent(scopeId)}/${encodeURIComponent(key)}`,
+    {
+      method: "PUT",
+      body: payload,
+      headers: {
+        ...(options?.tenantId ? { "x-tenant-id": options.tenantId } : {}),
+        ...(options?.fleetId ? { "x-fleet-id": options.fleetId } : {}),
+        ...(options?.roleOverride ? { "x-role": options.roleOverride } : {}),
+      },
+    },
+  );
+}
+
+export async function deleteScopeSetting(
+  scopeType: SettingsScopeType,
+  scopeId: string,
+  key: string,
+  payload?: { reason?: string },
+  options?: { tenantId?: string; fleetId?: string; roleOverride?: string },
+) {
+  return httpRequest<unknown>(
+    `/settings/scopes/${encodeURIComponent(scopeType)}/${encodeURIComponent(scopeId)}/${encodeURIComponent(key)}`,
+    {
+      method: "DELETE",
+      ...(payload ? { body: payload } : {}),
+      headers: {
+        ...(options?.tenantId ? { "x-tenant-id": options.tenantId } : {}),
+        ...(options?.fleetId ? { "x-fleet-id": options.fleetId } : {}),
+        ...(options?.roleOverride ? { "x-role": options.roleOverride } : {}),
+      },
+    },
+  );
+}

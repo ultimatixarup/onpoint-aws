@@ -233,6 +233,19 @@ export function AppRouter() {
           <Route path="/adlp/live-feed" element={<LiveFeedPage />} />
           <Route path="/adlp/users" element={<ManageUsersPage />} />
           <Route path="/adlp/groups" element={<ManageGroupsPage />} />
+          <Route
+            path="/adlp/settings"
+            element={<Navigate to="/adlp/settings/general" replace />}
+          />
+          <Route
+            path="/adlp/settings/general"
+            element={<ConfigurationPage />}
+          />
+          <Route
+            path="/adlp/settings/notifications"
+            element={<NotificationsPage />}
+          />
+          <Route path="/adlp/settings/faq" element={<FaqPage />} />
           <Route path="/adlp/config" element={<ConfigurationPage />} />
           <Route path="/adlp/notifications" element={<NotificationsPage />} />
           <Route path="/adlp/faq" element={<FaqPage />} />

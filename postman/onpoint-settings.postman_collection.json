@@ -1,0 +1,172 @@
+{
+  "info": {
+    "name": "OnPoint Settings API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Settings APIs for effective resolution and scope-level CRUD. Uses fleetTenancyBaseUrl and fleetTenancyApiKey from environment."
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "const uuid = pm.variables.replaceIn('{{$guid}}');",
+          "pm.variables.set('idempotencyKey', uuid);",
+          "pm.variables.set('correlationId', uuid);",
+          "const apiKey = pm.environment.get('fleetTenancyApiKey');",
+          "const role = pm.environment.get('roleAdmin') || 'admin';",
+          "const tenantId = pm.environment.get('tenantId');",
+          "const fleetId = pm.environment.get('fleetId');",
+          "const token = pm.environment.get('idToken');",
+          "if (apiKey && !pm.request.headers.has('x-api-key')) pm.request.headers.add({ key: 'x-api-key', value: apiKey });",
+          "if (role && !pm.request.headers.has('x-role')) pm.request.headers.add({ key: 'x-role', value: role });",
+          "if (tenantId && !pm.request.headers.has('x-tenant-id')) pm.request.headers.add({ key: 'x-tenant-id', value: tenantId });",
+          "if (fleetId && !pm.request.headers.has('x-fleet-id')) pm.request.headers.add({ key: 'x-fleet-id', value: fleetId });",
+          "if (token && !pm.request.headers.has('Authorization')) pm.request.headers.add({ key: 'Authorization', value: `Bearer ${token}` });"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Effective",
+      "item": [
+        {
+          "name": "Get effective settings (tenant + fleet)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+              { "key": "x-role", "value": "{{roleAdmin}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-fleet-id", "value": "{{fleetId}}" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/settings/effective?tenantId={{tenantId}}&fleetId={{fleetId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('effective payload present', function () {",
+                  "  pm.expect(json).to.have.property('effective');",
+                  "  pm.expect(json).to.have.property('sources');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get effective settings (tenant only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+              { "key": "x-role", "value": "{{roleAdmin}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/settings/effective?tenantId={{tenantId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Scope Settings",
+      "item": [
+        {
+          "name": "Get scope settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+              { "key": "x-role", "value": "{{roleAdmin}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/settings/scopes/{{settingsScopeType}}/{{settingsScopeId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('scope payload present', function () {",
+                  "  pm.expect(json).to.have.property('scopeType');",
+                  "  pm.expect(json).to.have.property('scopeId');",
+                  "  pm.expect(json).to.have.property('settings');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Put scope setting",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+              { "key": "x-role", "value": "{{roleAdmin}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/settings/scopes/{{settingsScopeType}}/{{settingsScopeId}}/{{settingsKey}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": {{settingsValue}},\n  \"valueType\": \"{{settingsValueType}}\",\n  \"reason\": \"{{settingsReason}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('setting key persisted', function () {",
+                  "  pm.expect(json).to.have.property('key', pm.environment.get('settingsKey'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete scope setting",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+              { "key": "x-role", "value": "{{roleAdmin}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/settings/scopes/{{settingsScopeType}}/{{settingsScopeId}}/{{settingsKey}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"{{settingsReason}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('delete acknowledged', function () {",
+                  "  pm.expect(json).to.have.property('deleted', true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

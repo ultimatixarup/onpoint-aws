@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const navSections = [
@@ -9,24 +9,12 @@ const navSections = [
     links: [{ to: "/adlp/dashboard", label: "Dashboard" }],
   },
   {
-    title: "Operations",
+    title: "Dispatch",
     icon: "⚙",
     links: [
       { to: "/adlp/tracking/live", label: "Live Tracking" },
+      { to: "/adlp/trips/planning", label: "Planning" },
       { to: "/adlp/tracking/trips", label: "Trip History" },
-      { to: "/adlp/trips/planning", label: "Trip Planning" },
-    ],
-  },
-  {
-    title: "Drivers",
-    icon: "▣",
-    links: [
-      { to: "/adlp/drivers/summary", label: "Driver Directory" },
-      { to: "/adlp/drivers/dashboard", label: "Driver Dashboard" },
-      { to: "/adlp/drivers/assign", label: "Assignments" },
-      { to: "/adlp/drivers/compliance", label: "Compliance" },
-      { to: "/adlp/drivers/safety", label: "Safety Analytics" },
-      { to: "/adlp/drivers/reports", label: "Reports" },
     ],
   },
   {
@@ -39,27 +27,46 @@ const navSections = [
     ],
   },
   {
-    title: "Telemetry",
-    icon: "◇",
-    links: [{ to: "/adlp/telemetry/raw", label: "Telemetry Events" }],
+    title: "Drivers",
+    icon: "▣",
+    links: [
+      { to: "/adlp/drivers/summary", label: "Drivers" },
+      { to: "/adlp/drivers/dashboard", label: "Performance" },
+      { to: "/adlp/drivers/assign", label: "Assignments" },
+      { to: "/adlp/drivers/compliance", label: "Compliance" },
+      { to: "/adlp/drivers/safety", label: "Safety" },
+      { to: "/adlp/drivers/reports", label: "Driver Reports" },
+    ],
   },
   {
-    title: "Reports",
+    title: "Insights",
     icon: "●",
-    links: [{ to: "/adlp/reports", label: "Fleet Reports" }],
+    links: [
+      { to: "/adlp/reports", label: "Reports" },
+      { to: "/adlp/telemetry/raw", label: "Telemetry" },
+    ],
+  },
+  {
+    title: "Settings",
+    icon: "☰",
+    links: [
+      { to: "/adlp/settings/general", label: "Config" },
+      { to: "/adlp/settings/notifications", label: "Notifications" },
+      { to: "/adlp/settings/faq", label: "FAQ" },
+    ],
   },
 ];
 
 const adminLinks = [
-  { to: "/adlp/platform/dashboard", label: "Platform Dashboard" },
+  { to: "/adlp/platform/dashboard", label: "Dashboard" },
   { to: "/adlp/platform/tenants", label: "Tenants" },
-  { to: "/adlp/platform/customers", label: "Customers" },
   { to: "/adlp/platform/fleets", label: "Fleets" },
   { to: "/adlp/platform/users", label: "Users" },
   { to: "/adlp/platform/drivers", label: "Drivers" },
   { to: "/adlp/platform/vehicles", label: "Vehicles" },
-  { to: "/adlp/platform/vehicle-assignments", label: "Vehicle Assignments" },
-  { to: "/adlp/platform/driver-assignments", label: "Driver Assignments" },
+  { to: "/adlp/platform/vehicle-assignments", label: "Vehicle Assign" },
+  { to: "/adlp/platform/driver-assignments", label: "Driver Assign" },
+  { to: "/adlp/platform/customers", label: "Customers" },
 ];
 
 const tenantAdminLinks = [
@@ -67,19 +74,105 @@ const tenantAdminLinks = [
   { to: "/adlp/tenant/vehicles", label: "Vehicles" },
   { to: "/adlp/users", label: "Users" },
   { to: "/adlp/groups", label: "Groups" },
-  { to: "/adlp/config", label: "Configuration" },
-  { to: "/adlp/notifications", label: "Notifications" },
 ];
 
+const OPEN_SECTIONS_STORAGE_KEY = "onpoint.sidebar.openSections";
+const OPEN_ADMIN_STORAGE_KEY = "onpoint.sidebar.openAdmin";
+const OPEN_TENANT_ADMIN_STORAGE_KEY = "onpoint.sidebar.openTenantAdmin";
+
+function readStoredBoolean(key: string, fallback: boolean): boolean {
+  if (typeof window === "undefined") return fallback;
+  const raw = window.localStorage.getItem(key);
+  if (raw === "true") return true;
+  if (raw === "false") return false;
+  return fallback;
+}
+
+function sectionHasPath(
+  section: (typeof navSections)[number],
+  pathname: string,
+): boolean {
+  return section.links.some((link) => pathname.startsWith(link.to));
+}
+
 export function Sidebar() {
+  const location = useLocation();
   const { roles } = useAuth();
   const isPlatformAdmin = roles.includes("platform_admin");
   const isTenantAdmin = roles.includes("tenant_admin");
-  const [isAdminOpen, setIsAdminOpen] = useState(true);
-  const [isTenantAdminOpen, setIsTenantAdminOpen] = useState(true);
-  const [openSections, setOpenSections] = useState(() =>
-    Object.fromEntries(navSections.map((section) => [section.title, true])),
+
+  const activeSectionTitle = useMemo(() => {
+    const match = navSections.find((section) =>
+      sectionHasPath(section, location.pathname),
+    );
+    return match?.title;
+  }, [location.pathname]);
+
+  const [isAdminOpen, setIsAdminOpen] = useState(() =>
+    readStoredBoolean(
+      OPEN_ADMIN_STORAGE_KEY,
+      location.pathname.startsWith("/adlp/platform"),
+    ),
   );
+  const [isTenantAdminOpen, setIsTenantAdminOpen] = useState(() =>
+    readStoredBoolean(
+      OPEN_TENANT_ADMIN_STORAGE_KEY,
+      location.pathname.startsWith("/adlp/tenant") ||
+        location.pathname.startsWith("/adlp/users") ||
+        location.pathname.startsWith("/adlp/groups"),
+    ),
+  );
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(
+    () => {
+      const defaults = Object.fromEntries(
+        navSections.map((section) => [
+          section.title,
+          section.title === "Overview",
+        ]),
+      ) as Record<string, boolean>;
+
+      if (activeSectionTitle) {
+        defaults[activeSectionTitle] = true;
+      }
+
+      if (typeof window === "undefined") return defaults;
+      const raw = window.localStorage.getItem(OPEN_SECTIONS_STORAGE_KEY);
+      if (!raw) return defaults;
+      try {
+        const parsed = JSON.parse(raw) as Record<string, boolean>;
+        return { ...defaults, ...parsed };
+      } catch {
+        return defaults;
+      }
+    },
+  );
+
+  useEffect(() => {
+    if (!activeSectionTitle) return;
+    setOpenSections((prev) => ({ ...prev, [activeSectionTitle]: true }));
+  }, [activeSectionTitle]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(
+      OPEN_SECTIONS_STORAGE_KEY,
+      JSON.stringify(openSections),
+    );
+  }, [openSections]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(OPEN_ADMIN_STORAGE_KEY, String(isAdminOpen));
+  }, [isAdminOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(
+      OPEN_TENANT_ADMIN_STORAGE_KEY,
+      String(isTenantAdminOpen),
+    );
+  }, [isTenantAdminOpen]);
+
   return (
     <aside className="sidebar">
       <nav className="sidebar__nav">
@@ -138,7 +231,7 @@ export function Sidebar() {
               aria-expanded={isTenantAdminOpen}
               aria-controls="nav-section-tenant-admin"
             >
-              <span>Tenant Admin</span>
+              <span>Tenant Setup</span>
               <span className="sidebar__chevron">
                 {isTenantAdminOpen ? "▾" : "▸"}
               </span>
@@ -166,7 +259,7 @@ export function Sidebar() {
               aria-expanded={isAdminOpen}
               aria-controls="nav-section-platform-admin"
             >
-              <span>Platform Admin</span>
+              <span>Platform Ops</span>
               <span className="sidebar__chevron">
                 {isAdminOpen ? "▾" : "▸"}
               </span>

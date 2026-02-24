@@ -697,6 +697,71 @@
           }
         }
       ]
+    },
+    {
+      "name": "Settings",
+      "item": [
+        {
+          "name": "Get effective settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+              { "key": "x-role", "value": "{{roleAdmin}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "x-fleet-id", "value": "{{fleetId}}" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/settings/effective?tenantId={{tenantId}}&fleetId={{fleetId}}"
+          }
+        },
+        {
+          "name": "Get scope settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+              { "key": "x-role", "value": "{{roleAdmin}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/settings/scopes/{{settingsScopeType}}/{{settingsScopeId}}"
+          }
+        },
+        {
+          "name": "Put scope setting",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+              { "key": "x-role", "value": "{{roleAdmin}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/settings/scopes/{{settingsScopeType}}/{{settingsScopeId}}/{{settingsKey}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": {{settingsValue}},\n  \"valueType\": \"{{settingsValueType}}\",\n  \"reason\": \"{{settingsReason}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete scope setting",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-api-key", "value": "{{fleetTenancyApiKey}}" },
+              { "key": "x-role", "value": "{{roleAdmin}}" },
+              { "key": "x-tenant-id", "value": "{{tenantId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{fleetTenancyBaseUrl}}/settings/scopes/{{settingsScopeType}}/{{settingsScopeId}}/{{settingsKey}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"{{settingsReason}}\"\n}"
+            }
+          }
+        }
+      ]
     }
   ]
 }
