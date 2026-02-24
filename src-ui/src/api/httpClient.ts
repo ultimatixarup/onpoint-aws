@@ -36,6 +36,8 @@ type RequestOptions = {
   baseUrl?: string;
 };
 
+const inFlightGetRequests = new Map<string, Promise<unknown>>();
+
 export async function httpRequest<T>(
   path: string,
   options: RequestOptions = {},
@@ -52,8 +54,7 @@ export async function httpRequest<T>(
     role =
       getRoleFromGroups(
         accessPayload["cognito:groups"] ?? accessPayload.groups,
-      ) ??
-      getRoleFromGroups(idPayload["cognito:groups"] ?? idPayload.groups);
+      ) ?? getRoleFromGroups(idPayload["cognito:groups"] ?? idPayload.groups);
   } catch (error) {
     console.warn("Auth session unavailable, continuing without token", error);
   }
@@ -64,55 +65,86 @@ export async function httpRequest<T>(
   const resolvedRole = role ?? roleOverride;
 
   const url = `${baseUrl}${path}`;
-  const response = await fetch(url, {
-    method: options.method ?? "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(apiKey ? { "x-api-key": apiKey } : {}),
-      ...(resolvedRole ? { "x-role": resolvedRole } : {}),
-      ...(options.headers ?? {}),
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
+  const method = options.method ?? "GET";
+  const headers = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(apiKey ? { "x-api-key": apiKey } : {}),
+    ...(resolvedRole ? { "x-role": resolvedRole } : {}),
+    ...(options.headers ?? {}),
+  };
 
-  if (!response.ok) {
-    const rawMessage = await response.text();
-    let message = rawMessage;
-    if (rawMessage) {
-      try {
-        const parsed = JSON.parse(rawMessage) as
-          | { error?: unknown; message?: unknown }
-          | string
-          | number
-          | boolean
-          | null;
-        if (typeof parsed === "string") {
-          message = parsed;
-        } else if (typeof parsed === "object" && parsed !== null) {
-          if (parsed.error !== undefined) {
-            message = String(parsed.error);
-          } else if (parsed.message !== undefined) {
-            message = String(parsed.message);
-          }
-        }
-      } catch (error) {
-        console.warn("Unable to parse error response", error);
-      }
+  const dedupeKey =
+    method === "GET"
+      ? [
+          method,
+          url,
+          headers["x-tenant-id"] ?? "none",
+          headers["x-role"] ?? "none",
+        ].join("|")
+      : null;
+
+  if (dedupeKey) {
+    const inFlight = inFlightGetRequests.get(dedupeKey);
+    if (inFlight) {
+      return inFlight as Promise<T>;
     }
-    throw new Error(message || `Request failed (${response.status})`);
   }
 
-  const raw = await response.text();
-  if (!raw) {
-    return null as T;
+  const requestPromise = (async () => {
+    const response = await fetch(url, {
+      method,
+      headers,
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+
+    if (!response.ok) {
+      const rawMessage = await response.text();
+      let message = rawMessage;
+      if (rawMessage) {
+        try {
+          const parsed = JSON.parse(rawMessage) as
+            | { error?: unknown; message?: unknown }
+            | string
+            | number
+            | boolean
+            | null;
+          if (typeof parsed === "string") {
+            message = parsed;
+          } else if (typeof parsed === "object" && parsed !== null) {
+            if (parsed.error !== undefined) {
+              message = String(parsed.error);
+            } else if (parsed.message !== undefined) {
+              message = String(parsed.message);
+            }
+          }
+        } catch (error) {
+          console.warn("Unable to parse error response", error);
+        }
+      }
+      throw new Error(message || `Request failed (${response.status})`);
+    }
+
+    const raw = await response.text();
+    if (!raw) {
+      return null as T;
+    }
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      const snippet = raw.length > 200 ? `${raw.slice(0, 200)}...` : raw;
+      throw new Error(
+        `Invalid JSON response from ${url} (status ${response.status}). ${snippet}`,
+      );
+    }
+  })();
+
+  if (dedupeKey) {
+    inFlightGetRequests.set(dedupeKey, requestPromise as Promise<unknown>);
+    requestPromise.finally(() => {
+      inFlightGetRequests.delete(dedupeKey);
+    });
   }
-  try {
-    return JSON.parse(raw) as T;
-  } catch (error) {
-    const snippet = raw.length > 200 ? `${raw.slice(0, 200)}...` : raw;
-    throw new Error(
-      `Invalid JSON response from ${url} (status ${response.status}). ${snippet}`,
-    );
-  }
+
+  return requestPromise;
 }

@@ -10,6 +10,7 @@ import {
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { fetchTripSummaryTrips } from "../../api/tripSummaryApi";
+import { useFleet } from "../../context/FleetContext";
 import { useTenant } from "../../context/TenantContext";
 import { Card } from "../../ui/Card";
 import { formatDate } from "../../utils/date";
@@ -28,6 +29,7 @@ function normalizeStatus(value?: string) {
 
 export function TenantDashboard() {
   const { tenant } = useTenant();
+  const { fleet } = useFleet();
   const tenantId = tenant?.id ?? "";
 
   const {
@@ -46,6 +48,11 @@ export function TenantDashboard() {
     [fleets],
   );
 
+  const effectiveFleetId = fleet?.id ?? primaryFleetId;
+  const hasResolvedFleetScope = !isLoadingFleets;
+  const hasConcreteFleetScope =
+    hasResolvedFleetScope && (fleets.length <= 1 || Boolean(effectiveFleetId));
+
   const fleetIds = useMemo(
     () => fleets.map((fleet) => fleet.fleetId).filter(Boolean),
     [fleets],
@@ -57,10 +64,10 @@ export function TenantDashboard() {
     error: vehiclesError,
   } = useQuery({
     queryKey: tenantId
-      ? queryKeys.vehicles(tenantId, primaryFleetId)
+      ? queryKeys.vehicles(tenantId, effectiveFleetId)
       : ["vehicles", "none"],
-    queryFn: () => fetchVehicles(tenantId, primaryFleetId),
-    enabled: Boolean(tenantId),
+    queryFn: () => fetchVehicles(tenantId, effectiveFleetId),
+    enabled: Boolean(tenantId && hasConcreteFleetScope),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -70,22 +77,34 @@ export function TenantDashboard() {
     error: driversError,
   } = useQuery({
     queryKey: tenantId
-      ? queryKeys.drivers(tenantId, primaryFleetId)
+      ? queryKeys.drivers(tenantId, effectiveFleetId)
       : ["drivers", "none"],
-    queryFn: () => fetchDrivers(tenantId, primaryFleetId),
-    enabled: Boolean(tenantId),
+    queryFn: () => fetchDrivers(tenantId, effectiveFleetId),
+    enabled: Boolean(tenantId && hasConcreteFleetScope),
     staleTime: 5 * 60 * 1000,
   });
+
+  const vehicleIds = useMemo(() => {
+    const normalized = vehicles
+      .map((vehicle) => vehicle.vin?.trim().toUpperCase())
+      .filter((vin): vin is string => Boolean(vin));
+    return Array.from(new Set(normalized)).sort();
+  }, [vehicles]);
 
   const { data: assignedDriverIds = [] } = useQuery({
     queryKey: [
       "dashboard-assigned-driver-ids",
       tenantId,
-      primaryFleetId ?? "all",
+      effectiveFleetId ?? "all",
+      vehicleIds.join("|"),
     ],
     queryFn: () =>
-      fetchAssignedDriverIdsByAssignments(tenantId, primaryFleetId),
-    enabled: Boolean(tenantId),
+      fetchAssignedDriverIdsByAssignments(tenantId, effectiveFleetId, {
+        vins: vehicleIds,
+      }),
+    enabled: Boolean(
+      tenantId && hasConcreteFleetScope && vehicleIds.length > 0,
+    ),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -95,10 +114,10 @@ export function TenantDashboard() {
     error: usersError,
   } = useQuery({
     queryKey: tenantId
-      ? queryKeys.users(tenantId, primaryFleetId)
+      ? queryKeys.users(tenantId, effectiveFleetId)
       : ["users", "none"],
-    queryFn: () => fetchUsers(tenantId, primaryFleetId),
-    enabled: Boolean(tenantId),
+    queryFn: () => fetchUsers(tenantId, effectiveFleetId),
+    enabled: Boolean(tenantId && hasConcreteFleetScope),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -108,11 +127,6 @@ export function TenantDashboard() {
     start.setDate(start.getDate() - TRIP_LOOKBACK_DAYS);
     return { from: start.toISOString(), to: now.toISOString() };
   }, []);
-
-  const vehicleIds = useMemo(
-    () => vehicles.map((vehicle) => vehicle.vin).filter(Boolean),
-    [vehicles],
-  );
 
   const {
     data: tripPreviewResult,
@@ -142,6 +156,10 @@ export function TenantDashboard() {
         return { items: recent, isFallback: false };
       }
 
+      if (effectiveFleetId) {
+        return { items: [], isFallback: false };
+      }
+
       const fallbackResponses = await Promise.all(
         fleetIds.map((fleetId) =>
           fetchTripSummaryTrips({
@@ -164,7 +182,12 @@ export function TenantDashboard() {
         isFallback: true,
       };
     },
-    enabled: Boolean(tenantId && fleetIds.length),
+    enabled: Boolean(
+      tenantId &&
+      hasConcreteFleetScope &&
+      vehicleIds.length > 0 &&
+      (effectiveFleetId || fleetIds.length),
+    ),
   });
 
   const tripPreview = tripPreviewResult?.items ?? [];
@@ -274,15 +297,19 @@ export function TenantDashboard() {
             <p className="dashboard-hero__subtitle">{tenantSubtitle}</p>
           </div>
           <div className="dashboard-hero__meta">
-            <span className="dashboard-pill">
-              Last {TRIP_LOOKBACK_DAYS} days
+            <span
+              className="dashboard-pill"
+              aria-label="Dashboard lookback window"
+            >
+              Window: Last {TRIP_LOOKBACK_DAYS} days
             </span>
             <span
               className={`dashboard-status dashboard-status--${normalizeStatus(
                 tenant?.status,
               ).toLowerCase()}`}
+              aria-label="Tenant status"
             >
-              {normalizeStatus(tenant?.status)}
+              Status: {normalizeStatus(tenant?.status)}
             </span>
           </div>
         </div>

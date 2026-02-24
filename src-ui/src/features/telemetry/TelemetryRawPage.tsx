@@ -364,34 +364,74 @@ export function TelemetryRawPage() {
   });
 
   const providers = useMemo(
-    () => Array.from(new Set(telemetryEvents.map((event) => event.provider))),
+    () =>
+      Array.from(
+        new Set(
+          telemetryEvents
+            .map((event) => String(event.provider ?? "").trim())
+            .filter((v) => v !== ""),
+        ),
+      ),
     [telemetryEvents],
   );
 
   const vins = useMemo(
-    () => Array.from(new Set(telemetryEvents.map((event) => event.vin))),
+    () =>
+      Array.from(
+        new Set(
+          telemetryEvents
+            .map((event) => String(event.vin ?? "").trim())
+            .filter((v) => v !== ""),
+        ),
+      ),
     [telemetryEvents],
   );
 
   const tripIds = useMemo(
-    () => Array.from(new Set(telemetryEvents.map((event) => event.tripId))),
+    () =>
+      Array.from(
+        new Set(
+          telemetryEvents
+            .map((event) => String(event.tripId ?? "").trim())
+            .filter((v) => v !== ""),
+        ),
+      ),
     [telemetryEvents],
   );
 
   const filteredEvents = useMemo(() => {
     const searchTerm = search.trim().toLowerCase();
+
+    const normalize = (v?: string) =>
+      String(v ?? "")
+        .trim()
+        .toLowerCase();
+
+    const providerFilterNormalized = normalize(providerFilter);
+    const vinFilterNormalized = normalize(vinFilter);
+    const tripIdFilterNormalized = normalize(tripIdFilter);
+
     return telemetryEvents
       .filter((event) => {
-        if (providerFilter !== "all" && event.provider !== providerFilter) {
+        if (
+          providerFilter !== "all" &&
+          normalize(event.provider) !== providerFilterNormalized
+        ) {
           return false;
         }
         if (levelFilter !== "all" && event.level !== levelFilter) {
           return false;
         }
-        if (vinFilter !== "all" && event.vin !== vinFilter) {
+        if (
+          vinFilter !== "all" &&
+          normalize(event.vin) !== vinFilterNormalized
+        ) {
           return false;
         }
-        if (tripIdFilter !== "all" && event.tripId !== tripIdFilter) {
+        if (
+          tripIdFilter !== "all" &&
+          !normalize(event.tripId).includes(tripIdFilterNormalized)
+        ) {
           return false;
         }
         if (searchTerm && !event.searchIndex.includes(searchTerm)) {
@@ -466,6 +506,13 @@ export function TelemetryRawPage() {
     }
   }, [filteredEvents, selectedId]);
 
+  // Clear selection when any filter changes so the inspector resets
+  // to the first matching event. This avoids showing a stale event
+  // when the left stream is narrowed by VIN/provider/trip filters.
+  useEffect(() => {
+    setSelectedId(null);
+  }, [vinFilter, providerFilter, tripIdFilter, levelFilter, search]);
+
   return (
     <div className="page telemetry-raw">
       <div className="telemetry-header">
@@ -537,7 +584,7 @@ export function TelemetryRawPage() {
 
       <Card title="Filters">
         <div className="form-grid telemetry-filters">
-          <label className="form__field">
+          <label className="form__field telemetry-filters__field">
             <span className="text-muted">Provider</span>
             <select
               className="select"
@@ -552,7 +599,7 @@ export function TelemetryRawPage() {
               ))}
             </select>
           </label>
-          <label className="form__field">
+          <label className="form__field telemetry-filters__field">
             <span className="text-muted">VIN</span>
             <select
               className="select"
@@ -567,7 +614,7 @@ export function TelemetryRawPage() {
               ))}
             </select>
           </label>
-          <label className="form__field">
+          <label className="form__field telemetry-filters__field telemetry-filters__field--trip-id">
             <span className="text-muted">Trip ID</span>
             <select
               className="select"
@@ -582,7 +629,7 @@ export function TelemetryRawPage() {
               ))}
             </select>
           </label>
-          <label className="form__field">
+          <label className="form__field telemetry-filters__field">
             <span className="text-muted">Level</span>
             <select
               className="select"

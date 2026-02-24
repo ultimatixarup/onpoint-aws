@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import {
   fetchFleets,
@@ -32,29 +32,17 @@ const carIcon = L.icon({
 
 L.Marker.prototype.options.icon = defaultIcon;
 
-const GEOCODE_BASE_URL =
-  import.meta.env.VITE_GEOCODE_BASE_URL ??
-  "https://nominatim.openstreetmap.org/reverse";
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const toLocationKey = (lat: number, lon: number) =>
-  `${lat.toFixed(6)},${lon.toFixed(6)}`;
+function formatApproxAddress(lat: number, lon: number) {
+  const latDirection = lat >= 0 ? "N" : "S";
+  const lonDirection = lon >= 0 ? "E" : "W";
+  return `${Math.abs(lat).toFixed(5)}°${latDirection}, ${Math.abs(lon).toFixed(5)}°${lonDirection}`;
+}
 
 export function LiveTrackingPage() {
   const { tenant } = useTenant();
   const { fleet, setFleet } = useFleet();
   const tenantId = tenant?.id ?? "";
   const [selectedVin, setSelectedVin] = useState<string>("");
-  const [addressByLocation, setAddressByLocation] = useState<
-    Record<string, string>
-  >({});
-  const [resolvingLocations, setResolvingLocations] = useState<
-    Record<string, boolean>
-  >({});
-  const geocodeCache = useRef(new Map<string, string>());
-  const geocodeFailures = useRef(new Set<string>());
-  const lastGeocodeTime = useRef<number>(0);
 
   const { data: fleets = [], isLoading: isLoadingFleets } = useQuery({
     queryKey: tenantId ? queryKeys.fleets(tenantId) : ["fleets", "none"],
@@ -84,6 +72,8 @@ export function LiveTrackingPage() {
         from: "2000-01-01T00:00:00Z",
       }),
     enabled: Boolean(tenantId && selectedFleetId),
+    staleTime: 25_000,
+    refetchOnWindowFocus: false,
     refetchInterval: 30_000,
   });
 
@@ -127,122 +117,16 @@ export function LiveTrackingPage() {
     [markers, selectedVin],
   );
 
-  useEffect(() => {
-    const locations = new Map<string, [number, number]>();
-
-    for (const marker of filteredMarkers) {
-      const [lat, lon] = marker.position;
-      const key = toLocationKey(lat, lon);
-      if (!locations.has(key)) {
-        locations.set(key, [lat, lon]);
-      }
-    }
-
-    if (locations.size === 0) {
-      setResolvingLocations({});
-      return;
-    }
-
-    const fetchAddressWithRateLimit = async (
-      lat: number,
-      lon: number,
-      retryCount = 0,
-    ): Promise<string | null> => {
-      const cacheKey = toLocationKey(lat, lon);
-      const cached = geocodeCache.current.get(cacheKey);
-      if (cached) return cached;
-
-      const timeSinceLastRequest = Date.now() - lastGeocodeTime.current;
-      if (timeSinceLastRequest < 1100) {
-        await delay(1100 - timeSinceLastRequest);
-      }
-
-      lastGeocodeTime.current = Date.now();
-      const url = `${GEOCODE_BASE_URL}?format=jsonv2&lat=${lat}&lon=${lon}`;
-
-      try {
-        const response = await fetch(url);
-
-        if (response.status === 425 || response.status === 429) {
-          if (retryCount < 3) {
-            const backoffMs = Math.pow(2, retryCount + 1) * 1000;
-            await delay(backoffMs);
-            return fetchAddressWithRateLimit(lat, lon, retryCount + 1);
-          }
-          return null;
-        }
-
-        if (!response.ok) return null;
-
-        const data = (await response.json()) as { display_name?: string };
-        const value = data.display_name?.trim();
-        if (value) {
-          geocodeCache.current.set(cacheKey, value);
-        }
-        return value ?? null;
-      } catch {
-        return null;
-      }
-    };
-
-    let isActive = true;
-
-    (async () => {
-      for (const [key, [lat, lon]] of locations.entries()) {
-        if (!isActive) return;
-
-        const cached = geocodeCache.current.get(key);
-        if (cached) {
-          setAddressByLocation((current) =>
-            current[key] ? current : { ...current, [key]: cached },
-          );
-          continue;
-        }
-
-        if (geocodeFailures.current.has(key)) {
-          continue;
-        }
-
-        setResolvingLocations((current) =>
-          current[key] ? current : { ...current, [key]: true },
-        );
-
-        const value = await fetchAddressWithRateLimit(lat, lon);
-        if (!isActive) return;
-
-        if (value) {
-          setAddressByLocation((current) => ({ ...current, [key]: value }));
-        } else {
-          geocodeFailures.current.add(key);
-        }
-
-        setResolvingLocations((current) => {
-          if (!current[key]) return current;
-          const next = { ...current };
-          delete next[key];
-          return next;
-        });
-      }
-    })().catch(() => {
-      if (!isActive) return;
-      setResolvingLocations({});
-    });
-
-    return () => {
-      isActive = false;
-    };
-  }, [filteredMarkers]);
-
   const activeCount = filteredMarkers.length;
   const totalCount = markers.length;
 
   const center = useMemo<[number, number]>(() => {
     if (filteredMarkers.length === 0) return [37.0902, -95.7129];
     const lat =
-      filteredMarkers.reduce((sum, m) => sum + m.position[0], 0) /
+      filteredMarkers.reduce((sum, marker) => sum + marker.position[0], 0) /
       filteredMarkers.length;
     const lon =
-      filteredMarkers.reduce((sum, m) => sum + m.position[1], 0) /
+      filteredMarkers.reduce((sum, marker) => sum + marker.position[1], 0) /
       filteredMarkers.length;
     return [lat, lon];
   }, [filteredMarkers]);
@@ -351,50 +235,38 @@ export function LiveTrackingPage() {
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                {filteredMarkers.map((marker) => (
-                  <Marker
-                    key={marker.vin}
-                    position={marker.position}
-                    icon={carIcon}
-                  >
-                    <Popup>
-                      <div>
-                        {(() => {
-                          const [lat, lon] = marker.position;
-                          const locationKey = toLocationKey(lat, lon);
-                          const address = addressByLocation[locationKey];
-                          const isResolving = Boolean(
-                            resolvingLocations[locationKey],
-                          );
-
-                          return (
-                            <>
-                              <strong>{marker.vin}</strong>
-                              <div>
-                                Last event:{" "}
-                                {formatDate(marker.lastEventTime, "--")}
-                              </div>
-                              <div>
-                                Address:{" "}
-                                {address ??
-                                  (isResolving ? "Resolving address..." : "--")}
-                              </div>
-                              <div>
-                                Lat/Lon: {lat.toFixed(5)}, {lon.toFixed(5)}
-                              </div>
-                              <div>Speed: {marker.speed_mph ?? "--"} mph</div>
-                              <div>Status: {marker.vehicleState ?? "--"}</div>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </Popup>
-                  </Marker>
-                ))}
+                {filteredMarkers.map((marker) => {
+                  const [lat, lon] = marker.position;
+                  return (
+                    <Marker
+                      key={marker.vin}
+                      position={marker.position}
+                      icon={carIcon}
+                    >
+                      <Popup>
+                        <div>
+                          <strong>{marker.vin}</strong>
+                          <div>
+                            Last event: {formatDate(marker.lastEventTime, "--")}
+                          </div>
+                          <div>
+                            Approx location: {formatApproxAddress(lat, lon)}
+                          </div>
+                          <div>
+                            Lat/Lon: {lat.toFixed(5)}, {lon.toFixed(5)}
+                          </div>
+                          <div>Speed: {marker.speed_mph ?? "--"} mph</div>
+                          <div>Status: {marker.vehicleState ?? "--"}</div>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  );
+                })}
               </MapContainer>
             </div>
           )}
         </Card>
+
         <Card title="Vehicle Feed">
           {filteredMarkers.length === 0 ? (
             <p>No vehicle state data available.</p>
@@ -414,11 +286,6 @@ export function LiveTrackingPage() {
                 <tbody>
                   {filteredMarkers.map((marker) => {
                     const [lat, lon] = marker.position;
-                    const locationKey = toLocationKey(lat, lon);
-                    const address = addressByLocation[locationKey];
-                    const isResolving = Boolean(
-                      resolvingLocations[locationKey],
-                    );
 
                     return (
                       <tr
@@ -443,10 +310,7 @@ export function LiveTrackingPage() {
                       >
                         <td>{marker.vin}</td>
                         <td>{formatDate(marker.lastEventTime, "--")}</td>
-                        <td title={address ?? undefined}>
-                          {address ??
-                            (isResolving ? "Resolving address..." : "--")}
-                        </td>
+                        <td>{formatApproxAddress(lat, lon)}</td>
                         <td>{lat.toFixed(5)}</td>
                         <td>{lon.toFixed(5)}</td>
                         <td>{marker.speed_mph ?? "--"}</td>

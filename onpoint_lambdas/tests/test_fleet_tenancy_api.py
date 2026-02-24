@@ -288,3 +288,85 @@ def test_get_fleet_includes_tenant_name(monkeypatch):
     assert response["statusCode"] == 200
     body = json.loads(response["body"])
     assert body["tenantName"] == "Test Tenant"
+
+
+def test_list_fleet_driver_assignments_active_only(monkeypatch):
+    add_common_to_path()
+
+    def fake_client(service_name):
+        return DummyClient()
+
+    _set_env(monkeypatch)
+    monkeypatch.setattr(boto3, "client", fake_client)
+
+    module_path = Path(__file__).resolve().parents[1] / "lambdas" / "fleet_tenancy_api" / "app.py"
+    mod = load_lambda_module("fleet_tenancy_api_app_fleet_assignments", module_path)
+
+    def fake_ddb_get(_table, key):
+        if key == {"PK": "FLEET#fleet-1", "SK": "META"}:
+            return {
+                "PK": "FLEET#fleet-1",
+                "SK": "META",
+                "fleetId": "fleet-1",
+                "tenantId": "tenant-1",
+            }
+        return None
+
+    def fake_list_vins_for_tenant(tenant_id, fleet_id, active_only):
+        assert tenant_id == "tenant-1"
+        assert fleet_id == "fleet-1"
+        assert active_only is False
+        return ["VIN123", "VIN456"]
+
+    def fake_ddb_query(params):
+        pk = (params.get("ExpressionAttributeValues") or {}).get(":pk", {}).get("S")
+        if pk == "VIN#VIN123":
+            return [
+                {
+                    "driverId": "driver-active",
+                    "vin": "VIN123",
+                    "tenantId": "tenant-1",
+                    "effectiveFrom": "2025-01-01T00:00:00Z",
+                },
+                {
+                    "driverId": "driver-expired",
+                    "vin": "VIN123",
+                    "tenantId": "tenant-1",
+                    "effectiveFrom": "2024-01-01T00:00:00Z",
+                    "effectiveTo": "2024-12-31T23:59:59Z",
+                },
+            ]
+        if pk == "VIN#VIN456":
+            return [
+                {
+                    "driverId": "driver-other-tenant",
+                    "vin": "VIN456",
+                    "tenantId": "tenant-2",
+                    "effectiveFrom": "2025-01-01T00:00:00Z",
+                }
+            ]
+        return []
+
+    mod._ddb_get = fake_ddb_get
+    mod._list_vins_for_tenant = fake_list_vins_for_tenant
+    mod._ddb_query = fake_ddb_query
+
+    event = {
+        "httpMethod": "GET",
+        "path": "/fleets/fleet-1/driver-assignments",
+        "headers": {
+            "x-role": "tenant-admin",
+            "x-tenant-id": "tenant-1",
+        },
+        "queryStringParameters": {
+            "asOf": "2026-01-15T00:00:00Z",
+        },
+    }
+
+    resp = mod.lambda_handler(event, None)
+    assert resp["statusCode"] == 200
+    body = json.loads(resp["body"])
+    assert body["fleetId"] == "fleet-1"
+    assert body["tenantId"] == "tenant-1"
+    assert body["activeOnly"] is True
+    assert [item["driverId"] for item in body["items"]] == ["driver-active"]

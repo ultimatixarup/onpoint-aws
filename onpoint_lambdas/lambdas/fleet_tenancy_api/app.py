@@ -3081,6 +3081,75 @@ def _list_vehicle_assignments(vin: str, role: str, caller_tenant: Optional[str])
     return _resp(200, {"items": items})
 
 
+def _list_fleet_assignments(
+    fleet_id: str,
+    query: Dict[str, str],
+    headers: Dict[str, str],
+    role: str,
+    caller_tenant: Optional[str],
+) -> dict:
+    if not DRIVER_ASSIGNMENTS_TABLE:
+        return _resp(500, {"error": "Driver assignments table not configured"})
+
+    fleet = _ddb_get(FLEETS_TABLE, {"PK": f"FLEET#{fleet_id}", "SK": "META"})
+    if not fleet:
+        return _resp(404, {"error": "Fleet not found"})
+
+    tenant_id = fleet.get("tenantId")
+    if not tenant_id:
+        return _resp(500, {"error": "Fleet tenant not configured"})
+    err = _require_tenant_access(role, caller_tenant, tenant_id)
+    if err:
+        return _resp(403, {"error": err})
+
+    if role == ROLE_FLEET_MANAGER:
+        scoped, scope_err = _apply_fleet_scope(role, headers, fleet_id)
+        if scope_err:
+            return _resp(403, {"error": scope_err})
+        if scoped != fleet_id:
+            return _resp(403, {"error": "Forbidden"})
+
+    active_only_raw = (query.get("activeOnly") or query.get("active") or "true").strip().lower()
+    active_only = active_only_raw not in ("false", "0", "no")
+    as_of = _normalize_iso(query.get("asOf") or query.get("as_of") or utc_now_iso()) or utc_now_iso()
+
+    vins = _list_vins_for_tenant(tenant_id, fleet_id, active_only=False)
+    if not vins:
+        return _resp(200, {"items": []})
+
+    items: List[dict] = []
+    for vin in vins:
+        params = {
+            "TableName": DRIVER_ASSIGNMENTS_TABLE,
+            "IndexName": "VinIndex",
+            "KeyConditionExpression": "GSI1PK = :pk",
+            "ExpressionAttributeValues": {":pk": {"S": f"VIN#{vin}"}},
+            "ScanIndexForward": True,
+        }
+        for assignment in _ddb_query(params):
+            if assignment.get("tenantId") != tenant_id:
+                continue
+            if active_only and not _range_overlaps(
+                assignment.get("effectiveFrom"),
+                assignment.get("effectiveTo"),
+                as_of,
+                as_of,
+            ):
+                continue
+            items.append(assignment)
+
+    return _resp(
+        200,
+        {
+            "items": items,
+            "fleetId": fleet_id,
+            "tenantId": tenant_id,
+            "asOf": as_of,
+            "activeOnly": active_only,
+        },
+    )
+
+
 def _delete_driver_assignment(
     driver_id: str,
     vin: str,
@@ -3938,6 +4007,9 @@ def lambda_handler(event, context):
         if len(segments) == 2 and segments[1].endswith(":archive") and method == "POST":
             fleet_id = segments[1].split(":archive")[0]
             return _set_fleet_status(fleet_id, "ARCHIVED", headers, role, caller_tenant)
+        if len(segments) == 3 and segments[2] == "driver-assignments" and method == "GET":
+            fleet_id = segments[1]
+            return _list_fleet_assignments(fleet_id, query, headers, role, caller_tenant)
 
     # /vehicles
     if segments[:1] == ["vehicles"]:

@@ -687,41 +687,60 @@ export async function fetchDrivers(tenantId: string, fleetId?: string) {
   } catch (error) {
     console.warn("Fleet driver lookup failed; falling back", error);
   }
-
-  const vehicles = await fetchVehicles(tenantId, fleetId);
-  const vins = vehicles.map((vehicle) => vehicle.vin).filter(Boolean);
-  if (vins.length === 0) return [];
-
-  const assignmentResponses = await Promise.all(
-    vins.map((vin) => fetchVehicleAssignments(vin, tenantId).catch(() => [])),
-  );
-  const driverIds = new Set(
-    assignmentResponses
-      .flatMap((response) => normalizeAssignments(response))
-      .map((assignment) => assignment.driverId)
-      .filter(Boolean) as string[],
-  );
-
   const allDrivers = await fetchDriversFromApi(tenantId);
-  return allDrivers.filter(
-    (driver) =>
-      (driver.fleetId && driver.fleetId === fleetId) ||
-      (driver.driverId && driverIds.has(driver.driverId)),
+  const fleetMatched = allDrivers.filter(
+    (driver) => driver.fleetId === fleetId,
   );
+  return fleetMatched.length > 0 ? fleetMatched : allDrivers;
 }
 
 export async function fetchAssignedDriverIdsByAssignments(
   tenantId: string,
   fleetId?: string,
+  options?: { vins?: string[] },
 ) {
-  const vehicles = await fetchVehicles(tenantId, fleetId);
-  const vins = vehicles.map((vehicle) => vehicle.vin).filter(Boolean);
+  const nowMs = Date.now();
+
+  if (fleetId) {
+    try {
+      const fleetResponse = await fetchFleetDriverAssignments(
+        tenantId,
+        fleetId,
+        {
+          activeOnly: true,
+        },
+      );
+      const assignedDriverIds = new Set<string>();
+      for (const assignment of normalizeAssignments(fleetResponse)) {
+        if (!assignment.driverId || !isActiveAssignment(assignment, nowMs)) {
+          continue;
+        }
+        assignedDriverIds.add(assignment.driverId);
+      }
+      return Array.from(assignedDriverIds);
+    } catch (error) {
+      console.warn(
+        "Fleet assignments lookup failed; falling back to per-vehicle assignments",
+        error,
+      );
+    }
+  }
+
+  const vins = Array.from(
+    new Set(
+      (options?.vins
+        ?.map((vin) => vin?.trim().toUpperCase())
+        .filter(Boolean) as string[] | undefined) ??
+        (await fetchVehicles(tenantId, fleetId))
+          .map((vehicle) => vehicle.vin?.trim().toUpperCase())
+          .filter((vin): vin is string => Boolean(vin)),
+    ),
+  );
   if (!vins.length) return [] as string[];
 
   const responses = await Promise.all(
     vins.map((vin) => fetchVehicleAssignments(vin, tenantId).catch(() => [])),
   );
-  const nowMs = Date.now();
   const assignedDriverIds = new Set<string>();
 
   for (const assignment of responses.flatMap((response) =>
@@ -734,6 +753,36 @@ export async function fetchAssignedDriverIdsByAssignments(
   }
 
   return Array.from(assignedDriverIds);
+}
+
+export async function fetchFleetDriverAssignments(
+  tenantId: string,
+  fleetId: string,
+  options?: {
+    activeOnly?: boolean;
+    asOf?: string;
+    roleOverride?: string;
+  },
+) {
+  const query = new URLSearchParams();
+  if (options?.activeOnly !== undefined) {
+    query.set("activeOnly", String(options.activeOnly));
+  }
+  if (options?.asOf) {
+    query.set("asOf", options.asOf);
+  }
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+
+  return httpRequest<unknown>(
+    `/fleets/${fleetId}/driver-assignments${suffix}`,
+    {
+      headers: {
+        "x-tenant-id": tenantId,
+        "x-fleet-id": fleetId,
+        ...(options?.roleOverride ? { "x-role": options.roleOverride } : {}),
+      },
+    },
+  );
 }
 
 export async function fetchDriverDetail(tenantId: string, driverId: string) {
@@ -1337,17 +1386,162 @@ export async function fetchDriverAssignments(
   return items.map((item) => item as DriverAssignment);
 }
 
+const VEHICLE_ASSIGNMENTS_CACHE_TTL_MS = 2000;
+const vehicleAssignmentsInFlight = new Map<string, Promise<unknown>>();
+const vehicleAssignmentsRecent = new Map<
+  string,
+  { expiresAt: number; response: unknown }
+>();
+let vehicleAssignmentsTraceCounter = 0;
+
+function traceVehicleAssignments(
+  phase: string,
+  details: {
+    traceId: number;
+    vin: string;
+    cacheKey: string;
+    tenantId?: string;
+    roleOverride?: string;
+    ageMs?: number;
+    durationMs?: number;
+    stack?: string;
+    error?: unknown;
+  },
+) {
+  if (!import.meta.env.DEV) return;
+  const payload: Record<string, unknown> = {
+    traceId: details.traceId,
+    vin: details.vin,
+    cacheKey: details.cacheKey,
+    tenantId: details.tenantId ?? "none",
+    roleOverride: details.roleOverride ?? "none",
+    ageMs: details.ageMs,
+    durationMs: details.durationMs,
+  };
+
+  if (details.stack) {
+    payload.stack = details.stack;
+  }
+  if (details.error) {
+    payload.error =
+      details.error instanceof Error
+        ? details.error.message
+        : String(details.error);
+  }
+
+  console.debug(`[vehicle-assignments] ${phase}`, payload);
+}
+
 export async function fetchVehicleAssignments(
   vin: string,
   tenantId?: string,
   options?: { roleOverride?: string },
 ) {
-  return httpRequest<unknown>(`/vehicles/${vin}/driver-assignments`, {
-    headers: {
-      ...(tenantId ? { "x-tenant-id": tenantId } : {}),
-      ...(options?.roleOverride ? { "x-role": options.roleOverride } : {}),
-    },
+  const normalizedVin = vin.trim().toUpperCase();
+  const traceId = ++vehicleAssignmentsTraceCounter;
+  const cacheKey = [
+    tenantId ?? "none",
+    options?.roleOverride ?? "none",
+    normalizedVin,
+  ].join("|");
+  const stack = new Error().stack
+    ?.split("\n")
+    .slice(2, 8)
+    .map((line) => line.trim())
+    .join(" | ");
+
+  traceVehicleAssignments("invoke", {
+    traceId,
+    vin: normalizedVin,
+    cacheKey,
+    tenantId,
+    roleOverride: options?.roleOverride,
+    stack,
   });
+
+  const now = Date.now();
+  const cached = vehicleAssignmentsRecent.get(cacheKey);
+  if (cached && cached.expiresAt > now) {
+    traceVehicleAssignments("cache-hit", {
+      traceId,
+      vin: normalizedVin,
+      cacheKey,
+      tenantId,
+      roleOverride: options?.roleOverride,
+      ageMs: VEHICLE_ASSIGNMENTS_CACHE_TTL_MS - (cached.expiresAt - now),
+      stack,
+    });
+    return cached.response;
+  }
+  if (cached && cached.expiresAt <= now) {
+    vehicleAssignmentsRecent.delete(cacheKey);
+  }
+
+  const inFlight = vehicleAssignmentsInFlight.get(cacheKey);
+  if (inFlight) {
+    traceVehicleAssignments("in-flight-hit", {
+      traceId,
+      vin: normalizedVin,
+      cacheKey,
+      tenantId,
+      roleOverride: options?.roleOverride,
+      stack,
+    });
+    return inFlight;
+  }
+
+  const startedAt = Date.now();
+  traceVehicleAssignments("network-start", {
+    traceId,
+    vin: normalizedVin,
+    cacheKey,
+    tenantId,
+    roleOverride: options?.roleOverride,
+    stack,
+  });
+
+  const request = httpRequest<unknown>(
+    `/vehicles/${normalizedVin}/driver-assignments`,
+    {
+      headers: {
+        ...(tenantId ? { "x-tenant-id": tenantId } : {}),
+        ...(options?.roleOverride ? { "x-role": options.roleOverride } : {}),
+      },
+    },
+  )
+    .then((response) => {
+      traceVehicleAssignments("network-success", {
+        traceId,
+        vin: normalizedVin,
+        cacheKey,
+        tenantId,
+        roleOverride: options?.roleOverride,
+        durationMs: Date.now() - startedAt,
+      });
+      vehicleAssignmentsRecent.set(cacheKey, {
+        expiresAt: Date.now() + VEHICLE_ASSIGNMENTS_CACHE_TTL_MS,
+        response,
+      });
+      return response;
+    })
+    .catch((error) => {
+      traceVehicleAssignments("network-error", {
+        traceId,
+        vin: normalizedVin,
+        cacheKey,
+        tenantId,
+        roleOverride: options?.roleOverride,
+        durationMs: Date.now() - startedAt,
+        error,
+      });
+      throw error;
+    })
+    .finally(() => {
+      vehicleAssignmentsInFlight.delete(cacheKey);
+    });
+
+  vehicleAssignmentsInFlight.set(cacheKey, request);
+  return request;
 }
 
 export async function fetchVinRegistryHistory(
