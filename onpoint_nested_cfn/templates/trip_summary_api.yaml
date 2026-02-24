@@ -106,6 +106,32 @@ Resources:
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TripSummaryApiFunctionArn}/invocations"
 
+  TripDetailOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Condition: HasTripSummaryApiArn
+    Properties:
+      RestApiId: !Ref TripSummaryRestApi
+      ResourceId: !Ref TripIdResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      ApiKeyRequired: false
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Api-Key,X-Role,X-Tenant-Id,X-Fleet-Id,Idempotency-Key'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+
   # /trips/{vin}/{tripId}/events resource (nested under tripId, not sibling)
   TripEventsResource:
     Type: AWS::ApiGateway::Resource
@@ -293,6 +319,7 @@ Resources:
       - TripsGetMethod
       - TripsOptionsMethod
       - TripDetailGetMethod
+      - TripDetailOptionsMethod
       - TripEventsGetMethod
       - TripEventsOptionsMethod
       - FleetTripsGetMethod
