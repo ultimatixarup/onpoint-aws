@@ -14,8 +14,11 @@ def _set_env(monkeypatch):
     monkeypatch.setenv("VIN_REGISTRY_TABLE", "vin-registry")
     monkeypatch.setenv("DRIVERS_TABLE", "drivers")
     monkeypatch.setenv("DRIVER_ASSIGNMENTS_TABLE", "driver-assignments")
+    monkeypatch.setenv("TELEMETRY_EVENTS_TABLE", "telemetry-events")
+    monkeypatch.setenv("TRIP_SUMMARY_TABLE", "trip-summary")
     monkeypatch.setenv("AUDIT_LOG_TABLE", "audit")
     monkeypatch.setenv("IDEMPOTENCY_TABLE", "idempotency")
+    monkeypatch.setenv("SETTINGS_TABLE", "settings")
 
 
 def test_vin_assign_requires_idempotency(monkeypatch):
@@ -370,3 +373,209 @@ def test_list_fleet_driver_assignments_active_only(monkeypatch):
     assert body["tenantId"] == "tenant-1"
     assert body["activeOnly"] is True
     assert [item["driverId"] for item in body["items"]] == ["driver-active"]
+
+
+def _build_settings_ddb(mod):
+    store = {}
+
+    def put_item(**kwargs):
+        item = mod._ddb_deserialize(kwargs["Item"])
+        store[(item["PK"], item["SK"])] = item
+        return {}
+
+    def get_item(**kwargs):
+        key = mod._ddb_deserialize(kwargs["Key"])
+        item = store.get((key["PK"], key["SK"]))
+        if not item:
+            return {}
+        return {"Item": mod._ddb_serialize(item)}
+
+    def delete_item(**kwargs):
+        key = mod._ddb_deserialize(kwargs["Key"])
+        store.pop((key["PK"], key["SK"]), None)
+        return {}
+
+    def query(**kwargs):
+        vals = mod._ddb_deserialize(kwargs.get("ExpressionAttributeValues") or {})
+        pk = vals.get(":pk")
+        sk_prefix = vals.get(":skp")
+        rows = []
+        for (row_pk, row_sk), item in store.items():
+            if pk and row_pk != pk:
+                continue
+            if sk_prefix and not row_sk.startswith(sk_prefix):
+                continue
+            rows.append(mod._ddb_serialize(item))
+        rows.sort(key=lambda x: x["SK"]["S"])
+        return {"Items": rows, "LastEvaluatedKey": None}
+
+    return DummyClient(put_item=put_item, get_item=get_item, delete_item=delete_item, query=query), store
+
+
+def test_settings_effective_resolution_prefers_fleet_then_tenant_then_platform(monkeypatch):
+    add_common_to_path()
+
+    def fake_client(service_name):
+        return DummyClient()
+
+    _set_env(monkeypatch)
+    monkeypatch.setattr(boto3, "client", fake_client)
+
+    module_path = Path(__file__).resolve().parents[1] / "lambdas" / "fleet_tenancy_api" / "app.py"
+    mod = load_lambda_module("fleet_tenancy_api_app_settings_effective", module_path)
+
+    ddb, store = _build_settings_ddb(mod)
+    mod._ddb = ddb
+
+    store[("SCOPE#PLATFORM#default", "SETTING#speedLimitMph")] = {
+        "PK": "SCOPE#PLATFORM#default",
+        "SK": "SETTING#speedLimitMph",
+        "scopeType": "PLATFORM",
+        "scopeId": "default",
+        "key": "speedLimitMph",
+        "value": 65,
+        "valueType": "number",
+        "updatedAt": "2026-02-23T00:00:00+00:00",
+        "updatedBy": "seed",
+    }
+    store[("SCOPE#TENANT#tenant-1", "SETTING#speedLimitMph")] = {
+        "PK": "SCOPE#TENANT#tenant-1",
+        "SK": "SETTING#speedLimitMph",
+        "scopeType": "TENANT",
+        "scopeId": "tenant-1",
+        "key": "speedLimitMph",
+        "value": 70,
+        "valueType": "number",
+        "updatedAt": "2026-02-23T00:00:00+00:00",
+        "updatedBy": "seed",
+    }
+    store[("SCOPE#FLEET#fleet-1", "SETTING#speedLimitMph")] = {
+        "PK": "SCOPE#FLEET#fleet-1",
+        "SK": "SETTING#speedLimitMph",
+        "scopeType": "FLEET",
+        "scopeId": "fleet-1",
+        "key": "speedLimitMph",
+        "value": 75,
+        "valueType": "number",
+        "updatedAt": "2026-02-23T00:00:00+00:00",
+        "updatedBy": "seed",
+    }
+    store[("FLEET#fleet-1", "META")] = {
+        "PK": "FLEET#fleet-1",
+        "SK": "META",
+        "fleetId": "fleet-1",
+        "tenantId": "tenant-1",
+    }
+
+    event = {
+        "httpMethod": "GET",
+        "path": "/settings/effective",
+        "headers": {"x-role": "tenant-admin", "x-tenant-id": "tenant-1"},
+        "queryStringParameters": {"tenantId": "tenant-1", "fleetId": "fleet-1"},
+    }
+    resp = mod.lambda_handler(event, None)
+    assert resp["statusCode"] == 200
+    body = json.loads(resp["body"])
+    assert body["effective"]["speedLimitMph"] == 75
+    assert body["sources"]["speedLimitMph"]["scopeType"] == "FLEET"
+
+
+def test_settings_put_and_get_scope(monkeypatch):
+    add_common_to_path()
+
+    def fake_client(service_name):
+        return DummyClient()
+
+    _set_env(monkeypatch)
+    monkeypatch.setattr(boto3, "client", fake_client)
+
+    module_path = Path(__file__).resolve().parents[1] / "lambdas" / "fleet_tenancy_api" / "app.py"
+    mod = load_lambda_module("fleet_tenancy_api_app_settings_upsert", module_path)
+
+    ddb, _store = _build_settings_ddb(mod)
+    mod._ddb = ddb
+
+    put_event = {
+        "httpMethod": "PUT",
+        "path": "/settings/scopes/TENANT/tenant-1/maxIdleMinutes",
+        "headers": {"x-role": "tenant-admin", "x-tenant-id": "tenant-1", "x-actor-id": "user-1"},
+        "body": json.dumps({"value": 15, "valueType": "number", "reason": "policy update"}),
+    }
+    put_resp = mod.lambda_handler(put_event, None)
+    assert put_resp["statusCode"] == 200
+
+    get_event = {
+        "httpMethod": "GET",
+        "path": "/settings/scopes/TENANT/tenant-1",
+        "headers": {"x-role": "tenant-admin", "x-tenant-id": "tenant-1"},
+    }
+    get_resp = mod.lambda_handler(get_event, None)
+    assert get_resp["statusCode"] == 200
+    body = json.loads(get_resp["body"])
+    assert body["settings"]["maxIdleMinutes"] == 15
+
+
+def test_settings_tenant_admin_cannot_write_platform_scope(monkeypatch):
+    add_common_to_path()
+
+    def fake_client(service_name):
+        return DummyClient()
+
+    _set_env(monkeypatch)
+    monkeypatch.setattr(boto3, "client", fake_client)
+
+    module_path = Path(__file__).resolve().parents[1] / "lambdas" / "fleet_tenancy_api" / "app.py"
+    mod = load_lambda_module("fleet_tenancy_api_app_settings_forbidden_platform", module_path)
+
+    ddb, _store = _build_settings_ddb(mod)
+    mod._ddb = ddb
+
+    event = {
+        "httpMethod": "PUT",
+        "path": "/settings/scopes/PLATFORM/default/maxIdleMinutes",
+        "headers": {"x-role": "tenant-admin", "x-tenant-id": "tenant-1"},
+        "body": json.dumps({"value": 10, "valueType": "number"}),
+    }
+    resp = mod.lambda_handler(event, None)
+    assert resp["statusCode"] == 403
+
+
+def test_settings_fleet_manager_cannot_delete(monkeypatch):
+    add_common_to_path()
+
+    def fake_client(service_name):
+        return DummyClient()
+
+    _set_env(monkeypatch)
+    monkeypatch.setattr(boto3, "client", fake_client)
+
+    module_path = Path(__file__).resolve().parents[1] / "lambdas" / "fleet_tenancy_api" / "app.py"
+    mod = load_lambda_module("fleet_tenancy_api_app_settings_fleet_manager_delete", module_path)
+
+    ddb, store = _build_settings_ddb(mod)
+    mod._ddb = ddb
+    store[("SCOPE#FLEET#fleet-1", "SETTING#speedLimitMph")] = {
+        "PK": "SCOPE#FLEET#fleet-1",
+        "SK": "SETTING#speedLimitMph",
+        "scopeType": "FLEET",
+        "scopeId": "fleet-1",
+        "key": "speedLimitMph",
+        "value": 70,
+        "valueType": "number",
+        "updatedAt": "2026-02-23T00:00:00+00:00",
+        "updatedBy": "seed",
+    }
+    store[("FLEET#fleet-1", "META")] = {
+        "PK": "FLEET#fleet-1",
+        "SK": "META",
+        "fleetId": "fleet-1",
+        "tenantId": "tenant-1",
+    }
+
+    event = {
+        "httpMethod": "DELETE",
+        "path": "/settings/scopes/FLEET/fleet-1/speedLimitMph",
+        "headers": {"x-role": "fleet-manager", "x-tenant-id": "tenant-1", "x-fleet-id": "fleet-1"},
+    }
+    resp = mod.lambda_handler(event, None)
+    assert resp["statusCode"] == 403

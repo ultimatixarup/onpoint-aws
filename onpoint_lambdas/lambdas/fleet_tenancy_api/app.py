@@ -46,6 +46,7 @@ AUDIT_LOG_TABLE = os.environ.get("AUDIT_LOG_TABLE")
 IDEMPOTENCY_TABLE = os.environ.get("IDEMPOTENCY_TABLE")
 USER_POOL_ID = os.environ.get("USER_POOL_ID")
 USERS_TABLE = os.environ.get("USERS_TABLE")
+SETTINGS_TABLE = os.environ.get("SETTINGS_TABLE")
 
 VIN_TENANT_INDEX = os.environ.get("VIN_TENANT_INDEX", "TenantIndex")
 VIN_TENANT_FLEET_INDEX = os.environ.get("VIN_TENANT_FLEET_INDEX")
@@ -63,6 +64,12 @@ GROUP_TENANT_ADMIN = "TenantAdmin"
 GROUP_FLEET_MANAGER = "FleetManager"
 GROUP_DISPATCHER = "Dispatcher"
 GROUP_READ_ONLY = "ReadOnly"
+
+SCOPE_PLATFORM = "PLATFORM"
+SCOPE_TENANT = "TENANT"
+SCOPE_FLEET = "FLEET"
+VALID_SCOPE_TYPES = {SCOPE_PLATFORM, SCOPE_TENANT, SCOPE_FLEET}
+VALID_SETTING_VALUE_TYPES = {"string", "number", "boolean", "object", "array", "null"}
 
 
 # -----------------------------
@@ -881,6 +888,363 @@ def _batch_get_vehicles(vins: List[str]) -> List[dict]:
         keys = [{"PK": f"VIN#{vin}", "SK": "META"} for vin in batch]
         items.extend(_ddb_batch_get(VEHICLES_TABLE, keys))
     return items
+
+
+def _settings_table() -> Optional[str]:
+    return SETTINGS_TABLE or TENANTS_TABLE
+
+
+def _normalize_scope_type(scope_type: Optional[str]) -> Optional[str]:
+    if not isinstance(scope_type, str):
+        return None
+    normalized = scope_type.strip().upper()
+    return normalized if normalized in VALID_SCOPE_TYPES else None
+
+
+def _settings_pk(scope_type: str, scope_id: str) -> str:
+    return f"SCOPE#{scope_type}#{scope_id}"
+
+
+def _settings_sk(key: str) -> str:
+    return f"SETTING#{key}"
+
+
+def _settings_change_sk(ts: str, key: str) -> str:
+    return f"CHANGE#{ts}#SETTING#{key}"
+
+
+def _infer_setting_value_type(value: Any) -> str:
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return "boolean"
+    if isinstance(value, (int, float, Decimal)):
+        return "number"
+    if isinstance(value, str):
+        return "string"
+    if isinstance(value, list):
+        return "array"
+    if isinstance(value, dict):
+        return "object"
+    return "string"
+
+
+def _is_valid_setting_value(value: Any, value_type: str) -> bool:
+    if value_type == "null":
+        return value is None
+    if value_type == "boolean":
+        return isinstance(value, bool)
+    if value_type == "number":
+        return isinstance(value, (int, float, Decimal)) and not isinstance(value, bool)
+    if value_type == "string":
+        return isinstance(value, str)
+    if value_type == "array":
+        return isinstance(value, list)
+    if value_type == "object":
+        return isinstance(value, dict)
+    return False
+
+
+def _parse_setting_key(sk: Optional[str]) -> Optional[str]:
+    if not isinstance(sk, str) or not sk.startswith("SETTING#"):
+        return None
+    key = sk.split("SETTING#", 1)[1]
+    return key or None
+
+
+def _settings_json_value(value: Any) -> Any:
+    if isinstance(value, Decimal):
+        if value == value.to_integral_value():
+            return int(value)
+        return float(value)
+    if isinstance(value, list):
+        return [_settings_json_value(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _settings_json_value(v) for k, v in value.items()}
+    return value
+
+
+def _fleet_belongs_to_tenant(fleet_id: str, tenant_id: str) -> bool:
+    if not FLEETS_TABLE:
+        return False
+    fleet = _ddb_get(FLEETS_TABLE, {"PK": f"FLEET#{fleet_id}", "SK": "META"})
+    if not fleet:
+        return False
+    return fleet.get("tenantId") == tenant_id
+
+
+def _authorize_settings_scope(
+    scope_type: str,
+    scope_id: str,
+    role: str,
+    caller_tenant: Optional[str],
+    headers: Dict[str, str],
+    *,
+    write: bool,
+) -> Optional[str]:
+    if role == ROLE_ADMIN:
+        return None
+
+    if write and role not in {ROLE_TENANT_ADMIN}:
+        return "Forbidden"
+    if not write and role not in {ROLE_TENANT_ADMIN, ROLE_FLEET_MANAGER, ROLE_READ_ONLY, ROLE_ANALYST}:
+        return "Forbidden"
+
+    if scope_type == SCOPE_PLATFORM:
+        return "Forbidden"
+
+    if not caller_tenant:
+        return "Tenant identity required"
+
+    if scope_type == SCOPE_TENANT:
+        if scope_id != caller_tenant:
+            return "Forbidden"
+        return None
+
+    if scope_type == SCOPE_FLEET:
+        if not _fleet_belongs_to_tenant(scope_id, caller_tenant):
+            return "Forbidden"
+        if role == ROLE_FLEET_MANAGER:
+            scoped = headers.get("x-fleet-id")
+            if not scoped:
+                return "Fleet scope required"
+            if scoped != scope_id:
+                return "Forbidden"
+        return None
+
+    return "Invalid scopeType"
+
+
+def _load_scope_settings(scope_type: str, scope_id: str) -> Dict[str, dict]:
+    table = _settings_table()
+    if not table:
+        return {}
+    pk = _settings_pk(scope_type, scope_id)
+    params = {
+        "TableName": table,
+        "KeyConditionExpression": "PK = :pk AND begins_with(SK, :skp)",
+        "ExpressionAttributeValues": {
+            ":pk": {"S": pk},
+            ":skp": {"S": "SETTING#"},
+        },
+        "ScanIndexForward": True,
+    }
+    items = _ddb_query(params)
+    out: Dict[str, dict] = {}
+    for it in items:
+        key = _parse_setting_key(it.get("SK")) or it.get("key")
+        if not key:
+            continue
+        out[str(key)] = it
+    return out
+
+
+def _settings_get_scope(scope_type: str, scope_id: str, headers: Dict[str, str], role: str, caller_tenant: Optional[str]) -> dict:
+    normalized = _normalize_scope_type(scope_type)
+    if not normalized:
+        return _resp(400, {"error": "Invalid scopeType"})
+    if not scope_id:
+        return _resp(400, {"error": "scopeId is required"})
+
+    auth_err = _authorize_settings_scope(normalized, scope_id, role, caller_tenant, headers, write=False)
+    if auth_err:
+        return _resp(403, {"error": auth_err})
+
+    items = _load_scope_settings(normalized, scope_id)
+    payload_items = []
+    values: Dict[str, Any] = {}
+    for key, item in items.items():
+        response_value = _settings_json_value(item.get("value"))
+        values[key] = response_value
+        payload_items.append(
+            {
+                "key": key,
+                "value": response_value,
+                "valueType": item.get("valueType"),
+                "updatedAt": item.get("updatedAt"),
+                "updatedBy": item.get("updatedBy"),
+            }
+        )
+    return _resp(200, {"scopeType": normalized, "scopeId": scope_id, "settings": values, "items": payload_items})
+
+
+def _settings_put_scope_key(
+    scope_type: str,
+    scope_id: str,
+    key: str,
+    body: dict,
+    headers: Dict[str, str],
+    role: str,
+    caller_tenant: Optional[str],
+) -> dict:
+    normalized = _normalize_scope_type(scope_type)
+    if not normalized:
+        return _resp(400, {"error": "Invalid scopeType"})
+    if not scope_id or not key:
+        return _resp(400, {"error": "scopeId and key are required"})
+    if body is None or "value" not in body:
+        return _resp(400, {"error": "value is required"})
+
+    auth_err = _authorize_settings_scope(normalized, scope_id, role, caller_tenant, headers, write=True)
+    if auth_err:
+        return _resp(403, {"error": auth_err})
+
+    table = _settings_table()
+    if not table:
+        return _resp(500, {"error": "SETTINGS_TABLE not configured"})
+
+    value = body.get("value")
+    value_type = str(body.get("valueType") or _infer_setting_value_type(value)).strip().lower()
+    if value_type not in VALID_SETTING_VALUE_TYPES:
+        return _resp(400, {"error": "Invalid valueType"})
+    if not _is_valid_setting_value(value, value_type):
+        return _resp(400, {"error": "value does not match valueType"})
+
+    now = utc_now_iso()
+    actor = _get_actor(headers, caller_tenant)
+    item = {
+        "PK": _settings_pk(normalized, scope_id),
+        "SK": _settings_sk(key),
+        "scopeType": normalized,
+        "scopeId": scope_id,
+        "key": key,
+        "value": value,
+        "valueType": value_type,
+        "updatedAt": now,
+        "updatedBy": actor,
+    }
+
+    existing = _ddb_get(table, {"PK": item["PK"], "SK": item["SK"]})
+    _ddb_put(table, item)
+
+    try:
+        change_item = {
+            "PK": item["PK"],
+            "SK": _settings_change_sk(now, key),
+            "key": key,
+            "oldValue": existing.get("value") if existing else None,
+            "newValue": value,
+            "changedAt": now,
+            "changedBy": actor,
+            "reason": body.get("reason"),
+        }
+        _ddb_put(table, change_item)
+    except Exception:
+        logger.warning("settings_change_log_write_failed", exc_info=True)
+
+    return _resp(200, {
+        "scopeType": normalized,
+        "scopeId": scope_id,
+        "key": key,
+        "value": _settings_json_value(value),
+        "valueType": value_type,
+        "updatedAt": now,
+        "updatedBy": actor,
+    })
+
+
+def _settings_delete_scope_key(
+    scope_type: str,
+    scope_id: str,
+    key: str,
+    body: Optional[dict],
+    headers: Dict[str, str],
+    role: str,
+    caller_tenant: Optional[str],
+) -> dict:
+    normalized = _normalize_scope_type(scope_type)
+    if not normalized:
+        return _resp(400, {"error": "Invalid scopeType"})
+    if not scope_id or not key:
+        return _resp(400, {"error": "scopeId and key are required"})
+
+    auth_err = _authorize_settings_scope(normalized, scope_id, role, caller_tenant, headers, write=True)
+    if auth_err:
+        return _resp(403, {"error": auth_err})
+
+    table = _settings_table()
+    if not table:
+        return _resp(500, {"error": "SETTINGS_TABLE not configured"})
+
+    pk = _settings_pk(normalized, scope_id)
+    sk = _settings_sk(key)
+    existing = _ddb_get(table, {"PK": pk, "SK": sk})
+    if not existing:
+        return _resp(404, {"error": "Setting not found"})
+
+    _ddb_delete(table, {"PK": pk, "SK": sk})
+
+    now = utc_now_iso()
+    actor = _get_actor(headers, caller_tenant)
+    try:
+        change_item = {
+            "PK": pk,
+            "SK": _settings_change_sk(now, key),
+            "key": key,
+            "oldValue": existing.get("value"),
+            "newValue": None,
+            "changedAt": now,
+            "changedBy": actor,
+            "reason": (body or {}).get("reason") if isinstance(body, dict) else None,
+        }
+        _ddb_put(table, change_item)
+    except Exception:
+        logger.warning("settings_change_log_write_failed", exc_info=True)
+
+    return _resp(200, {"deleted": True, "scopeType": normalized, "scopeId": scope_id, "key": key})
+
+
+def _settings_get_effective(query: Dict[str, str], headers: Dict[str, str], role: str, caller_tenant: Optional[str]) -> dict:
+    tenant_id = (query.get("tenantId") or query.get("tenant_id") or caller_tenant or "").strip()
+    fleet_id = (query.get("fleetId") or query.get("fleet_id") or "").strip()
+
+    if role != ROLE_ADMIN and not tenant_id:
+        return _resp(400, {"error": "tenantId is required"})
+
+    if role != ROLE_ADMIN:
+        tenant_err = _require_tenant_access(role, caller_tenant, tenant_id)
+        if tenant_err:
+            return _resp(403, {"error": tenant_err})
+
+    if fleet_id:
+        if not tenant_id:
+            return _resp(400, {"error": "tenantId is required when fleetId is provided"})
+        if role == ROLE_FLEET_MANAGER:
+            scoped = headers.get("x-fleet-id")
+            if not scoped:
+                return _resp(403, {"error": "Fleet scope required"})
+            if scoped != fleet_id:
+                return _resp(403, {"error": "Forbidden"})
+        if role != ROLE_ADMIN and not _fleet_belongs_to_tenant(fleet_id, tenant_id):
+            return _resp(403, {"error": "Forbidden"})
+
+    platform_items = _load_scope_settings(SCOPE_PLATFORM, "default")
+    tenant_items = _load_scope_settings(SCOPE_TENANT, tenant_id) if tenant_id else {}
+    fleet_items = _load_scope_settings(SCOPE_FLEET, fleet_id) if fleet_id else {}
+
+    effective: Dict[str, Any] = {}
+    sources: Dict[str, dict] = {}
+
+    for key, item in platform_items.items():
+        effective[key] = _settings_json_value(item.get("value"))
+        sources[key] = {"scopeType": SCOPE_PLATFORM, "scopeId": "default"}
+    for key, item in tenant_items.items():
+        effective[key] = _settings_json_value(item.get("value"))
+        sources[key] = {"scopeType": SCOPE_TENANT, "scopeId": tenant_id}
+    for key, item in fleet_items.items():
+        effective[key] = _settings_json_value(item.get("value"))
+        sources[key] = {"scopeType": SCOPE_FLEET, "scopeId": fleet_id}
+
+    return _resp(
+        200,
+        {
+            "tenantId": tenant_id or None,
+            "fleetId": fleet_id or None,
+            "effective": effective,
+            "sources": sources,
+            "resolvedAt": utc_now_iso(),
+        },
+    )
 
 
 def _require_tables() -> Optional[str]:
@@ -3831,6 +4195,23 @@ def lambda_handler(event, context):
             user_id = segments[4]
             body = body or {}
             return _assign_existing_user_to_tenant(tenant_id, user_id, body, headers, role)
+
+    # /settings
+    if segments[:1] == ["settings"]:
+        if len(segments) == 2 and segments[1] == "effective" and method == "GET":
+            return _settings_get_effective(query, headers, role, caller_tenant)
+        if len(segments) == 4 and segments[1] == "scopes" and method == "GET":
+            return _settings_get_scope(segments[2], segments[3], headers, role, caller_tenant)
+        if len(segments) == 5 and segments[1] == "scopes":
+            if method == "PUT":
+                err = _require_body(body)
+                return (
+                    _resp(400, {"error": err})
+                    if err
+                    else _settings_put_scope_key(segments[2], segments[3], segments[4], body, headers, role, caller_tenant)
+                )
+            if method == "DELETE":
+                return _settings_delete_scope_key(segments[2], segments[3], segments[4], body, headers, role, caller_tenant)
 
     # /tenants/{tenantId}/users
     if len(segments) >= 3 and segments[0] == "tenants" and segments[2] == "users":

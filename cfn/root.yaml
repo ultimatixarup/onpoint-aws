@@ -155,6 +155,7 @@ Resources:
         DriverAssignmentsTableName: !GetAtt TablesStack.Outputs.DriverAssignmentsTableName
         AuditLogTableName: !GetAtt TablesStack.Outputs.AuditLogTableName
         IdempotencyTableName: !GetAtt TablesStack.Outputs.IdempotencyTableName
+        SettingsTableName: !GetAtt TablesStack.Outputs.SettingsTableName
         VehicleStateTableName: !GetAtt TablesStack.Outputs.VehicleStateTableName
         TripsTableName: !GetAtt TablesStack.Outputs.TripsTableName
         TripSummaryTableName: !GetAtt TablesStack.Outputs.TripSummaryTableName

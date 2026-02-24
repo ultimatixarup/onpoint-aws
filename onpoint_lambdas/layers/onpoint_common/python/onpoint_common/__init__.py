@@ -6,4 +6,5 @@ __all__ = [
     "vin_registry",
     "timeutil",
     "loggingutil",
+    "settings_cache",
 ]
