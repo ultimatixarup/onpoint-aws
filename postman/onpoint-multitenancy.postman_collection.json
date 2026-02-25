@@ -2,7 +2,7 @@
   "info": {
     "name": "OnPoint - Multi-Tenancy Tests",
     "_postman_id": "d2d2e0f3-2f2b-4f9a-9a0c-3a6c7a6b0f6e",
-    "description": "Multi-tenancy validation for Trip Summary APIs (VIN registry + tenant isolation). Uses tripSummaryBaseUrl and tripSummaryApiKey from the environment.",
+    "description": "Multi-tenancy validation for Trip Summary APIs (VIN registry + tenant isolation). Uses tripSummaryBaseUrl and tripSummaryApiKey from the environment. Requests default x-role to admin unless overridden by tripSummaryRole/role.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -19,6 +19,8 @@
           "if (apiKey) {",
           "  pm.variables.set('apiKey', apiKey);",
           "}",
+          "const role = pm.environment.get('tripSummaryRole') || pm.environment.get('role') || pm.environment.get('roleAdmin') || 'admin';",
+          "pm.request.headers.upsert({ key: 'x-role', value: role });",
           "const url = pm.request.url.toString();",
           "const headers = {};",
           "pm.request.headers.each(h => {",

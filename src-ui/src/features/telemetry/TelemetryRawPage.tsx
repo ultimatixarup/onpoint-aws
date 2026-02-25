@@ -66,6 +66,35 @@ function normalizeStatus(value?: string): TelemetryEvent["status"] {
   return "accepted";
 }
 
+function canonicalizeVin(value?: string) {
+  return String(value ?? "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+}
+
+function normalizeText(value?: string) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase();
+}
+
+function sortTextValues(values: string[]) {
+  return [...values].sort((left, right) =>
+    left.localeCompare(right, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    }),
+  );
+}
+
+function resolveEventVin(record: Record<string, unknown>, fallbackVin: string) {
+  const directVin =
+    (record.vin as string | undefined) ??
+    (record.VIN as string | undefined) ??
+    fallbackVin;
+  return String(directVin ?? "").trim();
+}
+
 function formatTimestamp(value: string) {
   return formatDateTime(value, "--");
 }
@@ -254,6 +283,11 @@ export function TelemetryRawPage() {
   const [paused, setPaused] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<string | null>(null);
 
+  const searchTerm = search.trim().toLowerCase();
+  const providerFilterNormalized = normalizeText(providerFilter);
+  const tripIdFilterNormalized = normalizeText(tripIdFilter);
+  const vinFilterCanonical = canonicalizeVin(vinFilter);
+
   const {
     data: telemetryEvents = [],
     isLoading,
@@ -331,11 +365,12 @@ export function TelemetryRawPage() {
               (record.id as string | undefined) ??
               (record.SK as string | undefined) ??
               `${tripId}-${index}`;
+            const eventVin = resolveEventVin(record, vin);
 
             return {
               id: eventId,
               timestamp: rawTimestamp,
-              vin: String(record.vin ?? record.VIN ?? vin),
+              vin: eventVin,
               tripId,
               provider,
               level,
@@ -346,7 +381,7 @@ export function TelemetryRawPage() {
               searchIndex: buildSearchIndex({
                 id: eventId,
                 timestamp: rawTimestamp,
-                vin: String(record.vin ?? record.VIN ?? vin),
+                vin: eventVin,
                 tripId,
                 provider,
                 level,
@@ -375,47 +410,92 @@ export function TelemetryRawPage() {
     [telemetryEvents],
   );
 
-  const vins = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          telemetryEvents
-            .map((event) => String(event.vin ?? "").trim())
-            .filter((v) => v !== ""),
-        ),
+  const vins = useMemo(() => {
+    const uniqueVins = Array.from(
+      new Set(
+        telemetryEvents
+          .filter((event) => {
+            if (
+              providerFilter !== "all" &&
+              normalizeText(event.provider) !== providerFilterNormalized
+            ) {
+              return false;
+            }
+            if (levelFilter !== "all" && event.level !== levelFilter) {
+              return false;
+            }
+            if (
+              tripIdFilter !== "all" &&
+              !normalizeText(event.tripId).includes(tripIdFilterNormalized)
+            ) {
+              return false;
+            }
+            if (searchTerm && !event.searchIndex.includes(searchTerm)) {
+              return false;
+            }
+            return true;
+          })
+          .map((event) => String(event.vin ?? "").trim())
+          .filter((v) => v !== ""),
       ),
-    [telemetryEvents],
-  );
+    );
+    return sortTextValues(uniqueVins);
+  }, [
+    levelFilter,
+    providerFilter,
+    providerFilterNormalized,
+    searchTerm,
+    telemetryEvents,
+    tripIdFilter,
+    tripIdFilterNormalized,
+  ]);
 
-  const tripIds = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          telemetryEvents
-            .map((event) => String(event.tripId ?? "").trim())
-            .filter((v) => v !== ""),
-        ),
+  const tripIds = useMemo(() => {
+    const uniqueTripIds = Array.from(
+      new Set(
+        telemetryEvents
+          .filter((event) => {
+            if (
+              providerFilter !== "all" &&
+              normalizeText(event.provider) !== providerFilterNormalized
+            ) {
+              return false;
+            }
+            if (levelFilter !== "all" && event.level !== levelFilter) {
+              return false;
+            }
+            if (
+              vinFilter !== "all" &&
+              canonicalizeVin(event.vin) !== vinFilterCanonical
+            ) {
+              return false;
+            }
+            if (searchTerm && !event.searchIndex.includes(searchTerm)) {
+              return false;
+            }
+            return true;
+          })
+          .map((event) => String(event.tripId ?? "").trim())
+          .filter((v) => v !== ""),
       ),
-    [telemetryEvents],
-  );
+    );
+    return sortTextValues(uniqueTripIds);
+  }, [
+    levelFilter,
+    providerFilter,
+    providerFilterNormalized,
+    searchTerm,
+    telemetryEvents,
+    vinFilter,
+    vinFilterCanonical,
+  ]);
 
   const filteredEvents = useMemo(() => {
-    const searchTerm = search.trim().toLowerCase();
-
-    const normalize = (v?: string) =>
-      String(v ?? "")
-        .trim()
-        .toLowerCase();
-
-    const providerFilterNormalized = normalize(providerFilter);
-    const vinFilterNormalized = normalize(vinFilter);
-    const tripIdFilterNormalized = normalize(tripIdFilter);
-
     return telemetryEvents
       .filter((event) => {
         if (
           providerFilter !== "all" &&
-          normalize(event.provider) !== providerFilterNormalized
+          normalizeText(event.provider) !== providerFilterNormalized
         ) {
           return false;
         }
@@ -424,13 +504,13 @@ export function TelemetryRawPage() {
         }
         if (
           vinFilter !== "all" &&
-          normalize(event.vin) !== vinFilterNormalized
+          canonicalizeVin(event.vin) !== vinFilterCanonical
         ) {
           return false;
         }
         if (
           tripIdFilter !== "all" &&
-          !normalize(event.tripId).includes(tripIdFilterNormalized)
+          !normalizeText(event.tripId).includes(tripIdFilterNormalized)
         ) {
           return false;
         }
@@ -492,6 +572,29 @@ export function TelemetryRawPage() {
       setLastRefreshed(new Date().toISOString());
     }
   }, [telemetryEvents]);
+
+  useEffect(() => {
+    if (
+      vinFilter !== "all" &&
+      !vins.some((vin) => canonicalizeVin(vin) === vinFilterCanonical)
+    ) {
+      setVinFilter("all");
+    }
+
+    if (
+      tripIdFilter !== "all" &&
+      !tripIds.some((id) => normalizeText(id) === tripIdFilterNormalized)
+    ) {
+      setTripIdFilter("all");
+    }
+  }, [
+    tripIdFilter,
+    tripIdFilterNormalized,
+    tripIds,
+    vinFilter,
+    vinFilterCanonical,
+    vins,
+  ]);
 
   useEffect(() => {
     if (!filteredEvents.length) {
@@ -674,7 +777,7 @@ export function TelemetryRawPage() {
             ) : (
               filteredEvents.map((event) => (
                 <button
-                  key={event.id}
+                  key={`${event.id}-${event.timestamp}-${event.tripId}-${event.vin}`}
                   className={`telemetry-event${
                     selectedEvent?.id === event.id
                       ? " telemetry-event--active"

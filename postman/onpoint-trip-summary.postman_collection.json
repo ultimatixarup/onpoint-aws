@@ -2,7 +2,7 @@
   "info": {
     "name": "OnPoint - Trip Summary API",
     "_postman_id": "b4c8d3e4-3d6c-5c9b-9d1f-1c3b2a4f0e5f",
-    "description": "Trip Summary REST API - Query trip summaries and details. Uses tripSummaryBaseUrl and tripSummaryApiKey from the environment.",
+    "description": "Trip Summary REST API - Query trip summaries and details. Uses tripSummaryBaseUrl and tripSummaryApiKey from the environment. Requests default x-role to admin unless overridden by tripSummaryRole/role.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -18,13 +18,11 @@
           "}",
           "const url = pm.request.url.toString();",
           "const tenantId = pm.environment.get('tripSummaryTenantId') || pm.environment.get('tenantId');",
-          "const role = pm.environment.get('role');",
+          "const role = pm.environment.get('tripSummaryRole') || pm.environment.get('role') || pm.environment.get('roleAdmin') || 'admin';",
           "if (tenantId) {",
           "  pm.request.headers.upsert({ key: 'x-tenant-id', value: tenantId });",
           "}",
-          "if (role) {",
-          "  pm.request.headers.upsert({ key: 'x-role', value: role });",
-          "}",
+          "pm.request.headers.upsert({ key: 'x-role', value: role });",
           "const headers = {};",
           "pm.request.headers.each(h => {",
           "  const key = h.key || '';",
