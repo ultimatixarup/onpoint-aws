@@ -6,6 +6,7 @@ usage() {
   echo "       [--ui-bucket-name name] [--ui-price-class PriceClass_100]" >&2
   echo "       [--ui-custom-domain name] [--ui-acm-arn arn] [--ui-hosted-zone-id ZONEID]" >&2
   echo "       [--cleanup-ui-bucket 1|0] [--max-wait-seconds 1800]" >&2
+  echo "       [--allow-ui-url-change 1|0] [--expected-ui-url https://app.test.example.com]" >&2
   echo "       [--allow-integration-responses 1|0]" >&2
 }
 
@@ -36,6 +37,8 @@ UI_HOSTED_ZONE_ID=""
 CLEANUP_UI_BUCKET="1"
 MAX_WAIT_SECONDS="1800"
 ALLOW_INTEGRATION_RESPONSES="1"
+ALLOW_UI_URL_CHANGE="0"
+EXPECTED_UI_URL=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -65,6 +68,10 @@ while [[ $# -gt 0 ]]; do
       CLEANUP_UI_BUCKET="$2"; shift 2;;
     --max-wait-seconds)
       MAX_WAIT_SECONDS="$2"; shift 2;;
+    --allow-ui-url-change)
+      ALLOW_UI_URL_CHANGE="$2"; shift 2;;
+    --expected-ui-url)
+      EXPECTED_UI_URL="$2"; shift 2;;
     --allow-integration-responses)
       ALLOW_INTEGRATION_RESPONSES="$2"; shift 2;;
     *)
@@ -286,6 +293,14 @@ run_capture EXISTING_KEYS_RAW existing_keys \
   --output text
 EXISTING_KEYS_RAW="$(echo "$EXISTING_KEYS_RAW" | tr '\t' '\n' | sed '/^$/d')"
 
+PREVIOUS_UI_URL=""
+run_capture PREVIOUS_UI_URL previous_ui_url \
+  env AWS_PAGER="" aws cloudformation describe-stacks \
+  --region "$REGION" \
+  --stack-name "$STACK_NAME" \
+  --query "Stacks[0].Outputs[?OutputKey=='UiAppUrl'].OutputValue" \
+  --output text || true
+
 if [[ "$CLEANUP_UI_BUCKET" == "1" ]]; then
   EXISTING_UI_BUCKET=""
   run_capture EXISTING_UI_BUCKET existing_ui_bucket \
@@ -377,4 +392,28 @@ if [[ -n "$UI_BUCKET" && "$UI_BUCKET" != "None" ]]; then
 fi
 if [[ -n "$UI_DISTRIBUTION" && "$UI_DISTRIBUTION" != "None" ]]; then
   echo "UI distribution: $UI_DISTRIBUTION"
+fi
+
+CURRENT_UI_URL=""
+run_capture CURRENT_UI_URL current_ui_url \
+  env AWS_PAGER="" aws cloudformation describe-stacks \
+  --region "$REGION" \
+  --stack-name "$STACK_NAME" \
+  --query "Stacks[0].Outputs[?OutputKey=='UiAppUrl'].OutputValue" \
+  --output text || true
+
+if [[ "$ALLOW_UI_URL_CHANGE" != "1" ]]; then
+  if [[ -n "$EXPECTED_UI_URL" && "$EXPECTED_UI_URL" != "None" ]]; then
+    if [[ "$CURRENT_UI_URL" != "$EXPECTED_UI_URL" ]]; then
+      echo "UI URL changed unexpectedly. Expected: $EXPECTED_UI_URL, Current: $CURRENT_UI_URL" >&2
+      echo "If intentional, rerun with --allow-ui-url-change 1 and update expected URL." >&2
+      exit 1
+    fi
+  elif [[ -n "$PREVIOUS_UI_URL" && "$PREVIOUS_UI_URL" != "None" ]]; then
+    if [[ "$CURRENT_UI_URL" != "$PREVIOUS_UI_URL" ]]; then
+      echo "UI URL changed unexpectedly. Previous: $PREVIOUS_UI_URL, Current: $CURRENT_UI_URL" >&2
+      echo "If intentional, rerun with --allow-ui-url-change 1." >&2
+      exit 1
+    fi
+  fi
 fi
