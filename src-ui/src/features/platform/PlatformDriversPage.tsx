@@ -168,7 +168,7 @@ export function PlatformDriversPage() {
     setEditCustomerId(
       resolvedCustomerId === "UNASSIGNED" ? "" : resolvedCustomerId,
     );
-    setEditDisplayName(resolveDriverName(driver));
+    setEditDisplayName(driver.displayName?.trim() ?? "");
     setEditEmail(driver.email?.trim() || metadataEmail || "");
     setEditPhone(driver.phone?.trim() || metadataPhone || "");
     setEditEmployeeId(driver.employeeId?.trim() || metadataEmployeeId || "");

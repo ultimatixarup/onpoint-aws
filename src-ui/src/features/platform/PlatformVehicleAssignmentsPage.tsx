@@ -48,7 +48,6 @@ export function PlatformVehicleAssignmentsPage() {
   const [detailFleetId, setDetailFleetId] = useState("");
   const [detailCustomerId, setDetailCustomerId] = useState("");
   const [detailEffectiveFrom, setDetailEffectiveFrom] = useState("");
-  const [detailEffectiveTo, setDetailEffectiveTo] = useState("");
   const [detailReason, setDetailReason] = useState("");
   const [detailError, setDetailError] = useState<string | null>(null);
   const [detailStatus, setDetailStatus] = useState<string | null>(null);
@@ -169,7 +168,6 @@ export function PlatformVehicleAssignmentsPage() {
     setDetailFleetId(assignment.fleetId ?? "");
     setDetailCustomerId(assignment.customerId ?? "");
     setDetailEffectiveFrom(assignment.effectiveFrom ?? "");
-    setDetailEffectiveTo(assignment.effectiveTo ?? "");
     setDetailReason("");
     setDetailError(null);
     setDetailStatus(null);
@@ -188,16 +186,6 @@ export function PlatformVehicleAssignmentsPage() {
     if (!normalizedFrom) {
       setDetailError(
         "Effective From must be a valid ISO timestamp (example: 2026-02-28T12:00:00Z).",
-      );
-      return;
-    }
-
-    const normalizedTo = detailEffectiveTo.trim()
-      ? normalizeIsoForApi(detailEffectiveTo)
-      : undefined;
-    if (detailEffectiveTo.trim() && !normalizedTo) {
-      setDetailError(
-        "Effective To must be a valid ISO timestamp (example: 2026-03-01T12:00:00Z).",
       );
       return;
     }
@@ -227,33 +215,25 @@ export function PlatformVehicleAssignmentsPage() {
 
     const idempotencyKey = crypto.randomUUID();
     try {
-      if (currentTenantId) {
-        await transferVin(
-          {
-            vin,
-            fromTenantId: currentTenantId,
-            toTenantId: nextTenantId,
-            toFleetId: detailFleetId.trim() || undefined,
-            toCustomerId: detailCustomerId.trim() || undefined,
-            effectiveFrom: updateEffectiveFrom,
-            reason: nextReason,
-          },
-          idempotencyKey,
+      if (!currentTenantId) {
+        setDetailError(
+          "Selected assignment is missing tenant context. Please re-select a history row.",
         );
-      } else {
-        await assignVin(
-          {
-            vin,
-            tenantId: nextTenantId,
-            fleetId: detailFleetId.trim() || undefined,
-            customerId: detailCustomerId.trim() || undefined,
-            effectiveFrom: updateEffectiveFrom,
-            effectiveTo: normalizedTo,
-            reason: nextReason,
-          },
-          idempotencyKey,
-        );
+        return;
       }
+
+      await transferVin(
+        {
+          vin,
+          fromTenantId: currentTenantId,
+          toTenantId: nextTenantId,
+          toFleetId: detailFleetId.trim() || undefined,
+          toCustomerId: detailCustomerId.trim() || undefined,
+          effectiveFrom: updateEffectiveFrom,
+          reason: nextReason,
+        },
+        idempotencyKey,
+      );
 
       if (autoAdjustedFrom) {
         setDetailEffectiveFrom(updateEffectiveFrom);
@@ -262,9 +242,7 @@ export function PlatformVehicleAssignmentsPage() {
       setDetailStatus(
         autoAdjustedFrom
           ? `Assignment updated. Effective From was auto-adjusted to ${updateEffectiveFrom} to avoid overlap.`
-          : normalizedTo
-            ? "Assignment updated. Note: Effective To is not applied in transfer-based updates."
-            : "Assignment updated successfully.",
+          : "Assignment updated successfully.",
       );
       await refetch();
     } catch (err) {
@@ -458,6 +436,10 @@ export function PlatformVehicleAssignmentsPage() {
             <p>Select a history row to update assignment details.</p>
           ) : (
             <div className="stack">
+              <p className="text-muted">
+                This action rolls assignment history forward from the selected
+                record at the new Effective From timestamp.
+              </p>
               <label className="form__field">
                 <span>Tenant</span>
                 <select
@@ -514,16 +496,6 @@ export function PlatformVehicleAssignmentsPage() {
                   placeholder="YYYY-MM-DDTHH:mm:ssZ"
                   value={detailEffectiveFrom}
                   onChange={(event) => setDetailEffectiveFrom(event.target.value)}
-                />
-              </label>
-
-              <label className="form__field">
-                <span>Effective To (ISO)</span>
-                <input
-                  className="input"
-                  placeholder="Optional"
-                  value={detailEffectiveTo}
-                  onChange={(event) => setDetailEffectiveTo(event.target.value)}
                 />
               </label>
 
