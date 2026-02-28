@@ -1,0 +1,186 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: onpoint route53 environment domains (ui + api)
+
+Parameters:
+  Env:
+    Type: String
+  ProjectName:
+    Type: String
+  RootDomainName:
+    Type: String
+    Default: ""
+  HostedZoneId:
+    Type: String
+    Default: ""
+  UiDomainPrefix:
+    Type: String
+    Default: app
+  ApiDomainPrefix:
+    Type: String
+    Default: api
+  EnableUiAlias:
+    Type: String
+    Default: "true"
+  UiCloudFrontDomainName:
+    Type: String
+    Default: ""
+  EnableApiCustomDomain:
+    Type: String
+    Default: "false"
+  ApiAcmCertificateArn:
+    Type: String
+    Default: ""
+  ApiStageName:
+    Type: String
+    Default: ""
+  IngestStageName:
+    Type: String
+    Default: v1
+  FleetTenancyApiId:
+    Type: String
+    Default: ""
+  TripSummaryApiId:
+    Type: String
+    Default: ""
+  GeofencingApiId:
+    Type: String
+    Default: ""
+  VehicleStateApiId:
+    Type: String
+    Default: ""
+  IngestApiId:
+    Type: String
+    Default: ""
+
+Conditions:
+  HasRootDomainName: !Not [!Equals [!Ref RootDomainName, ""]]
+  HasHostedZoneId: !Not [!Equals [!Ref HostedZoneId, ""]]
+  HasUiCloudFrontDomainName: !Not [!Equals [!Ref UiCloudFrontDomainName, ""]]
+  EnableUiAliasCondition: !Equals [!Ref EnableUiAlias, "true"]
+  CreateUiAlias: !And
+    - !Condition HasRootDomainName
+    - !Condition HasHostedZoneId
+    - !Condition HasUiCloudFrontDomainName
+    - !Condition EnableUiAliasCondition
+
+  EnableApiCustomDomainCondition: !Equals [!Ref EnableApiCustomDomain, "true"]
+  HasApiAcmCertificateArn: !Not [!Equals [!Ref ApiAcmCertificateArn, ""]]
+  CreateApiCustomDomain: !And
+    - !Condition HasRootDomainName
+    - !Condition HasHostedZoneId
+    - !Condition EnableApiCustomDomainCondition
+    - !Condition HasApiAcmCertificateArn
+
+  HasFleetTenancyApiId: !Not [!Equals [!Ref FleetTenancyApiId, ""]]
+  HasTripSummaryApiId: !Not [!Equals [!Ref TripSummaryApiId, ""]]
+  HasGeofencingApiId: !Not [!Equals [!Ref GeofencingApiId, ""]]
+  HasVehicleStateApiId: !Not [!Equals [!Ref VehicleStateApiId, ""]]
+  HasIngestApiId: !Not [!Equals [!Ref IngestApiId, ""]]
+
+  MapFleetTenancyApi: !And [!Condition CreateApiCustomDomain, !Condition HasFleetTenancyApiId]
+  MapTripSummaryApi: !And [!Condition CreateApiCustomDomain, !Condition HasTripSummaryApiId]
+  MapGeofencingApi: !And [!Condition CreateApiCustomDomain, !Condition HasGeofencingApiId]
+  MapVehicleStateApi: !And [!Condition CreateApiCustomDomain, !Condition HasVehicleStateApiId]
+  MapIngestApi: !And [!Condition CreateApiCustomDomain, !Condition HasIngestApiId]
+
+Resources:
+  UiAliasRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateUiAlias
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub "${UiDomainPrefix}.${Env}.${RootDomainName}"
+      Type: A
+      AliasTarget:
+        DNSName: !Ref UiCloudFrontDomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+
+  ApiCustomDomain:
+    Type: AWS::ApiGateway::DomainName
+    Condition: CreateApiCustomDomain
+    Properties:
+      DomainName: !Sub "${ApiDomainPrefix}.${Env}.${RootDomainName}"
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      RegionalCertificateArn: !Ref ApiAcmCertificateArn
+      SecurityPolicy: TLS_1_2
+
+  ApiAliasRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateApiCustomDomain
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub "${ApiDomainPrefix}.${Env}.${RootDomainName}"
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt ApiCustomDomain.RegionalDomainName
+        HostedZoneId: !GetAtt ApiCustomDomain.RegionalHostedZoneId
+
+  FleetTenancyBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Condition: MapFleetTenancyApi
+    Properties:
+      DomainName: !Ref ApiCustomDomain
+      RestApiId: !Ref FleetTenancyApiId
+      Stage: !Ref ApiStageName
+
+  TripSummaryBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Condition: MapTripSummaryApi
+    Properties:
+      DomainName: !Ref ApiCustomDomain
+      BasePath: trips
+      RestApiId: !Ref TripSummaryApiId
+      Stage: !Ref ApiStageName
+
+  GeofencingBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Condition: MapGeofencingApi
+    Properties:
+      DomainName: !Ref ApiCustomDomain
+      BasePath: geofencing
+      RestApiId: !Ref GeofencingApiId
+      Stage: !Ref ApiStageName
+
+  VehicleStateBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Condition: MapVehicleStateApi
+    Properties:
+      DomainName: !Ref ApiCustomDomain
+      BasePath: vehicle
+      RestApiId: !Ref VehicleStateApiId
+      Stage: !Ref ApiStageName
+
+  IngestBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Condition: MapIngestApi
+    Properties:
+      DomainName: !Ref ApiCustomDomain
+      BasePath: ingest
+      RestApiId: !Ref IngestApiId
+      Stage: !Ref IngestStageName
+
+Outputs:
+  ProjectName:
+    Value: !Ref ProjectName
+  UiDnsName:
+    Value: !If
+      - CreateUiAlias
+      - !Sub "${UiDomainPrefix}.${Env}.${RootDomainName}"
+      - ""
+  UiAppUrl:
+    Value: !If
+      - CreateUiAlias
+      - !Sub "https://${UiDomainPrefix}.${Env}.${RootDomainName}"
+      - ""
+  ApiDomainName:
+    Value: !If
+      - CreateApiCustomDomain
+      - !Ref ApiCustomDomain
+      - ""
+  ApiBaseUrl:
+    Value: !If
+      - CreateApiCustomDomain
+      - !Sub "https://${ApiDomainPrefix}.${Env}.${RootDomainName}"
+      - ""

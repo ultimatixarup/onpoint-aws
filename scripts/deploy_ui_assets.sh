@@ -22,6 +22,34 @@ shift 2
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 UI_DIR="ui"
 CONFIG_FILE=""
+TMP_DIR="$ROOT_DIR/tmp"
+mkdir -p "$TMP_DIR"
+
+declare -a TMP_LOGS=()
+
+cleanup_temp_logs() {
+  for log_file in "${TMP_LOGS[@]:-}"; do
+    [[ -f "$log_file" ]] && rm -f "$log_file"
+  done
+}
+
+trap cleanup_temp_logs EXIT
+
+run_logged() {
+  local label="$1"
+  shift
+  local log_file
+  log_file="$(mktemp "$TMP_DIR/${label}.XXXXXX.log")"
+  TMP_LOGS+=("$log_file")
+
+  if "$@" >"$log_file" 2>&1; then
+    cat "$log_file"
+    return 0
+  fi
+
+  cat "$log_file" >&2
+  return 1
+}
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -54,8 +82,8 @@ fi
 DIST_DIR="$ROOT_DIR/$UI_DIR/dist"
 
 pushd "$ROOT_DIR/$UI_DIR" >/dev/null
-npm install
-npm run build
+run_logged npm_install npm install
+run_logged npm_build npm run build
 popd >/dev/null
 
 if [[ ! -d "$DIST_DIR" ]]; then
@@ -70,14 +98,14 @@ fi
 
 # Upload immutable hashed assets
 if [[ -d "$DIST_DIR/assets" ]]; then
-  AWS_PAGER="" aws s3 sync "$DIST_DIR/assets" "s3://${UI_BUCKET}/assets" \
+  run_logged s3_sync_assets env AWS_PAGER="" aws s3 sync "$DIST_DIR/assets" "s3://${UI_BUCKET}/assets" \
     --delete \
     --cache-control "public, max-age=31536000, immutable" \
     ${AWS_ARGS[@]+"${AWS_ARGS[@]}"}
 fi
 
 # Upload other files (index.html, favicon, etc) with no-cache
-AWS_PAGER="" aws s3 sync "$DIST_DIR" "s3://${UI_BUCKET}" \
+run_logged s3_sync_root env AWS_PAGER="" aws s3 sync "$DIST_DIR" "s3://${UI_BUCKET}" \
   --delete \
   --exclude "assets/*" \
   --cache-control "no-store, max-age=0, must-revalidate" \
@@ -89,13 +117,13 @@ if [[ -n "$CONFIG_FILE" ]]; then
     echo "Config file not found: $CONFIG_FILE" >&2
     exit 1
   fi
-  AWS_PAGER="" aws s3 cp "$CONFIG_FILE" "s3://${UI_BUCKET}/config.json" \
+  run_logged s3_cp_config env AWS_PAGER="" aws s3 cp "$CONFIG_FILE" "s3://${UI_BUCKET}/config.json" \
     --cache-control "no-store, max-age=0, must-revalidate" \
     --content-type "application/json" \
     ${AWS_ARGS[@]+"${AWS_ARGS[@]}"}
 fi
 
-AWS_PAGER="" aws cloudfront create-invalidation \
+run_logged cf_invalidate env AWS_PAGER="" aws cloudfront create-invalidation \
   --distribution-id "$UI_DISTRIBUTION_ID" \
   --paths "/index.html" "/config.json" \
   ${AWS_ARGS[@]+"${AWS_ARGS[@]}"}
