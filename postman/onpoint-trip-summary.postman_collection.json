@@ -2,7 +2,7 @@
   "info": {
     "name": "OnPoint - Trip Summary API",
     "_postman_id": "b4c8d3e4-3d6c-5c9b-9d1f-1c3b2a4f0e5f",
-    "description": "Trip Summary REST API - Query trip summaries and details. Uses tripSummaryBaseUrl and tripSummaryApiKey from the environment. Requests default x-role to admin unless overridden by tripSummaryRole/role.",
+    "description": "Trip Summary REST API - Query trip summaries and details. Uses tripSummaryBaseUrl and tripSummaryApiKey from the environment. Works with OnPoint Dev and OnPoint Test environment files. Requests default x-role to admin unless overridden by tripSummaryRole/role.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
