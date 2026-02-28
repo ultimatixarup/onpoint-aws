@@ -12,6 +12,18 @@ import {
 import { queryKeys } from "../../api/queryKeys";
 import { Card } from "../../ui/Card";
 
+function normalizeIsoForApi(value: string): string | null {
+  const raw = value.trim();
+  if (!raw) return null;
+  const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(raw);
+  const candidate = hasTimezone ? raw : `${raw}Z`;
+  const parsed = new Date(candidate);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+  return parsed.toISOString();
+}
+
 export function PlatformDriverAssignmentsPage() {
   const [driverId, setDriverId] = useState("");
   const [tenantId, setTenantId] = useState("");
@@ -21,6 +33,8 @@ export function PlatformDriverAssignmentsPage() {
   const [effectiveTo, setEffectiveTo] = useState("");
   const [assignmentType, setAssignmentType] = useState("");
   const [reason, setReason] = useState("");
+  const [assignError, setAssignError] = useState<string | null>(null);
+  const [assignStatus, setAssignStatus] = useState<string | null>(null);
 
   const {
     data: tenants = [],
@@ -77,21 +91,55 @@ export function PlatformDriverAssignmentsPage() {
 
   const handleAssign = async () => {
     if (!driverId || !tenantId || !vin || !effectiveFrom) return;
+    setAssignError(null);
+    setAssignStatus(null);
+
+    const normalizedFrom = normalizeIsoForApi(effectiveFrom);
+    if (!normalizedFrom) {
+      setAssignError(
+        "Effective From must be a valid ISO timestamp (example: 2026-02-28T12:00:00Z).",
+      );
+      return;
+    }
+
+    const normalizedTo = effectiveTo.trim()
+      ? normalizeIsoForApi(effectiveTo)
+      : undefined;
+    if (effectiveTo.trim() && !normalizedTo) {
+      setAssignError(
+        "Effective To must be a valid ISO timestamp (example: 2026-03-01T12:00:00Z).",
+      );
+      return;
+    }
+
     const idempotencyKey = crypto.randomUUID();
-    await createDriverAssignment(
-      driverId,
-      {
-        tenantId,
-        vin,
-        effectiveFrom,
-        effectiveTo: effectiveTo || undefined,
-        assignmentType: assignmentType || undefined,
-        reason: reason || undefined,
-      },
-      idempotencyKey,
-    );
-    setReason("");
-    refetch();
+    try {
+      await createDriverAssignment(
+        driverId,
+        {
+          tenantId,
+          vin,
+          effectiveFrom: normalizedFrom,
+          effectiveTo: normalizedTo,
+          assignmentType: assignmentType || undefined,
+          reason: reason || undefined,
+        },
+        idempotencyKey,
+        { fleetId: fleetId || undefined },
+      );
+      setReason("");
+      setAssignStatus("Driver assigned successfully.");
+      refetch();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Unable to assign driver.";
+      const isForbidden = message.toLowerCase().includes("forbidden");
+      setAssignError(
+        isForbidden
+          ? "Assignment forbidden: ensure the selected VIN is actively assigned to this tenant for the Effective From timestamp."
+          : message,
+      );
+    }
   };
 
   const assignmentItems = data;
@@ -245,6 +293,8 @@ export function PlatformDriverAssignmentsPage() {
             >
               Assign Driver
             </button>
+            {assignStatus ? <p className="text-success">{assignStatus}</p> : null}
+            {assignError ? <p className="text-danger">{assignError}</p> : null}
           </div>
         </Card>
         <Card title="Assignment History">

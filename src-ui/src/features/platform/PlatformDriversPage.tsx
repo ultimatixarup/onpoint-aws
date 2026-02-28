@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import {
-  createDriver,
-  fetchDrivers,
-  fetchTenants,
-  updateDriver,
+    createDriver,
+    fetchDrivers,
+    fetchFleets,
+    fetchTenants,
+    updateDriver,
 } from "../../api/onpointApi";
 import { queryKeys } from "../../api/queryKeys";
 import { useEnterpriseForm } from "../../hooks/useEnterpriseForm";
@@ -28,6 +29,51 @@ function formatTimestamp(value?: string | null) {
   return formatDate(value, "—");
 }
 
+function resolveDriverName(driver: {
+  displayName?: string;
+  name?: string;
+  driverId: string;
+  metadata?: Record<string, unknown> | null;
+}) {
+  const metadataName =
+    typeof driver.metadata?.name === "string"
+      ? driver.metadata.name.trim()
+      : "";
+  return (
+    driver.displayName?.trim() ||
+    driver.name?.trim() ||
+    metadataName ||
+    driver.driverId
+  );
+}
+
+function resolveDriverFleetId(
+  driver: {
+    fleetId?: string;
+    metadata?: Record<string, unknown> | null;
+  },
+  fallbackFleetId?: string,
+) {
+  const metadataFleetId =
+    typeof driver.metadata?.fleetId === "string"
+      ? driver.metadata.fleetId.trim()
+      : "";
+  return (
+    driver.fleetId?.trim() || metadataFleetId || fallbackFleetId || "UNASSIGNED"
+  );
+}
+
+function resolveDriverCustomerId(driver: {
+  customerId?: string;
+  metadata?: Record<string, unknown> | null;
+}) {
+  const metadataCustomerId =
+    typeof driver.metadata?.customerId === "string"
+      ? driver.metadata.customerId.trim()
+      : "";
+  return driver.customerId?.trim() || metadataCustomerId || "UNASSIGNED";
+}
+
 export function PlatformDriversPage() {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
@@ -37,10 +83,14 @@ export function PlatformDriversPage() {
   });
   const [tenantId, setTenantId] = useState("");
   const [fleetId, setFleetId] = useState("");
+  const normalizedFleetId = useMemo(() => {
+    const value = fleetId.trim();
+    return value.length > 0 ? value : undefined;
+  }, [fleetId]);
 
   const [search, setSearch] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"overview" | "details" | "audit">(
+  const [activeTab, setActiveTab] = useState<"overview" | "details">(
     "overview",
   );
 
@@ -50,9 +100,15 @@ export function PlatformDriversPage() {
     error,
   } = useQuery({
     queryKey: tenantId
-      ? queryKeys.drivers(tenantId, fleetId)
+      ? queryKeys.drivers(tenantId, normalizedFleetId)
       : ["drivers", "none"],
-    queryFn: () => fetchDrivers(tenantId, fleetId || undefined),
+    queryFn: () => fetchDrivers(tenantId, normalizedFleetId),
+    enabled: Boolean(tenantId),
+  });
+
+  const { data: tenantFleets = [] } = useQuery({
+    queryKey: tenantId ? queryKeys.fleets(tenantId) : ["fleets", "none"],
+    queryFn: () => fetchFleets(tenantId),
     enabled: Boolean(tenantId),
   });
 
@@ -80,19 +136,52 @@ export function PlatformDriversPage() {
   const [editDriverId, setEditDriverId] = useState("");
   const [editFleetId, setEditFleetId] = useState("");
   const [editCustomerId, setEditCustomerId] = useState("");
+  const [editDisplayName, setEditDisplayName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editEmployeeId, setEditEmployeeId] = useState("");
+  const [editExternalRef, setEditExternalRef] = useState("");
   const [editMetadata, setEditMetadata] = useState("");
+
+  const resetEditFields = (driver: NonNullable<typeof selectedDriver>) => {
+    const metadataEmail =
+      typeof driver.metadata?.email === "string"
+        ? driver.metadata.email.trim()
+        : "";
+    const metadataPhone =
+      typeof driver.metadata?.phone === "string"
+        ? driver.metadata.phone.trim()
+        : "";
+    const metadataEmployeeId =
+      typeof driver.metadata?.employeeId === "string"
+        ? driver.metadata.employeeId.trim()
+        : "";
+    const metadataExternalRef =
+      typeof driver.metadata?.externalRef === "string"
+        ? driver.metadata.externalRef.trim()
+        : "";
+
+    setEditDriverId(driver.driverId);
+    const resolvedFleetId = resolveDriverFleetId(driver, normalizedFleetId);
+    setEditFleetId(resolvedFleetId === "UNASSIGNED" ? "" : resolvedFleetId);
+    const resolvedCustomerId = resolveDriverCustomerId(driver);
+    setEditCustomerId(
+      resolvedCustomerId === "UNASSIGNED" ? "" : resolvedCustomerId,
+    );
+    setEditDisplayName(resolveDriverName(driver));
+    setEditEmail(driver.email?.trim() || metadataEmail || "");
+    setEditPhone(driver.phone?.trim() || metadataPhone || "");
+    setEditEmployeeId(driver.employeeId?.trim() || metadataEmployeeId || "");
+    setEditExternalRef(driver.externalRef?.trim() || metadataExternalRef || "");
+    setEditMetadata(
+      driver.metadata ? JSON.stringify(driver.metadata, null, 2) : "",
+    );
+  };
 
   useEffect(() => {
     if (!selectedDriver) return;
-    setEditDriverId(selectedDriver.driverId);
-    setEditFleetId(selectedDriver.fleetId ?? "");
-    setEditCustomerId(selectedDriver.customerId ?? "");
-    setEditMetadata(
-      selectedDriver.metadata
-        ? JSON.stringify(selectedDriver.metadata, null, 2)
-        : "",
-    );
-  }, [selectedDriver]);
+    resetEditFields(selectedDriver);
+  }, [normalizedFleetId, selectedDriver]);
 
   useEffect(() => {
     if (!isCreateOpen) {
@@ -107,7 +196,7 @@ export function PlatformDriversPage() {
 
   useEffect(() => {
     setSelectedDriverId("");
-  }, [tenantId, fleetId]);
+  }, [tenantId, normalizedFleetId]);
 
   useEffect(() => {
     if (!recentDriverId) return;
@@ -119,14 +208,26 @@ export function PlatformDriversPage() {
     const term = search.trim().toLowerCase();
     if (!term) return drivers;
     return drivers.filter((driver) =>
-      [driver.name, driver.driverId, driver.fleetId, driver.customerId].some(
-        (value) =>
-          String(value ?? "")
-            .toLowerCase()
-            .includes(term),
-      ),
+      [
+        resolveDriverName(driver),
+        driver.driverId,
+        resolveDriverFleetId(driver, normalizedFleetId),
+        resolveDriverCustomerId(driver),
+      ].some((value) => String(value ?? "").toLowerCase().includes(term)),
     );
-  }, [drivers, search]);
+  }, [drivers, normalizedFleetId, search]);
+
+  const tenantFleetIds = useMemo(
+    () => tenantFleets.map((fleet) => fleet.fleetId).filter(Boolean),
+    [tenantFleets],
+  );
+  const fleetDropdownOptions = useMemo(() => {
+    const options = [...tenantFleetIds];
+    if (editFleetId && !options.includes(editFleetId)) {
+      options.unshift(editFleetId);
+    }
+    return options;
+  }, [editFleetId, tenantFleetIds]);
 
   const handleCreate = async () => {
     if (!tenantId || isCreateSubmitting) return;
@@ -145,7 +246,7 @@ export function PlatformDriversPage() {
         {
           driverId: createdDriverId || undefined,
           tenantId,
-          fleetId: fleetId || undefined,
+          fleetId: normalizedFleetId,
           customerId:
             String(createForm.values.customerId || "").trim() || undefined,
           metadata: parseJson(String(createForm.values.metadata || "")),
@@ -162,7 +263,7 @@ export function PlatformDriversPage() {
       setIsCreateOpen(false);
       setRecentDriverId(createdDriverId);
       queryClient.invalidateQueries({
-        queryKey: queryKeys.drivers(tenantId, fleetId || undefined),
+        queryKey: queryKeys.drivers(tenantId, normalizedFleetId),
       });
       addToast({ type: "success", message: "Driver created successfully." });
     } catch (error) {
@@ -181,11 +282,15 @@ export function PlatformDriversPage() {
       await updateDriver(tenantId, editDriverId, {
         fleetId: editFleetId || undefined,
         customerId: editCustomerId || undefined,
+        displayName: editDisplayName.trim() || undefined,
+        email: editEmail.trim() || undefined,
+        phone: editPhone.trim() || undefined,
+        employeeId: editEmployeeId.trim() || undefined,
+        externalRef: editExternalRef.trim() || undefined,
         metadata: parseJson(editMetadata),
       });
-      setEditMetadata("");
       queryClient.invalidateQueries({
-        queryKey: queryKeys.drivers(tenantId, fleetId || undefined),
+        queryKey: queryKeys.drivers(tenantId, normalizedFleetId),
       });
       addToast({ type: "success", message: "Driver updated successfully." });
     } catch (error) {
@@ -294,10 +399,12 @@ export function PlatformDriversPage() {
                         .join(" ")}
                       onClick={() => setSelectedDriverId(driver.driverId)}
                     >
-                      <td>{driver.name ?? "—"}</td>
+                      <td>{resolveDriverName(driver)}</td>
                       <td className="mono">{driver.driverId}</td>
-                      <td className="mono">{driver.fleetId ?? "—"}</td>
-                      <td className="mono">{driver.customerId ?? "—"}</td>
+                      <td className="mono">
+                        {resolveDriverFleetId(driver, normalizedFleetId)}
+                      </td>
+                      <td className="mono">{resolveDriverCustomerId(driver)}</td>
                       <td>
                         <span
                           className={`badge badge--${
@@ -334,13 +441,7 @@ export function PlatformDriversPage() {
                   }
                   onClick={() => setActiveTab("details")}
                 >
-                  Details
-                </button>
-                <button
-                  className={activeTab === "audit" ? "tab tab--active" : "tab"}
-                  onClick={() => setActiveTab("audit")}
-                >
-                  Audit
+                  Update
                 </button>
               </div>
 
@@ -357,15 +458,11 @@ export function PlatformDriversPage() {
                     </div>
                     <div>
                       <div className="text-muted">Fleet ID</div>
-                      <div className="mono">
-                        {selectedDriver.fleetId ?? "—"}
-                      </div>
+                      <div className="mono">{resolveDriverFleetId(selectedDriver, normalizedFleetId)}</div>
                     </div>
                     <div>
                       <div className="text-muted">Customer ID</div>
-                      <div className="mono">
-                        {selectedDriver.customerId ?? "—"}
-                      </div>
+                      <div className="mono">{resolveDriverCustomerId(selectedDriver)}</div>
                     </div>
                     <div>
                       <div className="text-muted">Status</div>
@@ -386,13 +483,71 @@ export function PlatformDriversPage() {
               {activeTab === "details" ? (
                 <div className="stack">
                   <label className="form__field">
-                    <span>Fleet ID</span>
+                    <span>Display Name</span>
                     <input
                       className="input"
                       placeholder="Optional"
+                      value={editDisplayName}
+                      onChange={(event) =>
+                        setEditDisplayName(event.target.value)
+                      }
+                    />
+                  </label>
+                  <label className="form__field">
+                    <span>Email</span>
+                    <input
+                      className="input"
+                      type="email"
+                      placeholder="Optional"
+                      value={editEmail}
+                      onChange={(event) => setEditEmail(event.target.value)}
+                    />
+                  </label>
+                  <label className="form__field">
+                    <span>Phone</span>
+                    <input
+                      className="input"
+                      placeholder="Optional"
+                      value={editPhone}
+                      onChange={(event) => setEditPhone(event.target.value)}
+                    />
+                  </label>
+                  <label className="form__field">
+                    <span>Employee ID</span>
+                    <input
+                      className="input"
+                      placeholder="Optional"
+                      value={editEmployeeId}
+                      onChange={(event) =>
+                        setEditEmployeeId(event.target.value)
+                      }
+                    />
+                  </label>
+                  <label className="form__field">
+                    <span>External Reference</span>
+                    <input
+                      className="input"
+                      placeholder="Optional"
+                      value={editExternalRef}
+                      onChange={(event) =>
+                        setEditExternalRef(event.target.value)
+                      }
+                    />
+                  </label>
+                  <label className="form__field">
+                    <span>Fleet ID</span>
+                    <select
+                      className="select"
                       value={editFleetId}
                       onChange={(event) => setEditFleetId(event.target.value)}
-                    />
+                    >
+                      <option value="">Unassigned</option>
+                      {fleetDropdownOptions.map((id) => (
+                        <option key={id} value={id}>
+                          {id}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                   <label className="form__field">
                     <span>Customer ID</span>
@@ -418,27 +573,12 @@ export function PlatformDriversPage() {
                 </div>
               ) : null}
 
-              {activeTab === "audit" ? (
-                <div className="stack">
-                  <p className="text-muted">
-                    Audit events are not yet connected. This tab will surface
-                    driver changes and admin actions.
-                  </p>
-                </div>
-              ) : null}
-
               <div className="form__actions">
                 <button
                   className="btn btn--secondary"
                   onClick={() => {
                     if (!selectedDriver) return;
-                    setEditFleetId(selectedDriver.fleetId ?? "");
-                    setEditCustomerId(selectedDriver.customerId ?? "");
-                    setEditMetadata(
-                      selectedDriver.metadata
-                        ? JSON.stringify(selectedDriver.metadata, null, 2)
-                        : "",
-                    );
+                    resetEditFields(selectedDriver);
                   }}
                   disabled={isUpdateSubmitting}
                 >

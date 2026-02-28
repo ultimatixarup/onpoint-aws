@@ -1,15 +1,15 @@
-import {
-  createContext,
-  PropsWithChildren,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "./AuthContext";
+import {
+    createContext,
+    PropsWithChildren,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+} from "react";
 import { fetchTenants, TenantSummary } from "../api/onpointApi";
 import { queryKeys } from "../api/queryKeys";
+import { useAuth } from "./AuthContext";
 
 export type Tenant = TenantSummary;
 
@@ -67,9 +67,14 @@ export function useTenant() {
 }
 
 export function RequireTenant({ children }: PropsWithChildren) {
-  const { status } = useAuth();
+  const { status, roles } = useAuth();
   const { tenant, setTenant, tenants, isLoadingTenants, tenantsError } =
     useTenant();
+
+  if (roles.includes("platform_admin")) {
+    return <>{children}</>;
+  }
+
   if (!tenant) {
     if (status !== "authenticated") {
       return <div className="page">Loading...</div>;

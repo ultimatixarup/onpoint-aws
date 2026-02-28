@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 <ui-bucket> <cloudfront-distribution-id> [--ui-dir ui] [--config-file path/to/config.json]" >&2
+  echo "Usage: $0 <ui-bucket> <cloudfront-distribution-id> [--ui-dir ui] [--config-file path/to/config.json] [--vite-mode production]" >&2
 }
 
 if [[ ${1:-} == "-h" || ${1:-} == "--help" ]]; then
@@ -22,6 +22,7 @@ shift 2
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 UI_DIR="ui"
 CONFIG_FILE=""
+VITE_MODE="production"
 TMP_DIR="$ROOT_DIR/tmp"
 mkdir -p "$TMP_DIR"
 
@@ -57,6 +58,8 @@ while [[ $# -gt 0 ]]; do
       UI_DIR="$2"; shift 2;;
     --config-file)
       CONFIG_FILE="$2"; shift 2;;
+    --vite-mode)
+      VITE_MODE="$2"; shift 2;;
     *)
       echo "Unknown arg: $1" >&2; usage; exit 2;;
   esac
@@ -83,7 +86,7 @@ DIST_DIR="$ROOT_DIR/$UI_DIR/dist"
 
 pushd "$ROOT_DIR/$UI_DIR" >/dev/null
 run_logged npm_install npm install
-run_logged npm_build npm run build
+run_logged npm_build npm run build -- --mode "$VITE_MODE"
 popd >/dev/null
 
 if [[ ! -d "$DIST_DIR" ]]; then
