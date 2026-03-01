@@ -44,6 +44,7 @@ BUILD_ID = "2026-02-21T23:58:00Z"
 TABLE = os.environ["TRIP_SUMMARY_TABLE"]
 TELEMETRY_EVENTS_TABLE = os.environ.get("TELEMETRY_EVENTS_TABLE", "onpoint-dev-telemetry-events")
 VIN_REGISTRY_TABLE = os.environ.get("VIN_REGISTRY_TABLE")
+VEHICLE_STATE_TABLE = os.environ.get("VEHICLE_STATE_TABLE")
 DRIVERS_TABLE = os.environ.get("DRIVERS_TABLE")
 DRIVER_ASSIGNMENTS_TABLE = os.environ.get("DRIVER_ASSIGNMENTS_TABLE")
 VIN_TENANT_FLEET_INDEX = os.environ.get("VIN_TENANT_FLEET_INDEX")
@@ -87,7 +88,6 @@ def _round_numeric_fields(data: Any, parent_key: str = "") -> Any:
     # Field-specific rounding rules (field_name -> decimal_places)
     rounding_rules = {
         # Distance (miles) - 2 decimals
-        'milesDriven': 2,
         'startMiles': 2,
         'endMiles': 2,
         'cityMiles': 2,
@@ -105,7 +105,7 @@ def _round_numeric_fields(data: Any, parent_key: str = "") -> Any:
         'tripMiles': 2,
         'rangeStartMiles': 2,
         'rangeEndMiles': 2,
-        
+
         # Fuel (gallons) - 2 decimals
         'fuelConsumed': 2,
         'refueledGallons': 2,
@@ -117,7 +117,7 @@ def _round_numeric_fields(data: Any, parent_key: str = "") -> Any:
         'highwayFuelGallons': 2,
         'lowPressureFuelGallons': 2,
         'fuelCostUsd': 2,
-        
+
         # MPG & Speed - 1 decimal
         'averageMpg': 1,
         'actualMpg': 1,
@@ -126,26 +126,26 @@ def _round_numeric_fields(data: Any, parent_key: str = "") -> Any:
         'maxMph': 1,
         'averageMphExcludingIdle': 1,
         'speedThresholdMph': 1,
-        
+
         # Battery (volts) - 2 decimals
         'startVolts': 2,
         'maxVolts': 2,
         'endVolts': 2,
         'minVolts': 2,
-        
+
         # Temperature (Celsius/Fahrenheit) - 1 decimal
         'startCelsius': 1,
         'maxCelsius': 1,
         'endCelsius': 1,
         'minCelsius': 1,
-        
+
         # Percentages - 1 decimal (though often 0)
         'fuelIndicatorPercent': 1,
         'batteryLevelStartPercent': 1,
         'batteryLevelMaxPercent': 1,
         'batteryLevelEndPercent': 1,
         'endPercent': 1,
-        
+
         # GPS coordinates - 6 decimals (standard GPS precision)
         'startLat': 6,
         'startLon': 6,
@@ -154,7 +154,7 @@ def _round_numeric_fields(data: Any, parent_key: str = "") -> Any:
         'lat': 6,
         'lon': 6,
     }
-    
+
     if isinstance(data, dict):
         return {
             key: _round_numeric_fields(value, key)
@@ -169,7 +169,7 @@ def _round_numeric_fields(data: Any, parent_key: str = "") -> Any:
             return _round_number(data, decimals)
         # Default: round to 2 decimals for unspecified numeric fields
         return _round_number(data, 2)
-    
+
     return data
 
 
@@ -567,6 +567,12 @@ def _is_fleet_trips_route(resource: str, path: str) -> bool:
     return bool(path and path.startswith("/fleets/") and path.endswith("/trips"))
 
 
+def _is_vehicle_state_route(resource: str, path: str) -> bool:
+    if resource == "/vehicles/{vin}/latest-state":
+        return True
+    return bool(path and path.startswith("/vehicles/") and path.endswith("/latest-state"))
+
+
 def _utc_start_of_day(dt: datetime) -> datetime:
     return datetime(dt.year, dt.month, dt.day, tzinfo=timezone.utc)
 
@@ -643,7 +649,7 @@ def _summarize_item(it: dict) -> dict:
         miles = _fallback_miles_from_summary(summary_obj)
     else:
         summary_obj = None
-    
+
     # Extract startMiles from summary if not a top-level field
     if start_miles is None:
         if summary_obj is None:
@@ -655,7 +661,7 @@ def _summarize_item(it: dict) -> dict:
                     start_miles = _as_float(odometer_obj.get("startMiles"))
             if start_miles is None:
                 start_miles = _as_float(summary_obj.get("startMiles"))
-    
+
     # Extract endMiles from summary if not a top-level field
     if end_miles is None:
         if summary_obj is None:
@@ -694,8 +700,11 @@ def _summarize_item(it: dict) -> dict:
         out["overspeedEventCountSevere"] = os_cnt_sev
         out["overspeedEventCountTotal"] = os_cnt_total
 
-    # Round numeric fields for clean UI display
-    return _round_numeric_fields(out)
+    # Round numeric fields for clean UI display, but preserve milesDriven precision.
+    rounded = _round_numeric_fields(out)
+    if miles is not None:
+        rounded["milesDriven"] = miles
+    return rounded
 
 
 # -----------------------------------------------------------
@@ -713,24 +722,52 @@ def _normalize_event(raw_item: dict) -> dict:
         if isinstance(v, (int, float)):
             return v
         return default
-    
+
+    event_time = raw_item.get("eventTime") or raw_item.get("timestamp")
+    speed = _get_val("speed_mph") or _get_val("speed")
+    rpm = _get_val("engine_rpm") or _get_val("engine_speed_rpm")
+    odometer = _get_val("odometer_miles") or _get_val("odometer_Miles")
+
     return {
-        "timestamp": raw_item.get("eventTime") or raw_item.get("timestamp"),
+        # Legacy fields expected by consumers/tests
+        "vin": raw_item.get("vin"),
+        "tripId": raw_item.get("tripId"),
+        "eventTime": event_time,
+        "raw": raw_item.get("raw"),
+        # Normalized fields
+        "timestamp": event_time,
         "lat": _get_val("lat"),
         "lon": _get_val("lon"),
-        "speed_mph": _get_val("speed_mph") or _get_val("speed"),
+        "speed_mph": speed,
+        "speed": speed,
         "heading": _get_val("heading"),
         "altitude_m": _get_val("altitudeM"),
-        "rpm": _get_val("engine_rpm") or _get_val("engine_speed_rpm"),
+        "rpm": rpm,
         "coolant_temp_c": _get_val("coolantTempC"),
         "fuel_level_gallons": _get_val("fuelLevelGallons"),
         "fuel_percent": _get_val("fuelPercent"),
-        "odometer_miles": _get_val("odometer_miles") or _get_val("odometer_Miles"),
+        "odometer_miles": odometer,
+        "odometerMiles": odometer,
         "satellite_count": _get_val("satelliteCount"),
         "vehicle_state": raw_item.get("vehicleState"),
+        "vehicleState": raw_item.get("vehicleState"),
         "event_type": raw_item.get("eventType"),
+        "eventType": raw_item.get("eventType"),
         "message_id": raw_item.get("messageId"),
+        "messageId": raw_item.get("messageId"),
     }
+
+
+def _get_vehicle_state(vin: str) -> Optional[dict]:
+    if not VEHICLE_STATE_TABLE:
+        return None
+    pk = f"VEHICLE#{vin}"
+    sk = "STATE"
+    resp = ddb.get_item(TableName=VEHICLE_STATE_TABLE, Key={"PK": {"S": pk}, "SK": {"S": sk}})
+    item = resp.get("Item")
+    if not item:
+        return None
+    return _ddb_unmarshal_item(item)
 
 
 def _query_trip_events_raw(
@@ -1085,6 +1122,8 @@ def lambda_handler(event, context):
         route_type = "TRIP_EVENTS"
     elif _is_map_route(resource, path):
         route_type = "TRIP_MAP"
+    elif _is_vehicle_state_route(resource, path):
+        route_type = "VEHICLE_STATE"
     elif _is_fleet_trips_route(resource, path):
         route_type = "FLEET_TRIPS"
     # /trips/{vin}/{tripId} detail route
@@ -1272,6 +1311,16 @@ def lambda_handler(event, context):
             },
         )
 
+    if route_type == "VEHICLE_STATE":
+        if not vin_path:
+            return _resp(400, {"error": "vin is required"})
+        state = _get_vehicle_state(vin_path)
+        if not state:
+            return _resp(404, {"error": "Vehicle state not found"})
+        if not _authorize_vin(vin_path, tenant_id, state.get("lastEventTime"), role):
+            return _resp(403, {"error": "Forbidden"})
+        return _resp(200, state)
+
     if route_type == "FLEET_TRIPS":
         if not fleet_id_path:
             return _resp(400, {"error": "fleetId is required"})
@@ -1433,7 +1482,11 @@ def lambda_handler(event, context):
                     needs_miles_backfill = s.get("startMiles") is None or s.get("endMiles") is None
                     if tid and (include == INCLUDE_SUMMARY or needs_miles_backfill):
                         detail_include = INCLUDE_SUMMARY if include == INCLUDE_SUMMARY else INCLUDE_NONE
-                        d = _get_trip_detail(vin, tid, include=detail_include)
+                        try:
+                            d = _get_trip_detail(vin, tid, include=detail_include)
+                        except Exception as exc:
+                            logger.warning(f"Detail fetch failed for vin={vin} tripId={tid}: {exc}")
+                            d = None
                         if d:
                             if s.get("startMiles") is None and d.get("startMiles") is not None:
                                 s["startMiles"] = d.get("startMiles")

@@ -71,6 +71,24 @@ def _trip_summary_item():
         "idlingTime": "00:05:00",
         "mpg": {"actualMpg": 15.0},
     }
+    return {
+        "PK": "VEHICLE#VIN123",
+        "SK": "TRIP_SUMMARY#TRIP1",
+        "vin": "VIN123",
+        "tripId": "TRIP1",
+        "startTime": "2026-02-01T00:00:00Z",
+        "endTime": "2026-02-01T00:30:00Z",
+        "milesDriven": Decimal("30.0"),
+        "fuelConsumed": Decimal("2.0"),
+        "safetyScore": 90,
+        "overspeedMilesStandard": Decimal("1.0"),
+        "overspeedMilesSevere": Decimal("0.5"),
+        "overspeedMilesTotal": Decimal("1.5"),
+        "overspeedEventCountStandard": 2,
+        "overspeedEventCountSevere": 1,
+        "overspeedEventCountTotal": 3,
+        "summary": json.dumps(summary),
+    }
 
 
 def _trip_summary_item_without_top_level_miles():
