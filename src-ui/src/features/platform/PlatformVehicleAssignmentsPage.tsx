@@ -197,6 +197,22 @@ export function PlatformVehicleAssignmentsPage() {
     }
 
     const currentTenantId = selectedAssignment.tenantId?.trim();
+    const currentFleetId = selectedAssignment.fleetId?.trim() || "";
+    const currentCustomerId = selectedAssignment.customerId?.trim() || "";
+    const nextFleetId = detailFleetId.trim();
+    const nextCustomerId = detailCustomerId.trim();
+
+    const hasContextChange =
+      (currentTenantId ?? "") !== nextTenantId ||
+      currentFleetId !== nextFleetId ||
+      currentCustomerId !== nextCustomerId;
+    if (!hasContextChange) {
+      setDetailError(
+        "Roll-forward requires changing tenant, fleet, or customer to avoid creating no-op history entries.",
+      );
+      return;
+    }
+
     const currentFrom = normalizeIsoForApi(selectedAssignment.effectiveFrom ?? "");
     let updateEffectiveFrom = normalizedFrom;
     let autoAdjustedFrom = false;
@@ -227,8 +243,8 @@ export function PlatformVehicleAssignmentsPage() {
           vin,
           fromTenantId: currentTenantId,
           toTenantId: nextTenantId,
-          toFleetId: detailFleetId.trim() || undefined,
-          toCustomerId: detailCustomerId.trim() || undefined,
+          toFleetId: nextFleetId || undefined,
+          toCustomerId: nextCustomerId || undefined,
           effectiveFrom: updateEffectiveFrom,
           reason: nextReason,
         },
@@ -431,14 +447,15 @@ export function PlatformVehicleAssignmentsPage() {
           )}
         </Card>
 
-        <Card title="Assignment Details">
+        <Card title="Assignment Roll-forward">
           {!selectedAssignment ? (
-            <p>Select a history row to update assignment details.</p>
+            <p>Select a history row to roll assignment forward.</p>
           ) : (
             <div className="stack">
               <p className="text-muted">
                 This action rolls assignment history forward from the selected
-                record at the new Effective From timestamp.
+                record at the new Effective From timestamp. Use this when
+                tenant, fleet, or customer changes.
               </p>
               <label className="form__field">
                 <span>Tenant</span>
@@ -517,7 +534,9 @@ export function PlatformVehicleAssignmentsPage() {
                 {isUpdatingAssignment ? (
                   <span className="btn__spinner" aria-hidden="true" />
                 ) : null}
-                {isUpdatingAssignment ? "Updating..." : "Update Assignment"}
+                {isUpdatingAssignment
+                  ? "Rolling forward..."
+                  : "Roll Forward Assignment"}
               </button>
 
               {detailStatus ? <p className="text-success">{detailStatus}</p> : null}

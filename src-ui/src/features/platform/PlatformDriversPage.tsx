@@ -277,6 +277,11 @@ export function PlatformDriversPage() {
 
   const handleUpdate = async () => {
     if (!editDriverId || !tenantId || isUpdateSubmitting) return;
+    const parsedMetadata = parseJson(editMetadata);
+    if (editMetadata.trim() && !parsedMetadata) {
+      addToast({ type: "error", message: "Metadata JSON is invalid." });
+      return;
+    }
     try {
       setIsUpdateSubmitting(true);
       await updateDriver(tenantId, editDriverId, {
@@ -287,7 +292,7 @@ export function PlatformDriversPage() {
         phone: editPhone.trim() || undefined,
         employeeId: editEmployeeId.trim() || undefined,
         externalRef: editExternalRef.trim() || undefined,
-        metadata: parseJson(editMetadata),
+        metadata: parsedMetadata,
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.drivers(tenantId, normalizedFleetId),
