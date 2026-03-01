@@ -17,6 +17,24 @@ pre-commit run -a
 ./scripts/safe_redeploy.sh onpoint-dev-cfn-artifacts --region us-east-1 --stack-name onpoint-dev --env dev --project-name onpoint --prefix cfn
 ```
 
+## Parallel test environment
+
+Use a separate stack and artifacts bucket for test:
+
+```bash
+bash scripts/deploy_test.sh
+```
+
+Config file:
+
+- [deploy/config/test.env](deploy/config/test.env)
+
+You can also pass a custom config path:
+
+```bash
+bash scripts/deploy_test.sh deploy/config/test.env
+```
+
 Never delete stacks; redeploy via update-stack.
 Nested templates must be uploaded to S3 first; stack references them from TemplateBucket/TemplatePrefix.
 
@@ -59,3 +77,20 @@ Notes:
 
 - Tests are black-box API calls only.
 - All requests use `x-api-key` only (no bearer tokens).
+
+## AWS profiles (dev/test/prod)
+
+You can bootstrap three named AWS profiles with one script:
+
+```bash
+bash scripts/setup_aws_profiles.sh
+```
+
+For SSO-based profile setup:
+
+```bash
+bash scripts/setup_aws_profiles.sh --mode sso --region us-east-1
+```
+
+The script configures `dev`, `test`, and `prod`, sets default region/output,
+and attempts identity verification using `sts get-caller-identity`.

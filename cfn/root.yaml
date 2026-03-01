@@ -81,11 +81,33 @@ Parameters:
   UiHostedZoneId:
     Type: String
     Default: ""
+  EnableRoute53Domains:
+    Type: String
+    Default: "false"
+  RootDomainName:
+    Type: String
+    Default: ""
+  HostedZoneId:
+    Type: String
+    Default: ""
+  UiDomainPrefix:
+    Type: String
+    Default: app
+  ApiDomainPrefix:
+    Type: String
+    Default: api
+  EnableApiCustomDomain:
+    Type: String
+    Default: "false"
+  ApiAcmCertificateArn:
+    Type: String
+    Default: ""
 
 Conditions:
   UseProvidedUserPoolId: !Not [!Equals [!Ref UserPoolId, ""]]
   UseProvidedUiBucketName: !Not [!Equals [!Ref UiBucketName, ""]]
   EnableUiStackCondition: !Equals [!Ref EnableUiStack, "true"]
+  EnableRoute53DomainsCondition: !Equals [!Ref EnableRoute53Domains, "true"]
 
 Resources:
   StreamsStack:
@@ -257,6 +279,30 @@ Resources:
         UiHostedZoneId: !Ref UiHostedZoneId
       TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/ui.yaml
 
+  Route53DomainsStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: EnableRoute53DomainsCondition
+    Properties:
+      Parameters:
+        Env: !Ref Env
+        ProjectName: !Ref ProjectName
+        RootDomainName: !Ref RootDomainName
+        HostedZoneId: !Ref HostedZoneId
+        UiDomainPrefix: !Ref UiDomainPrefix
+        ApiDomainPrefix: !Ref ApiDomainPrefix
+        EnableUiAlias: !Ref EnableUiStack
+        UiCloudFrontDomainName: !If [EnableUiStackCondition, !GetAtt UiStack.Outputs.UiCloudFrontDomainName, ""]
+        EnableApiCustomDomain: !Ref EnableApiCustomDomain
+        ApiAcmCertificateArn: !Ref ApiAcmCertificateArn
+        ApiStageName: !Ref Env
+        IngestStageName: !GetAtt IngestApiStack.Outputs.IngestApiStageName
+        FleetTenancyApiId: !GetAtt FleetTenancyApiStack.Outputs.RestApiId
+        TripSummaryApiId: !GetAtt ApiStack.Outputs.RestApiId
+        GeofencingApiId: !GetAtt GeofencingApiStack.Outputs.RestApiId
+        VehicleStateApiId: !GetAtt VehicleStateApiStack.Outputs.RestApiId
+        IngestApiId: !GetAtt IngestApiStack.Outputs.IngestApiId
+      TemplateURL: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/route53_domains.yaml
+
 Outputs:
   Env:
     Value: !Ref Env
@@ -275,6 +321,10 @@ Outputs:
   ApiStackTemplateURL:
     Description: Trip summary API nested template URL
     Value: !Sub https://${TemplateBucket}.s3.${AWS::Region}.amazonaws.com/${TemplatePrefix}/${TemplateVersion}/nested/trip_summary_api.yaml
+  TripSummaryApiId:
+    Value: !GetAtt ApiStack.Outputs.RestApiId
+  TripSummaryApiInvokeUrl:
+    Value: !GetAtt ApiStack.Outputs.InvokeUrl
   VehicleStateApiInvokeUrl:
     Value: !GetAtt VehicleStateApiStack.Outputs.InvokeUrl
   VehicleStateApiId:
@@ -309,3 +359,15 @@ Outputs:
   UiAppUrl:
     Condition: EnableUiStackCondition
     Value: !GetAtt UiStack.Outputs.UiAppUrl
+  UiDnsName:
+    Condition: EnableRoute53DomainsCondition
+    Value: !GetAtt Route53DomainsStack.Outputs.UiDnsName
+  UiDnsUrl:
+    Condition: EnableRoute53DomainsCondition
+    Value: !GetAtt Route53DomainsStack.Outputs.UiAppUrl
+  ApiCustomDomainName:
+    Condition: EnableRoute53DomainsCondition
+    Value: !GetAtt Route53DomainsStack.Outputs.ApiDomainName
+  ApiCustomBaseUrl:
+    Condition: EnableRoute53DomainsCondition
+    Value: !GetAtt Route53DomainsStack.Outputs.ApiBaseUrl

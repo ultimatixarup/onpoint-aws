@@ -34,11 +34,15 @@ Conditions:
 Resources:
   UiBucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       BucketName: !If
         - UseProvidedUiBucketName
         - !Ref UiBucketName
         - !Ref AWS::NoValue
+      VersioningConfiguration:
+        Status: Suspended
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
